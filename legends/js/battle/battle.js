@@ -11,8 +11,9 @@ const STATUS_NAME = { brand: 'Verbrennung', gift: 'Vergiftung', starre: 'Starre'
 const freshStages = () => ({ atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 });
 
 export class Battle {
-  constructor({ team, foeTeam, wild = true, trainer = null, rnd = Math.random, canCatch = true }) {
-    this.team = team; this.foeTeam = foeTeam; this.wild = wild; this.trainer = trainer;
+  constructor({ team, foeTeam, wild = true, trainer = null, rnd = Math.random, canCatch = true, pvp = false, names = null }) {
+    this.team = team; this.foeTeam = foeTeam; this.wild = wild && !pvp; this.trainer = trainer;
+    this.pvp = pvp; this.names = names || { p: 'Du', f: trainer?.name || 'Gegner' };
     this.rnd = rnd; this.canCatch = canCatch && wild;
     this.pi = team.findIndex(m => m.hp > 0); this.fi = 0;
     this.st = { p: freshStages(), f: freshStages() };
@@ -23,7 +24,7 @@ export class Battle {
   get p() { return this.team[this.pi]; }
   get f() { return this.foeTeam[this.fi]; }
   mon(side) { return side === 'p' ? this.p : this.f; }
-  label(side) { const m = this.mon(side); return side === 'p' ? monName(m) : (this.wild ? 'Das wilde ' : 'Gegnerisches ') + monName(m); }
+  label(side) { const m = this.mon(side); if (this.pvp) return `${monName(m)} (${this.names[side]})`; return side === 'p' ? monName(m) : (this.wild ? 'Das wilde ' : 'Gegnerisches ') + monName(m); }
   eff(side, k) {
     const m = this.mon(side); let v = calcStats(m)[k] * STAGE(this.st[side][k]);
     if (k === 'spe' && m.status === 'starre') v *= 0.5;
@@ -31,8 +32,9 @@ export class Battle {
   }
 
   // Hauptschleife einer Runde
-  turn(action) {
+  turn(action, foeAction) {
     if (this.over) return [];
+    if (this.pvp) return this.pvpTurn(action, foeAction || { t: 'move', i: 0 });
     const ev = [];
     let playerMoves = null;
     if (action.t === 'run') {
@@ -169,7 +171,55 @@ export class Battle {
     this.checkFaints(ev);
   }
 
+  // ---------------------------------------------------------- Spieler gegen Spieler (Server-autoritativ)
+  pvpTurn(a, b) {
+    const ev = [], acts = { p: a, f: b };
+    for (const side of ['p', 'f']) if (acts[side].t === 'forfeit') {
+      ev.push({ t: 'msg', text: `${this.names[side]} gibt auf!` });
+      return this.finish(ev, side === 'p' ? 'lose' : 'win');
+    }
+    for (const side of ['p', 'f']) if (acts[side].t === 'switch') this.doSwitch(side, acts[side].i, ev);
+    const movers = ['p', 'f'].filter(s => acts[s].t === 'move');
+    if (movers.length === 2) {
+      const sp = this.eff('p', 'spe'), sf = this.eff('f', 'spe');
+      if (sf > sp || (sf === sp && this.rnd() < 0.5)) movers.reverse();
+    }
+    for (const side of movers) {
+      if (this.over || this.awaitSwitch || this.awaitSwitchF) break;
+      if (this.mon(side).hp <= 0) continue;
+      this.useMove(side, acts[side].i, ev);
+      if (this.checkFaints(ev)) break;
+    }
+    if (!this.over && !this.awaitSwitch && !this.awaitSwitchF) this.endOfTurn(ev);
+    return ev;
+  }
+  doSwitch(side, i, ev) {
+    const m = this.mon(side);
+    ev.push({ t: 'recall', side, text: `${this.names[side]} ruft ${monName(m)} zurück!` });
+    if (side === 'p') this.pi = i; else this.fi = i;
+    this.st[side] = freshStages();
+    ev.push({ t: 'send', side, mon: this.mon(side), text: `${this.names[side]} schickt ${monName(this.mon(side))} in den Kampf!` });
+  }
+  checkFaintsPvp(ev) {
+    let any = false;
+    for (const side of ['f', 'p']) {
+      const m = this.mon(side);
+      if (m.hp <= 0 && !m._fainted) { m._fainted = true; any = true; ev.push({ t: 'faint', side }); ev.push({ t: 'msg', text: `${this.label(side)} ist kampfunfähig!` }); }
+    }
+    if (!any) return false;
+    const aliveP = this.team.some(m => m.hp > 0), aliveF = this.foeTeam.some(m => m.hp > 0);
+    if (!aliveP || !aliveF) {
+      const res = aliveP ? 'win' : aliveF ? 'lose' : 'draw';
+      ev.push({ t: 'msg', text: res === 'draw' ? 'Unentschieden!' : `${this.names[res === 'win' ? 'p' : 'f']} gewinnt den Kampf!` });
+      this.finish(ev, res); return true;
+    }
+    if (this.p.hp <= 0) { this.awaitSwitch = true; ev.push({ t: 'needSwitch', side: 'p' }); }
+    if (this.f.hp <= 0) { this.awaitSwitchF = true; ev.push({ t: 'needSwitch', side: 'f' }); }
+    return true;
+  }
+
   checkFaints(ev) {
+    if (this.pvp) return this.checkFaintsPvp(ev);
     let any = false;
     if (this.f.hp <= 0 && !this.f._fainted) {
       this.f._fainted = true; any = true;
@@ -191,7 +241,12 @@ export class Battle {
     return any;
   }
 
-  forcedSwitch(i) {
+  forcedSwitch(i, side = 'p') {
+    if (this.pvp) {
+      if (side === 'p') { this.awaitSwitch = false; this.pi = i; } else { this.awaitSwitchF = false; this.fi = i; }
+      this.st[side] = freshStages();
+      return [{ t: 'send', side, mon: this.mon(side), text: `${this.names[side]} schickt ${monName(this.mon(side))} in den Kampf!` }];
+    }
     this.awaitSwitch = false; this.pi = i; this.st.p = freshStages(); this.participants.add(this.p.uid);
     return [{ t: 'send', side: 'p', mon: this.p, text: `Los, ${monName(this.p)}!` }];
   }

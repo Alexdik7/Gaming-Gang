@@ -12,6 +12,7 @@ import { createMon, healMon, maxHp, monName } from '../data/mon.js';
 import { ensureSpecies, stepBreeding, hatch, canBreed, compatibility } from '../data/breeding.js';
 import { initAudio, sfx, cry, setMusic, setAudio, audioState } from '../core/audio.js';
 import { mulberry } from '../core/noise.js';
+import { Online } from './online.js';
 
 const SAVE = 'lu2-save', OPT = 'lu2-opt', DAY = 24 * 60;
 const LOOKS = {
@@ -27,7 +28,7 @@ class Game {
   constructor() {
     const o = safe(localStorage.getItem(OPT)) || {};
     settings.textSpeed = o.textSpeed ?? 2; setAudio('music', o.music ?? true); setAudio('sfx', o.sfx ?? true);
-    this.state = null; this.ow = new Overworld(this);
+    this.state = null; this.ow = new Overworld(this); this.online = new Online(this);
   }
   saveOpt() { try { localStorage.setItem(OPT, JSON.stringify({ textSpeed: settings.textSpeed, music: audioState.music, sfx: audioState.sfx })); } catch {} }
 
@@ -80,14 +81,13 @@ class Game {
     const r = await T.done;
     initAudio(); sfx('open');
     const has = !!localStorage.getItem(SAVE);
-    const items = [...(has ? ['WEITER'] : []), 'NEUES SPIEL', 'OPTIONEN', '3D-PROTOTYP'];
+    const items = [...(has ? ['WEITER'] : []), 'NEUES SPIEL', 'OPTIONEN'];
     for (;;) {
       const i = await choose(items, { x: 70, y: 96, w: 100, cancel: false });
       const k = items[i];
       if (k === 'WEITER') { pop(T); this.state = this.load(); return this.enterWorld(); }
       if (k === 'NEUES SPIEL') { if (has && !(await ask('Dein alter Spielstand wird beim Speichern überschrieben. Trotzdem neu beginnen?'))) continue; pop(T); return this.intro(); }
       if (k === 'OPTIONEN') await this.options();
-      if (k === '3D-PROTOTYP') { location.href = '3d.html'; return; }
     }
   }
 
@@ -119,13 +119,14 @@ class Game {
     this.ow.load(s.map, s.x, s.y, s.dir);
     push(this.ow); this.started = true;
     await fade(0, 400);
+    this.online.autoJoin();
     if (fresh) { this.ow.busy = true; await say(['Mama: Guten Morgen, ' + s.name + '!', 'Mama: Prof. Linde wartet in ihrem Labor auf dich – das große graue Haus im Süden des Dorfes.'], {}); this.ow.busy = false; this.save(true); }
   }
 
   // ---------------------------------------------------------- Menüs
   async startMenu() {
     const s = this.state, ow = this.ow; ow.busy = true;
-    const items = [...(s.flags.dex ? ['CHRONIK'] : []), ...(s.team.length ? ['TEAM'] : []), 'BEUTEL', s.name.toUpperCase(), 'SPEICHERN', 'OPTIONEN', 'ZURÜCK'];
+    const items = [...(s.flags.dex ? ['CHRONIK'] : []), ...(s.team.length ? ['TEAM'] : []), 'BEUTEL', s.name.toUpperCase(), 'ONLINE', 'SPEICHERN', 'OPTIONEN', 'ZURÜCK'];
     for (;;) {
       const i = await choose(items, { above: false, x: W - 86, w: 83 });
       const k = items[i];
@@ -136,6 +137,7 @@ class Game {
       if (k === s.name.toUpperCase()) await card(s);
       if (k === 'SPEICHERN') { if (await ask('Möchtest du das Spiel speichern?')) { this.save(); await say(`${s.name} hat das Spiel gespeichert.`); } }
       if (k === 'OPTIONEN') await this.options();
+      if (k === 'ONLINE') { await this.online.menu(); break; }
     }
     ow.busy = false;
   }
@@ -181,8 +183,10 @@ class Game {
     }
     return false;
   }
+  remoteActors(id) { return this.online.actors(id); }
   async onMapLoad(id) {
     const s = this.state;
+    this.online.pos(true);
     if (id === 'route2' && s.flags.gotBalls && !s.flags.kian2) {
       this.ow.busy = true;
       await wait(500);
@@ -201,6 +205,7 @@ class Game {
 
   onStep() {
     const s = this.state;
+    this.online.pos();
     const ev = stepBreeding(s);
     for (const e of ev) {
       if (e.t === 'eggReady') this.ow.notify('Die Brutstätte in Quellbach hat ein Ei für dich!');

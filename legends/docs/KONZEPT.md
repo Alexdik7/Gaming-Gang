@@ -7,27 +7,23 @@ Realistisch ist deshalb ein **schrittweiser Aufbau**. Am Anfang steht ein echtes
 
 | Anforderung | Machbar? | Umsetzung |
 |---|---|---|
-| Spielbare 3D-Welt, Bewegung, Kamera, Kämpfe, Fangen | ✅ sofort | in Phase 1 umgesetzt |
-| Koop für 4 Spieler in einer dauerhaften Welt | ✅ | Grundlage in Phase 1 umgesetzt, gemeinsame Kämpfe folgen in Phase 2 |
+| Spielbare Welt, Bewegung, Kämpfe, Fangen | ✅ | umgesetzt (Handheld-Edition) |
+| Koop für 4 Spieler in einer dauerhaften Welt | ✅ | Phase 2: gemeinsame Welt, Mitspieler sehen, Freundschaftskämpfe und Tausch umgesetzt |
 | 150+ Kreaturen, 7 Regionen, 8 Arenen, Top 4 | ✅, braucht Zeit | datengetriebenes System: neue Kreaturen und Regionen sind Daten statt neuer Code |
-| Grafik auf dem Niveau von Unreal und AAA | ⚠️ eingeschränkt | eigener stilisierter Look mit Toon-Shading, Outlines, Licht, Wetter und Partikeln. Fotorealismus bräuchte Profi-3D-Modelle. |
-| Windows-Installer, Android, iOS | ✅ | als installierbare App über PWA, später zusätzlich Electron/Tauri (Windows) und Capacitor (Stores) |
+| Grafik | ✅ | eigene Pixel-Art im Stil der 32-Bit-Handhelds (240×160, 16×16-Kacheln, 64×64-Kampfsprites). Alle Grafiken sind eigenständig gestaltet, nichts ist aus fremden Spielen übernommen. |
+| Windows-Installer, Android, iOS | ✅ | als installierbare App über PWA, später zusätzlich Tauri (Windows) und Capacitor (Stores) |
 
-## 2. Wahl der Technik: Three.js (WebGL) + Node.js statt Unity/Unreal
+## 2. Wahl der Technik: Canvas 2D + Node.js statt Unity/Unreal
 
-**Entscheidung:** Das Spiel nutzt eine eigene Engine-Schicht auf Basis von **Three.js**. Der Weltserver läuft mit **Node.js + WebSockets**.
+**Entscheidung:** Das Spiel nutzt eine eigene kleine Engine auf Basis von **Canvas 2D** (keine Fremdbibliothek). Der Weltserver läuft mit **Node.js + WebSockets**.
+Der frühere 3D-Prototyp (Three.js) wurde mit v0.3 entfernt.
 
 Gründe:
 
-1. **Eure Geräte:** Ihr spielt auf Handys **und** PCs. Ein einziger Code läuft auf Windows, Android, iOS, Mac und Linux und lässt sich überall wie eine App installieren.
-2. **Keine Entwicklungsumgebung nötig:** Unity und Unreal brauchen Editor, Lizenzen und Build-Rechner. Für iOS braucht man zusätzlich einen Mac und ein Apple-Entwicklerkonto für 99 €/Jahr.
-   Mit Three.js öffnet ihr einfach einen Link und tippt auf „Zum Startbildschirm“.
-3. **Updates sofort für alle:** Jede neue Version liegt nach dem Upload bei allen vier Spielern, ohne neuen Download.
-4. **Echte Spiele-Engine-Funktionen:** Echtzeit-3D, Schatten, eigene Shader (Wasser, Gras, Himmel, Wasserfall), Instancing für tausende Objekte und ein Partikelsystem.
-
-Das ist ausdrücklich **keine Website, die nur wie ein Spiel aussieht**. Es ist ein echtzeitgerendertes 3D-Spiel mit eigener Spielschleife.
-
-**Plan B:** Wenn das Projekt später Grafik auf Unreal-Niveau braucht, lassen sich Spieldaten, Kampflogik und Server weiterverwenden. Neu geschrieben würde nur der Darstellungsteil.
+1. **Eure Geräte:** Ihr spielt auf Handys **und** PCs. Ein einziger Code läuft überall und lässt sich wie eine App installieren.
+2. **Keine Entwicklungsumgebung nötig:** Link öffnen, „Zum Startbildschirm“ tippen, fertig.
+3. **Updates sofort für alle:** Jede neue Version liegt nach dem Upload bei allen vier Spielern.
+4. **Gemeinsame Logik:** Kampf- und Kreaturen-Code laufen unverändert im Browser und auf dem Server.
 
 ## 3. Architektur
 
@@ -38,23 +34,24 @@ legends/
 ├── js/
 │   ├── main.js                     Spielablauf: Zustände, Story, Quests, HUD, Menüs, Speichern, Netzwerk-Anbindung
 │   ├── core/                       Engine-Bausteine
-│   │   ├── noise.js                deterministisches Rauschen (gleiche Welt für alle Spieler)
-│   │   ├── input.js                Tastatur/Maus + Touch-Joystick
-│   │   ├── audio.js                Synthesizer: Effekte, Kreaturenrufe, prozedurale Musik
-│   │   └── ui.js                   Dialoge, Auswahlfenster, Hinweise
+│   │   ├── noise.js                deterministisches Rauschen / Zufall mit Seed
+│   │   └── audio.js                Synthesizer: Effekte, Kreaturenrufe, prozedurale Musik
 │   ├── data/                       reine Spieldaten (leicht erweiterbar)
-│   │   ├── types.js                15 Typen + Effektivitäts-Tabelle
-│   │   ├── moves.js                Attacken
-│   │   ├── creatures.js            Kreaturen (Werte, Lernsets, Entwicklung, Lore, Modell, Ruf)
+│   │   ├── types.js · moves.js     15 Typen, 58 Attacken
+│   │   ├── creatures.js/creatures2.js  45 Kreaturen (Werte, Lernsets, Entwicklung, Lore, Aussehen, Ruf)
+│   │   ├── breeding.js             Brutstätte, Eier, Mutationen
 │   │   └── mon.js                  Werteberechnung, EP, Level, Entwicklung
-│   ├── world/
-│   │   ├── world.js                Region Verdantia: Gelände, Wasser, Wälder, Dorf, Tempel, Tag/Nacht, Wetter
-│   │   └── models.js               prozedurale 3D-Modelle (Kreaturen + Menschen) und Animationen
-│   ├── battle/
-│   │   ├── battle.js               Kampflogik (ohne Grafik, daher auch auf dem Server lauffähig)
-│   │   └── battleView.js           Inszenierung: Kamerafahrten, Partikel, Effekte, Kampf-UI
-│   ├── net/net.js                  Netzwerk-Client mit automatischer Wiederverbindung
-│   └── vendor/three.module.min.js  Three.js r170 (MIT-Lizenz)
+│   ├── battle/battle.js            Kampflogik ohne Grafik – läuft im Browser UND auf dem Server (PvP)
+│   ├── gb/                         Handheld-Edition (Canvas 2D, 240×160)
+│   │   ├── engine.js               Spielschleife, Szenen-Stapel, Eingabe, Zeichenhilfen
+│   │   ├── pixel.js                Kacheln, Gebäude, Laufsprites
+│   │   ├── monart.js               2D-Pixel-Art-Generator für Kreaturen und Trainer
+│   │   ├── maps.js · overworld.js  Karten, Bewegung, NPCs, Trainer
+│   │   ├── battle2d.js             Kampfbildschirm
+│   │   ├── gbui.js                 Dialoge, Menüs, Team, Bericht, Chronik
+│   │   ├── online.js               Koop: Mitspieler, Freundschaftskampf, Tausch
+│   │   └── game.js                 Story, Ereignisse, Speichern
+│   └── net/net.js                  Netzwerk-Client mit automatischer Wiederverbindung
 ├── server/                         Weltserver (Node.js)
 │   └── server.js
 └── docs/                           Konzept, Roadmap, Fortschritt, Multiplayer-Anleitung
@@ -62,9 +59,9 @@ legends/
 
 ### Wichtige Prinzipien
 
-- **Datengetrieben:** Eine neue Kreatur ist ein Eintrag in `creatures.js`. Das 3D-Modell entsteht über einen Baukasten-Typ und Farben, der Ruf über Synthesizer-Parameter.
-- **Logik getrennt von Grafik:** `battle.js` erzeugt nur Ereignislisten, `battleView.js` spielt sie ab.
-  Dadurch kann der Server Kämpfe später selbst berechnen; das ist der Weg zur vollständigen Server-Autorität.
+- **Datengetrieben:** Eine neue Kreatur ist ein Eintrag in `creatures.js`. Das Pixel-Sprite entsteht über einen Körperbau-Typ, Farben und Zusatzteile, der Ruf über Synthesizer-Parameter.
+- **Logik getrennt von Grafik:** `battle.js` erzeugt nur Ereignislisten, `battle2d.js` spielt sie ab.
+  Kämpfe zwischen Spielern berechnet deshalb der Server selbst; die Clients senden nur ihre Wahl.
 - **Deterministische Welt:** Gelände, Bäume und Wetter entstehen aus einem Seed. Alle Spieler sehen exakt dieselbe Welt, ohne dass der Server sie übertragen muss.
 
 ## 4. Multiplayer- und Datenstruktur

@@ -7,7 +7,7 @@ export class Net {
     try { this.acc = JSON.parse(localStorage.getItem(LS)) || {}; } catch { this.acc = {}; }
   }
   on(t, fn) { (this.handlers[t] ||= []).push(fn); }
-  emit(t, m) { (this.handlers[t] || []).forEach(f => f(m)); }
+  emit(t, m) { (this.handlers[t] || []).forEach(f => f(m)); if (t !== 'status') (this.handlers['*'] || []).forEach(f => f(m)); }
   setStatus(s) { this.status = s; this.emit('status', s); }
 
   connect(url, name) {

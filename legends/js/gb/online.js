@@ -1,0 +1,270 @@
+// Online-Koop (Phase 2): gemeinsame Welt für bis zu 4 Spieler, Mitspieler auf der Karte,
+// Freundschaftskämpfe (Kampflogik auf dem Server) und Tauschen.
+import { Net } from '../net/net.js';
+import { G, W, H, push, pop, text, box, wait, fade } from './engine.js';
+import { say, ask, choose, party, inputName, waitMsg } from './gbui.js';
+import { monSprite } from './sprites.js';
+import { battle } from './battle2d.js';
+import { SPECIES } from '../data/creatures.js';
+import { TYPES } from '../data/types.js';
+import { ensureSpecies } from '../data/breeding.js';
+import { monName, newUid } from '../data/mon.js';
+import { sfx, cry } from '../core/audio.js';
+
+const OPT = 'lu2-online';
+const DEF_LOOK = { skin: '#e8b892', hair: '#2a1d16', outfit: '#3d8bfd', pants: '#2b2d42', accent: '#ffd36b' };
+const load = () => { try { return JSON.parse(localStorage.getItem(OPT)) || {}; } catch { return {}; } };
+
+export class Online {
+  constructor(game) {
+    this.g = game; this.net = new Net(); this.cfg = load();
+    this.players = new Map(); this.waiters = []; this.reqs = []; this.world = null; this.members = [];
+    this.last = performance.now(); this.sent = null;
+    const n = this.net;
+    n.on('*', m => this.dispatch(m));
+    n.on('joined', m => { this.world = { code: m.code, name: m.name }; this.members = m.members; this.cfg.world = m.code; this.saveCfg(); this.sent = null; this.pos(true); });
+    n.on('snap', m => this.snap(m.players));
+    n.on('left', m => { const p = this.players.get(m.pid); if (p) this.g.ow?.notify(`${p.name} hat die Welt verlassen.`); this.players.delete(m.pid); });
+    n.on('chat', m => { if (m.pid !== n.pid) this.g.ow?.notify(`${m.from}: ${m.text}`.slice(0, 44)); });
+    n.on('req', m => this.reqs.push(m));
+    n.on('err', m => this.g.ow?.notify(m.msg));
+    n.on('status', st => { if (st === 'offline') this.players.clear(); });
+  }
+  saveCfg() { try { localStorage.setItem(OPT, JSON.stringify(this.cfg)); } catch {} }
+  get on() { return this.net.online; }
+  send(m) { this.net.send(m); }
+  // Jede eingehende Nachricht kann auf ein wartendes Versprechen treffen
+  dispatch(m) {
+    const i = this.waiters.findIndex(w => w.types.includes(m.t));
+    if (i >= 0) { const [w] = this.waiters.splice(i, 1); w.res(m); }
+  }
+  next(types, ms = 0) {
+    return new Promise(res => {
+      const w = { types, res }; this.waiters.push(w);
+      if (ms) setTimeout(() => { const i = this.waiters.indexOf(w); if (i >= 0) { this.waiters.splice(i, 1); res({ t: 'timeout' }); } }, ms);
+    });
+  }
+
+  // ---------------------------------------------------------- Verbindung
+  defaultServer() {
+    if (this.cfg.server) return this.cfg.server;
+    if (location.protocol.startsWith('http') && !location.hostname.endsWith('github.io')) return location.origin;
+    return '';
+  }
+  async connect(ask = true) {
+    let url = this.defaultServer();
+    if (!url || ask === 'change') {
+      url = await inputName('Server-Adresse', url || 'https://', 120);
+      if (!/^https?:\/\/|^wss?:\/\//.test(url)) url = 'https://' + url;
+    }
+    this.cfg.server = url.replace(/\/+$/, ''); this.saveCfg();
+    try { await this.net.connect(this.cfg.server, this.g.state.name); return true; }
+    catch { this.net.disconnect(); return false; }
+  }
+  char() { return { name: this.g.state.name, look: this.g.state.look }; }
+  async autoJoin() {
+    if (!this.cfg.server || !this.cfg.world || this.on) return;
+    try { await this.net.connect(this.cfg.server, this.g.state.name); } catch { this.net.disconnect(); return; }
+    this.net.join(this.cfg.world, this.char());
+    const r = await this.next(['joined', 'err'], 8000);
+    if (r.t === 'joined') this.g.ow.notify(`Online: ${r.name}`);
+  }
+
+  async menu() {
+    const s = this.g.state;
+    if (!this.on) {
+      const items = ['WELT ERSTELLEN', 'WELT BEITRETEN', ...(this.cfg.world ? ['LETZTE WELT'] : []), 'SERVER ÄNDERN', 'ZURÜCK'];
+      const i = await choose(items, { title: 'ONLINE' }); const k = items[i];
+      if (i === null || k === 'ZURÜCK') return;
+      if (k === 'SERVER ÄNDERN') { this.cfg.server = ''; await this.connect('change'); this.net.disconnect(); return this.menu(); }
+      let close = waitMsg('Verbinde mit dem Weltserver');
+      const ok = await this.connect(); close();
+      if (!ok) { await say(['Keine Verbindung zum Weltserver.', 'Prüfe die Adresse unter „SERVER ÄNDERN“. Anleitung: docs/MULTIPLAYER.md']); return; }
+      if (k === 'WELT ERSTELLEN') this.net.create(`${s.name}s Welt`, this.char());
+      else if (k === 'LETZTE WELT') this.net.join(this.cfg.world, this.char());
+      else { const code = (await inputName('Welt-Code (6 Zeichen)', '', 6)).toUpperCase(); this.net.join(code, this.char()); }
+      close = waitMsg('Betrete die Welt');
+      const r = await this.next(['joined', 'err'], 10000); close();
+      if (r.t !== 'joined') { this.net.disconnect(); await say(r.msg || 'Der Server antwortet nicht.'); return; }
+      sfx('lvl');
+      await say(k === 'WELT ERSTELLEN' ? [`Deine Welt ist online!`, `Welt-Code: ${r.code}`, 'Gib diesen Code deinen Freunden. Sie wählen ONLINE → WELT BEITRETEN.'] : [`Du bist jetzt in „${r.name}“!`, 'Stell dich vor einen Mitspieler und drücke A, um zu kämpfen oder zu tauschen.']);
+      return;
+    }
+    const items = ['MITSPIELER', 'NACHRICHT', 'WELT-CODE', 'TRENNEN', 'ZURÜCK'];
+    const i = await choose(items, { title: this.world?.name?.slice(0, 16) || 'ONLINE' }); const k = items[i];
+    if (k === 'MITSPIELER') {
+      const here = [...this.players.values()];
+      await say(here.length ? here.map(p => `${p.name} – ${MAPNAME(p.map)}`) : 'Gerade ist niemand außer dir online.');
+    }
+    if (k === 'NACHRICHT') { const t = await inputName('Nachricht an alle', '', 60); if (t) { this.send({ t: 'chat', text: t }); this.g.ow.notify(`Du: ${t}`.slice(0, 44)); } }
+    if (k === 'WELT-CODE') await say([`Welt-Code: ${this.world.code}`, 'Mit diesem Code können bis zu drei Freunde beitreten.']);
+    if (k === 'TRENNEN') { this.net.disconnect(); this.cfg.world = ''; this.saveCfg(); this.players.clear(); await say('Du spielst jetzt wieder allein.'); }
+  }
+
+  // ---------------------------------------------------------- Positionen
+  pos(force) {
+    if (!this.on || !this.g.ow?.p) return;
+    const ow = this.g.ow, p = ow.p, x = p.moving ? p.tx : p.x, y = p.moving ? p.ty : p.y;
+    const warp = !this.sent || this.sent.map !== ow.id || Math.abs(this.sent.x - x) + Math.abs(this.sent.y - y) > 2;
+    if (!force && this.sent && this.sent.map === ow.id && this.sent.x === x && this.sent.y === y && this.sent.dir === p.dir) return;
+    this.sent = { map: ow.id, x, y, dir: p.dir };
+    this.send({ t: 'pos', ...this.sent, warp });
+  }
+  snap(list) {
+    const seen = new Set();
+    for (const r of list) {
+      if (!r.map) continue;
+      seen.add(r.pid);
+      let p = this.players.get(r.pid);
+      if (!p || p.map !== r.map) { p = { px: r.x * 16, py: r.y * 16, step: 0 }; this.players.set(r.pid, p); }
+      Object.assign(p, { pid: r.pid, name: r.name, look: r.look, map: r.map, x: r.x, y: r.y, dir: r.dir, busy: r.busy });
+    }
+    for (const k of this.players.keys()) if (!seen.has(k)) this.players.delete(k);
+  }
+  // Für Overworld.draw: Mitspieler auf dieser Karte, weich interpoliert
+  actors(mapId) {
+    const now = performance.now(), dt = Math.min(0.1, (now - this.last) / 1000); this.last = now;
+    const out = [];
+    for (const p of this.players.values()) {
+      if (p.map !== mapId) continue;
+      const tx = p.x * 16, ty = p.y * 16, d = Math.hypot(tx - p.px, ty - p.py);
+      if (d > 48) { p.px = tx; p.py = ty; }
+      else if (d > 0) { const st = Math.min(d, 80 * dt); p.px += (tx - p.px) / d * st; p.py += (ty - p.py) / d * st; p.step += st; }
+      const moving = d > 0.5;
+      out.push({ look: { ...DEF_LOOK, ...(p.look || {}) }, dir: p.dir, frame: moving ? (Math.floor(p.step / 8) % 2 ? 1 : 2) : 0, px: Math.round(p.px), py: Math.round(p.py), x: p.x, y: p.y, name: p.name + (p.busy ? ' …' : '') });
+    }
+    return out;
+  }
+  playerAt(mapId, x, y) { for (const p of this.players.values()) if (p.map === mapId && p.x === x && p.y === y) return p; return null; }
+
+  // ---------------------------------------------------------- Anfragen
+  // Wird vom Overworld-Update aufgerufen, wenn der Spieler frei ist
+  idle() {
+    if (!this.reqs.length) return false;
+    const r = this.reqs.shift(); const ow = this.g.ow; ow.busy = true;
+    (async () => {
+      try {
+        sfx('encounter');
+        const ok = await ask(r.kind === 'trade' ? `${r.name} möchte mit dir tauschen. Einverstanden?` : `${r.name} fordert dich zu einem Freundschaftskampf heraus! Annehmen?`);
+        const team = this.g.state.team.filter(m => !m.egg);
+        if (ok && r.kind === 'battle' && !team.length) { this.send({ t: 'reqAns', to: r.from, ok: false }); await say('Du hast noch keine Kreaturen!'); return; }
+        this.send({ t: 'reqAns', to: r.from, ok, team: r.kind === 'battle' ? team : undefined });
+        if (!ok) return;
+        if (r.kind === 'trade') { const m = await this.next(['tradeStart', 'tradeCancel'], 8000); if (m.t === 'tradeStart') await this.trade(m.with); }
+        else { const m = await this.next(['duelStart', 'reqNo'], 8000); if (m.t === 'duelStart') await this.duel(m); }
+      } finally { ow.busy = false; }
+    })();
+    return true;
+  }
+  async interact(p) {
+    const s = this.g.state;
+    const i = await choose(['KÄMPFEN', 'TAUSCHEN', 'ZURÜCK'], { title: p.name.slice(0, 14) });
+    if (i === null || i === 2) return;
+    const kind = i === 0 ? 'battle' : 'trade';
+    const team = s.team.filter(m => !m.egg);
+    if (!team.length) { await say('Du hast noch keine Kreaturen!'); return; }
+    this.send({ t: 'req', to: p.pid, kind, team: kind === 'battle' ? team : undefined });
+    const close = waitMsg(`Warte auf Antwort von ${p.name}`);
+    const m = await this.next(['reqNo', 'tradeStart', 'duelStart'], 30000); close();
+    if (m.t === 'timeout') { this.send({ t: 'tradeCancel' }); await say(`${p.name} antwortet nicht.`); return; }
+    if (m.t === 'reqNo') { await say(m.why); return; }
+    if (m.t === 'tradeStart') await this.trade(m.with);
+    else await this.duel(m);
+  }
+
+  // ---------------------------------------------------------- Freundschaftskampf
+  async duel(m) {
+    const rb = new RemoteBattle(this, m);
+    m.foeTeam.forEach(x => ensureSpecies(x.sp));
+    sfx('encounter'); await this.g.flashIn();
+    const r = await battle(this.g, { remote: rb, trainer: { name: m.foeName, look: { ...DEF_LOOK, ...(m.foeLook || {}) } }, canCatch: false, bg: 'arena' });
+    this.g.ow.music();
+    await say(r.result === 'win' ? `Du hast den Freundschaftskampf gegen ${m.foeName} gewonnen!` : r.result === 'lose' ? `${m.foeName} hat gewonnen. Gut gekämpft!` : 'Der Kampf ist vorbei.');
+    await say('Im Freundschaftskampf werden deine Kreaturen nicht verletzt.');
+  }
+
+  // ---------------------------------------------------------- Tausch
+  async trade(withName) {
+    const s = this.g.state;
+    const free = s.team.filter(m => !m.egg).length;
+    await say(`Tausch mit ${withName}: Welche Kreatur bietest du an?`);
+    const i = await party(s, { select: true, prompt: 'Was bietest du an?', filter: m => !m.egg && (free > 1) });
+    if (i === null) { this.send({ t: 'tradeCancel' }); if (free <= 1) await say('Du brauchst mindestens zwei Kreaturen im Team, um zu tauschen.'); return; }
+    const mine = s.team[i];
+    this.send({ t: 'tradeOffer', mon: mine });
+    let close = waitMsg(`Warte auf das Angebot von ${withName}`);
+    let r = await this.next(['tradeShow', 'tradeCancel'], 120000); close();
+    if (r.t !== 'tradeShow') { if (r.t === 'timeout') this.send({ t: 'tradeCancel' }); await say(r.why || 'Der Tausch wurde abgebrochen.'); return; }
+    ensureSpecies(r.theirs.sp);
+    const T = SPECIES[r.theirs.sp];
+    const ok = await ask(`${withName} bietet ${monName(r.theirs)} (Lv ${r.theirs.lvl}, ${T.types.map(t => TYPES[t].name).join('/')}${r.theirs.mut ? ', Mutant' : ''}). Gegen ${monName(mine)} tauschen?`);
+    this.send({ t: 'tradeOk', ok });
+    if (!ok) return;
+    close = waitMsg('Warte auf Bestätigung');
+    r = await this.next(['tradeDone', 'tradeCancel'], 60000); close();
+    if (r.t !== 'tradeDone') { await say(r.why || 'Der Tausch wurde abgebrochen.'); return; }
+    const idx = s.team.findIndex(x => x.uid === r.give); if (idx < 0) return;
+    const got = { ...r.get, uid: newUid() };
+    ensureSpecies(got.sp);
+    await tradeAnim(s.team[idx], got);
+    s.team[idx] = got; this.g.markDex(got.sp, true);
+    cry(SPECIES[got.sp].cry);
+    await say([`${monName(got)} gehört jetzt zu deinem Team!`, `Pass gut auf ${monName(mine)} auf, ${withName}!`]);
+    this.g.save(true);
+  }
+}
+
+const MAPNAME = id => ({ moosgrund: 'Moosgrund', route1: 'Route 1', quellbach: 'Quellbach', altwald: 'Altwald', route2: 'Route 2', hoehle: 'Kieselhöhle', felsenau: 'Felsenau' })[id] || 'in einem Gebäude';
+
+// Tauschanimation: eigene Kreatur fliegt hinaus, neue kommt herein
+function tradeAnim(out, inn) {
+  return new Promise(res => {
+    const sOut = monSprite(out.sp, 'front', out.shiny, out.mut), sIn = monSprite(inn.sp, 'front', inn.shiny, inn.mut);
+    let t = 0;
+    const sc = {
+      update(dt) { t += dt; if (t > 3.4) { pop(sc); res(); } },
+      draw(ctx) {
+        const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#203868'); g.addColorStop(1, '#58a0d8'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        for (let i = 0; i < 24; i++) { const y = (i * 37 + t * 90) % H, x = (i * 53) % W; ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(x, y, 1, 3); }
+        if (t < 1.5) ctx.drawImage(sOut, W / 2 - 32, 40 - Math.max(0, t - 0.6) * 140);
+        else if (t > 1.8) ctx.drawImage(sIn, W / 2 - 32, Math.min(40, -70 + (t - 1.8) * 160));
+        box(4, H - 30, W - 8, 26);
+        text(t < 1.6 ? `Tschüss, ${monName(out)}!` : `Willkommen, ${monName(inn)}!`, 14, H - 22, '#28283a', 8.5);
+      },
+    };
+    push(sc); sfx('whoosh'); setTimeout(() => sfx('evo'), 1800);
+  });
+}
+
+// Spiegel eines Server-Kampfes mit derselben Schnittstelle wie Battle
+class RemoteBattle {
+  constructor(on, m) {
+    this.o = on; this.team = m.team; this.foeTeam = m.foeTeam; this.pi = m.pi; this.fi = m.fi;
+    this.over = false; this.result = null; this.pendingEvos = []; this.canCatch = false; this.wild = false; this.pvp = true;
+    this.awaitSwitch = false; this.waitingOther = false; this.foeName = m.foeName;
+  }
+  get p() { return this.team[this.pi]; }
+  get f() { return this.foeTeam[this.fi]; }
+  mon(side) { return side === 'p' ? this.p : this.f; }
+  async turn(a) { this.o.send({ t: 'duelAct', a }); return this.recv(); }
+  async forcedSwitch(i) { this.o.send({ t: 'duelSwitch', i }); return this.recv(); }
+  forfeit() { this.o.send({ t: 'duelQuit' }); }
+  async recv() {
+    const m = await this.o.next(['duelEv'], 180000);
+    if (m.t === 'timeout' || !this.o.on) { this.over = true; this.result = 'draw'; return [{ t: 'msg', text: 'Die Verbindung zum Kampf ist abgerissen.' }, { t: 'end', result: 'draw' }]; }
+    this.over = m.over; this.result = m.result;
+    this.awaitSwitch = !m.over && m.phase === 'switch' && m.mine;
+    this.waitingOther = !m.over && m.phase === 'switch' && !m.mine;
+    return m.ev;
+  }
+  apply(e) {
+    if (e.t === 'send' && e.mon) {
+      ensureSpecies(e.mon.sp);
+      const list = e.side === 'p' ? this.team : this.foeTeam, i = list.findIndex(x => x.uid === e.mon.uid);
+      if (i >= 0) { list[i] = e.mon; if (e.side === 'p') this.pi = i; else this.fi = i; }
+    }
+    if (e.t === 'hp') this.mon(e.side).hp = e.hp;
+    if (e.t === 'status') this.mon(e.side).status = e.status;
+    if (e.t === 'move') { const sl = this.mon(e.side).moves.find(x => x.id === e.move); if (sl) sl.pp = Math.max(0, sl.pp - 1); }
+  }
+}

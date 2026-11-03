@@ -84,16 +84,22 @@ class Choice {
     if (this.scroll + this.max < this.items.length) text('▼', this.x + this.w - 10, this.y + this.h - 9, COL.inkSoft, 6);
   }
 }
+// Nicht blockierende Wartemeldung (z. B. auf Mitspieler warten) → gibt Schließen-Funktion zurück
+class Waiting {
+  constructor(t) { this.overlay = true; this.t = t; }
+  draw() { box(3, 114, 234, 43); const l = wrap(this.t + '.'.repeat(Math.floor(G.t * 3) % 4), 216, 8.5); l.slice(0, 2).forEach((s, i) => text(s, 12, 121 + i * 15, COL.ink, 8.5)); }
+}
+export function waitMsg(t) { const w = new Waiting(t); push(w); return () => pop(w); }
 export const choose = (items, o = {}) => new Promise(res => push(new Choice(items, o, res)));
 export async function ask(q, opts = {}) { await say(q, opts); return (await choose(['Ja', 'Nein'], { cancel: true })) === 0; }
 
 // ---------------------------------------------------------------- Name eingeben (natives Eingabefeld → Handy-Tastatur)
-export function inputName(title, def = '') {
+export function inputName(title, def = '', max = 12) {
   return new Promise(res => {
     const o = document.getElementById('nameinput'); o.hidden = false;
-    o.innerHTML = `<div class="ni"><label>${title}</label><input maxlength="12" value="${def}"><button>OK</button></div>`;
+    o.innerHTML = `<div class="ni"><label>${title}</label><input maxlength="${max}" value="${def}" autocapitalize="off" autocomplete="off"><button>OK</button></div>`;
     const inp = o.querySelector('input'); setTimeout(() => inp.focus(), 50);
-    const done = () => { const v = inp.value.trim() || def || 'Alex'; o.hidden = true; res(v.slice(0, 12)); };
+    const done = () => { const v = inp.value.trim() || (max === 12 ? def || 'Alex' : ''); o.hidden = true; res(v.slice(0, max)); };
     o.querySelector('button').onclick = done; inp.onkeydown = e => { if (e.key === 'Enter') done(); };
   });
 }
@@ -109,7 +115,7 @@ export function monIcon(m) { return m.egg ? eggSprite(32, '#f8f0d8', SPECIES[m.s
 
 // ---------------------------------------------------------------- Team
 class Party {
-  constructor(state, o, res) { this.s = state; this.o = o; this.res = res; this.i = 0; this.swap = null; }
+  constructor(state, o, res) { this.s = state; this.o = o; this.res = res; this.i = o.filter ? Math.max(0, state.team.findIndex(o.filter)) : 0; this.swap = null; }
   get team() { return this.s.team; }
   update() {
     const n = this.team.length + 1; // + Abbrechen

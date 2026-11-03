@@ -60,6 +60,7 @@ export class Overworld {
     }
     p.frame = 0;
     if (this.busy) return;
+    if (this.g.online?.idle()) return;
     if (input.pressed('start')) { sfx('open'); this.g.startMenu(); return; }
     if (input.pressed('select')) { this.g.quickTeam?.(); return; }
     if (input.pressed('a')) { this.interact(); return; }
@@ -68,6 +69,7 @@ export class Overworld {
     if (p.dir !== d) { p.dir = d; p.turnT = 0.08; return; }
     if (p.turnT > 0) { p.turnT -= dt; return; }
     this.tryMove(d);
+    if (p.moving) this.g.online?.pos();
   }
 
   tryMove(d) {
@@ -187,8 +189,10 @@ export class Overworld {
     const p = this.p, [dx, dy] = DX[p.dir], fx = p.x + dx, fy = p.y + dy;
     let n = this.npcAt(fx, fy);
     if (!n && this.ch(fx, fy) === 'C') n = this.npcAt(fx + dx, fy + dy);
+    const rp = !n && this.g.online?.playerAt(this.id, fx, fy);
     this.busy = true;
     try {
+      if (rp) { await this.g.online.interact(rp); return; }
       if (n) { if (!n.trainer || this.g.state.flags[n.id]) n.dir = OPP[p.dir]; await this.g.talk(n); return; }
       const it = this.items.find(i => i.x === fx && i.y === fy);
       if (it) { await this.g.pickup(it); this.items = this.items.filter(i => i !== it); return; }

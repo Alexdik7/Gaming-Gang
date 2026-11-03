@@ -4,8 +4,10 @@ Ein Kreaturen-Abenteuer im Stil der klassischen Handheld-Rollenspiele: Draufsich
 
 Alles ist eigenständig gestaltet: eigene Kreaturen, Karten und Geschichte. Dazu kommen eine **Brutstätte**, in der aus zwei Kreaturen ein Ei mit einer **Mutation** beider Eltern entsteht.
 
-**Spielen (Handheld-Edition):** https://alexdik7.github.io/Gaming-Gang/legends/
-**3D-Prototyp mit Koop-Grundlage:** https://alexdik7.github.io/Gaming-Gang/legends/3d.html
+**Spielen:** https://alexdik7.github.io/Gaming-Gang/legends/
+
+**Zusammen spielen (bis zu 4):** START → ONLINE → Welt erstellen, den Code an Freunde geben.
+Vor einem Mitspieler A drücken → **Kämpfen** oder **Tauschen**. Den nötigen Weltserver richtet ihr einmalig ein, siehe [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
 Auf PC und Handy spielbar und installierbar:
 - **PC (Chrome/Edge):** Adressleiste → „App installieren“

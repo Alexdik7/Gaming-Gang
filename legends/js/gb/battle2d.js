@@ -8,7 +8,7 @@ import { maxHp, monName, xpForLevel, evolve } from '../data/mon.js';
 import { sfx, cry, setMusic } from '../core/audio.js';
 import { monSprite, trainerSprite } from './sprites.js';
 import { crystalIcon } from './pixel.js';
-import { choose, party, evoScene, typeTag, say } from './gbui.js';
+import { choose, party, evoScene, typeTag, say, ask, waitMsg } from './gbui.js';
 import { ITEMS } from './maps.js';
 
 const BG = {
@@ -21,7 +21,7 @@ const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 class BattleScene {
   constructor(game, o, res) {
     this.g = game; this.o = o; this.res = res; this.s = game.state;
-    this.b = new Battle({ team: this.s.team, foeTeam: o.foeTeam, wild: !o.trainer, trainer: o.trainer, canCatch: o.canCatch !== false });
+    this.b = o.remote || new Battle({ team: this.s.team, foeTeam: o.foeTeam, wild: !o.trainer, trainer: o.trainer, canCatch: o.canCatch !== false });
     this.bg = BG[o.bg || 'gras'];
     this.msg = ''; this.chars = 0; this.mode = 'msg'; this.cur = 0; this.mcur = 0;
     this.foeOff = { x: -200, y: 0, s: 1, vis: true, flash: false }; this.ownOff = { x: 0, y: 0, s: 0, vis: false, flash: false };
@@ -53,19 +53,20 @@ class BattleScene {
     while (!b.over) {
       const action = await this.chooseAction();
       if (!action) continue;
-      await this.play(b.turn(action));
+      await this.play(await this.remote(() => b.turn(action)));
       if (b.awaitSwitch) {
-        let i = null; while (i === null) i = await party(this.s, { select: true, prompt: 'Wer soll kämpfen?', filter: m => !m.egg && m.hp > 0 });
-        await this.play(b.forcedSwitch(i));
+        let i = null; while (i === null) i = await party(this.teamState(), { select: true, prompt: 'Wer soll kämpfen?', filter: m => !m.egg && m.hp > 0 });
+        await this.play(await this.remote(() => b.forcedSwitch(i)));
       }
+      if (b.waitingOther) await this.play(await this.remote(() => b.recv()));
     }
-    if (b.result === 'win' && o.trainer) {
+    if (b.result === 'win' && o.trainer && !o.remote) {
       this.trainerFoe.vis = true; this.trainerFoe.x = 120;
       await this.tween(0.4, k => (this.trainerFoe.x = 120 * (1 - k)));
       if (o.trainer.lose) await this.say(o.trainer.lose);
       if (o.trainer.reward) { this.s.money += o.trainer.reward; await this.say(`Du erhältst ${o.trainer.reward} ◈ Preisgeld!`); }
     }
-    if (b.result === 'lose') await this.say(`${this.s.name} hat keine kampffähigen Kreaturen mehr… Alles wird schwarz.`);
+    if (b.result === 'lose' && !o.remote) await this.say(`${this.s.name} hat keine kampffähigen Kreaturen mehr… Alles wird schwarz.`);
     // Entwicklungen
     for (const pe of b.pendingEvos) {
       const m = this.s.team.find(x => x.uid === pe.uid);
@@ -81,6 +82,14 @@ class BattleScene {
     this.res({ result: b.result, caught: b.caught });
   }
 
+  // Online: während auf den Server/Mitspieler gewartet wird, Wartemeldung zeigen
+  async remote(fn) {
+    if (!this.o.remote) return fn();
+    this.mode = 'busy'; this.msg = '';
+    const close = waitMsg(`Warte auf ${this.b.foeName}`);
+    try { return await fn(); } finally { close(); }
+  }
+  teamState() { return this.o.remote ? { ...this.s, team: this.b.team } : this.s; }
   tween(dur, fn) { return new Promise(res => this.tweens.push({ t: 0, dur, fn, res })); }
   say(t, hold = 900) {
     this.msg = t; this.chars = 0; this.mode = 'msg';
@@ -94,6 +103,8 @@ class BattleScene {
   async onMenu(i) {
     const b = this.b, done = a => { this.mode = 'busy'; const r = this.actRes; this.actRes = null; r(a); };
     if (i === 0) { if (b.p.moves.every(m => m.pp <= 0)) b.p.moves[0].pp = 1; this.mode = 'moves'; return; }
+    if (i === 1 && this.o.remote) { this.mode = 'busy'; await say('Im Freundschaftskampf sind keine Items erlaubt.'); this.mode = 'menu'; return; }
+    if (i === 3 && this.o.remote) { this.mode = 'busy'; if (await ask('Möchtest du aufgeben?')) return done({ t: 'forfeit' }); this.mode = 'menu'; return; }
     if (i === 1) {
       this.mode = 'busy';
       const bag = this.s.bag, opts = [];
@@ -109,7 +120,7 @@ class BattleScene {
     }
     if (i === 2) {
       this.mode = 'busy';
-      const ti = await party(this.s, { select: true, prompt: 'Welche Kreatur einwechseln?', filter: m => !m.egg && m.hp > 0 && m !== b.p });
+      const ti = await party(this.teamState(), { select: true, prompt: 'Welche Kreatur einwechseln?', filter: m => !m.egg && m.hp > 0 && m !== b.p });
       if (ti === null) { this.mode = 'menu'; return; }
       return done({ t: 'switch', i: ti });
     }
@@ -119,6 +130,7 @@ class BattleScene {
   // ---------------------------------------------------------- Ereignisse
   async play(events) {
     for (const e of events) {
+      this.b.apply?.(e);
       switch (e.t) {
         case 'msg': await this.say(e.text); break;
         case 'move': await this.animMove(e.side, e.move, e.hit); break;
@@ -131,7 +143,7 @@ class BattleScene {
         case 'status': this.burst(e.side, { brand: '#ff6a2b', gift: '#b45ce0', starre: '#ffd23a' }[e.status], 20); await wait(300); break;
         case 'faint': await this.faint(e.side); break;
         case 'send': await this.say(e.text, 600); if (e.side === 'p') { this.xpD = this.b.p.xp; this.hpD.p = this.b.p.hp; } else this.hpD.f = this.b.f.hp; await this.appear(e.side); if (e.side === 'f') this.g.markDex(this.b.f.sp); break;
-        case 'recall': await this.say(e.text, 500); await this.tween(0.25, k => (this.ownOff.s = 1 - k)); this.ownOff.vis = false; break;
+        case 'recall': { const ro = e.side === 'f' ? this.foeOff : this.ownOff; await this.say(e.text, 500); await this.tween(0.25, k => (ro.s = 1 - k)); ro.vis = false; break; }
         case 'catch': await this.catchAnim(e.shakes, e.ok); break;
         case 'xp': { const m = this.b.team.find(x => x.uid === e.uid); if (m === this.b.p) await this.fillXp(); break; }
         case 'lvl': sfx('lvl'); this.sparkle('p', '#ffe27a', true); this.hpD.p = this.b.p.hp; await this.say(e.text); break;

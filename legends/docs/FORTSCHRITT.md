@@ -1,6 +1,31 @@
 # Fortschritt
 
-## Handheld-Edition (v0.2) – aktuelle Hauptversion
+## v0.3 – Phase 2a (aktuell)
+
+### ✅ Neu und getestet
+- **Neue Grafik:** Alle Kreaturen und Trainer sind jetzt echte 2D-Pixel-Art im Stil der 32-Bit-Handhelds:
+  - 64×64-Kampfsprites von vorn und hinten, 32×32-Symbole
+  - Schattierung in drei Stufen mit Licht von oben links, farbige Innenkonturen und dunkle Außenkontur
+  - 20 Körperbautypen; Zusatzteile wie Hörner, Flügel oder Krone erscheinen auch bei Mutationen
+  - Alle Grafiken sind eigenständig gestaltet.
+- **3D-Teil entfernt:** `3d.html`, Three.js und die 3D-Welt sind gelöscht. Das Spiel lädt dadurch deutlich schneller (ca. 0,8 MB weniger).
+- **Online-Koop** (START → ONLINE):
+  - **Welten:** Welt erstellen (6-stelliger Code) oder mit Code beitreten, bis zu 4 Spieler. Die letzte Welt wird automatisch wieder betreten.
+  - **Auf der Karte:** Mitspieler laufen sichtbar mit Namen herum; Chat-Nachrichten an alle.
+  - **Freundschaftskampf:** Vor einen Mitspieler stellen → A → KÄMPFEN.
+    - Der **Server** berechnet den Kampf, die Handys senden nur ihre Wahl.
+    - Beide Teams kämpfen mit voller KP; danach ist niemand verletzt.
+    - Aufgeben ist möglich, Items nicht.
+  - **Tausch:** A → TAUSCHEN, beide wählen eine Kreatur, beide bestätigen.
+    Die Kreatur merkt sich ihren ursprünglichen Trainer, und auch Mutationen lassen sich tauschen.
+- Getestet mit zwei gleichzeitigen Spielern: verbinden, sich sehen, kompletter Kampf, Tausch.
+
+### ❌ Noch nicht drin (Phase 2b)
+- Doppelkämpfe 2 gegen 2 und Koop gegen Bosse
+- Server-Sicherung der Spielstände (Spielstände liegen weiterhin auf dem Gerät)
+- Freundesliste und Spielerhäuser
+
+## Handheld-Edition (v0.2)
 
 ### ✅ Funktioniert (getestet)
 
@@ -12,7 +37,7 @@
 - Alle Grafiken werden im Code erzeugt:
   - Pixel-Kacheln und Gebäude
   - Spielfiguren mit 4 Richtungen × 3 Frames
-  - Kreaturen-Sprites: 64×64 von vorn und hinten, aus den 3D-Modellen gerendert und zu Pixel-Art verarbeitet
+  - Kreaturen-Sprites: 64×64 von vorn und hinten (seit v0.3 als echte 2D-Pixel-Art)
 
 **Start**
 - Titelbild.
@@ -62,12 +87,10 @@
 **Menüs:** Team (mit Reihenfolge tauschen), Bericht (2 Seiten), Chronik, Beutel, Trainerpass mit Orden, Speichern, Optionen (Musik, Effekte, Textgeschwindigkeit).
 
 ### ❌ Fehlt noch
-- **Koop für 4 Spieler in der Handheld-Edition:** Server und Netzwerk-Code stehen bereit, der 3D-Prototyp nutzt sie schon. Einbau als Nächstes.
-- **Tauschen und Kämpfe zwischen Spielern.**
 - **Weitere Regionen:** Ignis, Frostheim, Aqualis, Nocturna, Solaria, Drakmor.
 - **Arenen 2–8, Top 4 und Champion.**
 - **Mehr Kreaturen:** Ziel sind 150 Arten, aktuell sind es 45 plus beliebig viele Mutationen.
 - **Eigens komponierte Musik:** Die Musik wird derzeit vom Spiel erzeugt.
 
 ## 3D-Prototyp (v0.1)
-Der Stand ist unter `3d.html` erhalten: 3D-Welt Verdantia, Kampfinszenierung in 3D und die Multiplayer-Grundlage mit Weltserver.
+Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edition weiter.
