@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070a08">
+<meta name="description" content="The Plug from 52: fiktives Street-Tycoon-Spiel.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Plug 52">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}*,*::before,*::after{box-sizing:inherit}body{margin:0;overscroll-behavior:none;-webkit-text-size-adjust:100%}img{max-width:100%}</style>
+<title>The Plug from 52</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Chakra+Petch:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-screen mobile game shell — top HUD, scrolling stage, bottom nav (left rail on desktop). Single deliberate dark street look. */
+:root{
+  --bg:#070a08; --bg2:#0c110e; --panel:#111814; --panel2:#17211c; --line:#24332b; --ink:#e9f3ed; --mut:#8fa197;
+  --neon:#39ff88; --neon-d:#1c9c55; --pink:#ff3db8; --gold:#f5c542; --cyan:#38bdf8; --red:#ff5a5a; --soil:#2b1d14;
+  --f-g:"Permanent Marker","Marker Felt","Comic Sans MS",cursive;
+  --f:"Chakra Petch","Segoe UI",system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:14px;overflow:hidden;-webkit-tap-highlight-color:transparent}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(60% 40% at 85% 0%,rgba(57,255,136,.10),transparent 70%),radial-gradient(50% 35% at 0% 100%,rgba(255,61,184,.08),transparent 70%)}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-user-select:none;user-select:none}
+button:focus-visible,input:focus-visible{outline:2px solid var(--neon);outline-offset:2px}
+.ic{width:1.15em;height:1.15em;flex:none;vertical-align:-.2em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.shell{position:relative;z-index:1;height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+/* HUD */
+.hud{display:flex;align-items:center;gap:10px;padding-block:8px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));
+  background:linear-gradient(180deg,#0b100d,#090d0b);border-bottom:1px solid var(--line)}
+.lvl{position:relative;width:42px;height:42px;flex:none;display:grid;place-items:center;border:0;background:none;padding:0}
+.lvl svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.lvl b{font-weight:700;font-size:15px}
+.logo{font-family:var(--f-g);font-size:17px;line-height:1;color:var(--neon);text-shadow:0 0 12px rgba(57,255,136,.45);white-space:nowrap;transform:rotate(-3deg)}
+.logo span{color:var(--pink)}
+.cur{margin-left:auto;display:flex;gap:6px;min-width:0}
+.pill{display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 9px 4px 6px;font-weight:600;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill .ic{width:15px;height:15px}
+.p-cash{color:var(--neon)} .p-coin{color:var(--gold)} .p-rep{color:var(--pink)}
+.snd{border:1px solid var(--line);background:var(--panel);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;flex:none}
+@media (max-width:420px){.logo{display:none}.pill{padding:3px 7px 3px 5px;font-size:12px}.p-rep{display:none}}
+
+main{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.wrap{max-width:1000px;margin:0 auto;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));padding-block:14px 30px;display:flex;flex-direction:column;gap:14px}
+
+/* nav */
+.nav{display:flex;overflow-x:auto;scrollbar-width:none;background:#090d0b;border-top:1px solid var(--line);
+  padding-left:max(4px,env(safe-area-inset-left,0px));padding-right:max(4px,env(safe-area-inset-right,0px))}
+.nav::-webkit-scrollbar{display:none}
+.nb{flex:1 0 64px;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px 7px;color:var(--mut);font-size:9.5px;font-weight:700;letter-spacing:.08em;position:relative}
+.nb .ic{width:22px;height:22px}
+.nb[aria-current="true"]{color:var(--neon)}
+.nb[aria-current="true"]::before{content:"";position:absolute;top:0;left:25%;right:25%;height:3px;border-radius:0 0 3px 3px;background:var(--neon);box-shadow:0 0 10px var(--neon)}
+.nb .bd{position:absolute;top:4px;right:calc(50% - 20px);min-width:16px;height:16px;border-radius:8px;background:var(--pink);color:#fff;font-size:10px;display:grid;place-items:center;padding:0 4px;letter-spacing:0}
+@media (min-width:960px){
+  .shell{grid-template-columns:200px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .hud{grid-column:1 / 3}
+  .nav{grid-row:2;grid-column:1;flex-direction:column;border-top:0;border-right:1px solid var(--line);padding:10px 8px;gap:2px}
+  .nb{flex:none;flex-direction:row;gap:12px;padding:11px 14px;font-size:12px;border-radius:10px}
+  .nb[aria-current="true"]{background:var(--panel2)}
+  .nb[aria-current="true"]::before{top:20%;bottom:20%;left:0;right:auto;width:3px;height:auto;border-radius:0 3px 3px 0}
+  .nb .bd{position:static;margin-left:auto}
+}
+
+/* type */
+h1,h2,h3{margin:0;text-wrap:balance}
+.ttl{font-family:var(--f-g);font-weight:400;font-size:26px;line-height:1.05;color:var(--ink);letter-spacing:.01em}
+.ttl em{font-style:normal;color:var(--neon)}
+.sub{color:var(--mut);font-size:13px;margin-top:2px}
+.h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);font-weight:700;display:flex;align-items:center;gap:8px}
+.h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.mut{color:var(--mut)}
+.num{font-variant-numeric:tabular-nums}
+
+/* cards & buttons */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.g2{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:700px){.g4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px;
+  background:var(--neon);color:#04170b;box-shadow:0 0 0 0 rgba(57,255,136,0);transition:transform .08s,box-shadow .2s;white-space:nowrap}
+.btn:active{transform:scale(.96)}
+.btn:not(:disabled):hover{box-shadow:0 0 18px rgba(57,255,136,.35)}
+.btn.sec{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+.btn.gold{background:var(--gold);color:#2a1d00}
+.btn.pink{background:var(--pink);color:#fff}
+.btn.sm{padding:6px 10px;font-size:12px;border-radius:8px}
+.btn:disabled{background:var(--panel2);color:#5d6d64;border:1px solid var(--line);cursor:not-allowed;box-shadow:none}
+.row{display:flex;align-items:center;gap:10px}
+.row.wrap2{flex-wrap:wrap}
+.sp{margin-left:auto}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid currentColor;letter-spacing:.03em;white-space:nowrap}
+.bar{height:6px;border-radius:3px;background:#1d2923;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--neon);border-radius:3px;box-shadow:0 0 8px rgba(57,255,136,.5)}
+.bar.gold i{background:var(--gold);box-shadow:none}
+.bar.pink i{background:var(--pink);box-shadow:none}
+.tabs{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tab{flex:1;border:0;background:none;padding:8px;border-radius:9px;font-weight:700;color:var(--mut);font-size:13px}
+.tab[aria-selected="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 -2px 0 var(--neon)}
+.empty{color:var(--mut);text-align:center;padding:22px 10px;line-height:1.5}
+
+/* avatar */
+.av{width:44px;height:44px;flex:none;border-radius:12px;display:grid;place-items:center;font-family:var(--f-g);font-size:18px;color:#0a0f0c;position:relative;overflow:hidden}
+.av::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(0,0,0,.08) 0 4px,transparent 4px 8px)}
+.av.lg{width:64px;height:64px;font-size:26px;border-radius:16px}
+
+/* HOME */
+.hero{position:relative;overflow:hidden;border-radius:18px;border:1px solid var(--line);background:linear-gradient(180deg,#0f1713,#0a0f0c);padding:16px 16px 0}
+.hero .sky{display:block;width:100%;height:90px;margin-top:8px}
+.tag{font-family:var(--f-g);font-size:13px;color:var(--pink);transform:rotate(-2deg);display:inline-block}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:4px;text-align:left}
+.stat b{font-size:20px;font-variant-numeric:tabular-nums}
+.stat .mut{font-size:12px}
+.stat.hot{border-color:var(--neon);box-shadow:0 0 0 1px rgba(57,255,136,.25) inset}
+.event{border-radius:16px;padding:14px;background:linear-gradient(110deg,rgba(255,61,184,.18),rgba(56,189,248,.10));border:1px solid rgba(255,61,184,.45)}
+.mis{display:flex;flex-direction:column;gap:10px}
+.mi{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center}
+.mi .bar{grid-column:1}
+.coach{display:flex;gap:12px;align-items:center;border:1px dashed var(--neon);background:rgba(57,255,136,.06);border-radius:14px;padding:10px 12px}
+.coach p{margin:0;line-height:1.4;font-size:13px;min-width:0}
+.login{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.ld{flex:1 0 54px;border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;font-size:11px;background:var(--panel2)}
+.ld b{display:block;font-size:13px;margin-top:2px}
+.ld.now{border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(245,197,66,.25)}
+.ld.done{opacity:.45}
+
+/* FARM */
+.farmbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.scene-wrap{border-radius:18px;border:1px solid var(--line);overflow:auto;background:#0b120e;max-height:none;touch-action:pan-x pan-y}
+.scene{position:relative;min-width:320px;padding:14px;display:flex;flex-direction:column;gap:14px;transform-origin:0 0;
+  background:
+   radial-gradient(circle at 20% 10%,rgba(57,255,136,.07),transparent 40%),
+   repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 1px,transparent 1px 28px),
+   repeating-linear-gradient(90deg,rgba(255,255,255,.02) 0 1px,transparent 1px 28px),#0d1611}
+.blds{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.bld{flex:none;width:96px;border:0;background:none;padding:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bld .house{width:88px;height:64px;position:relative;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#1d2722,#141c18);border:1px solid #2e3d35;overflow:hidden}
+.bld .house::before{content:"";position:absolute;left:0;right:0;top:0;height:10px;background:repeating-linear-gradient(90deg,#2b3a32 0 8px,#24312a 8px 16px)}
+.bld .sign{position:absolute;left:8px;right:8px;top:16px;font-family:var(--f-g);font-size:11px;line-height:1.1;text-shadow:0 0 8px currentColor}
+.bld .door{position:absolute;bottom:0;left:50%;width:22px;height:20px;margin-left:-11px;background:#0a0f0c;border:1px solid #2e3d35;border-bottom:0}
+.bld small{font-size:10.5px;color:var(--mut);font-weight:600}
+.bld .ping{position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;background:var(--neon);box-shadow:0 0 8px var(--neon);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.field{position:relative;border-radius:12px;padding:12px;background:#1a130d;border:3px solid #3b2a1c;
+  box-shadow:inset 0 0 0 2px #120c08;display:grid;grid-template-columns:repeat(4,minmax(64px,1fr));gap:9px}
+@media (min-width:600px){.field{grid-template-columns:repeat(6,minmax(70px,1fr))}}
+.plot{position:relative;aspect-ratio:1;max-width:100%;border:0;border-radius:10px;padding:0;overflow:hidden;
+  background:repeating-linear-gradient(0deg,#3a2718 0 6px,#33221a 6px 12px);box-shadow:inset 0 -4px 0 rgba(0,0,0,.35)}
+.plot .pl{position:absolute;inset:4% 8% 18%;width:84%;height:78%}
+.pg{transform-origin:50px 92px;transform:scale(calc(.22 + .78 * var(--g,1)));transition:transform 1s linear}
+.plot.ready{box-shadow:inset 0 -4px 0 rgba(0,0,0,.35),0 0 0 2px var(--neon),0 0 16px rgba(57,255,136,.45)}
+.plot.ready .pl{animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-3px)}}
+.plot .lab{position:absolute;left:0;right:0;bottom:0;padding:3px 4px 4px;background:linear-gradient(transparent,rgba(0,0,0,.75));font-size:10px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+.plot .lab .bar{height:3px;margin-top:2px}
+.plot.empty .lab{color:var(--mut)}
+.plot.empty::after{content:"+";position:absolute;inset:0;display:grid;place-items:center;font-size:26px;color:rgba(255,255,255,.18);font-weight:300}
+.plot.ready .lab{color:var(--neon)}
+.plot.lock{background:repeating-linear-gradient(45deg,#15110d 0 8px,#1b1510 8px 16px);border:1px dashed #4a3b2c;display:grid;place-items:center;text-align:center;font-size:10.5px;color:var(--mut);padding:4px}
+.plot.lock b{display:block;color:var(--gold);font-size:12px}
+.decos{display:flex;gap:10px;flex-wrap:wrap;min-height:20px}
+.deco{width:56px;height:56px}
+.road{position:relative;height:46px;border-radius:8px;background:#151a17;overflow:hidden;border-top:2px solid #232b26;border-bottom:2px solid #232b26}
+.road::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:repeating-linear-gradient(90deg,var(--gold) 0 18px,transparent 18px 36px);opacity:.55}
+.car{position:absolute;top:6px;left:-90px;width:78px;height:34px;animation:drive 11s linear infinite}
+@keyframes drive{to{left:calc(100% + 20px)}}
+.crew{position:absolute;bottom:-2px;width:18px;height:28px;animation:walk 16s linear infinite}
+@keyframes walk{0%{left:6%}50%{left:88%}50.01%{left:88%;transform:scaleX(-1)}100%{left:6%;transform:scaleX(-1)}}
+.zoom{display:flex;gap:4px;margin-left:auto}
+
+/* list items */
+.li{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.li .mid{flex:1;min-width:0}
+.li .nm{font-weight:700;font-size:14px;line-height:1.25}
+.li .ds{font-size:12px;color:var(--mut);line-height:1.35}
+.list{display:flex;flex-direction:column;gap:8px}
+.sw{width:40px;height:40px;flex:none;border-radius:10px;display:grid;place-items:center;background:#0e1511;border:1px solid var(--line)}
+.sw svg{width:34px;height:34px}
+.q0{color:#a8b3ad}.q1{color:var(--neon)}.q2{color:var(--cyan)}.q3{color:#c084fc}.q4{color:var(--gold)}
+
+/* orders */
+.order{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+.order.ok{border-color:rgba(57,255,136,.6)}
+.order.partner::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--gold),var(--pink))}
+.need{display:flex;flex-wrap:wrap;gap:6px}
+.nd{display:flex;align-items:center;gap:6px;padding:5px 8px 5px 5px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:12px;font-weight:600}
+.nd svg{width:24px;height:24px}
+.nd.have{border-color:rgba(57,255,136,.55)}
+.nd .cnt{font-variant-numeric:tabular-nums}
+.rew{display:flex;gap:10px;flex-wrap:wrap;font-weight:700;font-size:13px;align-items:center}
+.timer{font-size:12px;color:var(--mut);display:flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
+.trend-up{color:var(--neon)}.trend-dn{color:var(--red)}
+
+/* map */
+.map{width:100%;height:auto;display:block;border-radius:16px;border:1px solid var(--line);background:#0a100d}
+.map .node{cursor:pointer}
+.map text{font-family:var(--f);font-weight:700}
+
+/* collection */
+.coll{display:grid;grid-template-columns:minmax(90px,1.4fr) repeat(5,minmax(28px,1fr));gap:4px;font-size:11px;align-items:center}
+.coll .c{height:26px;border-radius:6px;background:#0e1511;border:1px solid var(--line);display:grid;place-items:center}
+.coll .c.on{background:currentColor}
+.coll .c.on::after{content:"";width:8px;height:8px;border-radius:50%;background:#0a0f0c}
+
+/* sheet */
+.sheet-bg{position:fixed;inset:0;z-index:40;background:rgba(2,5,3,.7);display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)}
+.sheet{width:100%;max-width:560px;max-height:86%;overflow-y:auto;background:var(--bg2);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;
+  padding-block:16px calc(20px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:12px;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:.4}}
+@media (min-width:700px){.sheet-bg{align-items:center}.sheet{border-radius:20px;border-bottom:1px solid var(--line)}}
+.sh-head{display:flex;align-items:flex-start;gap:12px}
+.x{margin-left:auto;border:1px solid var(--line);background:var(--panel);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;flex:none}
+.say{background:var(--panel);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:12px;line-height:1.5}
+.big{font-family:var(--f-g);font-size:40px;color:var(--gold);text-align:center;text-shadow:0 0 18px rgba(245,197,66,.45)}
+.boxart{width:120px;height:120px;margin:0 auto;display:block}
+.boxart.shake{animation:shake .5s ease-in-out 2}
+@keyframes shake{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+
+.toast{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translate(-50%,-14px);opacity:0;z-index:60;pointer-events:none;
+  background:#0f1612;border:1px solid var(--neon);color:var(--ink);padding:9px 14px;border-radius:12px;font-weight:600;font-size:13px;max-width:calc(100% - 32px);text-align:center;
+  box-shadow:0 0 20px rgba(57,255,136,.25);transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{border-color:var(--red);box-shadow:0 0 20px rgba(255,90,90,.25)}
+.fx{position:fixed;z-index:55;pointer-events:none;font-weight:700;font-size:15px;color:var(--neon);text-shadow:0 0 8px rgba(57,255,136,.6);animation:fx 1s ease-out forwards}
+@keyframes fx{to{transform:translateY(-50px);opacity:0}}
+input.name{background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font:inherit;font-weight:700;font-size:16px;padding:8px 10px;width:100%;max-width:260px}
+.danger{background:var(--red)!important;color:#fff!important}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important;transition:none!important}}
+</style>
+<style>
+#boot{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:24px;
+ background:radial-gradient(70% 50% at 50% 35%,rgba(57,255,136,.16),transparent 70%),radial-gradient(60% 40% at 50% 100%,rgba(255,61,184,.14),transparent 70%),#070a08;transition:opacity .5s}
+#boot.out{opacity:0;pointer-events:none}
+#boot .bl{width:140px;height:140px;filter:drop-shadow(0 0 22px rgba(57,255,136,.55));animation:bpulse 2.2s ease-in-out infinite}
+@keyframes bpulse{50%{transform:scale(1.05) rotate(-2deg)}}
+#boot h1{margin:0;font-family:var(--f-g);font-weight:400;font-size:40px;line-height:.95;text-align:center;color:var(--neon);text-shadow:0 0 18px rgba(57,255,136,.5);transform:rotate(-3deg)}
+#boot h1 span{display:block;color:var(--pink);font-size:30px;text-shadow:0 0 18px rgba(255,61,184,.5)}
+#boot .bb{width:min(260px,70vw);height:8px;border-radius:4px;background:#17211c;overflow:hidden;border:1px solid var(--line)}
+#boot .bb i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--neon),var(--gold));transition:width .25s}
+#boot p{margin:0;color:var(--mut);font-size:13px;min-height:1.4em;text-align:center}
+#boot button{border:0;border-radius:14px;padding:14px 30px;font:700 16px var(--f);background:var(--neon);color:#04170b;letter-spacing:.06em;box-shadow:0 0 24px rgba(57,255,136,.45);animation:bpulse 1.6s infinite}
+#boot small{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom,0px));color:#4d5d54;font-size:11px}
+</style>
+</head>
+<body>
+<div id="boot"><svg class="bl" viewBox="0 0 100 100"><g transform="translate(50 70)" fill="#39ff88"><ellipse cx="0" cy="-16.8" rx="7" ry="16.8" transform="rotate(-72)"/><ellipse cx="0" cy="-27.2" rx="7" ry="27.2" transform="rotate(-46)"/><ellipse cx="0" cy="-36.0" rx="7" ry="36.0" transform="rotate(-22)"/><ellipse cx="0" cy="-40.0" rx="7" ry="40.0" transform="rotate(0)"/><ellipse cx="0" cy="-36.0" rx="7" ry="36.0" transform="rotate(22)"/><ellipse cx="0" cy="-27.2" rx="7" ry="27.2" transform="rotate(46)"/><ellipse cx="0" cy="-16.8" rx="7" ry="16.8" transform="rotate(72)"/></g><path d="M50 70v22" stroke="#39ff88" stroke-width="4"/></svg><h1>The Plug<span>from 52</span></h1><div class="bb"><i id="bootbar"></i></div><p id="boottip">Lade dein Imperium …</p><button id="bootgo" hidden>TIPPEN ZUM STARTEN</button><small>Fiktives Spiel · v1.0</small></div>
+<script>
+(function(){var tips=['Lade dein Imperium …','Gieße die Felder …','Rufe die Crew zusammen …','Poliere den Lowrider …','Checke die Marktpreise …'];
+var b=document.getElementById('bootbar'),t=document.getElementById('boottip'),g=document.getElementById('bootgo'),p=0,i=0,ready=false;
+var fr=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();fr.then(function(){ready=true});setTimeout(function(){ready=true},4000);
+var iv=setInterval(function(){p=Math.min(ready?100:88,p+4+Math.random()*9);b.style.width=p+'%';if(Math.random()<.25)t.textContent=tips[++i%tips.length];
+ if(p>=100){clearInterval(iv);t.textContent='Bereit, Boss.';g.hidden=false}},120);
+g.addEventListener('click',function(){var bt=document.getElementById('boot');bt.classList.add('out');setTimeout(function(){bt.remove()},550)});
+if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
+})();
+</script>
+
+
+<div class="shell">
+  <header class="hud">
+    <button class="lvl" data-a="go" data-v="profile" aria-label="Profil und Level"><svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="18" stroke="#24332b" stroke-width="4" fill="none"/><circle id="xpring" cx="21" cy="21" r="18" stroke="#39ff88" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="113"/></svg><b id="hlvl">1</b></button>
+    <div class="logo">The Plug <span>from 52</span></div>
+    <div class="cur">
+      <span class="pill p-cash"><svg class="ic"><use href="#i-cash"/></svg><span id="hcash">0</span></span>
+      <span class="pill p-coin"><svg class="ic"><use href="#i-coin"/></svg><span id="hcoin">0</span></span>
+      <span class="pill p-rep"><svg class="ic"><use href="#i-star"/></svg><span id="hrep">0</span></span>
+    </div>
+    <button class="snd" data-a="toggleSnd" aria-label="Sound an oder aus"><svg class="ic" id="sndic"><use href="#i-vol"/></svg></button>
+  </header>
+  <main id="main"><div class="wrap" id="view"></div></main>
+  <nav class="nav" id="nav"></nav>
+</div>
+<div class="sheet-bg" id="sheet" hidden><div class="sheet" id="sheetc"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-farm" viewBox="0 0 24 24"><path d="M12 21V11"/><path d="M12 11c0-4 3-7 7-7 0 4-3 7-7 7z"/><path d="M12 14c0-3-2.5-5.5-6-5.5 0 3.5 2.5 5.5 6 5.5z"/><path d="M5 21h14"/></symbol>
+  <symbol id="i-prod" viewBox="0 0 24 24"><path d="M3 21V9l6 4V9l6 4V5h6v16z"/><path d="M7 17h2M13 17h2"/></symbol>
+  <symbol id="i-market" viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5"/><path d="M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M5 13v8h14v-8"/><path d="M10 21v-5h4v5"/></symbol>
+  <symbol id="i-net" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.8 0 4.5 2 4.5 5"/></symbol>
+  <symbol id="i-world" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3z"/></symbol>
+  <symbol id="i-inv" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></symbol>
+  <symbol id="i-emp" viewBox="0 0 24 24"><path d="M4 21V5l6-2v18M10 8h10v13M2 21h20"/><path d="M13 12h1M17 12h1M13 16h1M17 16h1M6.5 9h1M6.5 13h1"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></symbol>
+  <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l1.5 3.2 3.5.4-2.6 2.4.7 3.5L12 14.8 8.9 16.5l.7-3.5L7 10.6l3.5-.4z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.4 4.3 1 6.1L12 17l-5.4 2.8 1-6.1-4.4-4.3 6.1-.8z"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13"/><path d="M12 8c-1.5-3-5-3.5-5-1.5S10 8 12 8zm0 0c1.5-3 5-3.5 5-1.5S14 8 12 8z"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H4c0 3 1.5 4.5 4 4.5M16 6h4c0 3-1.5 4.5-4 4.5M12 13v4M8 21h8M9 17h6v4H9z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M2 6h12v10H2zM14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M3 7l6 6 4-4 8 8M15 17h6v-6"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4z"/><path d="M3 8v9l9 4 9-4V8M12 12v9"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 22c4 0 7-2.8 7-6.8 0-4.2-3.5-6.7-4.5-10.2-2 1.5-3 3.5-3 5.5C10 9 9 7.5 9 6c-2.5 2-4 5-4 8.6C5 19 8 22 12 22z"/></symbol>
+</svg>
+
+<script>
+(function(){
+'use strict';
+/* ============ DATA ============ */
+const KEY='plug52-v1', MAXL=60;
+const QN=['Standard','Premium','Exotic','Legendary','Ultra Rare'], QM=[1,1.6,2.6,4.5,8], QCOL=['#a8b3ad','#39ff88','#38bdf8','#c084fc','#f5c542'];
+const RARN=['Gewöhnlich','Ungewöhnlich','Selten','Episch','Legendär','Mythisch'], RARC=['#a8b3ad','#39ff88','#38bdf8','#c084fc','#ff3db8','#f5c542'];
+const ST=[
+ ['nl','Northern Lights',1,30,5,14,0,'#7dd3fc',3,'Robuster Klassiker, wächst schnell.'],
+ ['bd','Blue Dream',2,60,12,30,0,'#60a5fa',4,'Beliebt bei allen. Sicherer Umsatz.'],
+ ['ww','White Widow',3,120,25,60,0,'#e5e7eb',4,'Frostig-weiß, gern in Amsterdam gesehen.'],
+ ['og','OG Kush',5,300,60,150,1,'#a3e635',5,'Street-Legende. Hohe Nachfrage überall.'],
+ ['ah','Amnesia Haze',7,480,100,240,1,'#facc15',4,'Zitronig, energiegeladen, Clubliebling.'],
+ ['ph','Purple Haze',10,900,180,450,2,'#c084fc',4,'Violette Blüten, Sammler mögen sie.'],
+ ['ge','Gelato',13,1200,260,650,2,'#f472b6',5,'Süß und cremig. Premium-Kundschaft.'],
+ ['gg','Gorilla Glue',17,1800,400,1000,2,'#a8a29e',4,'Klebrig, schwer, enorm ertragreich.'],
+ ['sd','Sour Diesel',21,2700,600,1500,3,'#fb923c',3,'Scharf und laut. Die Stadt liebt sie.'],
+ ['wc','Wedding Cake',26,3600,900,2300,3,'#fde68a',5,'Für die großen Feiern der Elite.'],
+ ['nm','Neon Mirage',32,5400,1500,3800,4,'#22d3ee',4,'Hausgezüchtet. Leuchtet fast im Dunkeln.'],
+ ['g52','Golden 52',40,7200,2500,6500,5,'#f5c542',5,'Die Signatur-Sorte des Plugs. Mythisch.'],
+].map(([id,n,lvl,t,seed,val,rar,col,pop,d])=>({id,n,lvl,t,seed,val,rar,col,pop,d}));
+const SI={};ST.forEach((s,i)=>{SI[s.id]=s;s.idx=i});
+
+const RG=[
+ {id:'ams',n:'Amsterdam',c:'Niederlande',lvl:1,cost:0,col:'#ff8a00',pm:1,fav:['nl','ww','ah'],tag:'Grachten, Fahrräder, Kenner.',ch:'Kenner-Szene: Kunden fragen öfter nach Premium.',fx:{qb:1},rare:'Goldene Tulpe',x:236,y:52},
+ {id:'ber',n:'Berlin',c:'Deutschland',lvl:4,cost:2500,col:'#ff3db8',pm:1.12,fav:['bd','og','sd'],tag:'Techno bis Montagmorgen.',ch:'Nachtleben: kürzere Zeitlimits, +20 % Belohnung.',fx:{tm:.65,rw:1.2},rare:'Clubkarte „Halle 52“',x:282,y:58},
+ {id:'fra',n:'Frankfurt',c:'Deutschland',lvl:8,cost:12000,col:'#38bdf8',pm:1.25,fav:['og','ge','wc'],tag:'Skyline und Bankentürme.',ch:'Banker bestellen größere Mengen.',fx:{qm:1.4},rare:'Goldener Bulle',x:254,y:92},
+ {id:'bcn',n:'Barcelona',c:'Spanien',lvl:12,cost:35000,col:'#f97316',pm:1.38,fav:['ah','ph','ge'],tag:'Strand, Clubs, lange Nächte.',ch:'Fiesta: Aufträge bringen +30 % XP.',fx:{xp:1.3},rare:'Mosaik-Echse',x:206,y:150},
+ {id:'lon',n:'London',c:'Großbritannien',lvl:16,cost:90000,col:'#94a3b8',pm:1.52,fav:['ww','sd','gg'],tag:'Regen, Grime und alte Paläste.',ch:'Wechselhaft: Marktpreise schwanken stärker.',fx:{vol:1.9},rare:'Roter Doppeldecker',x:196,y:72},
+ {id:'zrh',n:'Zürich',c:'Schweiz',lvl:20,cost:200000,col:'#ef4444',pm:1.7,fav:['ge','wc','nm'],tag:'Diskret, präzise, wohlhabend.',ch:'Präzision: nur Premium oder besser.',fx:{minq:1},rare:'Diamant-Uhr',x:262,y:126},
+ {id:'tor',n:'Toronto',c:'Kanada',lvl:25,cost:450000,col:'#e11d48',pm:1.9,fav:['nl','gg','sd'],tag:'Ahorn, Eishockey, große Hallen.',ch:'Großhandel: eine Position mehr pro Auftrag.',fx:{lines:1},rare:'Goldenes Ahornblatt',x:86,y:62},
+ {id:'nyc',n:'New York',c:'USA',lvl:30,cost:1e6,col:'#facc15',pm:2.15,fav:['sd','og','wc'],tag:'Die Stadt, die nie schläft.',ch:'Tempo: neue Aufträge kommen doppelt so schnell.',fx:{spawn:.5},rare:'Goldenes Taxi-Schild',x:116,y:106},
+ {id:'la',n:'Los Angeles',c:'USA',lvl:36,cost:2.5e6,col:'#a855f7',pm:2.45,fav:['ge','og','nm'],tag:'Palmen, Lowrider, Hollywood.',ch:'Hype: doppelte Reputation pro Auftrag.',fx:{rep:2},rare:'Platin-Schallplatte',x:42,y:150},
+ {id:'bkk',n:'Bangkok',c:'Thailand',lvl:42,cost:6e6,col:'#22d3ee',pm:2.8,fav:['nm','g52','ph'],tag:'Neon-Märkte bei Nacht.',ch:'Sammler-Paradies: Sammler doppelt so häufig.',fx:{col:2},rare:'Jade-Elefant',x:362,y:184},
+];
+const RI={};RG.forEach(r=>RI[r.id]=r);
+
+const CT=[
+ {id:'daan',r:'ams',n:'Daan „Tulip“ de Vries',role:'Produzent',col:'#ff8a00',perk:'Wachstum −10 %',lines:['Neu in der Stadt? Liefer sauber, dann reden wir weiter.','Deine Ware hat Stil. Meine Leute fragen schon nach dir.','Ich zeig dir, wie man aus einem Feld mehr rausholt.','Du gehörst zur Familie. Meine Grow-Tricks gehören dir.']},
+ {id:'mira',r:'ber',n:'Mira Kowalski',role:'Eventveranstalterin',col:'#ff3db8',perk:'+25 % Reputation',lines:['Ich mach die Partys, über die morgen alle reden.','Deine Lieferungen retten meine Afterhours.','Ich bring deinen Namen auf jeden Flyer der Stadt.','Ohne dich läuft kein Event mehr. Respekt.']},
+ {id:'viktor',r:'fra',n:'Viktor Hahn',role:'Investor',col:'#38bdf8',perk:'+10 % Geld aus allen Aufträgen',lines:['Zahlen lügen nicht. Zeig mir deine.','Ordentliche Rendite. Ich bin interessiert.','Ich investiere in deine Logistik.','Du bist mein bestes Investment seit Jahren.']},
+ {id:'lucia',r:'bcn',n:'Lucía „La Reina“ Ortega',role:'Influencerin',col:'#f97316',perk:'+10 % XP',lines:['Zwei Millionen Follower warten auf guten Content.','Mein Feed liebt deine Farben.','Ich hab dich in meiner Story erwähnt. Spürst du den Hype?','Du bist offiziell Kult.']},
+ {id:'reggie',r:'lon',n:'Reggie Banks',role:'Geschäftspartner',col:'#94a3b8',perk:'+1 Auftragsplatz',lines:['In London zählt Pünktlichkeit, Kumpel.','Solide Arbeit. Wir können Geschäfte machen.','Ich vermittle dir meine Stammkundschaft.','Partner fürs Leben.']},
+ {id:'anton',r:'zrh',n:'Dr. Anton Keller',role:'Sammler',col:'#ef4444',perk:'Bessere Qualität',lines:['Ich sammle nur das Außergewöhnliche.','Diese Blüte ist bemerkenswert.','Ich teile mein Wissen über Selektion mit Ihnen.','Sie sind ein Künstler.']},
+ {id:'jayden',r:'tor',n:'Jayden „North“ Clarke',role:'Produzent',col:'#e11d48',perk:'+1 Ertrag (20 % Chance)',lines:['Up north machen wir alles in groß.','Respekt, deine Felder sind sauber.','Ich zeig dir mein Ertrags-Setup.','Wir sind ein Team, Bruder.']},
+ {id:'tasha',r:'nyc',n:'Tasha „Uptown“ Reid',role:'VIP-Kundin',col:'#facc15',perk:'+1 Coin pro VIP-Auftrag',lines:['Ich will nur das Beste. Immer.','Okay, du hast meine Aufmerksamkeit.','Meine Freunde haben Geld und Geschmack.','Du bist mein einziger Plug.']},
+ {id:'marco',r:'la',n:'Marco „Sunset“ Diaz',role:'Influencer',col:'#a855f7',perk:'+8 % Marktpreise',lines:['West Coast, Baby! Zeig, was du kannst.','Deine Ware sieht in meinen Videos krass aus.','Ganz LA redet über The Plug.','Du bist größer als Hollywood.']},
+ {id:'niran',r:'bkk',n:'Niran Chaiya',role:'Sammler',col:'#22d3ee',perk:'+20 % auf Sammler-Aufträge',lines:['Bangkok kennt jede Sorte der Welt.','Du hast ein Auge für Seltenes.','Meine Sammlung hat Platz für deine Schätze.','Legenden erkennen Legenden.']},
+];
+const CI={};CT.forEach(c=>CI[c.id]=c);
+const TRUST=[0,40,120,300,650,1200];
+const CTYPE=[
+ {n:'Privatkunde',lvl:1,m:1.25,rep:1,col:'#a8b3ad'},{n:'Stammkunde',lvl:2,m:1.35,rep:2,col:'#39ff88'},
+ {n:'Premiumkunde',lvl:4,m:1.5,rep:3,col:'#38bdf8'},{n:'VIP',lvl:7,m:1.8,rep:5,col:'#c084fc'},
+ {n:'Sammler',lvl:11,m:2.2,rep:8,col:'#f5c542'},{n:'Geschäftspartner',lvl:1,m:2.0,rep:6,col:'#ff3db8'}];
+const FN={ams:['Sem','Lotte','Bram','Femke','Jesse','Noor','Ruben'],ber:['Kalle','Jule','Deniz','Mo','Lina','Ole','Ezra'],fra:['Timo','Svenja','Kerem','Anja','Felix','Leonie','Baris'],
+ bcn:['Pau','Núria','Jordi','Marta','Iker','Aina','Biel'],lon:['Alfie','Priya','Kai','Imogen','Tunde','Freya','Jamal'],zrh:['Luca','Seraina','Nico','Mia','Gian','Flurina','Reto'],
+ tor:['Liam','Ava','Darnell','Chloe','Ethan','Maya','Owen'],nyc:['Andre','Bianca','Malik','Sofia','Vinnie','Keisha','Ray'],la:['Diego','Jade','Trey','Luna','Carlos','Skye','Dom'],bkk:['Somchai','Ploy','Arthit','Mali','Krit','Nok','Tawan']};
+const NICK=['Smokey','Ice','Lucky','Kid','Ghost','Mellow','Neo','Ace','Blaze','Chill','Duke','Sly','Velvet','Bandit','Rookie','Shadow'];
+const PERS=['Gechillt','Ungeduldig','Wählerisch','Großzügig','Misstrauisch','Loyal','Exzentrisch','Trendbewusst','Schweigsam','Laut'];
+const CTYPES_BY=[0,0,1,1,2,3,4];
+const CUST={};
+RG.forEach(r=>{const rnd=rng(h32(r.id));FN[r.id].forEach((f,i)=>{const id=r.id+'-'+i;
+  CUST[id]={id,r:r.id,n:f+' „'+NICK[Math.floor(rnd()*NICK.length)]+'“',t:CTYPES_BY[i],p:PERS[Math.floor(rnd()*PERS.length)],col:'hsl('+Math.floor(rnd()*360)+' 80% 62%)'}})});
+
+const EB=[
+ {id:'lager',n:'Lagerhaus',max:20,base:150,g:1.6,req:1,sign:'LAGER',col:'#38bdf8',d:l=>'Kapazität '+cap(l)+' Einheiten'},
+ {id:'grow',n:'Grow-Lab',max:10,base:350,g:1.85,req:2,sign:'GROW LAB',col:'#39ff88',d:l=>'Wachstum −'+(5*l)+' %, Ertrag +'+Math.floor(l/3)},
+ {id:'qc',n:'Qualitätskontrolle',max:10,base:600,g:1.9,req:3,sign:'QC',col:'#c084fc',d:l=>'Qualitätsbonus +'+(l*18)+' %'},
+ {id:'office',n:'Management-Büro',max:6,base:300,g:2.4,req:2,sign:'OFFICE',col:'#f5c542',d:l=>(2+l)+' Auftragsplätze'},
+ {id:'garage',n:'Fuhrpark',max:10,base:1200,g:1.9,req:6,sign:'GARAGE',col:'#ff8a00',d:l=>'+'+(5*l)+' % Geld aus Aufträgen'},
+ {id:'research',n:'Forschungszentrum',max:10,base:4000,g:2,req:12,sign:'R&D',col:'#22d3ee',d:l=>'+'+(4*l)+' % Marktpreise, +'+(3*l)+' % XP'},
+];
+const PB=[
+ {id:'pack',n:'Packstation',lvl:4,cost:250,sign:'PACK',col:'#39ff88',rec:{n:'Pre-Roll-Pack',in:2,m:1.35,t:90,minq:0}},
+ {id:'kitchen',n:'Edible-Küche',lvl:8,cost:1800,sign:'KITCHEN',col:'#f472b6',rec:{n:'Edible-Box',in:3,m:1.45,t:240,minq:0}},
+ {id:'lab',n:'Extrakt-Labor',lvl:14,cost:9000,sign:'LAB',col:'#38bdf8',rec:{n:'Extrakt-Flakon',in:4,m:1.6,t:480,minq:0}},
+ {id:'show',n:'Collector-Studio',lvl:20,cost:45000,sign:'STUDIO',col:'#f5c542',rec:{n:'Collector Case',in:3,m:2.1,t:900,minq:2}},
+];
+const PI={};PB.forEach(p=>PI[p.id]=p);
+const DC=[
+ {id:'graf',n:'Graffiti-Wand',lvl:2,cash:400,b:.01},{id:'neon',n:'Neon-Schild „52“',lvl:5,cash:1500,b:.02},
+ {id:'palm',n:'Palmen-Duo',lvl:8,cash:4000,b:.02},{id:'boom',n:'Ghettoblaster',lvl:11,cash:9000,b:.03},
+ {id:'low',n:'Lowrider',lvl:15,coins:25,b:.04},{id:'court',n:'Basketballkorb',lvl:18,cash:40000,b:.04},
+ {id:'flam',n:'Neon-Flamingo',lvl:24,cash:150000,b:.05},{id:'gold',n:'Goldene Statue',lvl:30,coins:80,b:.08}];
+const SEASONS=['Frost','Neon-Herz','Frühlings-Erwachen','Regenbogen','Mai-Rave','Sonnenwende','Hitzewelle','Festival','Ernte','Kürbis-Nacht','Nebel','Lichter'];
+const RIVALS=[['Rico Vibes',1500],['Kush Queen',6000],['Mr. Grün',18000],['Lil Haze',50000],['El Verde',150000],['Nebula Nate',450000],['Sativa Sam',1.4e6],['Duke Indica',5e6],['Ghost 420',2e7]];
+const MT=[
+ {t:'harvest',n:g=>'Ernte '+g+' Buds',g:l=>8+l*2},{t:'orders',n:g=>'Erfülle '+g+' Aufträge',g:l=>2+Math.floor(l/6)},
+ {t:'earned',n:g=>'Verdiene '+money(g),g:l=>Math.round(200*Math.pow(l,1.5))},{t:'plant',n:g=>'Setze '+g+' Pflanzen',g:l=>6+l},
+ {t:'sold',n:g=>'Verkaufe '+g+' Artikel am Markt',g:l=>4+l},{t:'produced',n:g=>'Stelle '+g+' Produkte her',g:l=>2+Math.floor(l/5),req:()=>S.pb.pack>0}];
+const ACH=[
+ ['h1','Erste Ernte','Ernte deine ersten Buds',s=>s.st.harvest,1,2],['h2','Grüner Daumen','Ernte 250 Buds',s=>s.st.harvest,250,5],['h3','Ernte-Maschine','Ernte 2.500 Buds',s=>s.st.harvest,2500,15],
+ ['o1','Erster Deal','Erfülle einen Auftrag',s=>s.st.orders,1,2],['o2','Zuverlässig','Erfülle 50 Aufträge',s=>s.st.orders,50,6],['o3','Der Plug','Erfülle 500 Aufträge',s=>s.st.orders,500,20],
+ ['e1','Erste Tausend','Verdiene $1.000',s=>s.st.earned,1e3,2],['e2','Sechsstellig','Verdiene $100K',s=>s.st.earned,1e5,8],['e3','Millionär','Verdiene $10M',s=>s.st.earned,1e7,25],
+ ['l1','Aufsteiger','Erreiche Level 10',s=>s.lvl,10,5],['l2','Boss','Erreiche Level 25',s=>s.lvl,25,15],['l3','Legende','Erreiche Level 50',s=>s.lvl,50,40],
+ ['r1','Reisender','Schalte 3 Regionen frei',s=>s.regions.length,3,5],['r2','Weltreich','Schalte alle 10 Regionen frei',s=>s.regions.length,10,40],
+ ['u1','Ultra Rare','Ernte ein Ultra-Rare-Bud',s=>s.st.ultra,1,10],['c1','Sammler','30 Einträge in der Sammlung',s=>Object.keys(s.coll).length,30,10],['c2','Komplettist','Alle 60 Sammlungseinträge',s=>Object.keys(s.coll).length,60,50],
+ ['v1','VIP-Service','Erfülle 10 VIP-Aufträge',s=>s.st.vip,10,8],['p1','Fabrikant','Stelle 100 Produkte her',s=>s.st.produced,100,10],['b1','Glückspilz','Öffne 10 Überraschungsboxen',s=>s.st.boxes,10,6],
+ ['d1','Style','Besitze 4 Dekorationen',s=>s.decos.length,4,6],['t1','Bester Freund','Ein Kontakt auf Vertrauen 5',s=>Math.max(0,...CT.map(c=>trustLvl(c.id))),5,15],
+ ['x1','Plantage','Besitze 16 Anbauflächen',s=>s.plots.length,16,10],['m1','Kartograf','Öffne die Weltkarte',s=>s.st.map,1,1]];
+const TUT=[
+ {v:'farm',t:'Willkommen, Boss. Tippe auf ein freies Feld in deiner Farm und setze Northern Lights.',c:s=>s.st.plant>=1},
+ {v:'farm',t:'Sobald eine Pflanze leuchtet, ist sie reif. Tippe drauf und ernte.',c:s=>s.st.harvest>=1},
+ {v:'market',t:'Unter MARKET warten Kunden. Liefere einen Auftrag aus deinem Lager.',c:s=>s.st.orders>=1},
+ {v:'empire',t:'Investiere: Verbessere unter EMPIRE ein Gebäude.',c:s=>s.st.upgrades>=1},
+ {v:'world',t:'Schau dir die WORLD MAP an. Dort wartet die Expansion.',c:s=>s.st.map>=1}];
+const LOGIN=[{cash:100},{cash:200},{coins:2},{cash:500},{coins:3},{box:1},{coins:10}];
+
+/* ============ HELPERS ============ */
+function h32(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function rng(seed){let a=seed>>>0;return function(){a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const rnd=Math.random, ri=(a,b)=>a+Math.floor(rnd()*(b-a+1)), pick=a=>a[Math.floor(rnd()*a.length)];
+const now=()=>Date.now();
+function nf(n){n=Math.floor(n);if(n<1e4)return n.toLocaleString('de-DE');for(const [v,s] of [[1e12,'T'],[1e9,'Mrd'],[1e6,'M'],[1e3,'K']])if(n>=v){const x=n/v;return x.toLocaleString('de-DE',{maximumFractionDigits:x<100?1:0})+s}}
+const money=n=>'$'+nf(n);
+function tf(sec){sec=Math.max(0,Math.ceil(sec));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;if(h>=48)return Math.floor(h/24)+'T '+(h%24)+'h';return h?h+'h '+String(m).padStart(2,'0')+'m':m?m+'m '+String(s).padStart(2,'0')+'s':s+'s'}
+const ic=(n,c)=>'<svg class="ic'+(c?' '+c:'')+'"><use href="#i-'+n+'"/></svg>';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function dayKey(t){const d=new Date(t||now());return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function weekIdx(){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return Math.round(d.getTime()/864e5/7)}
+function weekEnd(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+(7-((d.getDay()+6)%7)));return d.getTime()}
+function initials(n){return n.replace(/[„“"]/g,'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()}
+
+/* ============ STATE ============ */
+let S;
+function fresh(){const t=now();return{name:'Boss',cash:150,coins:15,rep:0,xp:0,lvl:1,
+ plots:[{s:'nl',p:t-24000,r:t+6000},{s:'nl',p:t-6000,r:t+24000},{s:null},{s:null}],
+ inv:{'b:nl:0':6,'b:nl:1':2},eb:{lager:1,grow:0,qc:0,office:1,garage:0,research:0},pb:{pack:0,kitchen:0,lab:0,show:0},jobs:{pack:[],kitchen:[],lab:[],show:[]},
+ orders:[],nextOrder:0,oseq:1,region:'ams',regions:['ams'],rOrders:{},rare:[],trust:{},gift:{},cust:{},
+ st:{harvest:0,plant:0,orders:0,earned:0,produced:0,sold:0,upgrades:0,boxes:0,vip:0,ultra:0,map:0},
+ ach:[],coll:{'nl:0':1,'nl:1':1},boxes:1,daily:{day:'',streak:0,claimed:true,m:[]},weekly:{wk:-1,m:[],c:false},
+ decos:[],boost:0,tut:0,snd:true,mus:false,start:t,last:t,zoom:1}}
+
+/* ============ ECONOMY ============ */
+function cap(l){return 50+30*((l===undefined?S.eb.lager:l)-1)}
+function used(){let n=0;for(const k in S.inv)n+=S.inv[k];return n}
+function trustLvl(id){const x=S.trust[id]||0;let l=0;TRUST.forEach((t,i)=>{if(x>=t)l=i});return l}
+function hasPerk(id){return trustLvl(id)>=4&&S.regions.includes(CI[id].r)}
+function decoB(){return S.decos.reduce((a,id)=>a+DC.find(d=>d.id===id).b,0)}
+function growTime(st){let f=1-.05*S.eb.grow;if(hasPerk('daan'))f*=.9;if(S.boost>now())f*=.5;return st.t*f}
+function yieldN(){let n=2+Math.floor(S.eb.grow/3);if(rnd()<.15)n++;if(hasPerk('jayden')&&rnd()<.2)n++;return n}
+function rollQ(st){const b=S.eb.qc*.18+S.eb.grow*.04+st.rar*.08+(hasPerk('anton')?.35:0);
+ const w=[70,22,6,1.6,.4].map((x,i)=>i?x*Math.pow(1+b,i):x);let r=rnd()*w.reduce((a,c)=>a+c,0);for(let i=0;i<5;i++){r-=w[i];if(r<=0)return i}return 0}
+function parseK(k){const p=k.split(':');return p[0]==='b'?{k:'b',s:p[1],q:+p[2]}:{k:'p',rec:p[1],s:p[2],q:+p[3]}}
+function itemVal(k){const o=parseK(k),st=SI[o.s];let v=st.val*QM[o.q];if(o.k==='p'){const r=PI[o.rec].rec;v*=r.in*r.m}return v}
+function itemName(k){const o=parseK(k);return (o.k==='p'?PI[o.rec].rec.n+' · ':'')+SI[o.s].n}
+function fluct(sid){const p=Math.floor(now()/6e5),vol=(RI[S.region].fx.vol||1);const f=x=>1+(rng(h32(sid+':'+x+S.region))()-.5)*.36*vol;return{f:f(p),prev:f(p-1)}}
+function eventStrain(){const av=ST.filter(s=>s.lvl<=Math.max(S.lvl,3));return av[weekIdx()%av.length]}
+function season(){return SEASONS[new Date().getMonth()]+'-Saison'}
+function xpMult(){return 1+.03*S.eb.research+.1/* season */+(hasPerk('lucia')?.1:0)}
+function sellPrice(k){const o=parseK(k);return Math.max(1,Math.round(itemVal(k)*.55*RI[S.region].pm*fluct(o.s).f*(o.s===eventStrain().id?1.5:1)*(1+.04*S.eb.research+decoB())*(hasPerk('marco')?1.08:1)))}
+function orderSlots(){return Math.min(8,2+S.eb.office+(hasPerk('reggie')?1:0))}
+function lvlNeed(l){return Math.round(40*Math.pow(l,1.8))}
+function ebCost(b){return Math.round(b.base*Math.pow(b.g,S.eb[b.id]))}
+function ebCap(b){return Math.min(b.max,2+Math.floor(S.lvl/3))}
+function pbCost(p){const l=S.pb[p.id];return l?Math.round(p.cost*1.2*Math.pow(1.9,l)):p.cost}
+function pbSlots(p){return Math.min(4,1+Math.floor(S.pb[p.id]/2))}
+function pbTime(p,sid){return p.rec.t*(1+SI[sid].idx*.08)*(1-.07*(S.pb[p.id]-1))}
+function plotCost(n){return Math.round(150*Math.pow(1.5,n-4))}
+function plotReq(n){return Math.floor((n-4)*1.6)+1}
+function netWorth(){let v=S.cash;for(const k in S.inv)v+=itemVal(k)*.55*S.inv[k];EB.forEach(b=>{for(let l=0;l<S.eb[b.id];l++)v+=b.base*Math.pow(b.g,l)*.5});PB.forEach(p=>{if(S.pb[p.id])v+=p.cost*S.pb[p.id]*.6});v+=S.plots.length*150;return Math.round(v)}
+
+function addInv(k,n){S.inv[k]=(S.inv[k]||0)+n;if(S.inv[k]<=0)delete S.inv[k]}
+function gainCash(n){S.cash+=n;S.st.earned+=n}
+function addXP(x){x=Math.round(x*xpMult());S.xp+=x;let up=[];while(S.lvl<MAXL&&S.xp>=lvlNeed(S.lvl)){S.xp-=lvlNeed(S.lvl);S.lvl++;up.push(S.lvl)}
+ if(up.length)setTimeout(()=>levelUp(up[up.length-1],up),350)}
+function unlocksAt(L){const u=[];ST.forEach(s=>s.lvl===L&&u.push('Neue Sorte: '+s.n));RG.forEach(r=>r.lvl===L&&r.cost&&u.push('Region verfügbar: '+r.n));
+ PB.forEach(p=>p.lvl===L&&u.push('Neues Gebäude: '+p.n));EB.forEach(b=>b.req===L&&b.id!=='lager'&&u.push('Neues Gebäude: '+b.n));
+ DC.forEach(d=>d.lvl===L&&u.push('Deko: '+d.n));CTYPE.forEach((c,i)=>i&&i<5&&c.lvl===L&&u.push('Neue Kunden: '+c.n));
+ for(let n=4;n<24;n++)if(plotReq(n)===L&&n>4){u.push('Weitere Anbaufläche');break}
+ if(L%3===0)u.push('Gebäude-Limit +1 Stufe');return u}
+function levelUp(L,all){const cash=all.reduce((a,l)=>a+60*l,0),coins=all.reduce((a,l)=>a+1+(l%5===0?4:0),0);S.cash+=cash;S.coins+=coins;
+ if(all.some(l=>l%10===0))S.boxes++;sfx('lvl');const u=all.flatMap(unlocksAt);
+ sheet(`<div class="big">LEVEL ${L}</div><p class="mut" style="text-align:center;margin:0">Dein Imperium wächst.</p>
+ <div class="row" style="justify-content:center;gap:8px"><span class="chip" style="color:var(--neon)">+${money(cash)}</span><span class="chip" style="color:var(--gold)">+${coins} Coins</span>${all.some(l=>l%10===0)?'<span class="chip" style="color:var(--pink)">+1 Box</span>':''}</div>
+ ${u.length?'<div class="list">'+u.map(x=>'<div class="li">'+ic('zap')+'<div class="mid nm">'+x+'</div></div>').join('')+'</div>':''}
+ <button class="btn" data-a="close">Weiter</button>`);save();render()}
+
+/* ============ ORDERS ============ */
+function availStrains(){return ST.filter(s=>s.lvl<=S.lvl)}
+function genOrder(){
+ const R=RI[S.region],fx=R.fx,av=availStrains();
+ let partner=null;const pc=CT.find(c=>c.r===S.region);
+ if(pc&&trustLvl(pc.id)>=1&&rnd()<.16)partner=pc;
+ let cid,type;
+ if(partner){cid='c:'+partner.id;type=5}else{
+  let pool=Object.values(CUST).filter(c=>c.r===S.region&&CTYPE[c.t].lvl<=S.lvl);
+  if(fx.col)pool=pool.concat(pool.filter(c=>c.t===4));
+  const c=pick(pool);cid=c.id;type=c.t}
+ const lines=Math.min(4,(type<=1?ri(1,2):ri(1,3))+(fx.lines||0));
+ const items=[];const used={};
+ for(let i=0;i<lines;i++){
+  let cand=av.filter(s=>!used[s.id]);if(!cand.length)break;
+  let s;if(rnd()<.45){const f=cand.filter(x=>R.fav.includes(x.id));s=f.length?pick(f):pick(cand)}
+  else if(type===4){const hi=cand.slice(-4);s=pick(hi)}else{const w=cand.map((x,j)=>j+1);let r=rnd()*w.reduce((a,c)=>a+c,0);s=cand.find((x,j)=>(r-=w[j])<=0)||cand[0]}
+  used[s.id]=1;
+  let q=[0,0,ri(0,1),ri(1,2),ri(2,3),ri(0,2)][type];if(fx.qb&&rnd()<.35)q++;q=Math.max(q,fx.minq||0);
+  q=Math.min(q,1+Math.floor(S.eb.qc/2),4);
+  let n=Math.max(1,Math.round((ri(2,6)-s.idx*.3)*(fx.qm||1)));if(q>=2)n=Math.max(1,Math.ceil(n/2));
+  const prods=PB.filter(p=>S.pb[p.id]>0&&q>=p.rec.minq);
+  if(prods.length&&rnd()<.3&&type>=1){const p=pick(prods);items.push({k:'p',rec:p.id,s:s.id,q,n:Math.max(1,Math.ceil(n/2))})}
+  else items.push({k:'b',s:s.id,q,n});
+ }
+ let v=items.reduce((a,it)=>a+itemVal(it.k==='b'?'b:'+it.s+':'+it.q:'p:'+it.rec+':'+it.s+':'+it.q)*it.n,0);
+ v*=CTYPE[type].m*R.pm*(fx.rw||1)*(items.some(it=>it.s===eventStrain().id)?1.25:1);
+ const dur=(type===5?14:ri(22,48))*60e3*(fx.tm||1);
+ return{id:S.oseq++,cid,type,items,cash:Math.round(v),xp:Math.round(Math.pow(v,.72)*.55)+4,rep:CTYPE[type].rep*(fx.rep||1),
+  coins:type>=3?ri(1,3):(rnd()<.06?1:0),exp:now()+dur,r:S.region}}
+function custOf(o){if(o.cid.startsWith('c:')){const c=CI[o.cid.slice(2)];return{n:c.n,col:c.col,p:c.role,contact:c}}return CUST[o.cid]}
+function stacksFor(it){return Object.keys(S.inv).filter(k=>{const o=parseK(k);return o.k===it.k&&o.s===it.s&&o.q>=it.q&&(it.k==='b'||o.rec===it.rec)}).sort((a,b)=>parseK(a).q-parseK(b).q)}
+function haveFor(it){return stacksFor(it).reduce((a,k)=>a+S.inv[k],0)}
+function canFill(o){return o.items.every(it=>haveFor(it)>=it.n)}
+function fillOrder(id,ev){const o=S.orders.find(x=>x.id===id);if(!o)return;if(!canFill(o)){toast('Dir fehlen noch Waren für diesen Auftrag.',1);sfx('err');return}
+ o.items.forEach(it=>{let need=it.n;for(const k of stacksFor(it)){const t=Math.min(need,S.inv[k]);addInv(k,-t);need-=t;if(!need)break}});
+ const cs=S.cust[o.cid]||(S.cust[o.cid]={sat:60,n:0});
+ let mult=1+.05*S.eb.garage+(hasPerk('viktor')?.1:0)+(cs.sat>=85?.1:0);const rc=CT.find(c=>c.r===o.r);
+ if(rc&&trustLvl(rc.id)>=2)mult+=.05;if(CT.some(c=>trustLvl(c.id)>=5))mult+=.05;if(o.type===4&&hasPerk('niran'))mult+=.2;
+ const cash=Math.round(o.cash*mult);gainCash(cash);
+ let rep=o.rep;if(hasPerk('mira'))rep=Math.round(rep*1.25);S.rep+=rep;
+ let coins=o.coins+(o.type===3&&hasPerk('tasha')?1:0);S.coins+=coins;
+ addXP(o.xp*(RI[o.r].fx.xp||1));
+ cs.sat=Math.min(100,cs.sat+8);cs.n++;
+ if(rc)S.trust[rc.id]=(S.trust[rc.id]||0)+(o.type===5?25:10);
+ S.st.orders++;if(o.type===3)S.st.vip++;
+ S.rOrders[o.r]=(S.rOrders[o.r]||0)+1;
+ if(S.rOrders[o.r]===10&&!S.rare.includes(o.r)){S.rare.push(o.r);S.coins+=5;setTimeout(()=>toast('Sammlerstück erhalten: '+RI[o.r].rare+' (+5 Coins)'),900)}
+ S.orders=S.orders.filter(x=>x!==o);S.nextOrder=Math.min(S.nextOrder||Infinity,now()+8000);
+ sfx('cash');fxAt(ev,'+'+money(cash));toast('Deal abgeschlossen: +'+money(cash)+(coins?' · +'+coins+' Coins':'')+' · +'+rep+' Rep');checkAll();save();render()}
+function tickOrders(){const t=now();let ch=false;
+ S.orders=S.orders.filter(o=>{if(o.exp<=t){const cs=S.cust[o.cid]||(S.cust[o.cid]={sat:60,n:0});cs.sat=Math.max(0,cs.sat-15);ch=true;return false}return true});
+ const sp=RI[S.region].fx.spawn||1;
+ if(S.orders.length<orderSlots()&&t>=S.nextOrder){S.orders.push(genOrder());S.nextOrder=t+(S.orders.length<2?5e3:40e3*sp);ch=true}
+ return ch}
+
+/* ============ DAILY / WEEKLY / ACH ============ */
+function mkMission(scale){const pool=MT.filter(m=>!m.req||m.req());const m=pick(pool);return{t:m.t,g:Math.round(m.g(S.lvl)*scale),b:S.st[m.t],c:false}}
+function dailyCheck(){const d=dayKey();if(S.daily.day!==d){const y=dayKey(now()-864e5);S.daily.streak=S.daily.day===y?S.daily.streak+1:1;S.daily.day=d;S.daily.claimed=false;
+  const ms=[];const seen={};while(ms.length<3){const m=mkMission(1);if(!seen[m.t]){seen[m.t]=1;ms.push(m)}}S.daily.m=ms}
+ const w=weekIdx();if(S.weekly.wk!==w){S.weekly={wk:w,c:false,m:[{t:'harvest',g:120+S.lvl*20,b:S.st.harvest,c:false},{t:'orders',g:20+S.lvl,b:S.st.orders,c:false},{t:'earned',g:Math.round(3000*Math.pow(S.lvl,1.5)),b:S.st.earned,c:false}]}}}
+function mProg(m){return Math.min(m.g,S.st[m.t]-m.b)}
+function checkAll(){ACH.forEach(a=>{if(!S.ach.includes(a[0])&&a[3](S)>=a[4]){S.ach.push(a[0]);S.coins+=a[5];setTimeout(()=>{toast('Erfolg: '+a[1]+' (+'+a[5]+' Coins)');sfx('lvl')},600)}});
+ if(S.tut<TUT.length&&TUT[S.tut].c(S)){S.tut++;}}
+
+/* ============ AUDIO ============ */
+let AC=null,noiseBuf=null,musT=null,step=0;
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate*.3,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=rnd()*2-1;noiseBuf=b}catch(e){AC=null}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function tone(f,d,type,v,w,f2){const a=ac();if(!a)return;const t=a.currentTime+(w||0),o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
+ g.gain.setValueAtTime(v||.06,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.02)}
+function noise(d,v,w,hp){const a=ac();if(!a||!noiseBuf)return;const t=a.currentTime+(w||0),s=a.createBufferSource(),g=a.createGain(),f=a.createBiquadFilter();f.type='highpass';f.frequency.value=hp||6000;s.buffer=noiseBuf;
+ g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(f).connect(g).connect(a.destination);s.start(t);s.stop(t+d)}
+function sfx(k){if(!S||!S.snd)return;
+ if(k==='tap')tone(520,.06,'triangle',.05);
+ else if(k==='plant')tone(300,.12,'sine',.08,0,520);
+ else if(k==='harvest'){tone(660,.08,'triangle',.06);tone(880,.1,'triangle',.06,.07);tone(1175,.14,'triangle',.05,.14)}
+ else if(k==='cash'){tone(988,.07,'square',.035);tone(1319,.16,'square',.035,.07);noise(.08,.05,0,8000)}
+ else if(k==='err')tone(150,.18,'sawtooth',.05,0,100);
+ else if(k==='lvl'){[523,659,784,1047].forEach((f,i)=>tone(f,.18,'triangle',.06,i*.09))}
+ else if(k==='box'){tone(200,.4,'sawtooth',.03,0,900);noise(.3,.05,.3,3000)}}
+const PROG=[[57,60,64],[53,57,60],[60,64,67],[55,59,62]];const mtof=m=>440*Math.pow(2,(m-69)/12);
+function musTick(){if(!S.mus)return;const a=ac();if(!a)return;const s=step%16,bar=Math.floor(step/16)%4,ch=PROG[bar];
+ if(s===0||s===10)tone(110,.25,'sine',.22,0,40);
+ if(s===4||s===12)noise(.12,.06,0,1800);
+ if(s%2===0)noise(.03,.025,0,9000);
+ if(s===0||s===6||s===8)tone(mtof(ch[0]-24),.28,'triangle',.08);
+ if(s===0)ch.forEach(n=>tone(mtof(n),1.6,'sine',.018));
+ if(s===14&&rnd()<.5)tone(mtof(ch[2]+12),.2,'sine',.02);
+ step++}
+function setMusic(on){clearInterval(musT);musT=null;if(on){ac();musT=setInterval(musTick,60000/86/4)}}
+
+/* ============ ART ============ */
+function fan(col,s){const A=[-72,-46,-22,0,22,46,72],L=[.42,.68,.9,1,.9,.68,.42];return A.map((a,i)=>'<ellipse cx="0" cy="'+(-L[i]*14*s).toFixed(1)+'" rx="'+(3*s).toFixed(1)+'" ry="'+(L[i]*14*s).toFixed(1)+'" fill="'+col+'" transform="rotate('+a+')"/>').join('')}
+function plantSVG(st,g,ready){return '<svg viewBox="0 0 100 100" class="pl"><g class="pg" style="--g:'+g.toFixed(3)+'"><path d="M50 92V38" stroke="#1d7a40" stroke-width="3"/>'+
+ '<g transform="translate(50 80)">'+fan('#1e8a45',1.35)+'</g><g transform="translate(50 62)">'+fan('#2fbf62',1.1)+'</g><g transform="translate(50 44)">'+fan('#45d977',.8)+'</g>'+
+ '<g transform="translate(50 30)">'+fan(st.col,.45)+'</g>'+(ready?[[50,24],[38,40],[62,40],[32,58],[68,58]].map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="5" fill="'+st.col+'" stroke="#0a0f0c" stroke-width="1"/>').join(''):'')+'</g></svg>'}
+function budSVG(st,q,prod){const c=st.col;if(prod){const p={pack:'M30 20h40v64H30z',kitchen:'M18 40h64v40H18z',lab:'M40 14h20v16l14 50H26l14-50z',show:'M14 30h72v50H14z'}[prod];
+  return '<svg viewBox="0 0 100 100"><path d="'+p+'" fill="#18221d" stroke="'+QCOL[q]+'" stroke-width="5" stroke-linejoin="round"/><circle cx="50" cy="56" r="13" fill="'+c+'"/></svg>'}
+ return '<svg viewBox="0 0 100 100"><g transform="translate(50 64)">'+fan('#2fbf62',1.6)+'</g><circle cx="50" cy="52" r="15" fill="'+c+'"/><circle cx="43" cy="47" r="4" fill="rgba(255,255,255,.45)"/>'+(q?'<circle cx="80" cy="20" r="11" fill="'+QCOL[q]+'"/>':'')+'</svg>'}
+function skyline(col,seed,h){const r=rng(h32(seed));let x=0,s='';while(x<400){const w=14+Math.floor(r()*26),hh=18+Math.floor(r()*(h-24));s+='<rect x="'+x+'" y="'+(h-hh)+'" width="'+w+'" height="'+hh+'" fill="#121a16"/>';
+  for(let wy=h-hh+6;wy<h-6;wy+=9)for(let wx=x+4;wx<x+w-4;wx+=7)if(r()<.32)s+='<rect x="'+wx+'" y="'+wy+'" width="3" height="4" fill="'+col+'" opacity="'+(.35+r()*.6).toFixed(2)+'"/>';x+=w+2}
+ return '<svg class="sky" viewBox="0 0 400 '+h+'" preserveAspectRatio="none">'+s+'<rect y="'+(h-2)+'" width="400" height="2" fill="'+col+'"/></svg>'}
+function avatar(c,lg){return '<div class="av'+(lg?' lg':'')+'" style="background:'+c.col+'">'+esc(initials(c.n))+'</div>'}
+function carSVG(col){return '<svg class="car" viewBox="0 0 80 34" style="animation-delay:'+(-rnd()*11).toFixed(1)+'s"><path d="M4 22l6-8h16l8-8h20l8 8h12l2 8z" fill="'+col+'"/><rect x="2" y="21" width="76" height="6" rx="3" fill="'+col+'" opacity=".8"/><path d="M30 13l6-6h16l6 6z" fill="#0b1210" opacity=".9"/><circle cx="18" cy="28" r="5" fill="#0a0a0a" stroke="#f5c542" stroke-width="2"/><circle cx="62" cy="28" r="5" fill="#0a0a0a" stroke="#f5c542" stroke-width="2"/><rect x="74" y="18" width="4" height="3" fill="#fff8b0"/></svg>'}
+function crewSVG(col,d){return '<svg class="crew" viewBox="0 0 18 28" style="animation-delay:'+d+'s"><circle cx="9" cy="6" r="4" fill="#d6a77a"/><path d="M3 8c0-3 2.5-5 6-5s6 2 6 5v1H3z" fill="'+col+'"/><rect x="3" y="11" width="12" height="10" rx="3" fill="'+col+'"/><rect x="4" y="21" width="4" height="7" fill="#1e293b"/><rect x="10" y="21" width="4" height="7" fill="#1e293b"/></svg>'}
+function decoSVG(id){const D={
+ graf:'<rect x="2" y="8" width="52" height="40" fill="#1b2420"/><path d="M8 34c6-14 12 6 18-8s10 10 16-4" stroke="#ff3db8" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M10 22l8 4 6-8" stroke="#39ff88" stroke-width="4" fill="none"/><circle cx="44" cy="20" r="5" fill="#f5c542"/>',
+ neon:'<rect x="4" y="12" width="48" height="30" rx="6" fill="#0b1210" stroke="#39ff88" stroke-width="2"/><text x="28" y="35" text-anchor="middle" font-size="20" font-family="Permanent Marker,cursive" fill="#ff3db8">52</text>',
+ palm:'<path d="M18 52V20M40 52V26" stroke="#8b5a2b" stroke-width="4"/><g fill="#2fbf62"><ellipse cx="18" cy="18" rx="12" ry="4" transform="rotate(-20 18 18)"/><ellipse cx="18" cy="18" rx="12" ry="4" transform="rotate(30 18 18)"/><ellipse cx="40" cy="24" rx="11" ry="4" transform="rotate(-25 40 24)"/><ellipse cx="40" cy="24" rx="11" ry="4" transform="rotate(25 40 24)"/></g>',
+ boom:'<rect x="6" y="18" width="44" height="26" rx="4" fill="#2a2f2c" stroke="#f5c542" stroke-width="2"/><circle cx="17" cy="32" r="8" fill="#111" stroke="#38bdf8" stroke-width="2"/><circle cx="39" cy="32" r="8" fill="#111" stroke="#38bdf8" stroke-width="2"/><path d="M14 18v-6h28v6" stroke="#888" stroke-width="2" fill="none"/>',
+ low:'<path d="M4 38l6-8h12l6-6h14l6 6h6v8z" fill="#a855f7"/><circle cx="14" cy="40" r="5" fill="#111" stroke="#f5c542" stroke-width="2"/><circle cx="42" cy="40" r="5" fill="#111" stroke="#f5c542" stroke-width="2"/>',
+ court:'<rect x="24" y="14" width="4" height="40" fill="#888"/><rect x="14" y="8" width="24" height="14" fill="#fff" opacity=".9"/><ellipse cx="26" cy="24" rx="8" ry="2.5" fill="none" stroke="#f97316" stroke-width="2"/><circle cx="42" cy="44" r="6" fill="#f97316"/>',
+ flam:'<path d="M28 52V30" stroke="#ff3db8" stroke-width="2"/><ellipse cx="28" cy="26" rx="12" ry="8" fill="none" stroke="#ff3db8" stroke-width="3"/><path d="M36 22c4-10 8-14 4-18" stroke="#ff3db8" stroke-width="3" fill="none"/>',
+ gold:'<rect x="16" y="44" width="24" height="8" fill="#b8860b"/><circle cx="28" cy="16" r="7" fill="#f5c542"/><path d="M18 44l2-20h16l2 20z" fill="#f5c542"/><path d="M20 28h16" stroke="#b8860b" stroke-width="2"/>'};
+ return '<svg class="deco" viewBox="0 0 56 56">'+D[id]+'</svg>'}
+
+/* ============ UI CORE ============ */
+const $=id=>document.getElementById(id);
+let view='home',subM='orders',subI='buds',subN='contacts';
+const NAV=[['home','HOME','home'],['farm','FARM','farm'],['production','PRODUCTION','prod'],['market','MARKET','market'],['network','NETWORK','net'],['world','WORLD MAP','world'],['inventory','INVENTORY','inv'],['empire','EMPIRE','emp'],['profile','PROFILE','user']];
+function badges(){const t=now();return{farm:S.plots.filter(p=>p.s&&p.r<=t).length,production:PB.reduce((a,p)=>a+S.jobs[p.id].filter(j=>j.r<=t).length,0),market:S.orders.filter(canFill).length,
+ home:(!S.daily.claimed?1:0)+S.daily.m.filter(m=>!m.c&&mProg(m)>=m.g).length,network:CT.filter(c=>S.regions.includes(c.r)&&trustLvl(c.id)>=3&&S.gift[c.id]!==dayKey()).length,inventory:S.boxes}}
+let navH='',sndH='';
+function renderNav(){const b=badges();const h=NAV.map(([id,l,i])=>'<button class="nb" data-a="go" data-v="'+id+'" aria-current="'+(view===id)+'">'+ic(i)+'<span>'+l+'</span>'+(b[id]?'<span class="bd">'+b[id]+'</span>':'')+'</button>').join('');if(h!==navH){navH=h;$('nav').innerHTML=h}}
+function renderHud(){$('hcash').textContent=money(S.cash);$('hcoin').textContent=nf(S.coins);$('hrep').textContent=nf(S.rep);$('hlvl').textContent=S.lvl;
+ $('xpring').setAttribute('stroke-dashoffset',(113*(1-(S.lvl>=MAXL?1:S.xp/lvlNeed(S.lvl)))).toFixed(1));const sh2='<use href="#i-'+(S.snd?'vol':'mute')+'"/>';if(sh2!==sndH){sndH=sh2;$('sndic').innerHTML=sh2}}
+function render(){renderHud();renderNav();$('view').innerHTML=(V[view]||V.home)();updTimers()}
+function coach(){if(S.tut>=TUT.length)return '';const t=TUT[S.tut];return '<div class="coach">'+avatar(CI.daan)+'<p><b>Daan:</b> '+t.t+'</p>'+(view!==t.v?'<button class="btn sm" data-a="go" data-v="'+t.v+'">Los</button>':'')+'<button class="x" data-a="skipTut" aria-label="Tutorial überspringen">'+ic('x')+'</button></div>'}
+function head(t,s,extra){return '<div class="row wrap2" style="align-items:flex-end"><div style="min-width:0"><h1 class="ttl">'+t+'</h1>'+(s?'<div class="sub">'+s+'</div>':'')+'</div>'+(extra||'')+'</div>'}
+
+/* ============ VIEWS ============ */
+const V={};
+V.home=()=>{const t=now(),R=RI[S.region],ready=S.plots.filter(p=>p.s&&p.r<=t).length,grow=S.plots.filter(p=>p.s&&p.r>t).length;
+ const pj=PB.reduce((a,p)=>a+S.jobs[p.id].length,0),pd=PB.reduce((a,p)=>a+S.jobs[p.id].filter(j=>j.r<=t).length,0),fill=S.orders.filter(canFill).length;
+ const ev=eventStrain();const nw=netWorth();
+ let h='<section class="hero"><div class="row"><div style="min-width:0"><span class="tag">'+R.n+' · '+season()+'</span><h1 class="ttl" style="margin-top:4px">Imperium von <em>'+esc(S.name)+'</em></h1><div class="sub num">Vermögen '+money(nw)+' · Rang '+rank(nw)+' von '+(RIVALS.length+1)+'</div></div></div>'+skyline(R.col,R.id,90)+'</section>';
+ h+=coach();
+ if(!S.daily.claimed){const d=(S.daily.streak-1)%7;h+='<section class="card"><div class="row"><div><div class="h2" style="margin-bottom:2px">Tägliche Belohnung</div><div class="sub">Tag '+S.daily.streak+' in Folge</div></div><button class="btn gold sp" data-a="claimLogin">'+ic('gift')+' Abholen</button></div><div class="login" style="margin-top:10px">'+
+  LOGIN.map((r,i)=>'<div class="ld'+(i===d?' now':i<d?' done':'')+'">Tag '+(i+1)+'<b>'+(r.cash?money(r.cash*(1+S.lvl*.3)):r.coins?r.coins+' C':'Box')+'</b></div>').join('')+'</div></section>'}
+ h+='<section class="event"><div class="row wrap2"><div style="min-width:0"><div class="h2" style="color:var(--pink)">'+ic('flame')+' Event der Woche</div><h3 style="font-family:var(--f-g);font-weight:400;font-size:20px;margin-top:4px">'+ev.n+' Week</h3><div class="sub">'+ev.n+' bringt +50 % am Markt und +25 % in Aufträgen. '+season()+': +10 % XP.</div></div><div class="timer sp">'+ic('clock')+'<span data-t="'+weekEnd()+'"></span></div></div></section>';
+ h+='<div class="g2 g4">'+
+  '<button class="stat'+(ready?' hot':'')+'" data-a="go" data-v="farm"><span class="mut">'+ic('farm')+' Farm</span><b>'+ready+' reif</b><span class="mut">'+grow+' wachsen · '+S.plots.filter(p=>!p.s).length+' frei</span></button>'+
+  '<button class="stat'+(pd?' hot':'')+'" data-a="go" data-v="production"><span class="mut">'+ic('prod')+' Produktion</span><b>'+pd+' fertig</b><span class="mut">'+pj+' Jobs aktiv</span></button>'+
+  '<button class="stat'+(fill?' hot':'')+'" data-a="go" data-v="market"><span class="mut">'+ic('market')+' Aufträge</span><b>'+S.orders.length+' offen</b><span class="mut">'+fill+' lieferbar</span></button>'+
+  '<button class="stat" data-a="go" data-v="inventory"><span class="mut">'+ic('inv')+' Lager</span><b>'+used()+'/'+cap()+'</b><div class="bar"><i style="width:'+Math.min(100,used()/cap()*100)+'%"></i></div></button></div>';
+ h+='<section class="card mis"><div class="h2">Tägliche Missionen</div>'+S.daily.m.map((m,i)=>misRow(m,'d',i,'+2 Coins · +'+money(100*S.lvl))).join('')+
+  '<div class="h2" style="margin-top:6px">Wochenaufgaben</div>'+S.weekly.m.map((m,i)=>misRow(m,'w',i,'+15 Coins · +1 Box')).join('')+'</section>';
+ h+='<section class="card row"><svg class="boxart" style="width:64px;height:64px;margin:0" viewBox="0 0 100 100">'+boxArt()+'</svg><div class="mid" style="flex:1;min-width:0"><div class="nm" style="font-weight:700">Überraschungsbox</div><div class="sub">Seltene Buds, Coins, Cash oder ein Wachstums-Boost.</div></div><div class="row wrap2" style="justify-content:flex-end"><button class="btn gold sm" data-a="buyBox" '+(S.coins<8?'disabled':'')+'>'+ic('coin')+' 8</button>'+(S.boxes?'<button class="btn pink sm" data-a="openBox">Öffnen ('+S.boxes+')</button>':'')+'</div></section>';
+ if(S.boost>t)h+='<div class="card row" style="border-color:var(--neon)">'+ic('zap')+'<b>Wachstums-Boost aktiv</b><span class="timer sp"><span data-t="'+S.boost+'"></span></span></div>';
+ return h};
+function misRow(m,k,i,rw){const p=mProg(m),done=p>=m.g,mt=MT.find(x=>x.t===m.t);return '<div class="mi"><div style="min-width:0"><div style="font-weight:600;font-size:13px">'+mt.n(m.g)+'</div><div class="sub num">'+nf(Math.max(0,p))+' / '+nf(m.g)+' · '+rw+'</div></div>'+
+ (m.c?'<span class="chip" style="color:var(--neon)">'+ic('check')+' Erledigt</span>':'<button class="btn sm" data-a="claimM" data-k="'+k+'" data-i="'+i+'" '+(done?'':'disabled')+'>Abholen</button>')+'<div class="bar"><i style="width:'+(Math.max(0,p)/m.g*100)+'%"></i></div></div>'}
+function boxArt(){return '<rect x="14" y="38" width="72" height="50" rx="6" fill="#1a1410" stroke="#f5c542" stroke-width="3"/><rect x="8" y="26" width="84" height="16" rx="4" fill="#241b12" stroke="#f5c542" stroke-width="3"/><rect x="44" y="26" width="12" height="62" fill="#ff3db8"/><path d="M50 26c-8-14-24-14-20-2M50 26c8-14 24-14 20-2" stroke="#ff3db8" stroke-width="5" fill="none"/><text x="50" y="72" text-anchor="middle" font-family="Permanent Marker,cursive" font-size="20" fill="#39ff88">?</text>'}
+function rank(nw){return RIVALS.filter(r=>rivalWorth(r)>nw).length+1}
+function rivalWorth(r){const days=(now()-S.start)/864e5;return Math.round(r[1]*(1+.06*days))}
+
+V.farm=()=>{const t=now();const free=S.plots.filter(p=>!p.s).length,ready=S.plots.filter(p=>p.s&&p.r<=t).length;
+ let h=head('Die <em>Farm</em>',S.plots.length+' Anbauflächen · Lager '+used()+'/'+cap(),'<div class="zoom"><button class="btn sec sm" data-a="zoom" data-d="-1" aria-label="Herauszoomen">'+ic('minus')+'</button><button class="btn sec sm" data-a="zoom" data-d="1" aria-label="Hineinzoomen">'+ic('plus')+'</button></div>');
+ h+=coach();
+ h+='<div class="farmbar"><button class="btn" data-a="harvestAll" '+(ready?'':'disabled')+'>'+ic('farm')+' Alles ernten ('+ready+')</button><button class="btn sec" data-a="pickSeed" data-i="-1" '+(free?'':'disabled')+'>'+ic('plus')+' Alle freien bepflanzen ('+free+')</button></div>';
+ const blds=EB.filter(b=>S.eb[b.id]>0).map(b=>({n:b.n,sign:b.sign,col:b.col,v:'empire',l:S.eb[b.id]})).concat(PB.filter(p=>S.pb[p.id]>0).map(p=>({n:p.n,sign:p.sign,col:p.col,v:'production',l:S.pb[p.id],ping:S.jobs[p.id].some(j=>j.r<=t)})));
+ h+='<div class="scene-wrap" id="scenewrap"><div class="scene" style="zoom:'+S.zoom+'"><div class="blds">'+blds.map(b=>'<button class="bld" data-a="go" data-v="'+b.v+'"><div class="house"><div class="sign" style="color:'+b.col+'">'+b.sign+'</div><div class="door"></div>'+(b.ping?'<span class="ping"></span>':'')+'</div><small>'+b.n+' · St. '+b.l+'</small></button>').join('')+'</div>';
+ h+='<div class="field">'+S.plots.map((p,i)=>{if(!p.s)return '<button class="plot empty" data-a="plot" data-i="'+i+'" aria-label="Freies Feld bepflanzen"><div class="lab">frei</div></button>';
+   const st=SI[p.s],rd=p.r<=t,g=rd?1:Math.min(1,(t-p.p)/(p.r-p.p));
+   return '<button class="plot'+(rd?' ready':'')+'" data-a="plot" data-i="'+i+'" aria-label="'+st.n+'">'+plantSVG(st,g,rd)+'<div class="lab">'+(rd?'ERNTEN':'<span data-t="'+p.r+'"></span><div class="bar"><i data-s="'+p.p+'" data-r="'+p.r+'"></i></div>')+'</div></button>'}).join('');
+ const n=S.plots.length;if(n<24){const ok=S.lvl>=plotReq(n);h+='<button class="plot lock" data-a="expand">'+(ok?'<span>Erweitern<b>'+money(plotCost(n))+'</b></span>':'<span>'+ic('lock')+'<br>Level '+plotReq(n)+'</span>')+'</button>'}
+ h+='</div>';
+ h+='<div class="decos">'+S.decos.map(decoSVG).join('')+'</div>';
+ h+='<div class="road">'+Array.from({length:1+Math.floor(S.eb.garage/3)},(_,i)=>carSVG(['#a855f7','#ff3db8','#38bdf8','#f5c542'][i%4])).join('')+crewSVG('#39ff88',0)+crewSVG('#ff3db8',-8)+'</div></div></div>';
+ h+='<p class="sub">Tipp: Tippe auf ein wachsendes Feld, um es mit Coins sofort fertigzustellen.</p>';
+ return h};
+
+V.production=()=>{const t=now();let h=head('<em>Production</em>','Verwandle Buds in wertvollere Produkte.');
+ h+='<div class="grid">'+PB.map(p=>{const l=S.pb[p.id];
+  if(!l){const ok=S.lvl>=p.lvl;return '<section class="card" style="display:flex;flex-direction:column;gap:10px"><div class="row"><div class="sw" style="color:'+p.col+'">'+ic('prod')+'</div><div class="mid" style="flex:1"><div class="nm" style="font-weight:700">'+p.n+'</div><div class="sub">'+p.rec.n+': '+p.rec.in+' Buds → 1 Produkt (×'+p.rec.m+' Wert)'+(p.rec.minq?' · ab '+QN[p.rec.minq]:'')+'</div></div></div>'+
+   (ok?'<button class="btn" data-a="buildPB" data-id="'+p.id+'" '+(S.cash<p.cost?'disabled':'')+'>Bauen · '+money(p.cost)+'</button>':'<button class="btn" disabled>'+ic('lock')+' Ab Level '+p.lvl+'</button>')+'</section>'}
+  const jobs=S.jobs[p.id],slots=pbSlots(p);
+  return '<section class="card" style="display:flex;flex-direction:column;gap:10px"><div class="row"><div class="sw" style="color:'+p.col+'">'+ic('prod')+'</div><div style="flex:1;min-width:0"><div style="font-weight:700">'+p.n+' <span class="chip" style="color:'+p.col+'">St. '+l+'</span></div><div class="sub">'+p.rec.n+' · '+p.rec.in+' Buds'+(p.rec.minq?' ab '+QN[p.rec.minq]:'')+' · '+slots+' Plätze</div></div></div>'+
+   '<div class="list">'+jobs.map((j,i)=>{const o=parseK(j.k),st=SI[o.s],done=j.r<=t;return '<div class="li"><div class="sw">'+budSVG(st,o.q,o.rec)+'</div><div class="mid"><div class="nm">'+p.rec.n+'</div><div class="ds"><span class="q'+o.q+'">'+QN[o.q]+'</span> · '+st.n+'</div>'+(done?'':'<div class="bar" style="margin-top:5px"><i data-s="'+j.s+'" data-r="'+j.r+'"></i></div>')+'</div>'+
+     (done?'<button class="btn sm" data-a="collect" data-id="'+p.id+'" data-i="'+i+'">Abholen</button>':'<button class="btn gold sm" data-a="speedJob" data-id="'+p.id+'" data-i="'+i+'">'+ic('zap')+' <span data-tc="'+j.r+'"></span></button>')+'</div>'}).join('')+
+   (jobs.length<slots?'<button class="btn sec" data-a="pickProd" data-id="'+p.id+'">'+ic('plus')+' Produktion starten</button>':'')+'</div>'+
+   (l<8?'<button class="btn sec sm" data-a="upPB" data-id="'+p.id+'" '+(S.cash<pbCost(p)?'disabled':'')+'>Upgrade auf St. '+(l+1)+' · '+money(pbCost(p))+'</button>':'<span class="chip" style="color:var(--gold)">Max. Stufe</span>')+'</section>'}).join('')+'</div>';
+ return h};
+
+V.market=()=>{let h=head('<em>Market</em>',RI[S.region].n+' · '+S.orders.length+'/'+orderSlots()+' Aufträge');h+=coach();
+ h+='<div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="'+(subM==='orders')+'" data-a="subM" data-v="orders">Aufträge</button><button class="tab" role="tab" aria-selected="'+(subM==='sell')+'" data-a="subM" data-v="sell">Verkaufen</button></div>';
+ if(subM==='orders'){h+='<div class="grid">'+S.orders.map(o=>{const c=custOf(o),ok=canFill(o);
+   return '<article class="order'+(ok?' ok':'')+(o.type===5?' partner':'')+'"><div class="row">'+avatar(c)+'<div style="flex:1;min-width:0"><div style="font-weight:700;line-height:1.2">'+esc(c.n)+'</div><div class="row wrap2" style="gap:6px;margin-top:3px"><span class="chip" style="color:'+CTYPE[o.type].col+'">'+CTYPE[o.type].n+'</span><span class="timer">'+ic('clock')+'<span data-t="'+o.exp+'"></span></span></div></div></div>'+
+   '<div class="need">'+o.items.map(it=>{const st=SI[it.s],hv=haveFor(it);return '<div class="nd'+(hv>=it.n?' have':'')+'">'+budSVG(st,it.q,it.k==='p'?it.rec:0)+'<span>'+(it.k==='p'?PI[it.rec].rec.n+' ':'')+st.n+'<br><span class="q'+it.q+'">'+(it.q?'ab '+QN[it.q]:'jede Qualität')+'</span> · <span class="cnt">'+Math.min(hv,it.n)+'/'+it.n+'</span></span></div>'}).join('')+'</div>'+
+   '<div class="rew"><span style="color:var(--neon)">'+money(o.cash)+'</span><span style="color:var(--mut)">+'+o.xp+' XP</span><span style="color:var(--pink)">+'+o.rep+' Rep</span>'+(o.coins?'<span style="color:var(--gold)">+'+o.coins+' Coins</span>':'')+'</div>'+
+   '<div class="row"><button class="btn" data-a="fill" data-id="'+o.id+'" '+(ok?'':'disabled')+'>'+ic('truck')+' Liefern</button><button class="btn sec sm sp" data-a="reject" data-id="'+o.id+'">Ablehnen</button></div></article>'}).join('')+
+   (S.orders.length<orderSlots()?'<div class="card empty">Neuer Kunde meldet sich in <span data-t="'+S.nextOrder+'"></span>.</div>':'')+'</div>'}
+ else{const ks=Object.keys(S.inv).sort((a,b)=>sellPrice(b)-sellPrice(a));
+  h+='<p class="sub">Marktpreise in '+RI[S.region].n+' ändern sich alle 10 Minuten. Aufträge zahlen deutlich mehr als der Direktverkauf.</p>';
+  h+=ks.length?'<div class="list">'+ks.map(k=>{const o=parseK(k),st=SI[o.s],fl=fluct(o.s),up=fl.f>=fl.prev,pr=sellPrice(k);
+   return '<div class="li"><div class="sw">'+budSVG(st,o.q,o.k==='p'?o.rec:0)+'</div><div class="mid"><div class="nm">'+itemName(k)+'</div><div class="ds"><span class="q'+o.q+'">'+QN[o.q]+'</span> · '+S.inv[k]+' Stück · Nachfrage '+Math.round(fl.f*100)+' % <span class="'+(up?'trend-up':'trend-dn')+'">'+ic(up?'up':'down')+'</span>'+(o.s===eventStrain().id?' · <span style="color:var(--pink)">Event</span>':'')+'</div></div>'+
+    '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><button class="btn sm" data-a="sell" data-k="'+k+'" data-n="1">'+money(pr)+'</button>'+(S.inv[k]>1?'<button class="btn sec sm" data-a="sell" data-k="'+k+'" data-n="all">Alle · '+money(pr*S.inv[k])+'</button>':'')+'</div></div>'}).join('')+'</div>':'<div class="card empty">Dein Lager ist leer. Ernte zuerst auf der Farm.</div>'}
+ return h};
+
+V.network=()=>{let h=head('<em>Network</em>','Kontakte schalten Boni frei, Kunden geben dir Aufträge.');
+ h+='<div class="tabs"><button class="tab" aria-selected="'+(subN==='contacts')+'" data-a="subN" data-v="contacts">Kontakte</button><button class="tab" aria-selected="'+(subN==='cust')+'" data-a="subN" data-v="cust">Kunden in '+RI[S.region].n+'</button></div>';
+ if(subN==='contacts'){h+='<div class="grid">'+CT.map(c=>{const known=S.regions.includes(c.r);if(!known)return '<section class="card row" style="opacity:.55"><div class="av" style="background:#1d2923;color:var(--mut)">?</div><div><div style="font-weight:700">Unbekannter Kontakt</div><div class="sub">Schalte '+RI[c.r].n+' frei, um diese Person zu treffen.</div></div></section>';
+   const l=trustLvl(c.id),x=S.trust[c.id]||0,nx=TRUST[l+1],gift=l>=3&&S.gift[c.id]!==dayKey();
+   return '<section class="card" style="display:flex;flex-direction:column;gap:10px"><div class="row">'+avatar(c,1)+'<div style="flex:1;min-width:0"><div style="font-weight:700">'+esc(c.n)+'</div><div class="sub">'+c.role+' · '+RI[c.r].n+'</div><div class="row" style="gap:6px;margin-top:6px"><span class="chip" style="color:var(--pink)">Vertrauen '+l+'/5</span></div></div></div>'+
+   '<div class="bar pink"><i style="width:'+(nx?((x-TRUST[l])/(nx-TRUST[l])*100):100)+'%"></i></div><div class="sub num">'+(nx?x+' / '+nx+' Vertrauen. Aufträge in '+RI[c.r].n+' bauen Vertrauen auf.':'Maximales Vertrauen')+'</div>'+
+   '<div class="list" style="gap:4px">'+[['Partner-Aufträge',1],['+5 % Belohnung in '+RI[c.r].n,2],['Tägliches Geschenk',3],[c.perk,4],['+5 % auf alle Aufträge',5]].map(([t,lv])=>'<div class="sub" style="color:'+(l>=lv?'var(--ink)':'var(--mut)')+'">'+ic(l>=lv?'check':'lock')+' St. '+lv+': '+t+'</div>').join('')+'</div>'+
+   '<div class="row"><button class="btn sec sm" data-a="talk" data-id="'+c.id+'">'+ic('chat')+' Reden</button>'+(l>=3?'<button class="btn gold sm" data-a="gift" data-id="'+c.id+'" '+(gift?'':'disabled')+'>'+ic('gift')+' '+(gift?'Geschenk':'Morgen wieder')+'</button>':'')+'</div></section>'}).join('')+'</div>'}
+ else{h+='<div class="list">'+Object.values(CUST).filter(c=>c.r===S.region).map(c=>{const cs=S.cust[c.id]||{sat:60,n:0},lk=CTYPE[c.t].lvl>S.lvl;
+   return '<div class="li" style="'+(lk?'opacity:.5':'')+'">'+avatar(c)+'<div class="mid"><div class="nm">'+esc(c.n)+'</div><div class="ds">'+c.p+' · '+CTYPE[c.t].n+' · '+cs.n+' Bestellungen'+(lk?' · ab Level '+CTYPE[c.t].lvl:'')+'</div><div class="bar" style="margin-top:5px"><i style="width:'+cs.sat+'%;background:'+(cs.sat>=85?'var(--gold)':cs.sat<35?'var(--red)':'var(--neon)')+'"></i></div></div><span class="chip num" style="color:'+CTYPE[c.t].col+'">'+cs.sat+' %</span></div>'}).join('')+'</div><p class="sub">Zufriedenheit über 85 % bringt +10 % Trinkgeld. Abgelaufene Aufträge senken sie.</p>'}
+ return h};
+
+V.world=()=>{if(!S.st.map){S.st.map=1;checkAll();save()}
+ let h=head('<em>World Map</em>','Aktive Region: '+RI[S.region].n+' · '+S.regions.length+'/10 freigeschaltet');h+=coach();
+ let svg='<svg class="map" viewBox="0 0 400 240" role="img" aria-label="Weltkarte"><defs><pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".9" fill="#2a3a31"/></pattern><filter id="gl"><feGaussianBlur stdDeviation="2.5"/></filter></defs>'+
+  '<path d="M10 40 Q60 20 120 36 L150 70 Q130 120 110 140 L80 200 Q60 210 50 180 L20 130 Q5 90 10 40z" fill="url(#dots)"/><path d="M175 40 Q230 22 300 34 L330 60 Q320 110 280 140 L250 170 Q200 190 185 150 L170 100z" fill="url(#dots)"/><path d="M320 120 Q370 110 390 150 L385 210 Q350 230 330 200z" fill="url(#dots)"/>';
+ for(let i=1;i<RG.length;i++){const a=RG[i-1],b=RG[i],on=S.regions.includes(b.id);svg+='<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="'+(on?'#39ff88':'#24332b')+'" stroke-width="1.5" stroke-dasharray="'+(on?'0':'4 4')+'"/>'}
+ RG.forEach(r=>{const on=S.regions.includes(r.id),act=S.region===r.id;svg+='<g class="node" data-a="region" data-id="'+r.id+'">'+(act?'<circle cx="'+r.x+'" cy="'+r.y+'" r="12" fill="'+r.col+'" opacity=".5" filter="url(#gl)"/>':'')+
+  '<circle cx="'+r.x+'" cy="'+r.y+'" r="'+(act?7:5.5)+'" fill="'+(on?r.col:'#1d2923')+'" stroke="'+(on?'#0a0f0c':'#3a4a41')+'" stroke-width="2"/><circle cx="'+r.x+'" cy="'+r.y+'" r="14" fill="transparent"/>'+
+  '<text x="'+r.x+'" y="'+(r.y+(r.id==='fra'||r.id==='zrh'?-10:16))+'" text-anchor="middle" font-size="8.5" fill="'+(on?'#e9f3ed':'#6b7d73')+'">'+r.n+(on?'':' · L'+r.lvl)+'</text></g>'});
+ svg+='</svg>';h+=svg;
+ h+='<div class="list">'+RG.map(r=>{const on=S.regions.includes(r.id);return '<button class="li" data-a="region" data-id="'+r.id+'" style="text-align:left;width:100%"><div class="sw" style="color:'+r.col+'">'+ic(on?'pin':'lock')+'</div><div class="mid"><div class="nm">'+r.n+' <span class="mut" style="font-weight:500">· '+r.c+'</span></div><div class="ds">'+(on?(S.region===r.id?'Aktiv · ':'')+'Preisniveau ×'+r.pm+' · '+(S.rOrders[r.id]||0)+' Aufträge':'Ab Level '+r.lvl+' · '+money(r.cost))+'</div></div>'+(S.rare.includes(r.id)?'<span class="chip" style="color:var(--gold)">'+ic('trophy')+'</span>':'')+'</button>'}).join('')+'</div>';
+ return h};
+
+V.inventory=()=>{let h=head('<em>Inventory</em>','Lager '+used()+' / '+cap()+' Einheiten','');h+='<div class="bar"><i style="width:'+Math.min(100,used()/cap()*100)+'%"></i></div>';
+ h+='<div class="tabs"><button class="tab" aria-selected="'+(subI==='buds')+'" data-a="subI" data-v="buds">Lager</button><button class="tab" aria-selected="'+(subI==='coll')+'" data-a="subI" data-v="coll">Sammlung</button><button class="tab" aria-selected="'+(subI==='rare')+'" data-a="subI" data-v="rare">Raritäten</button></div>';
+ if(subI==='buds'){const ks=Object.keys(S.inv).sort((a,b)=>a.localeCompare(b));
+  h+=S.boxes?'<div class="card row"><svg viewBox="0 0 100 100" style="width:48px;height:48px">'+boxArt()+'</svg><div style="flex:1"><b>'+S.boxes+' Überraschungsbox'+(S.boxes>1?'en':'')+'</b></div><button class="btn pink sm" data-a="openBox">Öffnen</button></div>':'';
+  h+=ks.length?'<div class="list">'+ks.map(k=>{const o=parseK(k),st=SI[o.s];return '<div class="li"><div class="sw">'+budSVG(st,o.q,o.k==='p'?o.rec:0)+'</div><div class="mid"><div class="nm">'+itemName(k)+'</div><div class="ds"><span class="q'+o.q+'">'+QN[o.q]+'</span> · <span style="color:'+RARC[st.rar]+'">'+RARN[st.rar]+'</span> · Wert '+money(itemVal(k))+'</div></div><b class="num" style="font-size:18px">×'+S.inv[k]+'</b></div>'}).join('')+'</div>':'<div class="card empty">Noch nichts im Lager.</div>'}
+ else if(subI==='coll'){h+='<p class="sub">Jede Sorte in jeder Qualität einmal ernten. '+Object.keys(S.coll).length+' / 60 gefunden. Eine komplette Reihe bringt 10 Coins.</p><div class="card" style="overflow-x:auto"><div class="coll"><span></span>'+QN.map((q,i)=>'<span class="q'+i+'" style="text-align:center;font-weight:700;font-size:9.5px">'+q.split(' ')[0]+'</span>').join('')+
+  ST.map(s=>{const lk=s.lvl>S.lvl;return '<span style="font-weight:600;'+(lk?'color:var(--mut)':'')+'">'+(lk?'??? · L'+s.lvl:s.n)+'</span>'+QN.map((q,i)=>'<span class="c q'+i+(S.coll[s.id+':'+i]?' on':'')+'"></span>').join('')}).join('')+'</div></div>';
+  h+='<div class="h2">Sorten</div><div class="list">'+availStrains().map(s=>'<div class="li"><div class="sw">'+budSVG(s,0)+'</div><div class="mid"><div class="nm">'+s.n+' <span class="chip" style="color:'+RARC[s.rar]+'">'+RARN[s.rar]+'</span></div><div class="ds">'+s.d+'<br>Marktwert '+money(s.val)+' · Beliebtheit '+'★'.repeat(s.pop)+' · Sammlerwert '+money(s.val*(s.rar+1)*3)+'</div></div></div>').join('')+'</div>'}
+ else{h+='<p class="sub">Erfülle 10 Aufträge in einer Region, um ihr Sammlerstück zu bekommen.</p><div class="grid">'+RG.map(r=>{const has=S.rare.includes(r.id),p=Math.min(10,S.rOrders[r.id]||0);return '<div class="li" style="'+(has?'border-color:var(--gold)':'')+'"><div class="sw" style="color:'+(has?'var(--gold)':'var(--mut)')+'">'+ic(has?'trophy':'lock')+'</div><div class="mid"><div class="nm">'+(has?r.rare:'???')+'</div><div class="ds">'+r.n+' · '+p+'/10 Aufträge</div></div></div>'}).join('')+'</div>'}
+ return h};
+
+V.empire=()=>{let h=head('<em>Empire</em>','Gebäude, Erweiterungen und Dekorationen.');h+=coach();
+ h+='<div class="grid">'+EB.map(b=>{const l=S.eb[b.id],lk=S.lvl<b.req,mx=l>=b.max,capd=l>=ebCap(b),c=ebCost(b);
+  return '<section class="card" style="display:flex;flex-direction:column;gap:8px"><div class="row"><div class="sw" style="color:'+b.col+'">'+ic('emp')+'</div><div style="flex:1;min-width:0"><div style="font-weight:700">'+b.n+' <span class="chip" style="color:'+b.col+'">St. '+l+'</span></div><div class="sub">'+(l?b.d(l):'Noch nicht gebaut')+'</div></div></div>'+
+  (!mx?'<div class="sub">Nächste Stufe: '+b.d(l+1)+'</div>':'')+
+  (lk?'<button class="btn" disabled>'+ic('lock')+' Ab Level '+b.req+'</button>':mx?'<span class="chip" style="color:var(--gold)">Max. Stufe</span>':capd?'<button class="btn" disabled>'+ic('lock')+' Nächste Stufe ab Level '+(3*(l-1))+'</button>':'<button class="btn" data-a="upEB" data-id="'+b.id+'" '+(S.cash<c?'disabled':'')+'>'+(l?'Upgrade':'Bauen')+' · '+money(c)+'</button>')+'</section>'}).join('')+'</div>';
+ h+='<div class="h2">Dekorationen</div><p class="sub">Jede Deko steht auf deiner Farm und erhöht deine Marktpreise dauerhaft. Aktuell +'+Math.round(decoB()*100)+' %.</p><div class="grid">'+DC.map(d=>{const own=S.decos.includes(d.id),lk=S.lvl<d.lvl,af=d.cash?S.cash>=d.cash:S.coins>=d.coins;
+  return '<div class="li">'+decoSVG(d.id)+'<div class="mid"><div class="nm">'+d.n+'</div><div class="ds">+'+Math.round(d.b*100)+' % Marktpreise</div></div>'+(own?'<span class="chip" style="color:var(--neon)">'+ic('check')+'</span>':lk?'<span class="chip" style="color:var(--mut)">L'+d.lvl+'</span>':'<button class="btn sm '+(d.coins?'gold':'')+'" data-a="buyDeco" data-id="'+d.id+'" '+(af?'':'disabled')+'>'+(d.cash?money(d.cash):d.coins+' Coins')+'</button>')+'</div>'}).join('')+'</div>';
+ return h};
+
+V.profile=()=>{const nw=netWorth();let h=head('<em>Profile</em>','');
+ h+='<section class="card" style="display:flex;flex-direction:column;gap:10px"><label class="sub" for="pname">Dein Name</label><input class="name" id="pname" maxlength="18" value="'+esc(S.name)+'">'+
+  '<div class="row"><span class="big" style="font-size:30px">Lvl '+S.lvl+'</span><div style="flex:1"><div class="bar"><i style="width:'+(S.lvl>=MAXL?100:S.xp/lvlNeed(S.lvl)*100)+'%"></i></div><div class="sub num">'+(S.lvl>=MAXL?'Maximales Level':nf(S.xp)+' / '+nf(lvlNeed(S.lvl))+' XP')+'</div></div></div>';
+ const nx=[];for(let L=S.lvl+1;L<=Math.min(MAXL,S.lvl+4);L++){const u=unlocksAt(L);if(u.length)nx.push('<b>L'+L+':</b> '+u.join(', '))}
+ h+=(nx.length?'<div class="sub">'+nx.join('<br>')+'</div>':'')+'</section>';
+ h+='<div class="h2">Rangliste</div><div class="list">'+RIVALS.map(r=>({n:r[0],w:rivalWorth(r)})).concat([{n:S.name+' (du)',w:nw,me:1}]).sort((a,b)=>b.w-a.w).map((r,i)=>'<div class="li" style="'+(r.me?'border-color:var(--neon)':'')+'"><b class="num" style="width:26px;color:'+(i<3?'var(--gold)':'var(--mut)')+'">#'+(i+1)+'</b><div class="mid nm">'+esc(r.n)+'</div><span class="num">'+money(r.w)+'</span></div>').join('')+'</div>';
+ h+='<div class="h2">Erfolge · '+S.ach.length+'/'+ACH.length+'</div><div class="grid">'+ACH.map(a=>{const d=S.ach.includes(a[0]),p=Math.min(a[4],a[3](S));return '<div class="li" style="'+(d?'border-color:rgba(245,197,66,.6)':'')+'"><div class="sw" style="color:'+(d?'var(--gold)':'var(--mut)')+'">'+ic('trophy')+'</div><div class="mid"><div class="nm">'+a[1]+'</div><div class="ds">'+a[2]+' · +'+a[5]+' Coins</div>'+(d?'':'<div class="bar gold" style="margin-top:4px"><i style="width:'+(p/a[4]*100)+'%"></i></div>')+'</div></div>'}).join('')+'</div>';
+ const st=S.st;h+='<div class="h2">Statistik</div><div class="card list" style="gap:6px">'+[['Buds geerntet',st.harvest],['Aufträge erfüllt',st.orders],['Geld verdient',money(st.earned)],['Produkte hergestellt',st.produced],['Am Markt verkauft',st.sold],['Boxen geöffnet',st.boxes],['Reputation',S.rep],['Spielzeit seit',new Date(S.start).toLocaleDateString('de-DE')]].map(r=>'<div class="row"><span class="mut">'+r[0]+'</span><b class="sp num">'+(typeof r[1]==='number'?nf(r[1]):r[1])+'</b></div>').join('')+'</div>';
+ h+='<div class="h2">Einstellungen</div><div class="card row wrap2"><button class="btn sec" data-a="toggleSnd">'+ic(S.snd?'vol':'mute')+' Sound '+(S.snd?'an':'aus')+'</button><button class="btn sec" data-a="toggleMus">'+ic('music')+' Musik '+(S.mus?'an':'aus')+'</button><button class="btn sec" data-a="resetTut">Tutorial neu starten</button><button class="btn sec" id="resetbtn" data-a="reset">Spielstand löschen</button></div>';
+ h+='<div class="h2">Spielstand übertragen</div><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="sub" style="margin:0">Kopiere deinen Code und füge ihn in der anderen Version des Spiels ein, um deinen Fortschritt mitzunehmen.</p><div class="row wrap2"><button class="btn sec" data-a="exportSave">Code kopieren</button><button class="btn sec" data-a="importSave">Code laden</button></div><textarea id="savecode" rows="3" placeholder="Spielstand-Code hier einfügen" style="width:100%;box-sizing:border-box;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px;font:12px monospace;resize:vertical"></textarea></div>';
+ h+='<p class="sub">The Plug from 52 ist ein fiktives Spiel. Alle Abläufe sind abstrakte Spielmechaniken ohne Bezug zu realer Produktion oder realem Handel. Dein Spielstand liegt nur in diesem Browser auf diesem Gerät.</p>';
+ return h};
+
+/* ============ SHEETS ============ */
+function sheet(html){$('sheetc').innerHTML=html;$('sheet').hidden=false;updTimers()}
+function closeSheet(){$('sheet').hidden=true;$('sheetc').innerHTML=''}
+$('sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet()});
+function sh(t,sub){return '<div class="sh-head"><div style="min-width:0"><h2 class="ttl" style="font-size:22px">'+t+'</h2>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div><button class="x" data-a="close" aria-label="Schließen">'+ic('x')+'</button></div>'}
+function seedSheet(i){const all=i<0;const free=S.plots.filter(p=>!p.s).length;
+ sheet(sh(all?'Alle freien Felder':'Sorte wählen',all?free+' Felder · Kosten pro Feld':'Samen kosten Cash. Höhere Qualität ist Glückssache.')+'<div class="list">'+ST.map(s=>{const lk=s.lvl>S.lvl,c=all?s.seed*free:s.seed;
+  return '<div class="li" style="'+(lk?'opacity:.5':'')+'"><div class="sw">'+budSVG(s,0)+'</div><div class="mid"><div class="nm">'+s.n+' <span class="chip" style="color:'+RARC[s.rar]+'">'+RARN[s.rar]+'</span></div><div class="ds">'+ic('clock')+' '+tf(growTime(s))+' · Wert '+money(s.val)+(s.id===eventStrain().id?' · <span style="color:var(--pink)">Event</span>':'')+'</div></div>'+
+  (lk?'<span class="chip" style="color:var(--mut)">'+ic('lock')+' L'+s.lvl+'</span>':'<button class="btn sm" data-a="plant" data-s="'+s.id+'" data-i="'+i+'" '+(S.cash<c?'disabled':'')+'>'+money(c)+'</button>')+'</div>'}).join('')+'</div>')}
+function plotSheet(i){const p=S.plots[i],st=SI[p.s],c=speedCost(p.r);
+ sheet(sh(st.n,'Wächst · fertig in <span data-t="'+p.r+'"></span>')+'<div class="bar"><i data-s="'+p.p+'" data-r="'+p.r+'"></i></div><p class="sub" style="margin:0">'+st.d+'</p><button class="btn gold" data-a="speedPlot" data-i="'+i+'" '+(S.coins<c?'disabled':'')+'>'+ic('zap')+' Sofort fertig · '+c+' Coins</button>')}
+function speedCost(r){return Math.max(1,Math.ceil((r-now())/1000/600))}
+function prodSheet(id){const p=PI[id];const ks=Object.keys(S.inv).filter(k=>{const o=parseK(k);return o.k==='b'&&o.q>=p.rec.minq&&S.inv[k]>=p.rec.in}).sort((a,b)=>itemVal(b)-itemVal(a));
+ sheet(sh(p.rec.n,p.rec.in+' Buds derselben Sorte und Qualität → 1 '+p.rec.n)+(ks.length?'<div class="list">'+ks.map(k=>{const o=parseK(k),st=SI[o.s];const out='p:'+id+':'+o.s+':'+o.q;
+  return '<div class="li"><div class="sw">'+budSVG(st,o.q)+'</div><div class="mid"><div class="nm">'+st.n+'</div><div class="ds"><span class="q'+o.q+'">'+QN[o.q]+'</span> · Bestand '+S.inv[k]+' · '+tf(pbTime(p,o.s))+' · Wert '+money(itemVal(out))+'</div></div><button class="btn sm" data-a="startProd" data-id="'+id+'" data-k="'+k+'">Start</button></div>'}).join('')+'</div>':'<div class="empty">Du brauchst mindestens '+p.rec.in+' gleiche Buds'+(p.rec.minq?' in '+QN[p.rec.minq]+' oder besser':'')+'. Ernte mehr auf der Farm.</div>'))}
+function regionSheet(id){const r=RI[id],on=S.regions.includes(id),c=CT.find(x=>x.r===id);
+ sheet('<div style="border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0b120e">'+skyline(r.col,r.id,110)+'</div>'+sh(r.n,r.c+' · '+r.tag)+
+ '<div class="list" style="gap:6px"><div class="row"><span class="mut">Preisniveau</span><b class="sp">×'+r.pm+'</b></div><div class="row"><span class="mut">Lieblingssorten</span><b class="sp" style="text-align:right">'+r.fav.map(f=>SI[f].n).join(', ')+'</b></div><div class="row"><span class="mut">Kontakt</span><b class="sp">'+(on?esc(c.n):'???')+'</b></div><div class="row"><span class="mut">Sammlerstück</span><b class="sp">'+(S.rare.includes(id)?r.rare:'???')+'</b></div></div>'+
+ '<div class="say"><b style="color:'+r.col+'">Besonderheit:</b> '+r.ch+'</div>'+
+ (on?(S.region===id?'<span class="chip" style="color:var(--neon);align-self:flex-start">'+ic('pin')+' Du bist hier</span>':'<button class="btn" data-a="travel" data-id="'+id+'">'+ic('pin')+' Hierher wechseln</button><p class="sub" style="margin:0">Beim Wechsel bleiben deine offenen Aufträge erhalten. Neue Aufträge kommen aus der aktiven Region.</p>')
+  :S.lvl<r.lvl?'<button class="btn" disabled>'+ic('lock')+' Ab Level '+r.lvl+'</button>':'<button class="btn gold" data-a="unlockRegion" data-id="'+id+'" '+(S.cash<r.cost?'disabled':'')+'>Expandieren · '+money(r.cost)+'</button>'))}
+function talkSheet(id){const c=CI[id],l=trustLvl(id);sheet(sh(esc(c.n),c.role+' · '+RI[c.r].n)+'<div class="row" style="align-items:flex-start">'+avatar(c,1)+'<div class="say" style="flex:1">'+c.lines[Math.min(3,Math.floor(l*.8))]+'</div></div>'+
+ (l<1?'<p class="sub" style="margin:0">Erfülle Aufträge in '+RI[c.r].n+', um Vertrauen aufzubauen. Ab Stufe 1 schickt '+c.n.split(' ')[0]+' dir eigene Partner-Aufträge.</p>':'')+'<button class="btn sec" data-a="close">Bis später</button>')}
+
+/* ============ ACTIONS ============ */
+function toast(m,err){const t=$('toast');t.textContent=m;t.className='toast show'+(err?' err':'');clearTimeout(toast.h);toast.h=setTimeout(()=>t.className='toast',2400)}
+function fxAt(e,txt){if(!e||e.clientX===undefined)return;const d=document.createElement('div');d.className='fx';d.textContent=txt;d.style.left=(e.clientX-20)+'px';d.style.top=(e.clientY-20)+'px';document.body.appendChild(d);setTimeout(()=>d.remove(),1000)}
+function plantAt(i,sid){const s=SI[sid],t=now();if(S.cash<s.seed)return false;S.cash-=s.seed;S.plots[i]={s:sid,p:t,r:t+growTime(s)*1000};S.st.plant++;return true}
+function harvestAt(i){const p=S.plots[i];if(!p.s||p.r>now())return 0;const st=SI[p.s],n=yieldN();if(used()+n>cap())return -1;
+ for(let k=0;k<n;k++){const q=rollQ(st);addInv('b:'+st.id+':'+q,1);if(q===4)S.st.ultra++;
+  if(!S.coll[st.id+':'+q]){S.coll[st.id+':'+q]=1;if(q>=2)setTimeout(()=>toast('Neu in der Sammlung: '+st.n+' · '+QN[q]),300);if(QN.every((_,j)=>S.coll[st.id+':'+j])){S.coins+=10;setTimeout(()=>toast('Sammlung komplett: '+st.n+' (+10 Coins)'),700)}}}
+ S.st.harvest+=n;addXP(1+Math.round(st.val/12)*n/2);S.plots[i]={s:null};return n}
+function claimLogin(){if(S.daily.claimed)return;const r=LOGIN[(S.daily.streak-1)%7];S.daily.claimed=true;
+ if(r.cash)S.cash+=Math.round(r.cash*(1+S.lvl*.3));if(r.coins)S.coins+=r.coins;if(r.box)S.boxes+=r.box;sfx('cash');toast('Login-Belohnung erhalten!')}
+function openBox(){if(!S.boxes)return;S.boxes--;S.st.boxes++;sfx('box');const av=availStrains(),r=rnd();let txt,sub='';
+ if(r<.35){const st=pick(av.slice(-3)),q=ri(1,3),n=ri(2,4);addInv('b:'+st.id+':'+q,n);S.coll[st.id+':'+q]=1;txt=n+'× '+st.n;sub=QN[q]}
+ else if(r<.6){const c=Math.round(200*Math.pow(S.lvl,1.45));S.cash+=c;txt=money(c);sub='Cash'}
+ else if(r<.82){const c=ri(3,10);S.coins+=c;txt=c+' Coins';sub='Empire Coins'}
+ else{S.boost=Math.max(S.boost,now())+30*60e3;txt='Grow-Boost';sub='30 Minuten doppelt so schnelles Wachstum'}
+ sheet('<svg class="boxart shake" viewBox="0 0 100 100">'+boxArt()+'</svg><div class="big" style="font-size:30px">'+txt+'</div><p class="mut" style="text-align:center;margin:0">'+sub+'</p><button class="btn" data-a="close">Nice</button>'+(S.boxes?'<button class="btn pink" data-a="openBox">Nächste öffnen ('+S.boxes+')</button>':''));checkAll()}
+const A={
+ go:d=>{view=d.v;closeSheet();$('main').scrollTop=0;render()},
+ close:()=>{closeSheet();render()},
+ subM:d=>{subM=d.v;render()},subI:d=>{subI=d.v;render()},subN:d=>{subN=d.v;render()},
+ skipTut:()=>{S.tut=TUT.length;render()},resetTut:()=>{S.tut=0;toast('Tutorial neu gestartet');render()},
+ toggleSnd:()=>{S.snd=!S.snd;if(S.snd)ac();render()},
+ toggleMus:()=>{S.mus=!S.mus;setMusic(S.mus);render()},
+ zoom:d=>{S.zoom=Math.min(1.4,Math.max(.7,+(S.zoom+.15*d).toFixed(2)));render()},
+ plot:(d,e)=>{const i=+d.i,p=S.plots[i];if(!p.s)return seedSheet(i);if(p.r<=now()){const n=harvestAt(i);if(n<0){toast('Lager voll. Verkaufe Waren oder baue das Lagerhaus aus.',1);sfx('err');return}sfx('harvest');fxAt(e,'+'+n+' Buds');checkAll();render();return}plotSheet(i)},
+ pickSeed:d=>seedSheet(+d.i),
+ plant:d=>{const i=+d.i;if(i>=0){if(!plantAt(i,d.s))return;}else{let n=0;S.plots.forEach((p,j)=>{if(!p.s&&plantAt(j,d.s))n++});toast(n+' Felder bepflanzt')}sfx('plant');closeSheet();checkAll();render()},
+ harvestAll:(d,e)=>{let tot=0,full=false;S.plots.forEach((p,i)=>{const n=harvestAt(i);if(n<0)full=true;else tot+=n});if(tot){sfx('harvest');fxAt(e,'+'+tot+' Buds')}if(full)toast('Lager voll. Nicht alles konnte geerntet werden.',1);checkAll();render()},
+ speedPlot:d=>{const p=S.plots[+d.i],c=speedCost(p.r);if(S.coins<c)return;S.coins-=c;p.r=now();closeSheet();sfx('tap');render()},
+ expand:()=>{const n=S.plots.length;if(S.lvl<plotReq(n)){toast('Neue Anbaufläche ab Level '+plotReq(n),1);return}const c=plotCost(n);if(S.cash<c){toast('Dir fehlen '+money(c-S.cash)+'.',1);sfx('err');return}S.cash-=c;S.plots.push({s:null});sfx('cash');toast('Neue Anbaufläche!');checkAll();render()},
+ buildPB:d=>{const p=PI[d.id];if(S.cash<p.cost)return;S.cash-=p.cost;S.pb[p.id]=1;S.st.upgrades++;sfx('lvl');toast(p.n+' gebaut!');checkAll();render()},
+ upPB:d=>{const p=PI[d.id],c=pbCost(p);if(S.cash<c)return;S.cash-=c;S.pb[p.id]++;S.st.upgrades++;sfx('cash');toast(p.n+' auf Stufe '+S.pb[p.id]);checkAll();render()},
+ pickProd:d=>prodSheet(d.id),
+ startProd:d=>{const p=PI[d.id],o=parseK(d.k);if((S.inv[d.k]||0)<p.rec.in||S.jobs[p.id].length>=pbSlots(p))return;addInv(d.k,-p.rec.in);const t=now();S.jobs[p.id].push({k:'p:'+p.id+':'+o.s+':'+o.q,s:t,r:t+pbTime(p,o.s)*1000});sfx('plant');closeSheet();render()},
+ collect:(d,e)=>{const j=S.jobs[d.id][+d.i];if(!j||j.r>now())return;if(used()+1>cap()){toast('Lager voll.',1);return}addInv(j.k,1);S.jobs[d.id].splice(+d.i,1);S.st.produced++;addXP(Math.round(Math.pow(itemVal(j.k),.6)*.3)+2);sfx('harvest');fxAt(e,'+1 Produkt');checkAll();render()},
+ speedJob:d=>{const j=S.jobs[d.id][+d.i];if(!j)return;const c=speedCost(j.r);if(S.coins<c){toast('Nicht genug Coins ('+c+' nötig).',1);return}S.coins-=c;j.r=now();sfx('tap');render()},
+ fill:(d,e)=>fillOrder(+d.id,e),
+ reject:d=>{const o=S.orders.find(x=>x.id===+d.id);if(!o)return;const cs=S.cust[o.cid]||(S.cust[o.cid]={sat:60,n:0});cs.sat=Math.max(0,cs.sat-5);S.orders=S.orders.filter(x=>x!==o);S.nextOrder=now()+15000;render()},
+ sell:(d,e)=>{const k=d.k;if(!S.inv[k])return;const n=d.n==='all'?S.inv[k]:1,pr=sellPrice(k)*n;addInv(k,-n);gainCash(pr);S.st.sold+=n;sfx('cash');fxAt(e,'+'+money(pr));checkAll();render()},
+ talk:d=>talkSheet(d.id),
+ gift:d=>{const c=CI[d.id];if(trustLvl(c.id)<3||S.gift[c.id]===dayKey())return;S.gift[c.id]=dayKey();const coins=2+trustLvl(c.id),cash=Math.round(100*Math.pow(S.lvl,1.3));S.coins+=coins;S.cash+=cash;sfx('cash');toast(c.n.split(' ')[0]+' schenkt dir '+money(cash)+' und '+coins+' Coins');render()},
+ region:d=>regionSheet(d.id),
+ unlockRegion:d=>{const r=RI[d.id];if(S.lvl<r.lvl||S.cash<r.cost)return;S.cash-=r.cost;S.regions.push(r.id);S.region=r.id;S.nextOrder=now()+2000;sfx('lvl');toast('Willkommen in '+r.n+'!');checkAll();closeSheet();render()},
+ travel:d=>{S.region=d.id;S.nextOrder=Math.min(S.nextOrder,now()+3000);sfx('tap');toast('Aktive Region: '+RI[d.id].n);closeSheet();render()},
+ upEB:d=>{const b=EB.find(x=>x.id===d.id),c=ebCost(b);if(S.cash<c||S.eb[b.id]>=ebCap(b)||S.lvl<b.req)return;S.cash-=c;S.eb[b.id]++;S.st.upgrades++;sfx('cash');toast(b.n+' auf Stufe '+S.eb[b.id]);checkAll();render()},
+ buyDeco:d=>{const x=DC.find(y=>y.id===d.id);if(S.decos.includes(x.id)||S.lvl<x.lvl)return;if(x.cash){if(S.cash<x.cash)return;S.cash-=x.cash}else{if(S.coins<x.coins)return;S.coins-=x.coins}S.decos.push(x.id);S.rep+=10;sfx('lvl');toast(x.n+' steht jetzt auf deiner Farm');checkAll();render()},
+ claimLogin:()=>{claimLogin();render()},
+ claimM:d=>{const m=(d.k==='d'?S.daily.m:S.weekly.m)[+d.i];if(!m||m.c||mProg(m)<m.g)return;m.c=true;if(d.k==='d'){S.coins+=2;S.cash+=100*S.lvl}else{S.coins+=15;S.boxes++}sfx('cash');toast('Mission erledigt!');render()},
+ buyBox:()=>{if(S.coins<8)return;S.coins-=8;S.boxes++;openBox();render()},
+ openBox:()=>{openBox();render()},
+ exportSave:()=>{save();const code='P52:'+btoa(unescape(encodeURIComponent(JSON.stringify(S))));const ta=$('savecode');ta.value=code;
+  try{navigator.clipboard.writeText(code).then(()=>toast('Code kopiert'),()=>{ta.select();toast('Code markiert. Jetzt kopieren.')})}catch(e){ta.select();toast('Code markiert. Jetzt kopieren.')}},
+ importSave:()=>{const v=($('savecode').value||'').trim();try{if(!v.startsWith('P52:'))throw 0;const d=JSON.parse(decodeURIComponent(escape(atob(v.slice(4)))));if(!d||!d.plots||!d.st)throw 0;
+  const f=fresh();S=Object.assign(f,d,{st:Object.assign(f.st,d.st),eb:Object.assign(f.eb,d.eb||{}),pb:Object.assign(f.pb,d.pb||{}),jobs:Object.assign(f.jobs,d.jobs||{})});S.mus=false;dailyCheck();save();toast('Spielstand geladen');view='home';render()}
+  catch(e){toast('Dieser Code ist ungültig. Kopiere ihn bitte komplett.',1)}},
+ reset:(d,e,el)=>{if(!el.classList.contains('danger')){el.classList.add('danger');el.textContent='Wirklich alles löschen? Nochmal tippen';setTimeout(()=>{if(el.isConnected){el.classList.remove('danger');el.textContent='Spielstand löschen'}},4000);return}
+  S=fresh();dailyCheck();view='home';save();toast('Neuer Spielstand gestartet');render()},
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el||el.disabled)return;const f=A[el.dataset.a];if(f){ac();f(el.dataset,e,el);save()}});
+document.addEventListener('change',e=>{if(e.target.id==='pname'){S.name=e.target.value.trim().slice(0,18)||'Boss';save();renderHud()}});
+
+/* ============ LOOP ============ */
+function updTimers(){const t=now();document.querySelectorAll('[data-t]').forEach(el=>{el.textContent=tf((+el.dataset.t-t)/1000)});
+ document.querySelectorAll('[data-tc]').forEach(el=>{el.textContent=speedCost(+el.dataset.tc)});
+ document.querySelectorAll('i[data-r]').forEach(el=>{const s=+el.dataset.s,r=+el.dataset.r;el.style.width=Math.min(100,Math.max(0,(t-s)/(r-s)*100))+'%'});
+ if(view==='farm')document.querySelectorAll('.plot .pg').forEach(g=>{const b=g.closest('.plot'),p=S.plots[+b.dataset.i];if(p&&p.s&&p.r>t)g.style.setProperty('--g',Math.min(1,(t-p.p)/(p.r-p.p)).toFixed(3))})}
+let lastSig='';
+function sig(){const t=now();return S.plots.map(p=>p.s?(p.r<=t?'R':'G'):'E').join('')+'|'+PB.map(p=>S.jobs[p.id].map(j=>j.r<=t?1:0).join('')).join(',')+'|'+S.orders.map(o=>o.id).join(',')+'|'+(S.boost>t)+'|'+S.tut+'|'+S.daily.day}
+function tick(){dailyCheck();const ch=tickOrders();checkAll();const s=sig();if(ch||s!==lastSig){lastSig=s;const sc=$('main').scrollTop;render();$('main').scrollTop=sc}else{updTimers();renderNav();renderHud()}}
+function save(){if(!S)return;S.last=now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+function start(data){let d=data&&data.S;if(!d){try{d=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){d=null}}
+ const f=fresh();S=d?Object.assign(f,d,{st:Object.assign(f.st,d.st||{}),eb:Object.assign(f.eb,d.eb||{}),pb:Object.assign(f.pb,d.pb||{}),jobs:Object.assign(f.jobs,d.jobs||{})}):f;
+ if(!d){S.orders=[];S.nextOrder=0;S.orders.push(firstOrder());}
+ dailyCheck();if(S.mus)S.mus=false;
+ lastSig=sig();render();setInterval(tick,1000);setInterval(save,5000);
+ addEventListener('visibilitychange',()=>{if(document.hidden)save()});addEventListener('pagehide',save)}
+function firstOrder(){const c=CUST['ams-0'];return{id:S.oseq++,cid:c.id,type:0,items:[{k:'b',s:'nl',q:0,n:4}],cash:90,xp:20,rep:1,coins:1,exp:now()+45*60e3,r:'ams'}}
+window.claude?.hot?.snapshot?.(()=>({S:(S&&(S.last=now(),S))}));
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+})();
+</script>
+
+</body>
+</html>
