@@ -2,7 +2,7 @@
 
 Sammlung von Browser-Spielen, spielbar am Handy als installierbare Web-App (PWA).
 
-**Live:** https://alexdik7.github.io/gaming-gang/
+**Live:** https://alexdik7.github.io/Gaming-Gang/
 
 ## Spiele
 
