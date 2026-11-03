@@ -316,6 +316,172 @@ const BUILD = {
   },
 };
 
+// ------------------------------------------------------------------ neue Körpertypen (2D-Version, Phase 2)
+Object.assign(BUILD, {
+  blob(s, g, P) {
+    const body = part(G.sph, toon(s.main, s.glow, 0.15), [0, 0.38, 0], [0.48, 0.4, 0.44], null, true); g.add(body); P.body = body;
+    g.add(part(G.sph, toon(s.accent), [0, 0.12, 0], [0.5, 0.12, 0.46]));
+    g.add(part(G.cone, toon(s.main), [0, 0.82, -0.05], [0.12, 0.25, 0.12], [-0.3, 0, 0]));
+    const head = pivot([0, 0.45, 0.32]); g.add(head); P.head = head;
+    eyes(head, 0.02, 0.08, 0.15, 0.09);
+    head.add(part(G.sph, toon('#2a1f33'), [0, -0.14, 0.1], [0.07, 0.03, 0.02]));
+    g.add(part(G.sph, toon('#ffffff', '#ffffff', 0.6), [-0.22, 0.6, 0.25], 0.06));
+  },
+  bat(s, g, P) {
+    P.hover = 0.45;
+    const body = part(G.sph, toon(s.main), [0, 0.5, 0], [0.26, 0.28, 0.24], null, true); g.add(body); P.body = body;
+    const head = pivot([0, 0.72, 0.08]); g.add(head); P.head = head;
+    head.add(part(G.sph, toon(s.main), [0, 0, 0], 0.2, null, true));
+    for (const x of [-1, 1]) head.add(part(G.cone, toon(s.main), [x * 0.12, 0.22, 0], [0.08, 0.24, 0.06], [0, 0, -x * 0.3], true));
+    eyes(head, 0.03, 0.15, 0.08, 0.055, '#1b1626', s.glow);
+    for (const x of [-1, 1]) head.add(part(G.cone, toon('#ffffff'), [x * 0.05, -0.12, 0.16], [0.02, 0.06, 0.02], [Math.PI, 0, 0]));
+    P.wings = [];
+    const wm = toon(s.accent); wm.side = THREE.DoubleSide;
+    for (const x of [-1, 1]) {
+      const w = pivot([x * 0.2, 0.55, 0]); g.add(w);
+      const m = new THREE.Mesh(G.circ, wm); m.scale.set(0.5, 0.3, 1); m.position.set(x * 0.42, 0.02, -0.02); m.rotation.set(-Math.PI / 2 + 0.3, 0, 0); w.add(m);
+      w.add(part(G.cyl, toon(s.main), [x * 0.4, 0.04, 0], [0.02, 0.8, 0.02], [0, 0, Math.PI / 2]));
+      P.wings.push(w);
+    }
+  },
+  fish(s, g, P) {
+    P.hover = 0.25;
+    const body = part(G.sph, toon(s.main), [0, 0.5, 0], [0.26, 0.36, 0.5], null, true); g.add(body); P.body = body;
+    g.add(part(G.sph, toon(s.accent), [0, 0.4, 0.05], [0.2, 0.22, 0.42]));
+    const head = pivot([0, 0.55, 0.3]); g.add(head); P.head = head;
+    eyes(head, 0.05, 0.08, 0.17, 0.08);
+    head.add(part(G.sph, toon('#ff8a8a'), [0, -0.12, 0.17], [0.07, 0.05, 0.04]));
+    const tail = pivot([0, 0.5, -0.45]); g.add(tail); P.tails = [tail];
+    tail.add(part(G.cone, toon(s.accent, s.glow, 0.3), [0, 0, -0.18], [0.04, 0.4, 0.3], [Math.PI / 2, 0, 0], true));
+    g.add(part(G.cone, toon(s.accent), [0, 0.92, -0.05], [0.04, 0.28, 0.22], [-0.3, 0, 0]));
+    for (const x of [-1, 1]) g.add(part(G.cone, toon(s.accent), [x * 0.27, 0.4, 0.05], [0.03, 0.2, 0.12], [0.6, 0, -x * 1.2]));
+  },
+  bunny(s, g, P) {
+    const body = part(G.sph, toon(s.main), [0, 0.38, 0], [0.32, 0.34, 0.32], null, true); g.add(body); P.body = body;
+    g.add(part(G.sph, toon(s.accent), [0, 0.34, 0.14], [0.22, 0.24, 0.2]));
+    const head = pivot([0, 0.78, 0.08]); g.add(head); P.head = head;
+    head.add(part(G.sph, toon(s.main), [0, 0, 0], [0.27, 0.24, 0.24], null, true));
+    head.add(part(G.sph, toon('#ff9fb4'), [0, -0.06, 0.23], [0.04, 0.03, 0.02]));
+    eyes(head, 0.04, 0.18, 0.12, 0.07);
+    P.glow = [];
+    for (const x of [-1, 1]) {
+      const ear = pivot([x * 0.11, 0.18, -0.04]); ear.rotation.z = -x * 0.2; head.add(ear);
+      ear.add(part(G.sph, toon(s.main), [0, 0.3, 0], [0.08, 0.32, 0.05], null, true));
+      const inn = part(G.sph, toon(s.glow, s.glow, 0.3), [0, 0.3, 0.03], [0.045, 0.24, 0.02]); ear.add(inn); P.glow.push(inn);
+      P.tails.push(ear);
+    }
+    P.legs = [];
+    for (const x of [-0.16, 0.16]) { const l = pivot([x, 0.1, 0.12]); g.add(l); l.add(part(G.sph, toon(s.accent), [0, -0.04, 0.04], [0.11, 0.07, 0.15])); P.legs.push(l); }
+    g.add(part(G.sph, toon('#ffffff'), [0, 0.3, -0.32], 0.11));
+  },
+  golem(s, g, P) {
+    const box = new THREE.BoxGeometry(1, 1, 1);
+    const body = part(box, toon(s.main), [0, 0.55, 0], [0.62, 0.55, 0.45], [0, 0, 0], true); g.add(body); P.body = body;
+    const head = pivot([0, 0.98, 0.05]); g.add(head); P.head = head;
+    head.add(part(box, toon(s.main), [0, 0, 0], [0.36, 0.3, 0.32], null, true));
+    eyes(head, 0.02, 0.17, 0.08, 0.055, '#1b1626', s.glow);
+    P.glow = [];
+    for (const [x, y, z] of [[0.18, 0.85, 0.1], [-0.2, 0.7, -0.15], [0.05, 1.18, -0.05]]) { const c = part(G.oct, toon(s.accent, s.glow, 0.8), [x, y, z], [0.09, 0.16, 0.09]); g.add(c); P.glow.push(c); }
+    P.wings = [];
+    for (const x of [-1, 1]) { const a = pivot([x * 0.4, 0.75, 0]); g.add(a); a.add(part(box, toon(s.main), [x * 0.08, -0.22, 0.05], [0.2, 0.45, 0.22], null, true)); P.wings.push(a); }
+    P.legs = [];
+    for (const x of [-0.17, 0.17]) { const l = pivot([x, 0.28, 0]); g.add(l); l.add(part(box, toon(s.accent), [0, -0.14, 0], [0.2, 0.28, 0.24])); P.legs.push(l); }
+  },
+  serpent(s, g, P) {
+    P.tails = [];
+    for (let i = 0; i < 6; i++) {
+      const a = i * 0.9, r = 0.3 - i * 0.02;
+      const seg = part(G.sph, toon(i % 2 ? s.main : s.main), [Math.sin(a) * 0.18, 0.18 + (i === 0 ? 0.25 : 0), -i * 0.2], r * (1 - i * 0.08), null, true); g.add(seg);
+      if (i === 0) P.body = seg;
+      g.add(part(G.sph, toon(s.accent), [Math.sin(a) * 0.18, 0.12, -i * 0.2 + 0.05], r * 0.8 * (1 - i * 0.08)));
+    }
+    const head = pivot([0, 0.7, 0.18]); g.add(head); P.head = head;
+    head.add(part(G.sph, toon(s.main), [0, 0, 0], [0.24, 0.2, 0.28], null, true));
+    head.add(part(G.sph, toon(s.main), [0, -0.05, 0.22], [0.15, 0.1, 0.14]));
+    eyes(head, 0.06, 0.18, 0.12, 0.06, '#1b1626', s.glow);
+    if (s.stage === 2) for (const x of [-1, 1]) {
+      const w = part(G.sph, toon(s.accent, s.glow, 0.3), [x * 0.42, 0.55, -0.2], [0.35, 0.04, 0.2], [0, 0, -x * 0.5], true); g.add(w);
+    }
+  },
+  wisp(s, g, P) {
+    P.hover = 0.35;
+    const body = part(G.sph, toon(s.main, s.glow, 0.5), [0, 0.45, 0], [0.32, 0.36, 0.3], null, true); g.add(body); P.body = body;
+    P.tails = [];
+    for (let i = 0; i < 3; i++) { const t = pivot([0, 0.25 - i * 0.12, -0.1 - i * 0.1]); g.add(t); t.add(part(G.sph, toon(s.main, s.glow, 0.5), [0, 0, 0], 0.2 - i * 0.05)); P.tails.push(t); }
+    const head = pivot([0, 0.5, 0.25]); g.add(head); P.head = head;
+    eyes(head, 0.02, 0.05, 0.12, 0.08, s.accent, s.accent).forEach(w => (w.children[0].material = toon(s.accent, s.accent, 2)));
+    P.glow = [];
+    const fl = part(G.cone, toon(s.accent, s.accent, 1.4), [0, 0.88, 0], [0.12, 0.32, 0.12]); g.add(fl); P.glow.push(fl);
+  },
+  beetle(s, g, P) {
+    const shell = part(G.sph, toon(s.main), [0, 0.38, -0.05], [0.4, 0.3, 0.48], null, true); g.add(shell); P.body = shell;
+    g.add(part(G.cyl, toon('#1a1a22'), [0, 0.5, -0.05], [0.012, 0.6, 0.012], [Math.PI / 2, 0, 0]));
+    P.glow = [];
+    for (const x of [-1, 1]) { const sp = part(G.sph, toon(s.accent, s.glow, 0.6), [x * 0.18, 0.62, -0.1], [0.08, 0.04, 0.1]); g.add(sp); P.glow.push(sp); }
+    const head = pivot([0, 0.35, 0.42]); g.add(head); P.head = head;
+    head.add(part(G.sph, toon('#2a2a33'), [0, 0, 0], [0.2, 0.16, 0.16], null, true));
+    eyes(head, 0.04, 0.12, 0.11, 0.05);
+    head.add(part(G.cone, toon(s.accent), [0, 0.2, 0.1], [0.06, 0.32, 0.06], [-0.5, 0, 0], true));
+    P.legs = [];
+    for (const x of [-1, 1]) for (let i = 0; i < 3; i++) { const l = pivot([x * 0.33, 0.25, 0.15 - i * 0.18]); g.add(l); l.add(part(G.cyl, toon('#2a2a33'), [x * 0.08, -0.08, 0], [0.025, 0.25, 0.025], [0, 0, x * 0.9])); P.legs.push(l); }
+  },
+  lizard(s, g, P) {
+    const body = part(G.sph, toon(s.main), [0, 0.3, 0], [0.26, 0.2, 0.48], null, true); g.add(body); P.body = body;
+    g.add(part(G.sph, toon(s.accent), [0, 0.23, 0.05], [0.2, 0.13, 0.4]));
+    const head = pivot([0, 0.42, 0.5]); g.add(head); P.head = head;
+    head.add(part(G.sph, toon(s.main), [0, 0, 0], [0.2, 0.16, 0.24], null, true));
+    eyes(head, 0.08, 0.1, 0.12, 0.06);
+    P.glow = [];
+    for (let i = 0; i < 4; i++) { const sp = part(G.cone, toon(s.glow, s.glow, 1.0), [0, 0.5, 0.25 - i * 0.18], [0.05, 0.16, 0.08]); g.add(sp); P.glow.push(sp); }
+    const tail = pivot([0, 0.3, -0.45]); g.add(tail); P.tails = [tail];
+    tail.add(part(G.cone, toon(s.main), [0, 0, -0.3], [0.12, 0.6, 0.12], [-Math.PI / 2, 0, 0], true));
+    const tip = part(G.sph, toon(s.glow, s.glow, 1.4), [0, 0.02, -0.62], 0.09); tail.add(tip); P.glow.push(tip);
+    P.legs = [];
+    for (const [x, z] of [[-0.25, 0.25], [0.25, 0.25], [-0.25, -0.2], [0.25, -0.2]]) { const l = pivot([x, 0.2, z]); g.add(l); l.add(part(G.sph, toon(s.main), [x * 0.3, -0.1, 0], [0.08, 0.12, 0.08])); P.legs.push(l); }
+  },
+  owl(s, g, P) {
+    const body = part(G.sph, toon(s.main), [0, 0.45, 0], [0.34, 0.42, 0.32], null, true); g.add(body); P.body = body;
+    g.add(part(G.sph, toon(s.accent), [0, 0.38, 0.14], [0.24, 0.3, 0.2]));
+    const head = pivot([0, 0.74, 0.12]); g.add(head); P.head = head;
+    for (const x of [-1, 1]) head.add(part(G.sph, toon('#ffffff'), [x * 0.11, 0, 0.12], [0.12, 0.12, 0.05]));
+    eyes(head, 0, 0.17, 0.11, 0.075, '#1b1626', s.glow);
+    head.add(part(G.cone, toon('#e8a23a'), [0, -0.1, 0.2], [0.04, 0.09, 0.04], [Math.PI, 0, 0]));
+    for (const x of [-1, 1]) head.add(part(G.cone, toon(s.main), [x * 0.2, 0.2, 0], [0.06, 0.2, 0.05], [0, 0, -x * 0.4], true));
+    P.wings = [];
+    for (const x of [-1, 1]) { const w = pivot([x * 0.32, 0.5, 0]); g.add(w); w.add(part(G.sph, toon(s.main), [x * 0.04, -0.05, -0.02], [0.1, 0.3, 0.2], null, true)); P.wings.push(w); }
+    P.legs = [];
+    for (const x of [-0.1, 0.1]) { const l = pivot([x, 0.08, 0.1]); g.add(l); l.add(part(G.sph, toon('#e8a23a'), [0, 0, 0.04], [0.07, 0.04, 0.09])); P.legs.push(l); }
+  },
+});
+
+// Zusatzteile: Entwicklungen + Mutationen (Kombinationen aus beiden Eltern)
+function addExtras(root, inner, s, P) {
+  if (!s.extras?.length) return;
+  inner.updateMatrixWorld(true);
+  const hb = new THREE.Box3().setFromObject(P.head || inner), bb = new THREE.Box3().setFromObject(inner);
+  const hc = hb.getCenter(new THREE.Vector3()), hs = hb.getSize(new THREE.Vector3());
+  const bc = bb.getCenter(new THREE.Vector3()), bs = bb.getSize(new THREE.Vector3());
+  const k = 1 / (s.size || 1); // in lokale Einheiten zurückrechnen
+  const L = v => v.clone().multiplyScalar(k);
+  const add = m => inner.add(m);
+  const acc = toon(s.accent), glow = toon(s.glow, s.glow, 1.3), main = toon(s.main);
+  for (const e of s.extras) {
+    const top = L(new THREE.Vector3(hc.x, hb.max.y, hc.z)), hw = hs.x * k, bw = bs.x * k;
+    if (e === 'horns') for (const x of [-1, 1]) add(part(G.cone, acc, [top.x + x * hw * 0.25, top.y + 0.08, top.z - 0.02], [0.05, 0.28, 0.05], [-0.3, 0, -x * 0.35], true));
+    if (e === 'crest') for (let i = 0; i < 3; i++) add(part(G.cone, glow, [top.x, top.y + 0.04, top.z + 0.08 - i * 0.12], [0.04, 0.2 - i * 0.04, 0.08], [-0.4, 0, 0]));
+    if (e === 'crown') for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; add(part(G.cone, toon('#ffd36b', '#ffb02e', 0.6), [top.x + Math.cos(a) * hw * 0.25, top.y + 0.03, top.z + Math.sin(a) * hw * 0.25], [0.035, 0.14, 0.035])); }
+    if (e === 'gem') add(part(G.oct, glow, [hc.x * k, hc.y * k + hs.y * k * 0.15, hb.max.z * k + 0.02], [0.06, 0.09, 0.04]));
+    if (e === 'leaf') add(part(G.sph, toon('#5fcf5c'), [top.x, top.y + 0.12, top.z], [0.16, 0.03, 0.08], [0, 0.4, -0.5], true));
+    if (e === 'cap') { add(part(G.half, toon(s.glow === '#ffffff' ? '#c94a6a' : s.accent), [top.x, top.y - 0.04, top.z], [hw * 0.75, 0.2, hw * 0.75], null, true)); }
+    if (e === 'ears') for (const x of [-1, 1]) add(part(G.cone, main, [top.x + x * hw * 0.32, top.y + 0.12, top.z], [0.07, 0.3, 0.05], [0, 0, -x * 0.25], true));
+    if (e === 'wings' && !P.wings.length) for (const x of [-1, 1]) { const w = part(G.sph, toon(s.accent, s.glow, 0.3), [x * (bw * 0.5 + 0.12), bc.y * k + 0.1, bc.z * k - 0.1], [0.32, 0.04, 0.18], [0, 0.3 * x, -x * 0.6], true); add(w); P.wings.push(w); }
+    if (e === 'spikes') for (let i = 0; i < 4; i++) add(part(G.cone, acc, [bc.x * k, bb.max.y * k - 0.02 - (P.head ? 0.1 : 0), bc.z * k + 0.15 - i * 0.14], [0.05, 0.18, 0.05], [-0.4, 0, 0]));
+    if (e === 'fins') for (const x of [-1, 1]) add(part(G.cone, toon(s.accent, s.glow, 0.3), [x * bw * 0.48, bc.y * k, bc.z * k], [0.04, 0.25, 0.14], [0.4, 0, -x * 1.2]));
+    if (e === 'tailflame') { const f = part(G.cone, glow, [bc.x * k, bc.y * k + 0.1, bb.min.z * k - 0.05], [0.1, 0.32, 0.1], [-0.6, 0, 0]); add(f); P.glow.push(f); }
+    if (e === 'aura') { const r = new THREE.Mesh(new THREE.TorusGeometry(bw * 0.7 + 0.15, 0.02, 6, 40), glow); r.rotation.x = Math.PI / 2; r.position.y = 0.04; add(r); P.ring ||= r; }
+  }
+}
+
 export function buildCreature(spec, shiny = false) {
   const g = new THREE.Group(), P = { legs: [], tails: [], wings: [], glow: [] };
   const s = { ...spec };
@@ -323,11 +489,12 @@ export function buildCreature(spec, shiny = false) {
   BUILD[s.kind](s, g, P);
   const inner = g; const root = new THREE.Group(); root.add(inner);
   inner.scale.setScalar(s.size || 1);
+  addExtras(root, inner, s, P);
   root.userData = { P, inner, phase: Math.random() * 10, kind: s.kind, size: s.size || 1 };
   return root;
 }
 
-function shiftHue(hex, d) { const c = new THREE.Color(hex); const h = {}; c.getHSL(h); c.setHSL((h.h + d) % 1, h.s, h.l); return '#' + c.getHexString(); }
+export function shiftHue(hex, d) { const c = new THREE.Color(hex); const h = {}; c.getHSL(h); c.setHSL((h.h + d) % 1, h.s, h.l); return '#' + c.getHexString(); }
 
 // Animation: mode = idle | walk | hover ; t = Zeit in s
 export function animateCreature(root, t, moving = false) {

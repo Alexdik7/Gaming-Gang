@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Legends United</title>
-<meta name="description" content="Kreaturen-Abenteuer in 3D für bis zu vier Freunde.">
-<meta name="theme-color" content="#0b1a14">
+<meta name="description" content="Kreaturen-Abenteuer im Handheld-Stil mit Brutstätte und Mutationen.">
+<meta name="theme-color" content="#2b2350">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,58 +13,32 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="gb.css">
 </head>
 <body>
-<canvas id="c"></canvas>
-<div id="tags"></div>
-
-<div id="boot">
-  <div class="boot-logo">
-    <div class="crest"><i></i><i></i><i></i></div>
-    <h1>LEGENDS<br><span>UNITED</span></h1>
+<main id="console">
+  <div class="bezel">
+    <div class="led"><i></i>POWER</div>
+    <canvas id="screen"></canvas>
+    <div class="brand">LEGENDS <b>UNITED</b></div>
   </div>
-  <div class="boot-prog"><i id="boot-bar"></i></div>
-  <div id="boot-txt">Lade…</div>
-  <button id="boot-start" class="btn big" hidden>▶ Spielen</button>
-  <div class="boot-tip">Tipp: Spielt zu viert in einer gemeinsamen Welt!</div>
-</div>
-
-<div id="title" hidden></div>
-<div id="create" hidden></div>
-<div id="mpscreen" hidden></div>
-
-<div id="hud" hidden>
-  <div class="h-top">
-    <div class="h-info"><span id="h-time"></span><span id="h-money"></span></div>
-    <div id="h-quest"></div>
-    <div id="h-net" hidden></div>
+  <div id="pad">
+    <div class="dpad" aria-label="Steuerkreuz">
+      <span data-d="up"></span><span data-d="down"></span><span data-d="left"></span><span data-d="right"></span><em></em>
+    </div>
+    <div class="ab">
+      <button data-btn="b" aria-label="B">B</button>
+      <button data-btn="a" aria-label="A">A</button>
+    </div>
+    <div class="ss">
+      <button data-btn="select">SELECT</button>
+      <button data-btn="start">START</button>
+    </div>
   </div>
-  <div class="h-right">
-    <canvas id="minimap" width="120" height="120"></canvas>
-    <div class="h-btns"><button id="b-map" title="Karte">🗺</button><button id="b-menu" title="Menü">☰</button></div>
-  </div>
-  <div id="h-team"></div>
-  <button id="b-run" title="Rennen">🏃</button>
-  <button id="act" hidden><b>A</b><span></span></button>
-  <div id="stick"><div id="knob"></div></div>
-</div>
-
-<div id="battle" hidden>
-  <div id="foe-card" class="bcard"></div>
-  <div id="own-card" class="bcard own"></div>
-  <div class="bbottom">
-    <div id="bmsg"></div>
-    <div id="cmd"></div>
-  </div>
-</div>
-
-<div id="menu" hidden></div>
-<div id="dialog" hidden></div>
-<div id="modal" hidden></div>
-<div id="toasts"></div>
-<div id="flash"></div>
-
-<script type="module" src="js/main.js"></script>
+</main>
+<div id="nameinput" hidden></div>
+<script type="module" src="js/gb/game.js"></script>
 </body>
 </html>

@@ -1,86 +1,73 @@
-# Fortschritt – Stand Phase 1 (v0.1.0)
+# Fortschritt
 
-## ✅ Funktioniert (getestet)
+## Handheld-Edition (v0.2) – aktuelle Hauptversion
 
-**Engine und Technik**
-- Echtzeit-3D mit Three.js:
-  - Schatten, Tone-Mapping, Nebel
-  - eigene Shader für Wasser, Himmel mit Sonne und Mond, Wasserfall und Gras im Wind
-  - Instancing für über 1.200 Bäume, über 4.000 Grashalme, 1.400 Blumen und über 200 Felsen
-- Ladebildschirm mit Fortschritt. Installierbar als App (PWA) mit Offline-Cache.
-- Drei Grafikstufen (hoch, mittel, niedrig) für PC und Handy.
-- Steuerung:
-  - Tastatur und Maus
-  - Touch-Joystick und Kamera-Wischen am Handy
-  - Kamera mit Zoom und Kollision mit Gebäuden
+### ✅ Funktioniert (getestet)
 
-**Region 1: Verdantia**
-- Dorf **Moosgrund** mit Labor, Heilzentrum, Kristallladen, eigenem Zuhause, Brunnen, Laternen und Zäunen.
-- **Tempelruinen** mit Säulenring, Torbogen und Altar mit schwebendem Kristall.
-- **Kristallsee** mit versteckter Sandbank zur Insel, Fluss und **Wasserfall** mit Höhle dahinter.
-- **Schattenhain**: dunkler Wald, nur durch einen schmalen Pfad erreichbar.
-- Gebirge als Weltgrenze.
-- Tag-Nacht-Zyklus (24 Minuten pro Spieltag) mit Sonnenauf- und -untergang, Sternen, Mond, Glühwürmchen und Fensterlicht.
-- Wetter: klar, wolkig, Regen mit Regenpartikeln, stärkerem Wind und dichterem Nebel.
+**Präsentation**
+- Bildschirm mit 240×160 Pixeln wie beim Handheld.
+- Steuerkreuz, A, B, START und SELECT auf dem Handy, im Hoch- und Querformat. Am PC per Tastatur.
+- Kachelbewegung in vier Richtungen mit Lauf- und Rennanimation, Kanten zum Runterspringen und hohes Gras, das über die Füße wächst.
+- Tag und Nacht mit Abenddämmerung. Manche Kreaturen erscheinen nur nachts.
+- Alle Grafiken werden im Code erzeugt:
+  - Pixel-Kacheln und Gebäude
+  - Spielfiguren mit 4 Richtungen × 3 Frames
+  - Kreaturen-Sprites: 64×64 von vorn und hinten, aus den 3D-Modellen gerendert und zu Pixel-Art verarbeitet
 
-**Kreaturen:** 10 eigenständige Arten und 3 Entwicklungen, also 13 Einträge in der Chronik.
-- **Starter:** Funkfux (Feuer) → Glutfux (Feuer/Magie), Tropfmolch (Wasser) → Gezeitenmolch (Wasser/Drache), Sprossling (Pflanze) → Knorrwurz (Pflanze/Erde)
-- **Wild:** Zirpfink, Voltmotte, Sporlich, Kieselkrebs, Schemenohr, Moospanzer
-- **Legendär:** Sylvaron, der Hüter Verdantias
-- Jede Art hat:
-  - eigenes prozedurales 3D-Modell mit Animation (Idle, Laufen, Flattern, Glühen)
-  - eigenen synthetischen Ruf
-  - Werte, Lernset, Seltenheit und Hintergrundgeschichte
-- Schillernde Varianten (1:512) mit anderer Farbe.
-- Wilde Kreaturen laufen sichtbar in der Welt herum, abhängig von Gebiet, Tageszeit und Wetter.
-- Dein erster Partner folgt dir durch die Welt.
+**Start**
+- Titelbild.
+- Intro mit Professorin Linde.
+- **Charakter-Editor:** Name, Haut, Haare, Oberteil, Hose und Mütze, mit Live-Vorschau groß und als Laufsprite.
 
-**Kampfsystem**
-- Rundenbasiert mit 15 Typen und vollständiger Effektivitätstabelle.
-- 30 Attacken mit physischem, speziellem und Status-Schaden.
-- Volltreffer, Statuswerte, Verbrennung, Vergiftung und Starre.
-- Fangen mit Wackel-Animation.
-- EP, Levelaufstieg, neue Attacken (mit Vergessen-Auswahl) und Entwicklung mit Animation.
-- Inszenierung:
-  - Kamerafahrten und 9 Effekttypen mit Partikeln in Typfarbe
-  - Rückstoß, Kamerawackeln und Blitz bei sehr effektiven Treffern
-  - Arena-Ringe; Bäume im Kampfbereich werden ausgeblendet
-- Trainerkämpfe: Rivale Kian und drei Trainer in der Region.
-- Niederlage: Rückkehr ins Heilzentrum.
+**Welt:** 7 Außengebiete und 7 Innenräume.
+- **Gebiete:** Moosgrund, Route 1, Quellbach, Altwald mit Ruinen, Route 2, Kieselhöhle, Felsenau
+- **Innenräume:** Zuhause, Nachbarhaus, Labor, Heilzentrum, Laden, Brutstätte, Arena
+- Schilder, Fundstücke, Angeln mit der Angel von Angler Jo, PC-Box im Heilzentrum.
 
-**Story (Prolog):**
-1. Ein neuer Morgen
-2. Starterwahl
-3. Rivalenkampf
-4. „Erste Freunde“ (3 Kreaturen binden)
-5. Ruinen untersuchen
-6. Drei versteckte Runensteine finden (keiner ist auf der Karte markiert)
-7. Nachts am Altar: Kampf gegen das legendäre **Sylvaron**
+**Story**
+1. Starterwahl am Kristalltisch, danach der erste Kampf gegen Rivale Kian.
+2. Chronik und Bindkristalle von der Professorin.
+3. Rivalenkampf 2 auf Route 2.
+4. Höhle, Arena Felsenau mit 2 Arena-Trainern und **Arenaleiter Gorm** → **Felsorden**.
+5. **Geheimnis:** drei versteckte Runensteine im Altwald, danach erscheint nachts das legendäre **Sylvaron**.
 
-**Menüs:** Titel, Charaktererstellung, Team, Chronik, Tasche, Aufgaben, Karte, Koop, Statistik, Optionen, Laden, Kreaturen-Box, Dialoge.
+**Trainer:** 7 Trainer, die dich sehen, mit „!“ auf dich zulaufen und dich herausfordern.
 
-**Speichern:** automatisch alle 20 Sekunden, nach Kämpfen und beim Schließen der App.
+**Kreaturen:** 45 Arten in 20 Körperbautypen, dazu Entwicklungen, schillernde Varianten und 15 Typen.
 
-**Multiplayer-Grundlage**
-- Weltserver (Node.js): Konten, Welt erstellen, Beitritt per 6-stelligem Code, maximal 4 Spieler.
-- Die Welt bleibt bestehen, auch wenn der Ersteller offline ist.
-- Mitspieler sind live sichtbar, mit Namensschild und flüssiger Interpolation.
-- Gemeinsame Weltuhr und gemeinsames Wetter. Gemeinsamer Weltfortschritt: Runensteine gelten für alle.
-- Chat.
-- Speicherstände liegen auf dem Server.
-- Wiederverbindung nach Abbruch.
-- Schutz vor Manipulation: Prüfung der Geschwindigkeit, Plausibilitätsprüfung der Spielstände, Flood-Bremse.
+**Kampf**
+- Handheld-Layout: Gegner oben, eigene Kreatur von hinten.
+- KP-Leisten, die sich abbauen, und eine EP-Leiste.
+- Menü mit KAMPF, BEUTEL, TEAM und FLUCHT; Attackenmenü mit AP und Typ.
+- Effekte: Partikel, Blitze, Wirbel, Beben und Bildschirmwackeln.
+- Bindkristall-Wurf mit Wackeln.
+- Levelaufstieg, Attacken lernen mit Vergessen-Dialog und Entwicklungsanimation.
 
-## ❌ Fehlt noch (bewusst nicht als „fertig“ markiert)
+**Brutstätte und Mutationen**
+- Du gibst zwei Kreaturen ab. Beim Laufen gewinnen sie EP, und es entsteht ein Ei.
+- Die Chance hängt davon ab, wie gut sich die beiden verstehen.
+- Aus zwei **verschiedenen** Arten schlüpft eine **Mutation**, eine eigene neue Art:
+  - **Name:** aus beiden Namen gemischt, z. B. Funkfux + Flatterlo → *Funkterlo*.
+  - **Typen:** von beiden Eltern.
+  - **Werte:** Durchschnitt beider Eltern plus 5 %.
+  - **Attacken:** die Lernlisten beider Eltern zusammengelegt, plus je eine Erbattacke.
+  - **Aussehen:** Körperbau von der **Mutter**, Farben und ein **Merkmal** vom **Vater** (Flügel, Hörner, Flossen, Pilzhut, Ohren …).
+  - **Entwicklung:** möglich, wenn die Eltern sich entwickeln können.
+- Mit 18 % Chance schlüpft ein **Mutant**: 10 % stärker, mit Stirnjuwel und eigenem Farbton.
+- Mutationen lassen sich weiter kreuzen.
+- Gleiche Arten ergeben ein normales Junges.
+- Feuer-Kreaturen im Team brüten Eier doppelt so schnell aus.
+- Schlüpfen mit Animation. Mutationen erscheinen in einer eigenen Rubrik der Chronik.
 
-| Bereich | Status |
-|---|---|
-| Tauschen, PvP, Doppel- und 2-gegen-2-Kämpfe, Koop-Bosse | Phase 2. Die Kampflogik ist dafür vorbereitet (getrennt von der Grafik). |
-| Kampfberechnung auf dem Server | Phase 2. Kämpfe laufen aktuell auf dem Gerät des Spielers. |
-| Freundesliste, Häuser besuchen | Phase 2 |
-| Regionen 2–7, Arenen, Top 4, Champion | Phase 3–4. Verdantia hat noch keine Arena. |
-| 150 Kreaturen | derzeit 13 |
-| Gemeinsame Story-Entscheidungen | Phase 3 |
-| Windows-Installer (.exe), Store-Apps | Phase 5. Bis dahin lässt sich das Spiel auf jedem Gerät als App installieren. |
-| Professionelle 3D-Modelle und Animationen | Modelle sind stilisiert-prozedural, also absichtlich ein eigener Look ohne gekaufte Assets. |
-| Musik | prozedural synthetisiert; komponierte Stücke folgen später |
+**Menüs:** Team (mit Reihenfolge tauschen), Bericht (2 Seiten), Chronik, Beutel, Trainerpass mit Orden, Speichern, Optionen (Musik, Effekte, Textgeschwindigkeit).
+
+### ❌ Fehlt noch
+- **Koop für 4 Spieler in der Handheld-Edition:** Server und Netzwerk-Code stehen bereit, der 3D-Prototyp nutzt sie schon. Einbau als Nächstes.
+- **Tauschen und Kämpfe zwischen Spielern.**
+- **Weitere Regionen:** Ignis, Frostheim, Aqualis, Nocturna, Solaria, Drakmor.
+- **Arenen 2–8, Top 4 und Champion.**
+- **Mehr Kreaturen:** Ziel sind 150 Arten, aktuell sind es 45 plus beliebig viele Mutationen.
+- **Eigens komponierte Musik:** Die Musik wird derzeit vom Spiel erzeugt.
+
+## 3D-Prototyp (v0.1)
+Der Stand ist unter `3d.html` erhalten: 3D-Welt Verdantia, Kampfinszenierung in 3D und die Multiplayer-Grundlage mit Weltserver.

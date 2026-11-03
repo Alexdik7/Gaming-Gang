@@ -1,8 +1,11 @@
 # LEGENDS UNITED
 
-Ein 3D-Kreaturen-Abenteuer für bis zu **4 Freunde in einer gemeinsamen Welt**.
+Ein Kreaturen-Abenteuer im Stil der klassischen Handheld-Rollenspiele: Draufsicht, Steuerkreuz, A/B, START und SELECT.
 
-**Spielen:** https://alexdik7.github.io/Gaming-Gang/legends/
+Alles ist eigenständig gestaltet: eigene Kreaturen, Karten und Geschichte. Dazu kommen eine **Brutstätte**, in der aus zwei Kreaturen ein Ei mit einer **Mutation** beider Eltern entsteht.
+
+**Spielen (Handheld-Edition):** https://alexdik7.github.io/Gaming-Gang/legends/
+**3D-Prototyp mit Koop-Grundlage:** https://alexdik7.github.io/Gaming-Gang/legends/3d.html
 
 Auf PC und Handy spielbar und installierbar:
 - **PC (Chrome/Edge):** Adressleiste → „App installieren“
@@ -13,11 +16,11 @@ Auf PC und Handy spielbar und installierbar:
 
 | | PC | Handy |
 |---|---|---|
-| Laufen | WASD / Pfeiltasten | linke Bildschirmhälfte = Joystick |
-| Rennen | Shift | Joystick ganz ausschlagen oder 🏃-Knopf |
-| Kamera | Maus ziehen, Mausrad = Zoom | rechte Hälfte wischen |
-| Interagieren | E / Leertaste | A-Knopf |
-| Menü / Karte / Team | Esc / M / T | ☰ / 🗺 |
+| Laufen | Pfeiltasten / WASD | Steuerkreuz |
+| A (sprechen, bestätigen) | Z / Leertaste | A |
+| B (zurück, **gedrückt halten = rennen**) | X / Shift | B |
+| START (Menü) | Enter | START |
+| SELECT (Team) | C / Tab | SELECT |
 
 ## Dokumentation
 

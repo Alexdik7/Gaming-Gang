@@ -8,10 +8,10 @@ export const newUid = () => (Date.now().toString(36) + (uidCounter++).toString(3
 export const xpForLevel = l => Math.floor(Math.pow(l, 3) * 0.8);
 
 export function calcStats(m) {
-  const b = SPECIES[m.sp].stats, L = m.lvl, iv = m.iv;
-  const s = k => Math.floor(((2 * b[k] + iv[k]) * L) / 100) + 5;
+  const b = SPECIES[m.sp].stats, L = m.lvl, iv = m.iv, mu = m.mut ? 1.1 : 1;
+  const s = k => Math.floor((Math.floor(((2 * b[k] + (iv[k] || 0)) * L) / 100) + 5) * mu);
   return {
-    hp: Math.floor(((2 * b.hp + iv.hp) * L) / 100) + L + 10,
+    hp: Math.floor((Math.floor(((2 * b.hp + (iv.hp || 0)) * L) / 100) + L + 10) * mu),
     atk: s('atk'), def: s('def'), spa: s('spa'), spd: s('spd'), spe: s('spe'),
   };
 }
@@ -37,6 +37,7 @@ export const monName = m => m.nick || SPECIES[m.sp].name;
 export const maxHp = m => calcStats(m).hp;
 
 export function healMon(m) {
+  if (m.egg) return;
   m.hp = maxHp(m); m.status = null;
   for (const mv of m.moves) mv.pp = MOVES[mv.id].pp;
 }

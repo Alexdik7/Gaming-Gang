@@ -9,7 +9,7 @@ Sammlung von Browser-Spielen, spielbar am Handy als installierbare Web-App (PWA)
 | Spiel | Ordner | Beschreibung |
 |---|---|---|
 | The Plug from 52 | [`plug52/`](plug52/) | Fiktives Street-Tycoon-Spiel: Farm, Produktion, Aufträge, Kontakte, 10 Regionen, 60 Level. |
-| Legends United | [`legends/`](legends/) | 3D-Kreaturen-Abenteuer (Three.js) mit Koop für 4 Spieler. Phase 1: Region Verdantia. Details in [`legends/README.md`](legends/README.md). |
+| Legends United | [`legends/`](legends/) | Kreaturen-RPG im Handheld-Stil mit 45 Kreaturen, Brutstätte & Mutationen, erster Arena. 3D-Prototyp unter `legends/3d.html`. Details in [`legends/README.md`](legends/README.md). |
 
 ## Neues Spiel hinzufügen
 
