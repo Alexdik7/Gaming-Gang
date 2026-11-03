@@ -1,0 +1,10 @@
+{
+  "name": "legends-united-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Weltserver für Legends United (bis zu 4 Spieler pro Welt)",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "ws": "^8.18.0" }
+}
