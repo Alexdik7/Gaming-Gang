@@ -4,7 +4,7 @@ Repo `Alexdik7/Gaming-Gang`, Branch `main`. GitHub Pages ist live: https://alexd
 Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legends United“, Hauptprojekt).
 
 ## Nutzer
-- Deutsch, spielt auf dem **iPhone** (Web-App über „Zum Home-Bildschirm“); Freunde ggf. mit Android (APK).
+- Deutsch, spielt auf dem **iPhone**: Web-App über „Zum Home-Bildschirm“, Updates kommen über GitHub Pages und `sw.js`. Android interessiert ihn nicht.
 - Arbeitsweise: „Weiter“ = nächsten sinnvollen Schritt der Roadmap bauen. Am Ende jedes Schritts:
   1. bauen
   2. testen
@@ -28,7 +28,7 @@ Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legend
 - **Web und iPhone:** Push auf `main` → Pages deployt automatisch.
   - Bei jeder Änderung an Spieldateien `CACHE` in `legends/sw.js` erhöhen, sonst bekommen Handys das Update nicht.
   - Neue Dateien in die `FILES`-Liste von `sw.js` eintragen.
-- **Android-APK:** `.github/workflows/android.yml`.
+- **Android-APK:** nur auf ausdrücklichen Wunsch bauen, da der Nutzer ein iPhone hat. Die APK ist nur für Freunde mit Android. Workflow: `.github/workflows/android.yml`.
   - Pushes aus Claude-Sitzungen lösen den Workflow nicht aus → manuell starten:
     `gh api -X POST repos/Alexdik7/Gaming-Gang/actions/workflows/406802438/dispatches -f ref=main`
   - Ergebnis: Release `app-v1.N`. Download: https://github.com/Alexdik7/Gaming-Gang/releases/latest/download/LegendsUnited.apk

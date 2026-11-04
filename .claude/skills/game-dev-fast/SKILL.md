@@ -68,5 +68,5 @@ description: Schlanke, token-sparende Vorgehensweise für neue Browser-/Handy-Sp
 5. `sw.js` `CACHE` erhöhen
 6. Doku: `FORTSCHRITT.md` (+ `ROADMAP.md`) und `CLAUDE.md`-Stand
 7. Commit mit Attribution, `git push -u origin main` (bei Fehler wiederholen)
-8. APK-Workflow per Dispatch starten, falls sich Spieldateien geändert haben
+8. APK-Workflow **nur auf Wunsch** starten (der Nutzer spielt auf dem iPhone)
 9. Kurzer deutscher Bericht mit Link
