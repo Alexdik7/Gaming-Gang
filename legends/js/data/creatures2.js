@@ -13,8 +13,8 @@ function C(id, num, name, types, rarity, stats, catchRate, xp, learn, evo, lore,
 SPECIES.zirpfink.evo = { to: 'sturmfink', lvl: 18 };
 SPECIES.voltmotte.evo = { to: 'donnerfalter', lvl: 22 };
 SPECIES.sporlich.evo = { to: 'sporanox', lvl: 20 };
-SPECIES.kieselkrebs.evo = { to: 'felsklaue', lvl: 24 };
-SPECIES.schemenohr.evo = { to: 'nachtmahr', lvl: 25 };
+SPECIES.kieselkrebs.evo = { to: 'felsklaue', lvl: 24, trade: true };
+SPECIES.schemenohr.evo = { to: 'nachtmahr', lvl: 25, trade: true };
 SPECIES.moospanzer.evo = { to: 'hainfeste', lvl: 28 };
 SPECIES.glutfux.model.extras = ['crest'];
 SPECIES.gezeitenmolch.model.extras = ['horns'];
@@ -93,7 +93,7 @@ C('funkenhase', 29, 'Funkenhase', ['elektro'], 'ungewoehnlich', [55, 60, 45, 65,
   'Reibt es seine Ohren aneinander, sprühen Funken. Bei trockenem Wetter knistert sein ganzes Fell.',
   { kind: 'bunny', main: '#ffe14a', accent: '#2b2d42', glow: '#9ff3ff', size: 0.65, extras: ['tailflame'] }, { f: 1400, f2: 2000, len: 0.15, wave: 'square', wob: 40 });
 C('brockel', 30, 'Brockel', ['erde'], 'gewoehnlich', [55, 70, 85, 25, 35, 20], 180, 60,
-  '1:rempler 1:panzern 6:steinwurf 12:sandwirbel 18:bodenstoss', { to: 'brockolith', lvl: 25 },
+  '1:rempler 1:panzern 6:steinwurf 12:sandwirbel 18:bodenstoss', { to: 'brockolith', lvl: 25, trade: true },
   'Liegt Brockel still, hält man es für einen Stein. Wanderer haben schon auf ihm Picknick gemacht.',
   { kind: 'golem', main: '#9a8a74', accent: '#6b5a48', glow: '#ffcf6b', size: 0.6 }, { f: 160, f2: 120, len: 0.3, wave: 'square', wob: 10 });
 C('brockolith', 31, 'Brockolith', ['erde', 'metall'], 'selten', [85, 105, 125, 40, 55, 30], 60, 160,
@@ -113,7 +113,7 @@ C('toxnatter', 34, 'Toxnatter', ['gift'], 'ungewoehnlich', [55, 70, 50, 45, 50, 
   'Ihr Schwanz rasselt wie trockenes Laub. Wer das Geräusch hört, sollte langsam zurückgehen.',
   { kind: 'serpent', main: '#7fcf3a', accent: '#3a2a4a', glow: '#d6ff9f', size: 0.6, extras: ['spikes'] }, { f: 1600, f2: 1200, len: 0.3, wave: 'sawtooth', wob: 80 });
 C('irrlicht', 35, 'Irrlicht', ['geist'], 'ungewoehnlich', [45, 40, 45, 75, 65, 70], 120, 75,
-  '1:spukgriff 1:nachtschleier 10:schattenball 18:lichtpfeil', { to: 'spukflamme', lvl: 26 },
+  '1:spukgriff 1:nachtschleier 10:schattenball 18:lichtpfeil', { to: 'spukflamme', lvl: 26, trade: true },
   'Es lockt Wanderer mit einem warmen Licht vom Weg ab – nur um ihnen dann den kürzesten Heimweg zu zeigen.',
   { kind: 'wisp', main: '#b8a8ff', accent: '#ffffff', glow: '#8a7dd6', size: 0.6 }, { f: 1200, f2: 600, len: 0.5, wave: 'sine', wob: 6 });
 C('spukflamme', 36, 'Spukflamme', ['geist', 'feuer'], 'selten', [65, 55, 65, 110, 85, 90], 45, 160,

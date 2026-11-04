@@ -2,13 +2,17 @@
 // Freundschaftskämpfe (Kampflogik auf dem Server) und Tauschen.
 import { Net } from '../net/net.js';
 import { G, W, H, push, pop, text, box, wait, fade } from './engine.js';
-import { say, ask, choose, party, inputName, waitMsg } from './gbui.js';
+import { say, ask, choose, party, inputName, waitMsg, evoScene } from './gbui.js';
 import { monSprite } from './sprites.js';
 import { battle } from './battle2d.js';
+import { doubleBattle } from './double2d.js';
+import { DoubleBattle } from '../battle/double.js';
+import { COOP } from '../data/coop.js';
+import { MOVES } from '../data/moves.js';
 import { SPECIES } from '../data/creatures.js';
 import { TYPES } from '../data/types.js';
 import { ensureSpecies } from '../data/breeding.js';
-import { monName, newUid } from '../data/mon.js';
+import { monName, newUid, tradeEvo, evolve, giveXp } from '../data/mon.js';
 import { sfx, cry } from '../core/audio.js';
 
 const OPT = 'lu2-online';
@@ -29,6 +33,7 @@ export class Online {
     n.on('req', m => this.reqs.push(m));
     n.on('err', m => this.g.ow?.notify(m.msg));
     n.on('status', st => { if (st === 'offline') this.players.clear(); });
+    n.on('account', m => { n.acc = { pid: m.pid, secret: m.secret }; n.pid = m.pid; try { localStorage.setItem('lu-account', JSON.stringify(n.acc)); } catch {} });
   }
   saveCfg() { try { localStorage.setItem(OPT, JSON.stringify(this.cfg)); } catch {} }
   get on() { return this.net.online; }
@@ -73,13 +78,14 @@ export class Online {
   async menu() {
     const s = this.g.state;
     if (!this.on) {
-      const items = ['WELT ERSTELLEN', 'WELT BEITRETEN', ...(this.cfg.world ? ['LETZTE WELT'] : []), 'SERVER ÄNDERN', 'ZURÜCK'];
+      const items = ['WELT ERSTELLEN', 'WELT BEITRETEN', ...(this.cfg.world ? ['LETZTE WELT'] : []), 'SPIELSTAND HOLEN', 'SERVER ÄNDERN', 'ZURÜCK'];
       const i = await choose(items, { title: 'ONLINE' }); const k = items[i];
       if (i === null || k === 'ZURÜCK') return;
       if (k === 'SERVER ÄNDERN') { this.cfg.server = ''; await this.connect('change'); this.net.disconnect(); return this.menu(); }
       let close = waitMsg('Verbinde mit dem Weltserver');
       const ok = await this.connect(); close();
       if (!ok) { await say(['Keine Verbindung zum Weltserver.', 'Prüfe die Adresse unter „SERVER ÄNDERN“. Anleitung: docs/MULTIPLAYER.md']); return; }
+      if (k === 'SPIELSTAND HOLEN') return this.redeem();
       if (k === 'WELT ERSTELLEN') this.net.create(`${s.name}s Welt`, this.char());
       else if (k === 'LETZTE WELT') this.net.join(this.cfg.world, this.char());
       else { const code = (await inputName('Welt-Code (6 Zeichen)', '', 6)).toUpperCase(); this.net.join(code, this.char()); }
@@ -90,15 +96,69 @@ export class Online {
       await say(k === 'WELT ERSTELLEN' ? [`Deine Welt ist online!`, `Welt-Code: ${r.code}`, 'Gib diesen Code deinen Freunden. Sie wählen ONLINE → WELT BEITRETEN.'] : [`Du bist jetzt in „${r.name}“!`, 'Stell dich vor einen Mitspieler und drücke A, um zu kämpfen oder zu tauschen.']);
       return;
     }
-    const items = ['MITSPIELER', 'NACHRICHT', 'WELT-CODE', 'TRENNEN', 'ZURÜCK'];
+    const items = ['MITSPIELER', 'ZU FREUND REISEN', 'NACHRICHT', 'WELT-CODE', 'SICHERN', 'WIEDERHERSTELLEN', 'GERÄT WECHSELN', 'TRENNEN', 'ZURÜCK'];
     const i = await choose(items, { title: this.world?.name?.slice(0, 16) || 'ONLINE' }); const k = items[i];
     if (k === 'MITSPIELER') {
       const here = [...this.players.values()];
       await say(here.length ? here.map(p => `${p.name} – ${MAPNAME(p.map)}`) : 'Gerade ist niemand außer dir online.');
     }
+    if (k === 'ZU FREUND REISEN') {
+      const list = [...this.players.values()];
+      if (!list.length) { await say('Gerade ist niemand außer dir online.'); return; }
+      const c = await choose(list.map(p => ({ label: p.name, right: MAPNAME(p.map) })), { title: 'Zu wem?' });
+      if (c === null) return;
+      const p = list[c], ow = this.g.ow;
+      sfx('whoosh'); await fade(1, 300);
+      ow.load(p.map, p.x, p.y, 'down');
+      const spot = [[0, 1], [1, 0], [-1, 0], [0, -1], [0, 2], [2, 0], [-2, 0]].map(([dx, dy]) => [p.x + dx, p.y + dy]).find(([x, y]) => !ow.solid(x, y) && !this.playerAt(p.map, x, y));
+      if (spot) { ow.p.x = spot[0]; ow.p.y = spot[1]; ow.p.px = spot[0] * 16; ow.p.py = spot[1] * 16; ow.p.dir = spot[1] > p.y ? 'up' : spot[1] < p.y ? 'down' : spot[0] > p.x ? 'left' : 'right'; }
+      this.pos(true);
+      await fade(0, 300);
+      return;
+    }
     if (k === 'NACHRICHT') { const t = await inputName('Nachricht an alle', '', 60); if (t) { this.send({ t: 'chat', text: t }); this.g.ow.notify(`Du: ${t}`.slice(0, 44)); } }
     if (k === 'WELT-CODE') await say([`Welt-Code: ${this.world.code}`, 'Mit diesem Code können bis zu drei Freunde beitreten.']);
+    if (k === 'SICHERN') { this.g.save(true); const r = await this.backup(true); await say(r ? 'Dein Spielstand ist jetzt auch auf dem Weltserver gesichert.' : 'Die Sicherung hat nicht geklappt.'); }
+    if (k === 'WIEDERHERSTELLEN') {
+      this.send({ t: 'load' }); const r = await this.next(['loaded'], 8000);
+      if (!r.data) { await say('Auf dem Server liegt noch keine Sicherung von dir.'); return; }
+      const when = new Date(r.at).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+      if (await ask(`Sicherung vom ${when} laden (${r.data.team.length} Kreaturen, ${r.data.badges?.length || 0} Orden)? Der aktuelle Stand wird ersetzt.`)) this.useSave(r.data);
+    }
+    if (k === 'GERÄT WECHSELN') {
+      this.g.save(true); await this.backup(true);
+      this.send({ t: 'transferCode' }); const r = await this.next(['transferCode'], 8000);
+      if (r.t !== 'transferCode') { await say('Der Server antwortet nicht.'); return; }
+      await say([`Dein Übertragungs-Code: ${r.code}`, 'Auf dem neuen Gerät: Spiel öffnen → START → ONLINE → SPIELSTAND HOLEN → Code eingeben.', 'Der Code gilt 15 Minuten. Danach ist dieses Gerät abgemeldet.']);
+    }
     if (k === 'TRENNEN') { this.net.disconnect(); this.cfg.world = ''; this.saveCfg(); this.players.clear(); await say('Du spielst jetzt wieder allein.'); }
+  }
+
+  // ---------------------------------------------------------- Sicherung auf dem Server
+  async backup(wait = false) {
+    if (!this.on) return false;
+    const now = Date.now(); if (!wait && now - (this.lastBackup || 0) < 15000) return false;
+    this.lastBackup = now;
+    this.send({ t: 'save', data: this.g.state });
+    if (!wait) return true;
+    const r = await this.next(['saved', 'err'], 8000); return r.t === 'saved';
+  }
+  useSave(data) {
+    try { localStorage.setItem('lu2-save', JSON.stringify(data)); } catch {}
+    location.reload();
+  }
+  async redeem() {
+    const code = (await inputName('Übertragungs-Code (8 Zeichen)', '', 8)).toUpperCase();
+    if (!code) return;
+    const close = waitMsg('Hole Spielstand');
+    const ok = await this.connect(); if (!ok) { close(); await say('Keine Verbindung zum Weltserver.'); return; }
+    this.send({ t: 'redeem', code });
+    const r = await this.next(['account', 'redeemFail'], 8000); close();
+    if (r.t !== 'account') { this.net.disconnect(); await say(r.msg || 'Der Server antwortet nicht.'); return; }
+    if (r.world) { this.cfg.world = r.world; this.saveCfg(); }
+    if (!r.save) { await say('Konto übertragen, aber es gab noch keine Sicherung. Tritt deiner Welt wieder bei.'); return; }
+    await say(`Spielstand von ${r.save.name} gefunden. Das Spiel startet neu.`);
+    this.useSave(r.save);
   }
 
   // ---------------------------------------------------------- Positionen
@@ -145,12 +205,13 @@ export class Online {
     (async () => {
       try {
         sfx('encounter');
-        const ok = await ask(r.kind === 'trade' ? `${r.name} möchte mit dir tauschen. Einverstanden?` : `${r.name} fordert dich zu einem Freundschaftskampf heraus! Annehmen?`);
+        const ok = await ask(r.kind === 'trade' ? `${r.name} möchte mit dir tauschen. Einverstanden?` : r.kind === 'coop' ? `${r.name} möchte mit dir zusammen gegen ${r.npcName} kämpfen! Mitmachen?` : `${r.name} fordert dich zu einem Freundschaftskampf heraus! Annehmen?`);
         const team = this.g.state.team.filter(m => !m.egg);
-        if (ok && r.kind === 'battle' && !team.length) { this.send({ t: 'reqAns', to: r.from, ok: false }); await say('Du hast noch keine Kreaturen!'); return; }
-        this.send({ t: 'reqAns', to: r.from, ok, team: r.kind === 'battle' ? team : undefined });
+        if (ok && r.kind !== 'trade' && !team.length) { this.send({ t: 'reqAns', to: r.from, ok: false }); await say('Du hast noch keine Kreaturen!'); return; }
+        this.send({ t: 'reqAns', to: r.from, ok, team: r.kind !== 'trade' ? team : undefined });
         if (!ok) return;
         if (r.kind === 'trade') { const m = await this.next(['tradeStart', 'tradeCancel'], 8000); if (m.t === 'tradeStart') await this.trade(m.with); }
+        else if (r.kind === 'coop') { const m = await this.next(['coopStart', 'reqNo'], 8000); if (m.t === 'coopStart') await this.runCoop(m); }
         else { const m = await this.next(['duelStart', 'reqNo'], 8000); if (m.t === 'duelStart') await this.duel(m); }
       } finally { ow.busy = false; }
     })();
@@ -170,6 +231,45 @@ export class Online {
     if (m.t === 'reqNo') { await say(m.why); return; }
     if (m.t === 'tradeStart') await this.trade(m.with);
     else await this.duel(m);
+  }
+
+  // ---------------------------------------------------------- Koop-Kampf (2 Spieler gegen Duo/Boss)
+  partners() { return [...this.players.values()].filter(p => p.map === this.g.ow.id && !p.busy); }
+  async coop(npc, p) {
+    const team = this.g.state.team.filter(m => !m.egg);
+    this.send({ t: 'req', to: p.pid, kind: 'coop', npc, team });
+    const close = waitMsg(`Warte auf ${p.name}`);
+    const m = await this.next(['reqNo', 'coopStart'], 30000); close();
+    if (m.t === 'timeout') { await say(`${p.name} antwortet nicht.`); return null; }
+    if (m.t === 'reqNo') { await say(m.why); return null; }
+    return this.runCoop(m);
+  }
+  async runCoop(m) {
+    const d = COOP[m.npc], s = this.g.state;
+    const b = new RemoteDouble(this, m);
+    sfx('encounter'); await this.g.flashIn();
+    const r = await doubleBattle(this.g, {
+      b, remote: true, mine: [m.slot], bg: d.bg, boss: !!d.boss, title: d.name,
+      trainers: d.looks ? d.looks.map(look => ({ look })) : null, ownLooks: m.looks.map(l => ({ ...DEF_LOOK, ...(l || {}) })),
+    });
+    this.g.ow.music();
+    // EP auf die echten Kreaturen übertragen
+    for (const [uid, amt] of Object.entries(r.xpLog || {})) {
+      const mon = s.team.find(x => x.uid === uid); if (!mon) continue;
+      for (const e of giveXp(mon, amt)) {
+        if (e.t === 'lvl') await say(`${monName(mon)} erreicht Level ${e.lvl}!`);
+        if (e.t === 'learn' && mon.moves.length < 4) { mon.moves.push({ id: e.id, pp: MOVES[e.id].pp }); await say(`${monName(mon)} hat ${MOVES[e.id].name} erlernt!`); }
+        if (e.t === 'evo') {
+          const name = monName(mon); sfx('evo');
+          await evoScene(monSprite(mon.sp, 'front', mon.shiny, mon.mut), monSprite(e.to, 'front', mon.shiny, mon.mut), `${name} hat sich zu ${SPECIES[e.to].name} entwickelt!`);
+          evolve(mon, e.to); this.g.markDex(e.to, true);
+        }
+      }
+    }
+    if (r.result === 'win') await this.g.coopReward(m.npc);
+    else await say(r.result === 'lose' ? 'Ihr habt verloren… Gemeinsam schafft ihr es beim nächsten Mal!' : 'Der Kampf ist vorbei.');
+    this.g.save(true);
+    return r.result;
   }
 
   // ---------------------------------------------------------- Freundschaftskampf
@@ -210,6 +310,14 @@ export class Online {
     s.team[idx] = got; this.g.markDex(got.sp, true);
     cry(SPECIES[got.sp].cry);
     await say([`${monName(got)} gehört jetzt zu deinem Team!`, `Pass gut auf ${monName(mine)} auf, ${withName}!`]);
+    const to = tradeEvo(got);
+    if (to) {
+      ensureSpecies(to);
+      await say(`Nanu? ${monName(got)} verändert sich durch den Tausch!`);
+      const name = monName(got); sfx('evo');
+      await evoScene(monSprite(got.sp, 'front', got.shiny, got.mut), monSprite(to, 'front', got.shiny, got.mut), `${name} hat sich zu ${SPECIES[to].name} entwickelt!`);
+      evolve(got, to); cry(SPECIES[to].cry); this.g.markDex(to, true);
+    }
     this.g.save(true);
   }
 }
@@ -234,6 +342,31 @@ function tradeAnim(out, inn) {
     };
     push(sc); sfx('whoosh'); setTimeout(() => sfx('evo'), 1800);
   });
+}
+
+// Spiegel eines Koop-Kampfes auf dem Server (gleiche Schnittstelle wie DoubleBattle)
+class RemoteDouble extends DoubleBattle {
+  constructor(on, m) {
+    super({ slots: {} });
+    this.o = on; this.mySlot = m.slot;
+    for (const [id, d] of Object.entries(m.slots)) { d.pool.forEach(x => ensureSpecies(x.sp)); this.slots[id] = { ...d, st: {} }; }
+  }
+  async turn(acts) { this.o.send({ t: 'coopAct', a: acts[this.mySlot] }); return this.recv(); }
+  async forcedSwitch(id, k) { this.o.send({ t: 'coopSwitch', i: k }); return this.recv(); }
+  async recv() {
+    const m = await this.o.next(['coopEv'], 300000);
+    if (m.t === 'timeout' || !this.o.on) { this.over = true; this.result = 'draw'; return [{ t: 'msg', text: 'Die Verbindung zum Kampf ist abgerissen.' }]; }
+    this.over = m.over; this.result = m.result; this.need = m.need || []; if (m.xpLog) this.xpLog = m.xpLog;
+    return m.ev;
+  }
+  apply(e) {
+    const id = e.slot;
+    if (e.t === 'send' && e.mon) { ensureSpecies(e.mon.sp); const s = this.slots[id], k = s.pool.findIndex(x => x.uid === e.mon.uid); if (k >= 0) { s.pool[k] = e.mon; s.i = k; } }
+    if (e.t === 'hp') this.mon(id).hp = e.hp;
+    if (e.t === 'status') this.mon(id).status = e.status;
+    if (e.t === 'move') { const sl = this.mon(id)?.moves.find(x => x.id === e.move); if (sl) sl.pp = Math.max(0, sl.pp - 1); }
+    if (e.t === 'faint') this.mon(id)._fainted = true;
+  }
 }
 
 // Spiegel eines Server-Kampfes mit derselben Schnittstelle wie Battle

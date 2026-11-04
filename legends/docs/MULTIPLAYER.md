@@ -45,3 +45,9 @@ Auch für eine Datenbank ist das der Plan in Phase 2.
    - **Vor einen Mitspieler stellen und A drücken:**
      - **KÄMPFEN:** Freundschaftskampf. Der Server berechnet ihn, also kann niemand schummeln. Danach ist niemand verletzt.
      - **TAUSCHEN:** Beide wählen eine Kreatur und bestätigen. Das klappt auch mit Mutationen aus der Brutstätte.
+   - **Zu zweit gegen Koop-Gegner:** Ria & Rio in Quellbach oder den Felsenkoloss in der Kieselhöhle ansprechen und „Mit …“ wählen.
+     Der Mitspieler muss auf derselben Karte sein. Mit ONLINE → ZU FREUND REISEN geht das sofort.
+5. **Spielstand sichern:**
+   - Jedes Speichern legt automatisch eine Sicherung auf dem Server an.
+   - ONLINE → GERÄT WECHSELN zeigt einen Code an, den ihr auf dem neuen Handy unter ONLINE → SPIELSTAND HOLEN eingebt.
+

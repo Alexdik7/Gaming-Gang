@@ -9,21 +9,22 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 | **1 – Grundgerüst** | Welt, Bewegung, Kämpfe, Fangen, Menüs, Speichern, Netzwerk-Grundlage | ✅ v0.1 |
 | **1b – Handheld-Edition** | 240×160-Darstellung, Steuerkreuz, Charakter-Editor, 45 Kreaturen, Brutstätte & Mutationen, Arena 1 | ✅ v0.2 |
 | **2a – Grafik & Koop** | eigene 2D-Pixel-Art statt 3D-Renderings, 3D-Teil entfernt, Online-Welt, Mitspieler auf der Karte, Freundschaftskampf (Server berechnet), Tausch, Chat | ✅ v0.3 |
-| **2b – Koop-Ausbau** | Doppelkämpfe 2 gegen 2, Koop gegen Trainer/Bosse, Tausch-Entwicklungen, Spielstand-Sicherung auf dem Server, Freundesliste, Spielerhäuser besuchen | ⏳ als Nächstes |
-| **3 – Hauptspiel** | Regionen Ignis, Aqualis, Frostheim · Arenen 2–4 mit Rätseln · Team Eklipse · Rivalin Lyra · 75 Kreaturen · Items (Beeren, Attacken-Kristalle) · Nebenquests | geplant |
+| **2b – Koop-Ausbau** | Doppelkämpfe 2 gegen 2, Koop gegen Trainer-Duo und Boss, Tausch-Entwicklungen, Server-Sicherung & Geräte-Übertragung, Zu Freund reisen | ✅ v0.4 |
+| **3 – Hauptspiel** ⏳ als Nächstes | Regionen Ignis, Aqualis, Frostheim · Arenen 2–4 mit Rätseln · Team Eklipse · Rivalin Lyra · 75 Kreaturen · Items (Beeren, Attacken-Kristalle) · Nebenquests | geplant |
 | **4 – Endgame** | Regionen Nocturna, Solaria, Drakmor · Arenen 5–8 · Top 4 · Champion · legendäre Hüter · Geheimorte nur zu viert · Postgame · 150 Kreaturen | geplant |
 | **5 – Qualität** | komponierte Musik, Animationen, Balancing, Performance, Windows-App (Tauri), Store-Apps (Capacitor) | geplant |
 
-## Ablaufplan Phase 2b (nächste Lieferung)
+## Phase 2b – erledigt (v0.4)
 
-| AP | Inhalt | Abhängigkeit |
+| AP | Inhalt | Status |
 |---|---|---|
-| 2b.1 | Kampflogik auf Teams pro Seite erweitern (2 aktive Kreaturen, Zielwahl) | – |
-| 2b.2 | Doppelkampf-Bildschirm (2 Sprites pro Seite, Zielauswahl) | 2b.1 |
-| 2b.3 | Koop-Kämpfe: 2 Spieler gegen Trainer-Duo bzw. Boss, Server berechnet | 2b.1, 2b.2 |
-| 2b.4 | Spielstand-Sicherung auf dem Server + Wiederherstellen auf neuem Gerät | – |
-| 2b.5 | Freundesliste, Mitspieler-Teleport („Zu Freund reisen“ im Heilzentrum) | 2b.4 |
-| 2b.6 | Tausch-Entwicklungen und Bonus-EP für getauschte Kreaturen | – |
+| 2b.6 | Tausch-Entwicklungen (Kieselkrebs, Schemenohr, Brockel, Irrlicht) + 1,5× EP für getauschte Kreaturen | ✅ |
+| 2b.4 | Spielstand auf dem Server sichern/wiederherstellen, Übertragung auf neues Gerät per Code | ✅ |
+| 2b.1 | Doppelkampf-Logik (2 gegen 2, 2 gegen Boss mit 2 Aktionen pro Runde) | ✅ |
+| 2b.2 | Doppelkampf-Bildschirm mit Zielauswahl | ✅ |
+| 2b.3 | Koop-Kämpfe zu zweit (Server berechnet): Zwillinge Ria & Rio, Felsenkoloss | ✅ |
+| 2b.5 | „Zu Freund reisen“ (ONLINE-Menü) | ✅ |
+| – | Freundesliste über Welten hinweg, Spielerhäuser | verschoben nach Phase 5 (wenig Nutzen bei 4 festen Freunden) |
 
 ## Ablaufplan Phase 3
 

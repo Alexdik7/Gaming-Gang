@@ -11,7 +11,7 @@ export function calcStats(m) {
   const b = SPECIES[m.sp].stats, L = m.lvl, iv = m.iv, mu = m.mut ? 1.1 : 1;
   const s = k => Math.floor((Math.floor(((2 * b[k] + (iv[k] || 0)) * L) / 100) + 5) * mu);
   return {
-    hp: Math.floor((Math.floor(((2 * b.hp + (iv.hp || 0)) * L) / 100) + L + 10) * mu),
+    hp: Math.floor((Math.floor(((2 * b.hp + (iv.hp || 0)) * L) / 100) + L + 10) * mu * (m.boss || 1)),
     atk: s('atk'), def: s('def'), spa: s('spa'), spd: s('spd'), spe: s('spe'),
   };
 }
@@ -59,6 +59,11 @@ export function giveXp(m, amount) {
   if (evo && m.lvl >= evo.lvl) ev.push({ t: 'evo', to: evo.to });
   return ev;
 }
+
+// Getauschte Kreaturen (fremder Erst-Trainer) lernen schneller
+export const xpBonus = m => (m.ot ? 1.5 : 1);
+// Entwicklung durch Tausch: Arten mit evo.trade entwickeln sich sofort beim Empfang
+export function tradeEvo(m) { const e = SPECIES[m.sp]?.evo; return e?.trade ? e.to : null; }
 
 export function evolve(m, to) {
   const before = maxHp(m);

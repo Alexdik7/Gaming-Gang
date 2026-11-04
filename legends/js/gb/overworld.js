@@ -4,6 +4,7 @@ import { MAPS, TILE, SOLID, ENC } from './maps.js';
 import { tile, building, drawChar, tallOverlay, itemBall } from './pixel.js';
 import { sfx, setMusic } from '../core/audio.js';
 import { say, choose } from './gbui.js';
+import { monSprite } from './sprites.js';
 
 const DX = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 const OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
@@ -237,12 +238,13 @@ export class Overworld {
     for (const b of this.blds) ctx.drawImage(building({ ...b, night }), b.x * 16 - cx, b.y * 16 - cy);
     for (const i of this.items) ctx.drawImage(this.ball, i.x * 16 - cx, i.y * 16 - cy - Math.round(Math.sin(G.t * 3 + i.x) * 1));
     // Figuren nach y sortiert
-    const actors = [...this.npcs.map(n => ({ look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
+    const actors = [...this.npcs.map(n => ({ mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
       { look: this.g.state.look, dir: p.dir, frame: p.frame, px: p.px, py: p.py - (p.hop || 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
       ...(this.g.remoteActors?.(this.id) || [])];
     actors.sort((a, b) => a.py - b.py);
     for (const a of actors) {
-      drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
+      if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
+      else drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
       if (this.ch(a.x, a.y) === ':' && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2), a.px - cx, a.py - cy + 8);
       if (a.name) { const w = a.name.length * 4.2 + 6; ctx.fillStyle = 'rgba(20,40,80,.8)'; ctx.fillRect(a.px - cx + 8 - w / 2, a.py - cy - 12, w, 8); text(a.name, a.px - cx + 8, a.py - cy - 11.5, '#ffd36b', 6, 'center', null); }
     }

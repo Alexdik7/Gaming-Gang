@@ -1,6 +1,34 @@
 # Fortschritt
 
-## v0.3 – Phase 2a (aktuell)
+## v0.4 – Phase 2b (aktuell)
+
+### ✅ Neu und getestet (automatisch, mit 2 gleichzeitigen Spielern)
+- **Doppelkämpfe:** 2 gegen 2, Zielauswahl, Wechseln, Tränke.
+  Im Einzelspiel steuerst du deine ersten beiden Kreaturen selbst.
+- **Zwillinge Ria & Rio** (Quellbach, südlich vom Teich):
+  - allein mit 2 Kreaturen oder zu zweit online
+  - Belohnung: 1200 ◈
+- **Felsenkoloss** (Kieselhöhle, oben rechts):
+  - Koop-Boss nur für 2 Spieler, mit doppelten KP und 2 Aktionen pro Runde
+  - Belohnung: 1500 ◈ + 2 Sternkristalle für beide
+  - Danach ist der Gang frei.
+- **Koop-Kämpfe:**
+  - Der Server berechnet alles, jeder steuert seine eigene Kreatur.
+  - Erfahrung und Entwicklungen gehen auf die echten Kreaturen über.
+  - Die KP der echten Kreaturen bleiben unberührt.
+- **Tausch-Entwicklungen:** Kieselkrebs, Schemenohr, Brockel und Irrlicht entwickeln sich sofort, wenn man sie tauscht.
+- **Getauschte Kreaturen** bekommen 1,5× Erfahrung.
+- **Sicherung** (ONLINE → SICHERN / WIEDERHERSTELLEN):
+  - Der Spielstand wird zusätzlich auf dem Weltserver gesichert, automatisch bei jedem Speichern.
+- **Gerät wechseln:**
+  - Auf dem alten Gerät zeigt ONLINE → GERÄT WECHSELN einen 8-stelligen Code an.
+  - Auf dem neuen Gerät: ONLINE → SPIELSTAND HOLEN.
+- **Zu Freund reisen:** ONLINE → ZU FREUND REISEN bringt dich direkt neben einen Mitspieler.
+- **Balance per Simulation geprüft** (je 300 Kämpfe):
+  - Zwillinge allein mit Lv 14/12: etwa 30–60 % Siegchance, mit Lv 16: über 80 %
+  - Koloss zu zweit mit Lv 16: etwa ein Drittel, mit Lv 18: etwa drei Viertel
+
+## v0.3 – Phase 2a
 
 ### ✅ Neu und getestet
 - **Neue Grafik:** Alle Kreaturen und Trainer sind jetzt echte 2D-Pixel-Art im Stil der 32-Bit-Handhelds:
@@ -20,10 +48,6 @@
     Die Kreatur merkt sich ihren ursprünglichen Trainer, und auch Mutationen lassen sich tauschen.
 - Getestet mit zwei gleichzeitigen Spielern: verbinden, sich sehen, kompletter Kampf, Tausch.
 
-### ❌ Noch nicht drin (Phase 2b)
-- Doppelkämpfe 2 gegen 2 und Koop gegen Bosse
-- Server-Sicherung der Spielstände (Spielstände liegen weiterhin auf dem Gerät)
-- Freundesliste und Spielerhäuser
 
 ## Handheld-Edition (v0.2)
 

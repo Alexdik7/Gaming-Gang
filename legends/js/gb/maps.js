@@ -139,6 +139,8 @@ export const MAPS = {
     ],
     signs: { '11,9': 'QUELLBACH\nWo die Bäche singen.\n↑ Altwald   → Route 2' },
     npcs: [
+      { id: 'ria', x: 8, y: 16, dir: 'right', look: { skin: '#f6d2b8', hair: '#f6b73c', outfit: '#e84a5f', pants: '#2b2d42', accent: '#ffffff' }, name: 'Ria' },
+      { id: 'rio', x: 9, y: 16, dir: 'left', look: { skin: '#f6d2b8', hair: '#f6b73c', outfit: '#3d8bfd', pants: '#2b2d42', accent: '#ffffff' }, name: 'Rio' },
       { id: 'jo', x: 9, y: 13, dir: 'up', look: LOOK.jo, name: 'Angler Jo' },
       { id: 'kid2', x: 20, y: 9, dir: 'left', look: LOOK.kid, name: 'Mädchen', wander: 2 },
       { id: 'ilse_out', x: 15, y: 17, dir: 'left', look: LOOK.ilse, name: 'Oma Ilse' },
@@ -217,7 +219,8 @@ export const MAPS = {
       'WWWWWWWWWWWWWWWWWWWWWWWW',
     ],
     warps: [{ x: 0, y: 6, to: 'route2', tx: 28, ty: 5, dir: 'left' }, { x: 23, y: 6, to: 'felsenau', tx: 1, ty: 7, dir: 'right' }],
-    npcs: [{ id: 'tr_ida', x: 6, y: 5, dir: 'down', look: LOOK.ida, name: 'Forscherin Ida', trainer: { team: [['flatterlo', 11], ['frostglibber', 12]], reward: 500, sight: 4, lines: ['Psst! Ich erforsche die Höhlenkreaturen. Kampf?'], lose: 'Faszinierend! Deine Kreaturen sind stark.' } }],
+    npcs: [
+      { id: 'koloss', x: 20, y: 3, dir: 'down', mon: 'brockolith', look: {}, name: 'Felsenkoloss', hideIf: 'coop_koloss' },{ id: 'tr_ida', x: 6, y: 5, dir: 'down', look: LOOK.ida, name: 'Forscherin Ida', trainer: { team: [['flatterlo', 11], ['frostglibber', 12]], reward: 500, sight: 4, lines: ['Psst! Ich erforsche die Höhlenkreaturen. Kampf?'], lose: 'Faszinierend! Deine Kreaturen sind stark.' } }],
     items: [{ id: 'it_h1', x: 21, y: 9, item: 'sternkristall', n: 1 }, { id: 'it_h2', x: 5, y: 11, item: 'trank', n: 1 }],
   },
   felsenau: {

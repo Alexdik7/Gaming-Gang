@@ -2,13 +2,13 @@
 import { SPECIES } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
 import { effectiveness, TYPES } from '../data/types.js';
-import { calcStats, maxHp, monName, giveXp } from '../data/mon.js';
+import { calcStats, maxHp, monName, giveXp, xpBonus } from '../data/mon.js';
 
-const STAGE = s => (s >= 0 ? (2 + s) / 2 : 2 / (2 - s));
-const ACC_STAGE = s => (s >= 0 ? (3 + s) / 3 : 3 / (3 - s));
-const STAT_NAME = { atk: 'Angriff', def: 'Verteidigung', spa: 'Spezial-Angriff', spd: 'Spezial-Vert.', spe: 'Initiative', acc: 'Genauigkeit' };
-const STATUS_NAME = { brand: 'Verbrennung', gift: 'Vergiftung', starre: 'Starre' };
-const freshStages = () => ({ atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 });
+export const STAGE = s => (s >= 0 ? (2 + s) / 2 : 2 / (2 - s));
+export const ACC_STAGE = s => (s >= 0 ? (3 + s) / 3 : 3 / (3 - s));
+export const STAT_NAME = { atk: 'Angriff', def: 'Verteidigung', spa: 'Spezial-Angriff', spd: 'Spezial-Vert.', spe: 'Initiative', acc: 'Genauigkeit' };
+export const STATUS_NAME = { brand: 'Verbrennung', gift: 'Vergiftung', starre: 'Starre' };
+export const freshStages = () => ({ atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 });
 
 export class Battle {
   constructor({ team, foeTeam, wild = true, trainer = null, rnd = Math.random, canCatch = true, pvp = false, names = null }) {
@@ -256,8 +256,8 @@ export class Battle {
     const base = Math.floor((SPECIES[f.sp].xp * f.lvl) / 5 * (this.wild ? 1 : 1.5));
     const alive = this.team.filter(m => this.participants.has(m.uid) && m.hp > 0);
     for (const m of alive) {
-      const amt = Math.max(1, Math.floor(base / alive.length));
-      ev.push({ t: 'msg', text: `${monName(m)} erhält ${amt} EP!` });
+      const amt = Math.max(1, Math.floor(base / alive.length * xpBonus(m)));
+      ev.push({ t: 'msg', text: `${monName(m)} erhält ${xpBonus(m) > 1 ? 'satte ' : ''}${amt} EP!` });
       const res = giveXp(m, amt);
       ev.push({ t: 'xp', uid: m.uid });
       for (const r of res) {

@@ -21,7 +21,8 @@ const jsUrl = f => pathToFileURL(path.join(__dirname, '..', 'js', f)).href;
 const logicReady = (async () => {
   Object.assign(L, await import(jsUrl('data/creatures.js')));
   await import(jsUrl('data/creatures2.js'));
-  Object.assign(L, await import(jsUrl('data/mon.js')), await import(jsUrl('data/breeding.js')), await import(jsUrl('battle/battle.js')));
+  Object.assign(L, await import(jsUrl('data/mon.js')), await import(jsUrl('data/breeding.js')), await import(jsUrl('battle/battle.js')),
+    await import(jsUrl('battle/double.js')), await import(jsUrl('data/coop.js')));
 })().catch(e => console.error('Kampflogik konnte nicht geladen werden:', e));
 
 // ---------------------------------------------------------------- Persistenz
@@ -114,6 +115,27 @@ function handle(s, m) {
   if (!s.pid) return send(s.ws, { t: 'err', msg: 'Nicht angemeldet' });
   const acc = db.accounts[s.pid];
 
+  // Spielstand auf ein anderes Gerät übertragen: kurzer Code (15 min gültig) → neues Geheimnis fürs neue Gerät
+  if (m.t === 'transferCode') {
+    db.transfers ||= {};
+    for (const [k, v] of Object.entries(db.transfers)) if (v.exp < Date.now() || v.pid === s.pid) delete db.transfers[k];
+    let c; do { c = Array.from(crypto.randomBytes(8), b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join(''); } while (db.transfers[c]);
+    db.transfers[c] = { pid: s.pid, exp: Date.now() + 15 * 60 * 1000 }; markDirty();
+    return send(s.ws, { t: 'transferCode', code: c });
+  }
+  if (m.t === 'redeem') {
+    const c = String(m.code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''), tr = db.transfers?.[c];
+    if (!tr || tr.exp < Date.now() || !db.accounts[tr.pid]) return send(s.ws, { t: 'redeemFail', msg: 'Code ungültig oder abgelaufen.' });
+    delete db.transfers[c];
+    const secret = crypto.randomBytes(18).toString('hex'), a2 = db.accounts[tr.pid];
+    a2.secret = hashSecret(secret); markDirty();
+    for (const o of live.values()) if (o.pid === tr.pid && o !== s) { send(o.ws, { t: 'err', msg: 'Dein Spielstand wurde auf ein anderes Gerät übertragen.' }); o.ws.close(); }
+    const worlds = a2.worlds.filter(w => db.worlds[w]);
+    const last = worlds[worlds.length - 1], save = last ? db.worlds[last].members[tr.pid]?.save : null;
+    s.pid = tr.pid;
+    return send(s.ws, { t: 'account', pid: tr.pid, secret, world: last || null, save });
+  }
+
   if (m.t === 'create') {
     const c = code();
     db.worlds[c] = { name: clean(m.name, 32) || 'Neue Welt', owner: s.pid, seed: 52, created: Date.now(), timeBase: DAY_LENGTH * 0.3, timeEpoch: Date.now(), flags: {}, members: {} };
@@ -135,12 +157,13 @@ function handle(s, m) {
     return;
   }
   if (m.t === 'look') { if (m.look && typeof m.look === 'object') me.look = lookClean(m.look); return; }
-  if (m.t === 'req' || m.t === 'reqAns' || m.t.startsWith('duel') || m.t.startsWith('trade')) return social(s, m, w, me);
+  if (m.t === 'req' || m.t === 'reqAns' || m.t.startsWith('duel') || m.t.startsWith('trade') || m.t.startsWith('coop')) return social(s, m, w, me);
   if (m.t === 'save') {
     if (!validSave(m.data)) return send(s.ws, { t: 'err', msg: 'Spielstand abgelehnt' });
     me.save = m.data; me.savedAt = Date.now(); markDirty();
     return send(s.ws, { t: 'saved', at: me.savedAt });
   }
+  if (m.t === 'load') return send(s.ws, { t: 'loaded', data: me.save || null, at: me.savedAt || 0 });
   if (m.t === 'flag') { // gemeinsamer Weltfortschritt (z. B. Runensteine)
     const id = clean(m.id, 40);
     if (!w.flags[id]) { w.flags[id] = { by: me.name, at: Date.now() }; markDirty(); broadcast(s.world, { t: 'flags', flags: w.flags, by: me.name, id }); }
@@ -177,7 +200,7 @@ setInterval(() => {
   for (const s of live.values()) if (s.world && s.pos) (byWorld[s.world] ||= []).push(s);
   for (const [c, list] of Object.entries(byWorld)) {
     const w = db.worlds[c];
-    const players = list.map(s => ({ pid: s.pid, name: w.members[s.pid].name, look: w.members[s.pid].look, busy: !!(s.duel || s.trade), ...s.pos }));
+    const players = list.map(s => ({ pid: s.pid, name: w.members[s.pid].name, look: w.members[s.pid].look, busy: !!(s.duel || s.trade || s.coop), ...s.pos }));
     for (const s of list) send(s.ws, { t: 'snap', players: players.filter(p => p.pid !== s.pid) });
   }
 }, 100);
@@ -198,12 +221,13 @@ function social(s, m, w) {
   if (m.t === 'req') {
     const o = byPid(s.world, m.to);
     if (!o || o === s) return send(s.ws, { t: 'reqNo', why: 'Spieler nicht erreichbar.' });
-    if (o.duel || o.trade || o.req) return send(s.ws, { t: 'reqNo', why: `${nameOf(o)} ist gerade beschäftigt.` });
-    const kind = m.kind === 'trade' ? 'trade' : 'battle';
+    if (o.duel || o.trade || o.coop || o.req) return send(s.ws, { t: 'reqNo', why: `${nameOf(o)} ist gerade beschäftigt.` });
+    const kind = ['trade', 'coop'].includes(m.kind) ? m.kind : 'battle';
+    if (kind === 'coop' && !(L.COOP && L.COOP[m.npc])) return send(s.ws, { t: 'reqNo', why: 'Unbekannter Koop-Gegner.' });
     if (kind === 'battle' && !L.Battle) return send(s.ws, { t: 'reqNo', why: 'Kampflogik auf dem Server nicht bereit.' });
-    s.req = { to: o.pid, kind, team: kind === 'battle' ? healCopy(m.team || []) : null };
+    s.req = { to: o.pid, kind, npc: kind === 'coop' ? m.npc : null, team: kind !== 'trade' ? healCopy(m.team || []) : null };
     if (s.req.team && !s.req.team.length) { s.req = null; return send(s.ws, { t: 'reqNo', why: 'Du hast keine kampffähigen Kreaturen.' }); }
-    return send(o.ws, { t: 'req', from: s.pid, name: nameOf(s), kind });
+    return send(o.ws, { t: 'req', from: s.pid, name: nameOf(s), kind, npc: s.req.npc, npcName: s.req.npc ? L.COOP[s.req.npc].name : null });
   }
   if (m.t === 'reqAns') {
     const o = byPid(s.world, m.to);
@@ -218,6 +242,7 @@ function social(s, m, w) {
     }
     const teamB = healCopy(m.team || []);
     if (!teamB.length) return send(o.ws, { t: 'reqNo', why: `${nameOf(s)} hat keine kampffähigen Kreaturen.` });
+    if (req.kind === 'coop') return startCoop(o, s, req, teamB);
     const names = { p: nameOf(o), f: nameOf(s) };
     const battle = new L.Battle({ team: req.team, foeTeam: teamB, wild: false, pvp: true, names, trainer: { name: names.f } });
     const duel = { a: o, b: s, battle, acts: {}, need: new Set(['p', 'f']), phase: 'act', pend: [] };
@@ -228,6 +253,7 @@ function social(s, m, w) {
     return;
   }
   if (m.t.startsWith('duel')) return duelMsg(s, m);
+  if (m.t.startsWith('coop')) return coopMsg(s, m);
   if (m.t.startsWith('trade')) return tradeMsg(s, m);
 }
 
@@ -267,6 +293,42 @@ function duelMsg(s, m) {
   }
 }
 
+// Koop: zwei Spieler (p0, p1) gegen ein Trainer-Duo oder einen Boss. Server berechnet alles.
+const slotState = b => Object.fromEntries(b.ids().map(id => [id, { pool: b.slots[id].pool, i: b.slots[id].i, owner: b.slots[id].owner, ai: !!b.slots[id].ai, acts: b.slots[id].acts }]));
+function startCoop(a, b, req, teamB) {
+  const battle = new L.DoubleBattle({ xpMode: 'log', slots: { p0: { pool: req.team, owner: nameOf(a) }, p1: { pool: teamB, owner: nameOf(b) }, ...L.foeSlots(req.npc) } });
+  const co = { a, b, battle, npc: req.npc, acts: {}, pend: [] };
+  a.coop = b.coop = co;
+  const st = slotState(battle), looks = [a, b].map(x => db.worlds[x.world].members[x.pid].look);
+  send(a.ws, { t: 'coopStart', slot: 'p0', npc: req.npc, slots: st, looks, partner: nameOf(b) });
+  send(b.ws, { t: 'coopStart', slot: 'p1', npc: req.npc, slots: st, looks, partner: nameOf(a) });
+}
+function coopSend(co, ev) {
+  const B = co.battle, msg = { t: 'coopEv', ev, need: B.need, over: B.over, result: B.result, xpLog: B.over ? B.xpLog : null };
+  send(co.a.ws, msg); send(co.b.ws, msg);
+  if (B.over) co.a.coop = co.b.coop = null;
+}
+function coopMsg(s, m) {
+  const co = s.coop; if (!co) return;
+  const B = co.battle, slot = co.a === s ? 'p0' : 'p1';
+  if (m.t === 'coopAct') {
+    const a = m.a || {}, mon = B.mon(slot);
+    if (!B.alive(slot) || co.acts[slot] || B.need.length) return;
+    if (a.t === 'forfeit') co.acts[slot] = { t: 'forfeit' };
+    else if (a.t === 'switch' && B.canSwitchTo(slot, a.i)) co.acts[slot] = { t: 'switch', i: a.i };
+    else { const i = Number.isInteger(a.i) && mon.moves[a.i]?.pp > 0 ? a.i : Math.max(0, mon.moves.findIndex(x => x.pp > 0)); co.acts[slot] = { t: 'move', i, target: ['f0', 'f1'].includes(a.target) ? a.target : null }; }
+    if (['p0', 'p1'].some(id => B.alive(id) && !co.acts[id])) return;
+    const ev = B.turn(co.acts); co.acts = {};
+    return coopSend(co, ev);
+  }
+  if (m.t === 'coopSwitch' && B.need.includes(slot)) {
+    co.pend.push(...B.forcedSwitch(slot, m.i));
+    if (B.need.length) return;
+    const ev = co.pend; co.pend = [];
+    return coopSend(co, ev);
+  }
+}
+
 function tradeMsg(s, m) {
   const tr = s.trade; if (!tr) return;
   const other = tr.a === s ? tr.b : tr.a;
@@ -292,6 +354,7 @@ function tradeMsg(s, m) {
 }
 function endSocial(s, why) {
   if (s.duel) { const d = s.duel; const side = d.a === s ? 'p' : 'f'; d.need = new Set(); const ev = d.battle.pvpTurn(side === 'p' ? { t: 'forfeit' } : { t: 'move', i: 0 }, side === 'f' ? { t: 'forfeit' } : { t: 'move', i: 0 }); try { duelSend(d, ev); } catch {} d.a.duel = d.b.duel = null; }
+  if (s.coop) { const co = s.coop; co.a.coop = co.b.coop = null; const o = co.a === s ? co.b : co.a; send(o.ws, { t: 'coopEv', ev: [{ t: 'msg', text: `${nameOf(s)} hat die Verbindung verloren. Der Kampf endet.` }, { t: 'end', result: 'draw' }], need: [], over: true, result: 'draw', xpLog: null }); }
   if (s.trade) { const tr = s.trade; tr.a.trade = tr.b.trade = null; const o = tr.a === s ? tr.b : tr.a; send(o.ws, { t: 'tradeCancel', why: 'Verbindung zum Tauschpartner verloren.' }); }
   for (const o of live.values()) if (o.req?.to === s.pid) { o.req = null; send(o.ws, { t: 'reqNo', why: 'Spieler hat die Welt verlassen.' }); }
   s.req = null;

@@ -7,7 +7,7 @@ Alles ist eigenständig gestaltet: eigene Kreaturen, Karten und Geschichte. Dazu
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/legends/
 
 **Zusammen spielen (bis zu 4):** START → ONLINE → Welt erstellen, den Code an Freunde geben.
-Vor einem Mitspieler A drücken → **Kämpfen** oder **Tauschen**. Den nötigen Weltserver richtet ihr einmalig ein, siehe [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
+Vor einem Mitspieler A drücken → **Kämpfen** oder **Tauschen**; zu zweit gegen Trainer-Duos und Bosse; Spielstand-Sicherung auf dem Server. Den nötigen Weltserver richtet ihr einmalig ein, siehe [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
 Auf PC und Handy spielbar und installierbar:
 - **PC (Chrome/Edge):** Adressleiste → „App installieren“

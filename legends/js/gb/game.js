@@ -13,6 +13,8 @@ import { ensureSpecies, stepBreeding, hatch, canBreed, compatibility } from '../
 import { initAudio, sfx, cry, setMusic, setAudio, audioState } from '../core/audio.js';
 import { mulberry } from '../core/noise.js';
 import { Online } from './online.js';
+import { doubleBattle, localDouble } from './double2d.js';
+import { COOP, foeSlots } from '../data/coop.js';
 
 const SAVE = 'lu2-save', OPT = 'lu2-opt', DAY = 24 * 60;
 const LOOKS = {
@@ -50,6 +52,7 @@ class Game {
     const s = this.state; if (!s) return;
     if (this.ow.p) { s.map = this.ow.id; s.x = this.ow.p.x; s.y = this.ow.p.y; s.dir = this.ow.p.dir; }
     try { localStorage.setItem(SAVE, JSON.stringify(s)); if (!quiet) sfx('lvl'); } catch {}
+    this.online?.backup();
   }
   load() {
     const s = safe(localStorage.getItem(SAVE)); if (!s) return null;
@@ -429,8 +432,39 @@ class Game {
       case 'fan': return say(['Arenaleiter Gorm benutzt Erd- und Metall-Kreaturen.', 'Wasser, Pflanze und Feuer haben es leichter gegen ihn!'], N);
       case 'guide': return say(['Hey, Champion in spe! Gorm wartet ganz oben.', 'Seine Kreaturen sind hart wie Stein. Wasser- und Pflanzenattacken helfen enorm!'], N);
       case 'gorm': return this.gym(n);
+      case 'ria': case 'rio': return this.coopNpc('zwillinge', n);
+      case 'koloss': return this.coopNpc('koloss', n);
       default: return say('…', N);
     }
+  }
+
+  // ---------------------------------------------------------- Doppel- und Koop-Kämpfe
+  async coopNpc(id, n) {
+    const d = COOP[id], s = this.state, N = { name: d.name };
+    if (s.flags['coop_' + id]) return say(id === 'koloss' ? 'Hier liegt nur noch Geröll. Der Gang ist frei.' : ['Ria: Das war knapp!', 'Rio: Komm wieder, wenn du einen Freund mitbringst – zu viert macht es noch mehr Spaß!'], N);
+    await say(d.intro, N);
+    const partners = this.online.on ? this.online.partners() : [];
+    const opts = [...partners.map(p => ({ label: `Mit ${p.name}`.slice(0, 16), p })), ...(d.solo ? [{ label: 'Allein (2 Kreaturen)' }] : []), { label: 'Später' }];
+    if (opts.length === 1) return say(this.online.on ? 'Kein Mitspieler auf dieser Karte. Holt euch zu zweit hierher!' : 'Zu zweit geht das nur online: START → ONLINE.', N);
+    const c = await choose(opts.map(o => o.label), { title: 'Kämpfen' });
+    if (c === null || opts[c].label === 'Später') return;
+    if (opts[c].p) { await this.online.coop(id, opts[c].p); return; }
+    if (s.team.filter(m => !m.egg && m.hp > 0).length < 2) return say('Du brauchst zwei kampffähige Kreaturen für einen Doppelkampf!');
+    sfx('encounter'); await this.flashIn();
+    const b = localDouble(this, foeSlots(id));
+    b.ids().filter(x => x[0] === 'f').forEach(x => this.markDex(b.mon(x).sp));
+    const r = await doubleBattle(this, { b, mine: ['p0', 'p1'], bg: d.bg, title: d.name, boss: !!d.boss, trainers: d.looks?.map(look => ({ look })), ownLooks: [s.look] });
+    if (r.result === 'win') { this.ow.music(); await this.coopReward(id); }
+    await this.afterBattle(r);
+  }
+  async coopReward(id) {
+    const d = COOP[id], s = this.state;
+    if (s.flags['coop_' + id]) { await say('Super Kampf! (Die Belohnung gab es schon.)'); return; }
+    s.flags['coop_' + id] = true;
+    if (d.lose) await say(d.lose);
+    s.money += d.reward; await say(`Du erhältst ${d.reward} ◈ Preisgeld!`);
+    if (d.item) { s.bag[d.item[0]] = (s.bag[d.item[0]] || 0) + d.item[1]; sfx('caught'); await say(`Du findest ${d.item[1]}× ${ITEMS[d.item[0]].name}!`); }
+    if (id === 'koloss') this.ow.npcs = this.ow.npcs.filter(x => x.id !== 'koloss');
   }
 
   async gym(n) {
