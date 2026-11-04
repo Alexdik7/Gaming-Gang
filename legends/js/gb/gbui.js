@@ -130,8 +130,9 @@ class Party {
     else if (input.pressed('a')) this.act();
     if (input.pressed('b')) { if (this.swap != null) this.swap = null; else this.close(null); }
   }
-  hit(t) { for (let k = 0; k < this.team.length; k++) { const [x, y] = this.pos(k); if (inRect(t, x, y, 114, 40)) return k; } if (inRect(t, 176, 140, 60, 16)) return this.team.length; return null; }
-  pos(k) { return [k % 2 ? 122 : 4, 4 + Math.floor(k / 2) * 43]; }
+  hit(t) { for (let k = 0; k < this.team.length; k++) { const [x, y, w, h] = this.pos(k); if (inRect(t, x, y, w, h)) return k; } if (inRect(t, 176, 140, 60, 16)) return this.team.length; return null; }
+  // erste Kreatur groß links, die anderen als Leisten rechts
+  pos(k) { return k === 0 ? [4, 20, 86, 58] : [94, 4 + (k - 1) * 26, 143, 24]; }
   async act() {
     sfx('click');
     if (this.i === this.team.length) return this.close(null);
@@ -144,22 +145,40 @@ class Party {
   }
   close(v) { pop(this); this.res(v); }
   draw(ctx) {
-    ctx.fillStyle = '#3a8a6a'; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#48a07a'; for (let y = 0; y < H; y += 8) for (let x = (y / 8) % 2 ? 4 : 0; x < W; x += 8) ctx.fillRect(x, y, 3, 3);
+    // Hintergrund: Blaugrün mit schrägen Streifen
+    ctx.fillStyle = '#287868'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#30887a'; for (let x = -H; x < W; x += 12) { ctx.beginPath(); ctx.moveTo(x, H); ctx.lineTo(x + 6, H); ctx.lineTo(x + 6 + H, 0); ctx.lineTo(x + H, 0); ctx.fill(); }
+    const panel = (x, y, w, h, sel, sw, fainted) => {
+      ctx.fillStyle = '#183830'; ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+      const g = ctx.createLinearGradient(0, y, 0, y + h);
+      if (fainted) { g.addColorStop(0, '#d89090'); g.addColorStop(1, '#b86868'); }
+      else if (sel) { g.addColorStop(0, '#f8c070'); g.addColorStop(1, '#e88838'); }
+      else if (sw) { g.addColorStop(0, '#f89898'); g.addColorStop(1, '#d85858'); }
+      else { g.addColorStop(0, '#68b8f0'); g.addColorStop(1, '#3888c8'); }
+      ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x + 1, y + 1, w - 2, 1);
+      if (sel) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1); }
+    };
     this.team.forEach((m, k) => {
-      const [x, y] = this.pos(k), sel = k === this.i, sw = k === this.swap;
-      box(x, y, 114, 40, sel ? 'gold' : sw ? 'red' : 'default');
-      ctx.drawImage(monIcon(m), x + 2, y + 4);
-      text(m.egg ? 'Ei' : monName(m), x + 34, y + 5, COL.ink, 8, 'left', COL.shadow, true);
+      const [x, y, w, h] = this.pos(k), sel = k === this.i, sw = k === this.swap, big = k === 0;
+      panel(x, y, w, h, sel, sw, !m.egg && m.hp <= 0);
+      const hop = sel && !m.egg ? (Math.floor(G.t * 4) % 2) * -2 : 0;
+      if (big) ctx.drawImage(monIcon(m), x + 2, y + 2 + hop); else ctx.drawImage(monIcon(m), x - 2, y - 6 + hop);
+      const nx = big ? x + 6 : x + 30, ny = big ? y + 32 : y + 3;
+      text(m.egg ? 'Ei' : monName(m), nx, ny, '#ffffff', 7.5, 'left', '#1a3a5a', true);
       if (!m.egg) {
-        text('Lv' + m.lvl, x + 108, y + 5, COL.ink, 7.5, 'right');
-        bar(x + 46, y + 19, 60, 3.5, m.hp / maxHp(m));
-        text('KP', x + 34, y + 17, COL.frame, 6.5, 'left', null, true);
-        text(`${m.hp}/${maxHp(m)}`, x + 108, y + 26, COL.ink, 7, 'right');
-        if (m.mut) text('MUTANT', x + 34, y + 27, '#c03a90', 6, 'left', null, true);
-        if (this.o.filter && this.o.select && !this.o.filter(m)) { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x + 2, y + 2, 110, 36); }
-      } else text(`noch ca. ${Math.max(1, Math.round(m.steps / 50))} Runden`, x + 34, y + 20, COL.inkSoft, 7);
+        text('Lv' + m.lvl, big ? x + 40 : x + 30, big ? y + 6 : y + 13, '#ffffff', 7, 'left', '#1a3a5a', true);
+        const bx = big ? x + 18 : x + 80, by = big ? y + 44 : y + 6, bw = big ? 62 : 56;
+        ctx.fillStyle = '#183830'; ctx.fillRect(bx - 14, by - 1, bw + 15, 6);
+        ctx.fillStyle = '#f8b030'; ctx.fillRect(bx - 13, by, 11, 4); text('KP', bx - 7.5, by - 0.5, '#583000', 4.5, 'center', null, true);
+        bar(bx, by + 0.5, bw, 3, m.hp / maxHp(m));
+        text(`${m.hp}/${maxHp(m)}`, big ? x + w - 6 : x + w - 5, big ? y + 50 : y + 13, '#ffffff', 7, 'right', '#1a3a5a', true);
+        if (m.mut) text('MUT', big ? x + 64 : x + 30, big ? y + 6 : y + 13, '#ffd0f0', 6, 'left', null, true);
+        if (m.status) text({ brand: 'BRD', gift: 'GIF', starre: 'STR' }[m.status], big ? x + 64 : x + 55, big ? y + 16 : y + 13, '#ffe08a', 6, 'left', '#5a2020', true);
+        if (this.o.filter && this.o.select && !this.o.filter(m)) { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x, y, w, h); }
+      } else text(`noch ca. ${Math.max(1, Math.round(m.steps / 50))} Runden`, nx, big ? y + 44 : y + 13, '#e8f0ff', 6.5);
     });
+    for (let k = this.team.length; k < 6; k++) { if (k === 0) continue; const [x, y, w, h] = this.pos(k); ctx.fillStyle = 'rgba(10,40,40,.45)'; ctx.fillRect(x, y, w, h); }
     box(176, 140, 60, 17, this.i === this.team.length ? 'gold' : 'default');
     text('Zurück', 206, 144, COL.ink, 8, 'center');
     box(3, 140, 170, 17, 'dark');
@@ -170,38 +189,74 @@ export const party = (state, o = {}) => new Promise(res => push(new Party(state,
 const eggText = m => `Ein Ei von ${m.parents?.join(' und ') || 'unbekannten Eltern'}. ${m.steps > 200 ? 'Es wird wohl noch eine Weile dauern.' : m.steps > 60 ? 'Manchmal hört man es wackeln!' : 'Es bewegt sich! Gleich schlüpft es!'}`;
 
 // ---------------------------------------------------------------- Bericht
+const STATN = { atk: 'den Angriff', def: 'die Verteidigung', spa: 'den Spezial-Angriff', spd: 'die Spezial-Verteidigung', spe: 'die Initiative', acc: 'die Genauigkeit' };
+function moveDesc(M) {
+  const e = M.effect || {}, T = TYPES[M.type]?.name || M.type;
+  let d = M.cat === 'phys' ? `Ein körperlicher ${T}-Angriff.` : M.cat === 'status' ? `Eine ${T}-Statusattacke.` : `Ein ${T}-Angriff mit Spezialkraft.`;
+  if (e.stat) d += ` ${e.stages > 0 ? 'Erhöht' : 'Senkt'} ${STATN[e.stat] || e.stat} ${e.target === 'self' ? 'des Anwenders' : 'des Gegners'}${Math.abs(e.stages) > 1 ? ' stark' : ''}.`;
+  if (e.status) d += ` Kann ${{ brand: 'Verbrennungen', gift: 'eine Vergiftung', starre: 'Starre' }[e.status]} verursachen${e.chance ? ` (${Math.round(e.chance * (e.chance <= 1 ? 100 : 1))} %)` : ''}.`;
+  if (e.heal) d += ' Heilt den Anwender.';
+  return d;
+}
 class Summary {
-  constructor(m, res) { this.m = m; this.res = res; this.page = 0; }
+  constructor(m, res) { this.m = m; this.res = res; this.page = 0; this.mc = 0; }
   update() {
-    if (input.pressed('left') || input.pressed('right') || input.tap) { this.page ^= 1; sfx('click'); }
+    if (input.pressed('right') || (input.tap && input.tap.x > 120)) { this.page = (this.page + 1) % 3; sfx('click'); }
+    else if (input.pressed('left') || (input.tap && input.tap.x <= 120)) { this.page = (this.page + 2) % 3; sfx('click'); }
+    if (this.page === 2 && this.m.moves.length) { if (input.repeat('down')) { this.mc = (this.mc + 1) % this.m.moves.length; sfx('click'); } if (input.repeat('up')) { this.mc = (this.mc - 1 + this.m.moves.length) % this.m.moves.length; sfx('click'); } }
     if (input.pressed('b') || input.pressed('a')) { pop(this); this.res(); }
   }
   draw(ctx) {
-    const m = this.m, S = SPECIES[m.sp];
-    ctx.fillStyle = '#f0f4f8'; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = TYPES[S.types[0]].color; ctx.fillRect(0, 0, W, 18);
-    text(this.page ? 'ATTACKEN & GESCHICHTE' : 'BERICHT', 8, 4, '#fff', 8, 'left', 'rgba(0,0,0,.4)', true);
-    text('◀ ▶', 230, 5, '#fff', 7, 'right', null);
-    ctx.fillStyle = '#dfe8f0'; ctx.fillRect(4, 22, 76, 76);
-    ctx.drawImage(monSprite(m.sp, 'front', m.shiny, m.mut), 10, 26);
-    text(monName(m), 6, 101, COL.ink, 8.5, 'left', COL.shadow, true);
-    text(`Lv ${m.lvl}  #${S.num}`, 6, 113, COL.inkSoft, 7.5);
-    S.types.forEach((t, i) => typeTag(t, 6 + i * 37, 125));
-    text(RARITY[S.rarity].name + (m.mut ? ' · Mutant' : '') + (m.shiny ? ' ✦' : ''), 6, 140, S.rarity === 'mutation' ? '#c03a90' : COL.inkSoft, 7, 'left', null, true);
-    if (!this.page) {
-      const st = calcStats(m), names = [['KP', 'hp'], ['Angriff', 'atk'], ['Verteid.', 'def'], ['Sp.-Ang.', 'spa'], ['Sp.-Vert.', 'spd'], ['Initiative', 'spe']];
-      box(86, 22, 150, 86);
-      names.forEach(([n, k], i) => { text(n, 94, 28 + i * 12, COL.ink, 7.5); text(k === 'hp' ? `${m.hp}/${st.hp}` : String(st[k]), 228, 28 + i * 12, COL.ink, 7.5, 'right', null, true); });
-      box(86, 110, 150, 46);
-      const need = xpForLevel(m.lvl + 1) - m.xp;
-      text(`EP: ${m.xp}`, 94, 116, COL.ink, 7.5); text(`Bis Lv ${m.lvl + 1}: ${need}`, 94, 127, COL.ink, 7.5);
-      bar(94, 141, 134, 3, (m.xp - xpForLevel(m.lvl)) / (xpForLevel(m.lvl + 1) - xpForLevel(m.lvl)), 'xp');
-    } else {
-      box(86, 22, 150, 62);
-      m.moves.forEach((mv, i) => { const M = MOVES[mv.id]; typeTag(M.type, 92, 28 + i * 13); text(M.name, 130, 28.5 + i * 13, COL.ink, 7.5); text(`${mv.pp}/${M.pp}`, 228, 28.5 + i * 13, COL.inkSoft, 7, 'right'); });
-      box(86, 86, 150, 70);
+    const m = this.m, S = SPECIES[m.sp], tc = TYPES[S.types[0]].color, P = ['INFO', 'WERTE', 'ATTACKEN'];
+    ctx.fillStyle = '#e8e0c8'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#d8cfb0'; for (let y = 0; y < H; y += 8) for (let x = (y / 8) % 2 ? 4 : 0; x < W; x += 8) ctx.fillRect(x, y, 2, 2);
+    // Kopfzeile mit Seiten
+    ctx.fillStyle = '#304860'; ctx.fillRect(0, 0, W, 16);
+    text('KREATUREN-' + P[this.page], 6, 4, '#fff', 7.5, 'left', null, true);
+    P.forEach((_, i) => { ctx.fillStyle = i === this.page ? '#f8d050' : '#6a88a8'; ctx.fillRect(196 + i * 13, 5, 10, 6); });
+    // linke Seite: Bild, Name, Level
+    ctx.fillStyle = '#28202c'; ctx.fillRect(3, 19, 82, 84); const g = ctx.createLinearGradient(0, 20, 0, 102); g.addColorStop(0, '#f8f8f0'); g.addColorStop(1, tc); ctx.fillStyle = g; ctx.fillRect(4, 20, 80, 82);
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(44, 88, 30, 7, 0, 0, 7); ctx.fill();
+    ctx.drawImage(monSprite(m.sp, 'front', m.shiny, m.mut), 12, 24 + Math.round(Math.sin(G.t * 3)));
+    if (m.shiny) text('✦', 78, 22, '#f8c830', 9, 'right', null, true);
+    box(3, 106, 82, 50);
+    text(monName(m), 9, 111, COL.ink, 8, 'left', COL.shadow, true);
+    text('Lv' + m.lvl, 9, 124, COL.ink, 7.5, 'left', null, true);
+    text('Nr.' + String(S.num).padStart(3, '0'), 79, 124, COL.inkSoft, 7, 'right');
+    S.types.forEach((t, i) => typeTag(t, 8 + i * 37, 138));
+    // rechte Seite
+    box(89, 19, 148, 138);
+    const L = (a, b, y, col = COL.ink) => { text(a, 96, y, COL.inkSoft, 7.5); text(b, 230, y, col, 7.5, 'right', null, true); };
+    if (this.page === 0) {
+      L('Art', S.name, 27); L('Seltenheit', RARITY[S.rarity].name + (m.mut ? ' · Mutant' : ''), 39);
+      L('Trainer', m.ot || 'Du', 51); L('Freundschaft', '♥'.repeat(Math.max(1, Math.min(5, Math.round((m.friendship || 70) / 51)))), 63, '#e84a6a');
+      ctx.fillStyle = '#d8d0b8'; ctx.fillRect(96, 76, 134, 1);
       let lore = S.lore; if (m.hatchedFrom) lore += ` Geschlüpft aus dem Ei von ${m.hatchedFrom.join(' & ')}.`;
-      wrap(lore, 136, 6.8).slice(0, 7).forEach((l, i) => text(l, 92, 91 + i * 9, COL.ink, 6.8, 'left', null));
+      wrap(lore, 132, 7).slice(0, 7).forEach((l, i) => text(l, 96, 82 + i * 10, COL.ink, 7, 'left', null));
+    } else if (this.page === 1) {
+      const st = calcStats(m), names = [['KP', 'hp'], ['Angriff', 'atk'], ['Verteid.', 'def'], ['Sp.-Ang.', 'spa'], ['Sp.-Vert.', 'spd'], ['Initiative', 'spe']];
+      names.forEach(([n, k], i) => {
+        const y = 26 + i * 13; text(n, 96, y, COL.ink, 7.5); text(k === 'hp' ? `${m.hp}/${st.hp}` : String(st[k]), 230, y, COL.ink, 7.5, 'right', null, true);
+        const v = Math.min(1, (k === 'hp' ? st.hp / 1.6 : st[k]) / (m.lvl * 2 + 40)); ctx.fillStyle = '#d8d0b8'; ctx.fillRect(150, y + 3, 44, 3); ctx.fillStyle = tc; ctx.fillRect(150, y + 3, Math.round(44 * v), 3);
+      });
+      ctx.fillStyle = '#d8d0b8'; ctx.fillRect(96, 105, 134, 1);
+      const need = xpForLevel(m.lvl + 1) - m.xp;
+      text('EP', 96, 111, COL.inkSoft, 7.5); text(String(m.xp), 230, 111, COL.ink, 7.5, 'right', null, true);
+      text('Bis Lv ' + (m.lvl + 1), 96, 124, COL.inkSoft, 7.5); text(String(Math.max(0, need)), 230, 124, COL.ink, 7.5, 'right', null, true);
+      bar(96, 140, 134, 3, (m.xp - xpForLevel(m.lvl)) / (xpForLevel(m.lvl + 1) - xpForLevel(m.lvl)), 'xp');
+    } else {
+      m.moves.forEach((mv, i) => {
+        const M = MOVES[mv.id], y = 24 + i * 18;
+        if (i === this.mc) { ctx.fillStyle = 'rgba(248,208,80,.35)'; ctx.fillRect(93, y - 2, 140, 17); }
+        typeTag(M.type, 95, y + 1); text(M.name, 133, y, COL.ink, 7.5, 'left', null, true); text(`AP ${mv.pp}/${M.pp}`, 230, y + 8, COL.inkSoft, 6.5, 'right');
+      });
+      const mv = m.moves[this.mc];
+      if (mv) {
+        const M = MOVES[mv.id]; ctx.fillStyle = '#d8d0b8'; ctx.fillRect(96, 98, 134, 1);
+        text(M.cat === 'status' ? 'Status-Attacke' : `Stärke ${M.pow}`, 96, 103, COL.ink, 7.5, 'left', null, true);
+        text(M.acc ? `Genauigkeit ${M.acc}` : 'trifft immer', 230, 103, COL.inkSoft, 7, 'right');
+        wrap(moveDesc(M), 132, 7).slice(0, 4).forEach((l, i) => text(l, 96, 115 + i * 10, COL.ink, 7, 'left', null));
+      }
     }
   }
 }

@@ -215,7 +215,8 @@ export class Overworld {
     if (b.heal) s.healPoint = { map: this.id, x: b.x + b.door, y: b.y + b.h };
     const I = MAPS[b.to]; let mx = 0, my = 0;
     I.rows.forEach((r, yy) => { const k = r.indexOf('m'); if (k >= 0 && !mx) { mx = k; my = yy; } });
-    sfx('open');
+    sfx('open'); this.busy = true; this.door = { x: b.x + b.door, y: b.y + b.h - 1 };
+    await wait(260); this.door = null;
     await this.warp(b.to, mx, my, 'up');
   }
   async exitInterior() { const r = this.g.state.ret || { map: 'moosgrund', x: 4, y: 9 }; await this.warp(r.map, r.x, r.y, 'down'); }
@@ -300,6 +301,31 @@ export class Overworld {
     } finally { this.busy = false; }
   }
 
+  // ---------------------------------------------------------- Wetter (Regen wechselt täglich, Asche am Vulkan, Schnee im Norden)
+  weather() {
+    if (!this.M.outdoor) return null;
+    const W0 = { route3: 'ash', ignis: 'ash', kraterherz: 'ash', route5: 'snow', frostheim: 'snow', frostgipfel: 'snow' };
+    if (W0[this.id]) return W0[this.id];
+    const day = Math.floor(Date.now() / 864e5), R = ['route1', 'route2', 'altwald', 'route4', 'aqualis', 'route8'], i = R.indexOf(this.id);
+    return i >= 0 && (day + i) % 3 === 0 ? 'rain' : null;
+  }
+  drawWeather(ctx, cx, cy) {
+    const w = this.weather(); if (!w) return;
+    const t = G.t, md = (v, m) => ((v % m) + m) % m;
+    if (w === 'rain') {
+      ctx.fillStyle = 'rgba(30,40,70,.18)'; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(200,220,255,.55)'; ctx.lineWidth = 1; ctx.beginPath();
+      for (let i = 0; i < 80; i++) { const x = md(i * 53.7 - t * 60 - cx, W + 20) - 10, y = md(i * 31.3 + t * 260 - cy, H + 20) - 10; ctx.moveTo(x, y); ctx.lineTo(x - 3, y + 8); }
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(220,235,255,.6)'; for (let i = 0; i < 14; i++) { const k = md(t * 3 + i * 0.37, 1); if (k > 0.3) continue; ctx.fillRect(md(i * 71.3 + Math.floor(t * 3 + i * 0.37) * 37 - cx, W), md(i * 47.9 + Math.floor(t * 3 + i * 0.37) * 53 - cy, H), 2 + k * 6, 1); }
+    } else {
+      const ash = w === 'ash', n = ash ? 45 : 60;
+      ctx.fillStyle = ash ? 'rgba(210,200,195,.85)' : 'rgba(255,255,255,.9)';
+      for (let i = 0; i < n; i++) { const x = md(i * 47.3 + Math.sin(t * 1.3 + i) * 6 + t * (ash ? 8 : -6) - cx, W + 10) - 5, y = md(i * 29.7 + t * (ash ? 16 : 22) * (0.7 + (i % 5) * 0.1) - cy, H + 10) - 5; ctx.fillRect(x, y, i % 3 ? 1.5 : 2.5, i % 3 ? 1.5 : 2); }
+      if (ash) { ctx.fillStyle = 'rgba(120,90,80,.12)'; ctx.fillRect(0, 0, W, H); }
+    }
+  }
+
   // ---------------------------------------------------------- Zeichnen
   draw(ctx) {
     const p = this.p, mw = this.w * 16, mh = this.h * 16;
@@ -341,6 +367,8 @@ export class Overworld {
     for (const b of this.blds) ctx.drawImage(building({ ...b, night }), b.x * 16 - cx, b.y * 16 - cy);
     for (const b of this.boulders || []) ctx.drawImage(tile('rockTop'), b.x * 16 - cx, b.y * 16 - cy);
     for (const i of this.items) ctx.drawImage(this.ball, i.x * 16 - cx, i.y * 16 - cy - Math.round(Math.sin(G.t * 3 + i.x) * 1));
+    // geöffnete Tür
+    if (this.door) { const dx = this.door.x * 16 - cx, dy = this.door.y * 16 - cy; ctx.fillStyle = '#28202c'; ctx.fillRect(dx + 3, dy + 3, 10, 13); ctx.fillStyle = '#100c14'; ctx.fillRect(dx + 4, dy + 4, 8, 12); ctx.fillStyle = 'rgba(255,220,150,.25)'; ctx.fillRect(dx + 4, dy + 13, 8, 3); }
     // Fußspuren im Sand
     for (const f of this.prints) {
       ctx.fillStyle = `rgba(100,70,35,${Math.min(1, f.t / 1.5) * 0.55})`; const bx = f.x * 16 - cx, by = f.y * 16 - cy;
@@ -348,7 +376,7 @@ export class Overworld {
     }
     // Figuren nach y sortiert
     const actors = [...this.npcs.map(n => ({ mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
-      { look: this.g.state.look, dir: p.dir, frame: p.frame, px: p.px, py: p.py - (p.hop || 0) - (p.bob || 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
+      { look: this.g.state.look, dir: p.dir, frame: p.frame, hop: p.hop || 0, px: p.px, py: p.py - (p.hop || 0) - (p.bob || 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
       ...(this.g.remoteActors?.(this.id) || [])];
     actors.sort((a, b) => a.py - b.py);
     for (const a of actors) {
@@ -361,7 +389,7 @@ export class Overworld {
           ctx.translate(Math.round(a.px - cx) + Math.round(Math.sin(G.t * 2.5 + a.x)), wy * 2 - 2); ctx.scale(1, -1);
           ctx.drawImage(charSheet(a.look), (a.frame || 0) * 16, DIRS.indexOf(a.dir) * 24, 16, 24, 0, Math.round(a.py - cy) - 9, 16, 24); ctx.restore();
         }
-        drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
+        drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy, a.hop || 0);
       }
       { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h' || tc === 'y' || tc === 'f' || tc === '%') && !(a.me && p.jump)) { const rs = a.me && this.rustle ? Math.round(Math.sin(this.rustle.t * 45) * 1.4) : 0; ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : tc === 'y' ? 'snow' : tc === 'f' ? 'dry' : tc === '%' ? 'mount' : 'green'), a.px - cx + rs, a.py - cy + 8 - Math.abs(rs)); } }
       if (a.name) { const w = a.name.length * 4.2 + 6; ctx.fillStyle = 'rgba(20,40,80,.8)'; ctx.fillRect(a.px - cx + 8 - w / 2, a.py - cy - 19, w, 8); text(a.name, a.px - cx + 8, a.py - cy - 18.5, '#ffd36b', 6, 'center', null); }
@@ -376,6 +404,7 @@ export class Overworld {
       const cl = cloudShadow(), span = mw + 320;
       for (let i = 0; i < 3; i++) { const wx = ((i * 260 + G.t * (5 + i * 2)) % span) - 160, wy = ((i * 173) % Math.max(1, mh)) - 30; ctx.drawImage(cl, wx - cx, wy - cy); }
     }
+    this.drawWeather(ctx, cx, cy);
     if (this.emote) {
       const n = this.emote.n, x = n.px - cx + 4, y = n.py - cy - 22;
       ctx.fillStyle = '#28202c'; ctx.fillRect(x - 1, y - 1, 10, 12); ctx.fillStyle = '#fff'; ctx.fillRect(x, y, 8, 10); text('!', x + 4, y + 0.5, '#e84a5f', 9, 'center', null, true);

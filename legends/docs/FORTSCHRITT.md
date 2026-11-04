@@ -424,3 +424,19 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
 - **Beutel:**
   - bildschirmfüllend mit fünf Taschen (Items, Kristalle, A-Kristalle, Beeren, Basis-Items), wechselbar mit ← →
   - Beutelgrafik in Taschenfarbe und Beschreibung des gewählten Gegenstands
+
+## v1.5 – Team, Bericht und Wetter wie in Smaragd
+- **Team-Bildschirm im Original-Layout:**
+  - erste Kreatur groß links, die anderen als Leisten rechts
+  - blaue Felder, orange für die Auswahl, rot bei K.O.
+  - hüpfendes Symbol, Status und KP-Schild
+- **Bericht mit drei Seiten** (◀ ▶):
+  - INFO: Art, Seltenheit, Trainer, Freundschaft, Beschreibung
+  - WERTE: Balken je Wert, EP bis zum nächsten Level
+  - ATTACKEN: Typ, AP, Stärke, Genauigkeit und eine erzeugte Beschreibung der Wirkung
+- **Wetter:**
+  - Aschenregen auf Route 3, in Ignis und im Kraterherz
+  - Schneefall auf Route 5, in Frostheim und am Frostgipfel
+  - Regen wechselt täglich auf sechs Gebieten
+- **Türen** öffnen sich sichtbar, bevor man ein Haus betritt.
+- **Felsvorsprünge:** Beim Hüpfen bleibt der Schatten am Boden und wird kleiner.

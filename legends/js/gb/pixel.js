@@ -583,9 +583,9 @@ export function charSheet(look) {
   return c;
 }
 export const DIRS = ['down', 'up', 'left', 'right'];
-export function drawChar(ctx, look, dir, frame, x, y) {
-  const sh = charSheet(look);
-  ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(x + 8, y + 15, 5.5, 2, 0, 0, 7); ctx.fill();
+export function drawChar(ctx, look, dir, frame, x, y, hop = 0) {
+  const sh = charSheet(look), k = 1 - Math.min(0.4, hop / 25);
+  ctx.fillStyle = `rgba(0,0,0,${0.22 * k})`; ctx.beginPath(); ctx.ellipse(x + 8, y + 15 + hop, 5.5 * k, 2 * k, 0, 0, 7); ctx.fill();
   ctx.drawImage(sh, frame * 16, DIRS.indexOf(dir) * 24, 16, 24, snap(x), snap(y - 9), 16, 24);
 }
 
