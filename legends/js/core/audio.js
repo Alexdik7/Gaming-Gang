@@ -3,8 +3,16 @@ import { compiled } from './music.js';
 let ctx = null, master = null, musicGain = null, sfxGain = null;
 export const audioState = { music: true, sfx: true };
 
+// iPhone: Ton auch bei eingeschaltetem Stummschalter (wie bei Spiele-Apps) und nach Anruf/App-Wechsel wieder aufnehmen
+try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+const wake = () => { if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume().catch(() => {}); };
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) wake(); });
+  addEventListener('pointerdown', wake, true); addEventListener('touchend', wake, true); addEventListener('keydown', wake, true);
+}
+
 export function initAudio() {
-  if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+  if (ctx) { if (ctx.state !== 'running') ctx.resume(); return; }
   try {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     master = ctx.createGain(); master.gain.value = 0.7; master.connect(ctx.destination);

@@ -26,13 +26,24 @@
 
 ## iPhone / iPad
 
-Apple erlaubt Apps außerhalb des App Stores nur mit einem kostenpflichtigen Entwicklerkonto. Die beste Lösung ohne App Store:
+Apple erlaubt Apps außerhalb des App Stores nur mit einem kostenpflichtigen Entwicklerkonto. Als Web-App vom Home-Bildschirm läuft das Spiel aber wie eine echte App: Vollbild, eigenes Icon, offline.
 
-1. https://alexdik7.github.io/Gaming-Gang/legends/ in **Safari** öffnen.
-2. **Teilen** (Quadrat mit Pfeil) → **„Zum Home-Bildschirm“** → **Hinzufügen**.
-3. Das Spiel startet dann vom Home-Bildschirm wie eine App:
-   - im Vollbild, ohne Adressleiste
-   - offline, nachdem es einmal geladen wurde
+1. In **Safari** öffnen: https://alexdik7.github.io/Gaming-Gang/legends/
+   Es muss Safari sein; in Chrome auf dem iPhone fehlt die Option.
+2. Unten auf **Teilen** tippen, das Quadrat mit dem Pfeil nach oben.
+3. Nach unten scrollen → **„Zum Home-Bildschirm“** → **Hinzufügen**.
+   Bei neueren iOS-Versionen den Schalter **„Als Web-App öffnen“** eingeschaltet lassen.
+4. Das Spiel ab jetzt **nur noch über das Icon** auf dem Home-Bildschirm starten.
+
+**Gut zu wissen:**
+- **Offline:** Nach dem ersten Start ist alles auf dem iPhone gespeichert, das Spiel läuft danach auch im Flugmodus.
+- **Ton:** Der Ton läuft auch bei eingeschaltetem Stummschalter, ab iOS 16.4. Nach einem Anruf oder App-Wechsel reicht ein Tippen, dann geht er weiter.
+- **Spielstand:**
+  - Die Home-Bildschirm-App hat einen **eigenen** Speicher, getrennt von Safari. Ein Spielstand aus dem Safari-Tab ist dort nicht automatisch drin.
+  - Am besten nur noch die App vom Home-Bildschirm benutzen.
+  - Das Icon nicht löschen, sonst ist der Spielstand weg.
+  - Mit Online-Server sichert ONLINE → GERÄT WECHSELN den Spielstand per Code.
+- **Updates:** kommen automatisch. Neue Versionen lädt das Spiel im Hintergrund und nutzt sie beim nächsten Start.
 
 ## Online zusammen spielen in der App
 
