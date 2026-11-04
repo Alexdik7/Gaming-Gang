@@ -566,6 +566,8 @@ function figure(look, dir, step) {
     } else {
       P(2, 1 + bob, 12, 10, hair); P(4, 1 + bob, 8, 1, shade(hair, 0.2)); P(11, 2 + bob, 2, 8, hairD); P(5, 11 + bob, 6, 1, skinD);
     }
+    if (look.jaw && dir === 'down') { P(5, 6 + bob, 2, 1, hairD); P(9, 6 + bob, 2, 1, hairD); P(3, 10 + bob, 10, 1, skin); P(4, 11 + bob, 8, 1, skinD); P(6, 10 + bob, 4, 1, skinD); }
+    if (look.pony) { if (dir === 'up') { P(7, 8 + bob, 2, 6, hair); P(7, 9 + bob, 2, 1, look.accent || hairD); P(7, 13 + bob, 2, 1, hairD); } else { P(13, 5 + bob, 1, 5, hairD); P(2, 5 + bob, 1, 4, hair); } }
     if (cap) { P(3, 0 + bob, 10, 4, cap); P(4, 0 + bob, 8, 1, shade(cap, 0.25)); P(11, 1 + bob, 2, 3, shade(cap, -0.3)); if (dir === 'down') { P(2, 4 + bob, 12, 1, shade(cap, -0.35)); P(7, 1 + bob, 2, 2, acc); } else P(5, 4 + bob, 6, 1, shade(cap, -0.35)); }
   } else {
     // Seitenansicht nach links (rechts wird gespiegelt)
@@ -579,6 +581,8 @@ function figure(look, dir, step) {
     P(1, 7 + bob, 1, 2, skin);
     P(3, 1 + bob, 10, 4, hair); P(7, 4 + bob, 6, 6, hair); P(10, 3 + bob, 3, 7, hairD); P(4, 1 + bob, 7, 1, shade(hair, 0.2)); P(3, 5 + bob, 1, 1, hair);
     P(4, 7 + bob, 1, 2, '#202030'); P(4, 7 + bob, 1, 1, '#4a4a68'); P(3, 10 + bob, 2, 1, skinD); P(7, 7 + bob, 1, 2, skinD);
+    if (look.pony) { P(12, 4 + bob, 2, 2, look.accent || hairD); P(13, 5 + bob, 2, 6, hair); P(14, 6 + bob, 1, 5, hairD); }
+    if (look.jaw) { P(3, 6 + bob, 2, 1, hairD); P(3, 10 + bob, 4, 1, skin); P(4, 11 + bob, 4, 1, skinD); }
     if (cap) { P(3, 0 + bob, 10, 4, cap); P(4, 0 + bob, 7, 1, shade(cap, 0.25)); P(10, 1 + bob, 2, 3, shade(cap, -0.3)); P(0, 4 + bob, 7, 1, shade(cap, -0.35)); }
   }
   // dunkler Umriss um alles Gemalte

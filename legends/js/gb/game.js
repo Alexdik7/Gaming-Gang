@@ -202,8 +202,8 @@ class Game {
   async intro() {
     const I = new IntroScene(this); push(I);
     await fade(0, 300);
-    const P = { name: 'Prof. Linde' };
-    await say(['Hallo! Herzlich willkommen in der Welt von LEGENDS UNITED!', 'Mein Name ist Linde. Die Leute nennen mich die Kreaturen-Professorin.'], P);
+    const P = { name: 'Dr. Vato' };
+    await say(['Hallo! Herzlich willkommen in der Welt von LEGENDS UNITED!', 'Mein Name ist Vato – Dr. Vato. Die Leute nennen mich den Kreaturen-Doktor.'], P);
     I.showMon = 'hoppel'; cry(SPECIES.hoppel.cry);
     await say(['Diese Welt wird von Wesen bewohnt, die wir Kreaturen nennen.', 'Manche leben im hohen Gras, andere tief in Höhlen – und manche zeigen sich nur bei Nacht.', 'Wir Menschen und Kreaturen leben als Freunde zusammen. Manche Trainer lassen sie sogar gemeinsam Eier ausbrüten…', '… und daraus schlüpfen manchmal Mutationen, die es noch nie gegeben hat!'], P);
     I.showMon = null;
@@ -228,7 +228,7 @@ class Game {
     push(this.ow); this.started = true;
     await fade(0, 400);
     this.online.autoJoin();
-    if (fresh) { this.ow.busy = true; await say(['Mama: Guten Morgen, ' + s.name + '!', 'Mama: Prof. Linde wartet in ihrem Labor auf dich – das große graue Haus im Süden des Dorfes.'], {}); this.ow.busy = false; this.save(true); }
+    if (fresh) { this.ow.busy = true; await say(['Mama: Guten Morgen, ' + s.name + '!', 'Mama: Dr. Vato wartet in seinem Labor auf dich – das große graue Haus im Süden des Dorfes.'], {}); this.ow.busy = false; this.save(true); }
   }
 
   // ---------------------------------------------------------- Menüs
@@ -537,7 +537,7 @@ class Game {
     if (map === 'moosgrund' && to === 'route1' && !s.flags.gotBalls) {
       this.ow.busy = true;
       (async () => {
-        await say(s.flags.starter ? 'Prof. Linde: Warte, ' + s.name + '! Ich habe noch etwas für dich – komm kurz ins Labor!' : 'Eine Stimme ruft: Halt! Ohne eigene Kreatur ist das hohe Gras viel zu gefährlich! Geh erst zu Prof. Linde ins Labor.');
+        await say(s.flags.starter ? 'Dr. Vato: Warte, ' + s.name + '! Ich habe noch etwas für dich – komm kurz ins Labor!' : 'Eine Stimme ruft: Halt! Ohne eigene Kreatur ist das hohe Gras viel zu gefährlich! Geh erst zu Dr. Vato ins Labor.');
         this.ow.busy = false;
       })();
       return true;
@@ -548,7 +548,7 @@ class Game {
     const s = this.state, pg = { ignis: [12, 0], route4: [22, 14], frostheim: [20, 10], drakmor: [24, 1], altwald: [10, 2] }[map];
     if (pg && pg[0] === x && pg[1] === y && !s.flags.linde_pg) {
       this.ow.busy = true;
-      (async () => { await say(s.flags.champion ? ['Der Bann vor dem Eingang flackert, als würde er dich erkennen.', 'Prof. Linde in Moosgrund weiß bestimmt, was das bedeutet.'] : ['Ein uralter Bann aus Licht versiegelt den Eingang.', 'Nur jemand, der stärker ist als alle Trainer der Liga, könnte ihn brechen.']); this.ow.busy = false; })();
+      (async () => { await say(s.flags.champion ? ['Der Bann vor dem Eingang flackert, als würde er dich erkennen.', 'Dr. Vato in Moosgrund weiß bestimmt, was das bedeutet.'] : ['Ein uralter Bann aus Licht versiegelt den Eingang.', 'Nur jemand, der stärker ist als alle Trainer der Liga, könnte ihn brechen.']); this.ow.busy = false; })();
       return true;
     }
     if (map === 'drachenhort' && x === 10 && y === 0) {
@@ -625,20 +625,20 @@ class Game {
     for (const e of list) { r -= e[1]; if (r <= 0) return this.shinyRoll(createMon(e[0], e[2] + Math.floor(Math.random() * (e[3] - e[2] + 1)))); }
     return this.shinyRoll(createMon(list[0][0], list[0][2]));
   }
-  // Prof. Linde belohnt das Füllen der Chronik
+  // Dr. Vato belohnt das Füllen der Chronik
   async dexRewards() {
     const s = this.state, n = Object.keys(s.dex.caught).filter(id => !SPECIES[id]?.fusion).length;
     const R = [[5, { kristall: 5 }], [10, { sternkristall: 5 }], [20, { supertrank: 5 }], [30, { hypertrank: 3, sternkristall: 5 }], [45, { glanzamulett: 1 }], [60, { sternkristall: 10 }], [80, { urkristall: 1 }], [100, { hypertrank: 10, money: 20000 }], [125, { sternkristall: 20 }], [150, { urkristall: 2, money: 50000 }]];
     for (const [k, rew] of R) {
       if (n < k || s.flags['dexR' + k]) continue;
       s.flags['dexR' + k] = true; sfx('dex');
-      await say([`Dein Funkgerät klingelt …`, `Prof. Linde: ${s.name}, du hast schon ${k} verschiedene Kreaturen gebunden! Das ist großartig für meine Forschung!`, 'Prof. Linde: Hier, eine kleine Belohnung. Ich schicke sie dir direkt in den Beutel!']);
+      await say([`Dein Funkgerät klingelt …`, `Dr. Vato: ${s.name}, du hast schon ${k} verschiedene Kreaturen gebunden! Das ist großartig für meine Forschung!`, 'Dr. Vato: Hier, eine kleine Belohnung. Ich schicke sie dir direkt in den Beutel!']);
       for (const [it, v] of Object.entries(rew)) {
         if (it === 'money') { s.money += v; sfx('caught'); await say(`${s.name} erhält ${v} ◈!`); continue; }
         s.bag[it] = (s.bag[it] || 0) + v; sfx('caught'); await say(`${s.name} erhält ${v > 1 ? v + '× ' : ''}${ITEMS[it].name}!`);
       }
-      if (rew.glanzamulett) await say('Prof. Linde: Mit dem Glanzamulett begegnest du schimmernden Kreaturen viel häufiger. Halt die Augen offen!');
-      const next = R.find(([kk]) => kk > k); if (next) await say(`Prof. Linde: Melde dich wieder, wenn du ${next[0]} Arten gebunden hast!`);
+      if (rew.glanzamulett) await say('Dr. Vato: Mit dem Glanzamulett begegnest du schimmernden Kreaturen viel häufiger. Halt die Augen offen!');
+      const next = R.find(([kk]) => kk > k); if (next) await say(`Dr. Vato: Melde dich wieder, wenn du ${next[0]} Arten gebunden hast!`);
     }
   }
   async wildBattle(encId, bg, mon) {
@@ -801,8 +801,8 @@ class Game {
   }
   async orbs() {
     const s = this.state;
-    if (s.flags.starter) return say('Auf dem Tisch liegen nur noch zwei Kristalle. Die gehören der Professorin.');
-    if (!s.flags.lindeTalked) return say('Drei Kristalle leuchten auf dem Tisch. Vielleicht sollte ich zuerst mit Prof. Linde sprechen.');
+    if (s.flags.starter) return say('Auf dem Tisch liegen nur noch zwei Kristalle. Die gehören Dr. Vato.');
+    if (!s.flags.lindeTalked) return say('Drei Kristalle leuchten auf dem Tisch. Vielleicht sollte ich zuerst mit Dr. Vato sprechen.');
     for (;;) {
       const i = await choose(STARTERS.map(id => ({ label: SPECIES[id].name, right: SPECIES[id].types[0].toUpperCase() })), { title: 'Welcher Kristall?' });
       if (i === null) return;
@@ -828,7 +828,7 @@ class Game {
         s.flags.kian1 = true;
         this.ow.npcs = this.ow.npcs.filter(n => n !== kian);
       }
-      await say(['Prof. Linde: Fantastisch! Hier, nimm diese Chronik – sie zeichnet jede Kreatur auf, die du siehst oder bindest.', 'Und 5 Bindkristalle! Schwäche wilde Kreaturen und wirf dann einen Kristall.', 'In Quellbach, nördlich von hier, gibt es ein Heilzentrum und eine Brutstätte. Dort entstehen aus zwei Kreaturen sogar neue Mutationen!'], {});
+      await say(['Dr. Vato: Fantastisch! Hier, nimm diese Chronik – sie zeichnet jede Kreatur auf, die du siehst oder bindest.', 'Und 5 Bindkristalle! Schwäche wilde Kreaturen und wirf dann einen Kristall.', 'In Quellbach, nördlich von hier, gibt es ein Heilzentrum und eine Brutstätte. Dort entstehen aus zwei Kreaturen sogar neue Mutationen!'], {});
       s.flags.dex = true; s.flags.gotBalls = true; s.bag.kristall = (s.bag.kristall || 0) + 5; sfx('lvl');
       this.save(true);
       return;
@@ -842,8 +842,8 @@ class Game {
     if (QUESTS[n.id]) return this.quest(n, QUESTS[n.id]);
     switch (n.id) {
       case 'mama':
-        if (!s.flags.starter) return say(['Prof. Linde wartet im Labor auf dich, Schatz!', 'Das Labor ist das große Haus mit dem grauen Dach im Süden.'], N);
-        if (s.flags.champion && !s.flags.linde_pg) await say(['Prof. Linde hat angerufen! Sie möchte dich dringend im Labor sprechen.', 'Sie klang… nervös. So kenne ich sie gar nicht.'], N);
+        if (!s.flags.starter) return say(['Dr. Vato wartet im Labor auf dich, Schatz!', 'Das Labor ist das große Haus mit dem grauen Dach im Süden.'], N);
+        if (s.flags.champion && !s.flags.linde_pg) await say(['Dr. Vato hat angerufen! Er möchte dich dringend im Labor sprechen.', 'Er klang… nervös. So kenne ich ihn gar nicht.'], N);
         await say('Du siehst erschöpft aus. Ruh dich kurz aus!', N); s.team.forEach(healMon); sfx('heal'); return say('Dein Team ist wieder fit. Pass auf dich auf!', N);
       case 'nachbarin': return say(['Hast du schon gehört? In Quellbach gibt es eine Brutstätte.', 'Wenn man zwei Kreaturen dort lässt, finden die manchmal ein Ei. Und was da rauskommt… unglaublich!'], N);
       case 'kid1': return say(s.flags.starter ? 'Mit dem SELECT-Knopf siehst du sofort dein Team!' : 'Im hohen Gras leben wilde Kreaturen! Ohne eigene darfst du da nicht rein.', N);
@@ -1128,7 +1128,7 @@ class Game {
     await fade(1, 300);
     this.ow.load('home', 2, 3, 'down');
     await fade(0, 500);
-    if (first) await say(['Zuhause riecht es nach Pfannkuchen.', 'Mama: Champion! Ich habe es immer gewusst!', 'Mama: Ach ja – Prof. Linde hat angerufen. Sie möchte dich dringend im Labor sprechen.']);
+    if (first) await say(['Zuhause riecht es nach Pfannkuchen.', 'Mama: Champion! Ich habe es immer gewusst!', 'Mama: Ach ja – Dr. Vato hat angerufen. Er möchte dich dringend im Labor sprechen.']);
     this.save(true);
   }
 

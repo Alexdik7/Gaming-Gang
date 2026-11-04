@@ -88,4 +88,5 @@ Vanilla-JS-ES-Module, Canvas 2D, 240×160 logische Pixel. Es gibt keinen Build-S
 - Android: Signatur explizit in Gradle setzen (der Workflow prüft SHA256), sonst verlieren Updates den Spielstand.
 - `page.evaluate` nie auf Menü- oder Kampf-Promises warten lassen (z. B. `LU2.startMenu()` in `{ }` ohne return), sonst hängt der Test.
 - Figuren sind 16×24 und werden bei `y - 9` gezeichnet. Namensschilder und „!“ liegen deshalb höher.
+- Sichthöhe: Szenen mit `tall = true` (nur Oberwelt) zeichnen mit `VH`. Alles andere zeichnet weiter mit `H` = 160 und wird von der Engine versetzt (Overlays unten, Vollbild mittig). In der Oberwelt nie `H` verwenden.
 - Spielstand-Tests: `LU2.newState(name, look)` braucht ein vollständiges `look`, sonst Fehler in `shade()`.

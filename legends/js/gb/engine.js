@@ -1,5 +1,7 @@
 // Mini-Engine im Handheld-Stil: 240×160 logische Pixel, Szenen-Stapel, Steuerkreuz/A/B/START/SELECT
 export const W = 240, H = 160;
+// Sichthöhe: im Hochformat zeigt die Oberwelt mehr Felder (Kämpfe und Menüs bleiben 240×160)
+export let VH = 160;
 // Auflösung des Canvas: so viele echte Bildschirmpixel pro Spielpixel wie das Gerät hat (scharf und flüssig)
 export let SCALE = 3;
 // Position auf die feinste darstellbare Stufe runden (1/SCALE Spielpixel) → ruckelfreies Scrollen
@@ -22,9 +24,10 @@ export function initEngine(canvas) {
 }
 export function fitCanvas() {
   const c = G.canvas; if (!c) return;
-  const css = c.getBoundingClientRect().width || W * 3, dpr = window.devicePixelRatio || 1;
+  const r = c.getBoundingClientRect(), css = r.width || W * 3, dpr = window.devicePixelRatio || 1;
   const s = Math.max(2, Math.min(8, Math.ceil((css * dpr) / W)));
-  if (s !== SCALE || c.width !== W * s) { SCALE = s; c.width = W * s; c.height = H * s; }
+  const vh = r.width && r.height / r.width > 0.75 ? Math.max(H, Math.min(280, Math.round(r.height / r.width * W))) : H;
+  if (s !== SCALE || c.width !== W * s || vh !== VH) { SCALE = s; VH = vh; c.width = W * s; c.height = VH * s; }
   G.ctx.imageSmoothingEnabled = false;
 }
 
@@ -89,7 +92,7 @@ export function bindPad(root) {
   // Antippen des Bildschirms (für Menüs)
   G.canvas.addEventListener('pointerdown', e => {
     const r = G.canvas.getBoundingClientRect();
-    input.tap = { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H };
+    input.tap = { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * VH - (G.uiOff || 0) };
   });
 }
 
@@ -115,28 +118,36 @@ export function frame(dt) {
   const ctx = G.ctx;
   ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
   ctx.imageSmoothingEnabled = false;
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, VH);
   // ab der letzten nicht-transparenten Szene zeichnen
   let start = Math.max(0, G.scenes.length - 1);
   while (start > 0 && G.scenes[start].overlay) start--;
-  if (G.shake > 0) { G.shake = Math.max(0, G.shake - dt * 3); ctx.translate((Math.random() - 0.5) * G.shake * 6, (Math.random() - 0.5) * G.shake * 4); }
-  for (let i = start; i < G.scenes.length; i++) G.scenes[i].draw?.(ctx);
+  let sx = 0, sy = 0;
+  if (G.shake > 0) { G.shake = Math.max(0, G.shake - dt * 3); sx = (Math.random() - 0.5) * G.shake * 6; sy = (Math.random() - 0.5) * G.shake * 4; }
+  // hohe Szenen (Oberwelt) nutzen die volle Höhe; Overlays darüber sitzen unten, alles andere mittig
+  const tall = G.scenes[start]?.tall, extra = VH - H;
+  for (let i = start; i < G.scenes.length; i++) {
+    const off = tall ? (i === start ? 0 : extra) : Math.round(extra / 2);
+    ctx.setTransform(SCALE, 0, 0, SCALE, sx * SCALE, (sy + off) * SCALE);
+    if (i === G.scenes.length - 1) G.uiOff = off;
+    G.scenes[i].draw?.(ctx);
+  }
   ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
   if (G.fadeA !== G.fadeTo || G.fadeRes) {
     const d = G.fadeTo - G.fadeA, st = dt * G.fadeSpeed;
     G.fadeA = Math.abs(d) <= st ? G.fadeTo : G.fadeA + Math.sign(d) * st;
     if (G.fadeA === G.fadeTo && G.fadeRes) { const r = G.fadeRes; G.fadeRes = null; r(); }
   }
-  if (G.fadeA > 0) { ctx.fillStyle = `rgba(0,0,0,${G.fadeA})`; ctx.fillRect(0, 0, W, H); }
+  if (G.fadeA > 0) { ctx.fillStyle = `rgba(0,0,0,${G.fadeA})`; ctx.fillRect(0, 0, W, VH); }
   if (G.iris) { // Trainerkampf: Kreis schließt sich, Kristall dreht sich in der Mitte
-    const ir = G.iris; ir.t += dt; const k = Math.min(1, ir.t / ir.dur), r = Math.hypot(W, H) / 2 * Math.pow(1 - k, 1.6);
-    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.arc(W / 2, H / 2, Math.max(0, r), 0, Math.PI * 2, true); ctx.fill('evenodd');
-    ctx.save(); ctx.translate(W / 2, H / 2); ctx.rotate(ir.t * 9); const s = 6 + k * 10;
+    const ir = G.iris; ir.t += dt; const k = Math.min(1, ir.t / ir.dur), r = Math.hypot(W, VH) / 2 * Math.pow(1 - k, 1.6);
+    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.rect(0, 0, W, VH); ctx.arc(W / 2, VH / 2, Math.max(0, r), 0, Math.PI * 2, true); ctx.fill('evenodd');
+    ctx.save(); ctx.translate(W / 2, VH / 2); ctx.rotate(ir.t * 9); const s = 6 + k * 10;
     ctx.fillStyle = '#7fe3ff'; ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(s * 0.6, 0); ctx.lineTo(0, s); ctx.lineTo(-s * 0.6, 0); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.fillRect(-1, -s * 0.5, 2, s * 0.4); ctx.restore();
     if (k >= 1) { G.iris = null; G.fadeA = G.fadeTo = 1; ir.res(); }
   }
   if (G.wipe) {
-    const wp = G.wipe; wp.t += dt; const k = Math.min(1, wp.t / wp.dur), n = 10, bh = H / n;
+    const wp = G.wipe; wp.t += dt; const k = Math.min(1, wp.t / wp.dur), n = 10, bh = VH / n;
     ctx.fillStyle = '#000';
     for (let i = 0; i < n; i++) {
       const ki = Math.max(0, Math.min(1, k * 1.6 - (i % 2 ? 0.25 : 0) - Math.abs(i - n / 2) * 0.03)), w = W * (1 - Math.pow(1 - ki, 3));

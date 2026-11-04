@@ -12,7 +12,7 @@ export const TILE = {
 export const SOLID = new Set('TPD~RFSWIArb#wKCtYVMQkZvXJGqUzH^$&'.split(''));
 
 const LOOK = {
-  linde: { skin: '#f0c8a8', hair: '#e8e2d6', outfit: '#f4f4f4', pants: '#5a6b7a', accent: '#6fa8dc' },
+  linde: { skin: '#e2b088', hair: '#f2d26a', outfit: '#f4f4f4', pants: '#4a5466', accent: '#6fa8dc', pony: true, jaw: true },
   mama: { skin: '#f6d2b8', hair: '#8a4a2a', outfit: '#f28aa8', pants: '#5a4a6a', accent: '#ffd36b' },
   kian: { skin: '#c98e62', hair: '#1a1a2a', outfit: '#2b2d42', cap: '#e84a5f', accent: '#e84a5f' },
   nia: { skin: '#e8b892', hair: '#ff8ab0', outfit: '#7cf2a0', pants: '#f4f4f4', accent: '#ffffff' },
@@ -1184,7 +1184,7 @@ export const MAPS = {
   lab: {
     name: 'Labor', indoor: true,
     rows: ['KK#w###w#KK', 'xxxxxxxxxxx', 'xMxxxZxxxxM', 'xxxxxxxxxxx', 'xtttxxxxttt', 'xxxxxxxxxxx', 'Kxxxxxxxxxk', 'xxxxxxxxxxx', 'xxxxxmxxxxx'],
-    npcs: [{ id: 'linde', x: 5, y: 1, dir: 'down', look: LOOK.linde, name: 'Prof. Linde' }, { id: 'kian_lab', x: 8, y: 6, dir: 'left', look: LOOK.kian, name: 'Kian', hideIf: 'kian1' }],
+    npcs: [{ id: 'linde', x: 5, y: 1, dir: 'down', look: LOOK.linde, name: 'Dr. Vato' }, { id: 'kian_lab', x: 8, y: 6, dir: 'left', look: LOOK.kian, name: 'Kian', hideIf: 'kian1' }],
   },
   heal: {
     name: 'Heilzentrum', indoor: true,
@@ -1263,14 +1263,14 @@ export const ITEMS = {
   ak_schattenball: { name: 'AK Schattenball', desc: 'Attacken-Kristall: lehrt Schattenball (Geist). Einmal nutzbar.', tm: 'schattenball' },
   ak_sonnenstrahl: { name: 'AK Sonnenstrahl', desc: 'Attacken-Kristall: lehrt Sonnenstrahl (Licht). Einmal nutzbar.', tm: 'sonnenstrahl' },
   ak_blitzschlag: { name: 'AK Blitzschlag', desc: 'Attacken-Kristall: lehrt Blitzschlag (Elektro). Einmal nutzbar.', tm: 'blitzschlag' },
-  urkristall: { name: 'Urkristall', desc: 'Ein uralter Kristall von Prof. Linde. Bindet mit zehnfacher Chance.', ball: 10 },
+  urkristall: { name: 'Urkristall', desc: 'Ein uralter Kristall von Dr. Vato. Bindet mit zehnfacher Chance.', ball: 10 },
   hypertrank: { name: 'Hypertrank', desc: 'Heilt 200 KP.', heal: 200 },
   vk_zerschneider: { name: 'VM01 Zerschneider', desc: 'Versteckte Maschine: lehrt Zerschneider. Unbegrenzt nutzbar. Außerhalb von Kämpfen zerschneidet sie kleine Büsche.', tm: 'zerschneider', hm: true, key: true },
   vk_zertruemmerer: { name: 'VM02 Zertrümmerer', desc: 'Versteckte Maschine: lehrt Zertrümmerer. Außerhalb von Kämpfen zertrümmert sie rissige Felsen.', tm: 'zertruemmerer', hm: true, key: true },
   vk_surfer: { name: 'VM03 Surfer', desc: 'Versteckte Maschine: lehrt Surfer. Mit dem Wellenreiter kannst du damit übers Wasser reiten.', tm: 'surfer', hm: true, key: true },
   vk_blitz: { name: 'VM04 Blitz', desc: 'Versteckte Maschine: lehrt Blitz. Außerhalb von Kämpfen erhellt sie dunkle Orte.', tm: 'blitz', hm: true, key: true },
   vk_fliegen: { name: 'VM05 Fliegen', desc: 'Versteckte Maschine: lehrt Fliegen. Außerhalb von Kämpfen fliegst du zu besuchten Städten.', tm: 'fliegen', hm: true, key: true },
-  glanzamulett: { name: 'Glanzamulett', desc: 'Von Prof. Linde. Schimmernde Kreaturen begegnen dir dreimal so oft.', key: true },
+  glanzamulett: { name: 'Glanzamulett', desc: 'Von Dr. Vato. Schimmernde Kreaturen begegnen dir dreimal so oft.', key: true },
   herzstein_zeit: { name: 'Zeit-Herzstein', desc: 'Ein silberweißer Stein. Wer ihn hält, hört ein leises Ticken.', key: true },
   herzstein_ursprung: { name: 'Ursprungs-Herzstein', desc: 'Der älteste aller Herzsteine. Er schimmert in allen Farben.', key: true },
   herzstein_mond: { name: 'Mond-Herzstein', desc: 'Ein silbern glühender Stein aus der Mondruine.', key: true },

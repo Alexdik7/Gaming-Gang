@@ -1,5 +1,5 @@
 // Oberwelt: Kachelbewegung, Kamera, NPCs, Trainer-Sichtlinien, Türen, Begegnungen, Tag/Nacht
-import { G, W, H, COL, push, input, text, box, wait, fade, snap } from './engine.js';
+import { G, W, H, VH, COL, push, input, text, box, wait, fade, snap } from './engine.js';
 import { MAPS, TILE, SOLID, ENC } from './maps.js';
 import { charSheet, DIRS, tile, building, drawChar, tallOverlay, itemBall, treeCrown, TREE_KIND, grassFringe, shore, softShadow, cloudShadow, glow } from './pixel.js';
 // Untergründe, an deren Rand Gras über Wege/Sand wächst
@@ -8,11 +8,11 @@ const LANDISH = c => c !== null && c !== '~' && c !== 'B';
 // Licht + Vignette einmal vorzeichnen (in halber Auflösung, weich skaliert) statt jeden Frame Verläufe zu berechnen
 const LL = {};
 function lightLayer(sun) {
-  if (LL[sun]) return LL[sun];
-  const c = document.createElement('canvas'); c.width = W * 2; c.height = H * 2; const x = c.getContext('2d'); x.scale(2, 2);
-  if (sun) { const sg = x.createLinearGradient(0, 0, W, H); sg.addColorStop(0, 'rgba(255,240,200,.12)'); sg.addColorStop(0.5, 'rgba(255,240,200,0)'); sg.addColorStop(1, 'rgba(40,30,60,.08)'); x.fillStyle = sg; x.fillRect(0, 0, W, H); }
-  const g = x.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, W * 0.62); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,10,.22)'); x.fillStyle = g; x.fillRect(0, 0, W, H);
-  return (LL[sun] = c);
+  const key = sun + ':' + VH; if (LL[key]) return LL[key];
+  const c = document.createElement('canvas'); c.width = W * 2; c.height = VH * 2; const x = c.getContext('2d'); x.scale(2, 2);
+  if (sun) { const sg = x.createLinearGradient(0, 0, W, VH); sg.addColorStop(0, 'rgba(255,240,200,.12)'); sg.addColorStop(0.5, 'rgba(255,240,200,0)'); sg.addColorStop(1, 'rgba(40,30,60,.08)'); x.fillStyle = sg; x.fillRect(0, 0, W, VH); }
+  const g = x.createRadialGradient(W / 2, VH / 2, Math.min(W, VH) * 0.45, W / 2, VH / 2, Math.max(W, VH) * 0.62); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,10,.22)'); x.fillStyle = g; x.fillRect(0, 0, W, VH);
+  return (LL[key] = c);
 }
 import { sfx, setMusic } from '../core/audio.js';
 import { say, choose } from './gbui.js';
@@ -22,7 +22,7 @@ const DX = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 const OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
 export class Overworld {
-  constructor(game) { this.g = game; this.busy = false; this.banner = null; this.notice = null; this.emote = null; this.ball = itemBall(); this.parts = []; this.prints = []; }
+  constructor(game) { this.tall = true; this.g = game; this.busy = false; this.banner = null; this.notice = null; this.emote = null; this.ball = itemBall(); this.parts = []; this.prints = []; }
 
   load(id, x, y, dir) {
     const M = MAPS[id]; this.id = id; this.M = M;
@@ -346,32 +346,32 @@ export class Overworld {
     const w = this.weather(); if (!w) return;
     const t = G.t, md = (v, m) => ((v % m) + m) % m;
     if (w === 'rain') {
-      ctx.fillStyle = 'rgba(30,40,70,.18)'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(30,40,70,.18)'; ctx.fillRect(0, 0, W, VH);
       ctx.strokeStyle = 'rgba(200,220,255,.55)'; ctx.lineWidth = 1; ctx.beginPath();
-      for (let i = 0; i < 80; i++) { const x = md(i * 53.7 - t * 60 - cx, W + 20) - 10, y = md(i * 31.3 + t * 260 - cy, H + 20) - 10; ctx.moveTo(x, y); ctx.lineTo(x - 3, y + 8); }
+      for (let i = 0; i < 80; i++) { const x = md(i * 53.7 - t * 60 - cx, W + 20) - 10, y = md(i * 31.3 + t * 260 - cy, VH + 20) - 10; ctx.moveTo(x, y); ctx.lineTo(x - 3, y + 8); }
       ctx.stroke();
-      ctx.fillStyle = 'rgba(220,235,255,.6)'; for (let i = 0; i < 14; i++) { const k = md(t * 3 + i * 0.37, 1); if (k > 0.3) continue; ctx.fillRect(md(i * 71.3 + Math.floor(t * 3 + i * 0.37) * 37 - cx, W), md(i * 47.9 + Math.floor(t * 3 + i * 0.37) * 53 - cy, H), 2 + k * 6, 1); }
+      ctx.fillStyle = 'rgba(220,235,255,.6)'; for (let i = 0; i < 14; i++) { const k = md(t * 3 + i * 0.37, 1); if (k > 0.3) continue; ctx.fillRect(md(i * 71.3 + Math.floor(t * 3 + i * 0.37) * 37 - cx, W), md(i * 47.9 + Math.floor(t * 3 + i * 0.37) * 53 - cy, VH), 2 + k * 6, 1); }
     } else {
       const ash = w === 'ash', n = ash ? 45 : 60;
       ctx.fillStyle = ash ? 'rgba(210,200,195,.85)' : 'rgba(255,255,255,.9)';
-      for (let i = 0; i < n; i++) { const x = md(i * 47.3 + Math.sin(t * 1.3 + i) * 6 + t * (ash ? 8 : -6) - cx, W + 10) - 5, y = md(i * 29.7 + t * (ash ? 16 : 22) * (0.7 + (i % 5) * 0.1) - cy, H + 10) - 5; ctx.fillRect(x, y, i % 3 ? 1.5 : 2.5, i % 3 ? 1.5 : 2); }
-      if (ash) { ctx.fillStyle = 'rgba(120,90,80,.12)'; ctx.fillRect(0, 0, W, H); }
+      for (let i = 0; i < n; i++) { const x = md(i * 47.3 + Math.sin(t * 1.3 + i) * 6 + t * (ash ? 8 : -6) - cx, W + 10) - 5, y = md(i * 29.7 + t * (ash ? 16 : 22) * (0.7 + (i % 5) * 0.1) - cy, VH + 10) - 5; ctx.fillRect(x, y, i % 3 ? 1.5 : 2.5, i % 3 ? 1.5 : 2); }
+      if (ash) { ctx.fillStyle = 'rgba(120,90,80,.12)'; ctx.fillRect(0, 0, W, VH); }
     }
   }
 
   // ---------------------------------------------------------- Zeichnen
   draw(ctx) {
     const p = this.p, mw = this.w * 16, mh = this.h * 16;
-    let cx = p.px + 8 - W / 2, cy = p.py + 8 - H / 2;
+    let cx = p.px + 8 - W / 2, cy = p.py + 8 - VH / 2;
     cx = mw <= W ? (mw - W) / 2 : Math.max(0, Math.min(mw - W, cx));
-    cy = mh <= H ? (mh - H) / 2 : Math.max(0, Math.min(mh - H, cy));
+    cy = mh <= VH ? (mh - VH) / 2 : Math.max(0, Math.min(mh - VH, cy));
     cx = snap(cx); cy = snap(cy);
     this.cam = { x: cx, y: cy };
     const f2 = Math.floor(G.t * 2) % 2, f3 = Math.floor(G.t * 2.5) % 3;
     const flags = this.g.worldFlags();
     const runesOn = Object.values(this.M.runes || {}).filter(r => flags[r]).length;
     const x0 = Math.floor(cx / 16), y0 = Math.floor(cy / 16), crowns = [], rocks = [];
-    for (let y = y0; y <= y0 + 11; y++) for (let x = x0; x <= x0 + 15; x++) {
+    for (let y = y0; y <= y0 + Math.ceil(VH / 16) + 1; y++) for (let x = x0; x <= x0 + 15; x++) {
       const c = this.ch(x, y); if (c === null) continue;
       let name = TILE[c] || 'void', fr = 0;
       if (c === '~' || c === 'v') fr = f3; else if (c === ',' || c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%' || c === 'N' || c === 'e' || c === 'V' || c === 'M' || c === 'Q') fr = f2;
@@ -453,8 +453,8 @@ export class Overworld {
     // Tag/Nacht
     if (this.M.outdoor || this.M.cave || this.M.night) {
       const dark = (night ? 0.45 : this.g.dusk() * 0.25) + (this.M.dark || 0) + (this.M.cave ? 0.15 : 0);
-      if (this.M.night && !this.M.darkRadius) { ctx.fillStyle = 'rgba(10,8,34,.38)'; ctx.fillRect(0, 0, W, H); }
-      if (dark > 0) { ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = `rgba(${night ? '40,50,120' : '120,80,90'},${Math.min(0.7, dark)})`; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over'; }
+      if (this.M.night && !this.M.darkRadius) { ctx.fillStyle = 'rgba(10,8,34,.38)'; ctx.fillRect(0, 0, W, VH); }
+      if (dark > 0) { ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = `rgba(${night ? '40,50,120' : '120,80,90'},${Math.min(0.7, dark)})`; ctx.fillRect(0, 0, W, VH); ctx.globalCompositeOperation = 'source-over'; }
     }
     // Nachts leuchten Fenster und werfen Licht auf den Boden; Glühwürmchen über Wiesen
     if ((night || this.M.night) && this.M.outdoor) {
@@ -468,27 +468,28 @@ export class Overworld {
         }
       }
       if (!this.M.cave) for (let i = 0; i < 14; i++) {
-        const fx = ((i * 97 + Math.sin(G.t * 0.5 + i) * 30) % (W + 20)) - 10, fy = ((i * 61 + Math.cos(G.t * 0.4 + i * 2) * 20) % (H + 10)) - 5, on = (Math.sin(G.t * 2 + i * 1.7) + 1) / 2;
+        const fx = ((i * 97 + Math.sin(G.t * 0.5 + i) * 30) % (W + 20)) - 10, fy = ((i * 61 + Math.cos(G.t * 0.4 + i * 2) * 20) % (VH + 10)) - 5, on = (Math.sin(G.t * 2 + i * 1.7) + 1) / 2;
         ctx.globalAlpha = on; ctx.drawImage(glow(4, '200,255,120'), fx - 4, fy - 4); ctx.fillStyle = '#f8ffb0'; ctx.fillRect(fx, fy, 1, 1);
       }
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     }
     // Sonnenlicht von oben links und sanfte Vignette → mehr Tiefe
-    ctx.drawImage(lightLayer(this.M.outdoor && !night && !this.M.night), 0, 0, W, H);
+    ctx.drawImage(lightLayer(this.M.outdoor && !night && !this.M.night), 0, 0, W, VH);
     // Sandsturm: wehende Sandschleier
     if (this.M.sandstorm) {
       const gust = 0.24 + Math.sin(G.t * 0.7) * 0.08;
-      ctx.fillStyle = `rgba(226,186,110,${gust})`; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = `rgba(226,186,110,${gust})`; ctx.fillRect(0, 0, W, VH);
       for (let i = 0; i < 110; i++) {
-        const sp = 150 + (i % 7) * 35, x = ((i * 53 + G.t * sp) % (W + 60)) - 30, y = ((i * 37 + Math.sin(G.t * 2 + i) * 8) % H);
+        const sp = 150 + (i % 7) * 35, x = ((i * 53 + G.t * sp) % (W + 60)) - 30, y = ((i * 37 + Math.sin(G.t * 2 + i) * 8) % VH);
         ctx.fillStyle = i % 3 ? 'rgba(255,236,180,.75)' : 'rgba(176,126,60,.6)'; ctx.fillRect(x, y, 8 + (i % 5) * 3, 1);
         if (i % 9 === 0) ctx.fillRect(x + 4, y + 1, 4, 1);
       }
     }
     // Dunkelheit mit Lichtkreis um den Spieler (Ruinen, Schatten-Arena)
     if (this.M.darkRadius) {
-      const L = (this.lightCv ||= Object.assign(document.createElement('canvas'), { width: W, height: H })), lx = L.getContext('2d');
-      lx.globalCompositeOperation = 'source-over'; lx.clearRect(0, 0, W, H); lx.fillStyle = 'rgba(6,4,16,.96)'; lx.fillRect(0, 0, W, H);
+      if (this.lightCv && this.lightCv.height !== VH) this.lightCv = null;
+      const L = (this.lightCv ||= Object.assign(document.createElement('canvas'), { width: W, height: VH })), lx = L.getContext('2d');
+      lx.globalCompositeOperation = 'source-over'; lx.clearRect(0, 0, W, VH); lx.fillStyle = 'rgba(6,4,16,.96)'; lx.fillRect(0, 0, W, VH);
       const px = p.px - cx + 8, py = p.py - cy + 6, r = this.M.darkRadius + (this.flashLit || 0) + Math.sin(G.t * 3) * 1.5;
       const gr = lx.createRadialGradient(px, py, r * 0.45, px, py, r);
       gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');

@@ -402,11 +402,14 @@ export function paintTrainer(look, back = false) {
   parts.push(P(top, [[22, 22], [42, 22], [43, 42], [21, 42]]));
   parts.push(P(acc, [[21, 39], [43, 39], [43, 43], [21, 43]], { flat: true }));
   if (!back) parts.push(P(acc, [[30, 22], [34, 22], [33, 30], [31, 30]], { line: false, flat: true }));
+  // Zopf hinter dem Kopf
+  if (look.pony) { parts.push(P(hair, back ? [[29, 18], [35, 18], [34, 34], [30, 34]] : [[39, 12], [45, 16], [46, 30], [42, 31], [40, 20]])); parts.push(E(back ? 32 : 42, back ? 19 : 14, 2.5, 2, acc, { flat: true })); }
   // Kopf
   parts.push(E(32, 22, 4, 3, skin, { tone: -1, flat: true }));
   if (!back) {
     parts.push(E(32, 14, 9, 9.5, hair));
     parts.push(E(32, 15, 8, 8.5, skin));
+    if (look.jaw) parts.push(P(skin, [[24, 15], [40, 15], [40, 20], [36, 24], [28, 24], [24, 20]]));
     parts.push(P(hair, [[23, 12], [41, 12], [41, 8], [32, 4], [23, 8]]), tri(hair, 23, 11, 23, 19, 26, 12), tri(hair, 41, 11, 41, 19, 38, 12));
   } else {
     parts.push(E(32, 14, 9, 9.5, hair));
@@ -420,6 +423,7 @@ export function paintTrainer(look, back = false) {
     const ink = [32, 24, 40];
     for (const x of [28, 35]) { cv.px(x, 15, ink); cv.px(x, 16, ink); cv.px(x + 1, 15, ink); cv.px(x + 1, 16, ink); cv.px(x, 15, [255, 255, 255]); }
     const m = ramp(skin)[1]; cv.px(31, 20, m); cv.px(32, 20, m); cv.px(33, 20, m);
+    if (look.jaw) { const hd = ramp(look.hair)[2] || ink; for (const x of [27, 28, 29, 34, 35, 36]) cv.px(x, 13, hd); const sh = ramp(skin)[2] || m; for (let x = 28; x <= 36; x++) cv.px(x, 23, sh); cv.px(25, 20, sh); cv.px(39, 20, sh); }
   }
   return cv.toCanvas(false);
 }

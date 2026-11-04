@@ -469,3 +469,13 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
   - Wasser **Quellwasser**: 20 KP für alle, einmal pro Gebiet
   - Eis **Frostatem**: heilt Verbrennungen in Hitzegebieten
 - **Test:** Der Lauftest wertet nur noch die Laufphase. Stillstand nach dem Loslassen zählt nicht als Ruckler.
+
+## v1.7 – iPhone-Bildschirm und Dr. Vato
+- **Hochformat:**
+  - Das Spielbild reicht über die ganze Breite, ohne Konsolenrahmen.
+  - Die Oberwelt nutzt die zusätzliche Höhe (`VH` bis 280 statt 160 Pixel) und zeigt fast doppelt so viele Felder.
+  - Dialoge und Menüs sitzen unten, Kämpfe und Vollbild-Menüs bleiben 240×160 und werden mittig gezeigt.
+  - Antippen rechnet den Versatz mit ein.
+- **Querformat:** Das Spielbild nutzt die volle Höhe, die Tasten liegen halbtransparent links und rechts.
+- **Professor:** heißt jetzt **Dr. Vato** (männlich, alle Texte angepasst). Neues Aussehen: lange blonde Haare zum Zopf gebunden, kantiges Kinn, Augenbrauen. Neue `look`-Felder `pony` und `jaw`, gültig für Oberwelt-Figur und großes Bild.
+- **Lauftest:** erlaubt höchstens zwei einzelne ausgelassene Bilder (Testrechner ohne Grafikkarte). Stillstände zählen weiterhin als Fehler.
