@@ -1366,7 +1366,7 @@ class Game {
     if (s.badges[G.badge]) return say(G.after, N);
     if (G.badge > 0 && !s.badges[G.badge - 1]) return say('Komm wieder, wenn du die vorherigen Orden hast!', N);
     await say(G.intro, N);
-    const won = await this.trainerFight({ name: n.name, look: n.look, team: G.team, reward: G.reward, lose: G.lose, bg: G.bg || 'arena' });
+    const won = await this.trainerFight({ name: n.name, look: n.look, team: G.team, reward: G.reward, lose: G.lose, bg: G.bg || 'arena', music: 'ldr' + G.badge });
     if (!won) return say('Komm wieder, wenn du stärker bist!', N);
     s.badges[G.badge] = true; sfx('caught');
     await say([`${s.name} erhält den ${G.badgeName}!`, ...G.gift.text]);

@@ -69,6 +69,74 @@ export const TRACKS = {
     melody: `B5 - F#5 B5 D6 - C#6 B5 | B5 - G5 - D5 - G5 B5 | C#6 - A5 - E5 - A5 C#6 | A#5 - F#5 - C#6 - A#5 - |
              D6 - C#6 B5 F#6 - E6 D6 | D6 - B5 - G5 - B5 D6 | E6 - D6 C#6 B5 - G5 B5 | A#5 - C#6 - F#6 - - -`,
   },
+  // ---------------- Wilde Kämpfe (Varianten) und Trainer
+  battle2: { // Wald / Nacht
+    bpm: 164, lead: 'square', bass: 'pulse', arp: 'up', drums: 'rock',
+    chords: 'Dm Bb C A Dm Bb Gm A',
+    melody: `D5 F5 A5 - D6 - A5 F5 | Bb5 - A5 - F5 - D5 F5 | C5 E5 G5 - C6 - G5 E5 | C#6 - A5 - E5 - C#5 - |
+             D6 - C6 Bb5 A5 - F5 A5 | Bb5 - D6 - F6 - D6 Bb5 | G5 - Bb5 - D6 - C6 Bb5 | A5 - - - C#6 - E6 -`,
+  },
+  battle3: { // Wasser / Höhle / Schnee
+    bpm: 156, lead: 'triangle', harm: -12, bass: 'drive', arp: 'fast', drums: 'march',
+    chords: 'Gm Eb F D Gm Eb Cm D',
+    melody: `G5 - D5 G5 Bb5 - A5 G5 | Eb5 - G5 - Bb5 - Eb6 - | F5 - A5 - C6 - F6 - | F#5 - A5 - D6 - - - |
+             G6 - F6 - D6 - Bb5 D6 | Eb6 - D6 - Bb5 - G5 - | C6 - Eb6 - G6 - F6 Eb6 | D6 - F#6 - A6 - - -`,
+  },
+  trainer2: {
+    bpm: 174, lead: 'square', harm: -5, bass: 'pulse', arp: 'up', drums: 'double',
+    chords: 'Em C G D Em C Am B',
+    melody: `E5 - G5 - B5 - E6 D6 | C6 - B5 - G5 - E5 G5 | D6 - B5 - G5 - D6 - | F#6 - E6 D6 A5 - F#5 - |
+             G5 - B5 E6 G6 - F#6 E6 | E6 - C6 - G5 - C6 E6 | A5 - C6 - E6 - D6 C6 | B5 - D#6 - F#6 - B6 -`,
+  },
+  // ---------------- Arenaleiter: jedes Thema mit eigenem Charakter
+  ldr0: { // Gorm – Fels: stampfender Rock
+    bpm: 168, lead: 'square', harm: -5, bass: 'drive', arp: 'none', drums: 'tribal',
+    chords: 'Em Em C D Em Em C B',
+    melody: `E5 - E5 G5 A5 - G5 E5 | B5 - A5 G5 E5 - D5 E5 | C6 - B5 A5 G5 - E5 G5 | F#5 - - - A5 - D5 - |
+             E5 - E5 G5 A5 - B5 D6 | E6 - D6 B5 G5 - A5 B5 | C6 - E6 - D6 C6 B5 G5 | B5 - D#6 - F#6 - B5 -`,
+  },
+  ldr1: { // Selma – Feuer: feuriger Flamenco-Rock
+    bpm: 182, lead: 'sawtooth', bass: 'drive', arp: 'fast', drums: 'double',
+    chords: 'Am F G E Am F Dm E',
+    melody: `A5 B5 C6 - E6 - C6 B5 | A5 - F5 - A5 - C6 - | B5 C6 D6 - G6 - D6 B5 | G#5 - B5 - E6 - G#5 - |
+             A5 - E6 - D6 C6 B5 A5 | F5 - A5 - C6 - F6 - | D6 - F6 - E6 D6 C6 B5 | B5 - G#5 - E5 - - -`,
+  },
+  ldr2: { // Meri – Wasser: fließend und schnell
+    bpm: 170, lead: 'triangle', harm: -12, bass: 'pulse', arp: 'fast', drums: 'rock',
+    chords: 'Bm G D A Bm G Em F#',
+    melody: `B5 - C#6 D6 F#6 - E6 D6 | D6 - B5 - G5 - B5 D6 | A5 - D6 - F#6 - A6 - | A6 - G6 F#6 E6 - C#6 - |
+             B5 - F#6 - E6 D6 C#6 B5 | G5 - B5 - D6 - G6 - | E6 - D6 - C#6 - B5 C#6 | A#5 - C#6 - F#6 - - -`,
+  },
+  ldr3: { // Halvar – Eis: kristallklar, glitzernde Arpeggios
+    bpm: 160, lead: 'triangle', harm: 12, bass: 'pulse', arp: 'fast', drums: 'march',
+    chords: 'F#m D E C# F#m D Bm C#',
+    melody: `F#5 - A5 - C#6 - F#6 - | D6 - C#6 - A5 - F#5 - | E5 - G#5 - B5 - E6 - | C#6 - - - E#5 - G#5 - |
+             A5 - C#6 F#6 E6 - D6 C#6 | D6 - F#6 - A6 - F#6 D6 | B5 - D6 - F#6 - E6 D6 | C#6 - E#6 - G#6 - C#6 -`,
+  },
+  ldr4: { // Morwen – Schatten: düster, Trommeln aus dem Nebel
+    bpm: 150, lead: 'sawtooth', bass: 'drive', arp: 'up', drums: 'tribal',
+    chords: 'Cm Ab Fm G Cm Db Bb G',
+    melody: `C5 - Eb5 - G5 - F#5 G5 | Ab5 - - - G5 - Eb5 - | F5 - Ab5 - C6 - B5 C6 | D6 - B5 - G5 - - - |
+             C6 - Bb5 Ab5 G5 - Eb5 G5 | Db6 - C6 - Ab5 - F5 - | Bb5 - D6 - F6 - Eb6 D6 | B5 - D6 - G6 - - -`,
+  },
+  ldr5: { // Sahra – Wüste/Licht: orientalische Tonleiter
+    bpm: 176, lead: 'square', harm: -12, bass: 'drive', arp: 'none', drums: 'tribal',
+    chords: 'E F E Dm E F G E',
+    melody: `E5 F5 G#5 - B5 - A5 G#5 | F5 - A5 - C6 - B5 A5 | G#5 - B5 - E6 - D6 C6 | B5 - A5 G#5 F5 - E5 - |
+             E6 - D6 C6 B5 - A5 G#5 | A5 - C6 - F6 - E6 D6 | D6 - B5 - G5 - B5 D6 | E6 - - - G#5 - E5 -`,
+  },
+  ldr6: { // Brann – Drache: episch und wuchtig
+    bpm: 178, lead: 'square', harm: -5, bass: 'drive', arp: 'fast', drums: 'double',
+    chords: 'Dm Bb F C Dm Bb Gm A',
+    melody: `D5 - A5 - D6 - C6 A5 | Bb5 - F5 - D5 - F5 Bb5 | A5 - C6 - F6 - E6 C6 | G5 - C6 - E6 - G6 - |
+             F6 - E6 D6 A5 - D6 F6 | F6 - D6 - Bb5 - D6 F6 | G6 - F6 E6 D6 - Bb5 G5 | A5 - C#6 - E6 - A6 -`,
+  },
+  ldr7: { // Vala – letzte Arena: Sägezahn, Doppelbass, volle Wucht
+    bpm: 186, lead: 'sawtooth', harm: -12, bass: 'drive', arp: 'fast', drums: 'double',
+    chords: 'Gm Eb Bb F Gm Eb Cm D',
+    melody: `G5 - Bb5 - D6 - G6 F6 | Eb6 - D6 - Bb5 - G5 - | F5 - Bb5 - D6 - F6 - | F6 - Eb6 D6 C6 - A5 - |
+             G6 - F6 Eb6 D6 - Bb5 D6 | Eb6 - G6 - Bb6 - G6 Eb6 | C6 - Eb6 - G6 - F6 Eb6 | D6 - F#6 - A6 - D6 -`,
+  },
 };
 // Alte Modusnamen weiter unterstützen
 export const ALIAS = { day: 'route' };

@@ -103,19 +103,27 @@ function playStep(T, st, t, beat) {
   const fast = T.bpm >= 140;
   // Melodie
   const e = T.lead[st % T.steps];
-  if (e) tone(mtof(e.midi), t, beat * e.len * 0.95, { type: T.voice, vol: T.voice === 'square' ? 0.045 : 0.075, out, attack: 0.012, wob: e.len > 2 ? 5 : 0 });
+  if (e) {
+    const lv = T.voice === 'square' ? 0.045 : T.voice === 'sawtooth' ? 0.03 : 0.075;
+    tone(mtof(e.midi), t, beat * e.len * 0.95, { type: T.voice, vol: lv, out, attack: 0.012, wob: e.len > 2 ? 5 : 0 });
+    if (T.harm) tone(mtof(e.midi + T.harm), t, beat * e.len * 0.9, { type: T.voice === 'sawtooth' ? 'square' : T.voice, vol: lv * 0.5, out, attack: 0.015 }); // zweite Stimme
+  }
   // Bass
   const root = ch[0] - 12;
   if (T.bass === 'walk' && s % 2 === 0) tone(mtof(s % 4 === 0 ? root : root + 7), t, beat * 1.8, { type: 'triangle', vol: 0.11, out });
   if (T.bass === 'pulse') tone(mtof(root + (s % 2 ? 12 : 0)), t, beat * 0.85, { type: 'triangle', vol: 0.11, out });
+  if (T.bass === 'drive') tone(mtof(root + (s % 4 === 3 ? 7 : 0) + (s % 2 ? 12 : 0)), t, beat * 0.8, { type: 'triangle', vol: 0.12, out });
   if (T.bass === 'long' && s % 4 === 0) tone(mtof(root), t, beat * 3.8, { type: 'triangle', vol: 0.1, out, attack: 0.05 });
   // Begleitung
   if (T.arp === 'up') { const k = ARP[s], n = k === 3 ? ch[0] + 12 : ch[k]; tone(mtof(n + 12), t, beat * 0.9, { type: fast ? 'square' : 'triangle', vol: fast ? 0.018 : 0.035, out }); }
+  if (T.arp === 'fast') { const n = ch.length; tone(mtof(ch[(s * 2) % n] + 12), t, beat * 0.45, { type: 'square', vol: 0.014, out }); tone(mtof(ch[(s * 2 + 1) % n] + 24), t + beat / 2, beat * 0.45, { type: 'square', vol: 0.012, out }); }
   if (T.arp === 'block' && s === 0) ch.forEach(n => tone(mtof(n + 12), t, beat * 7.8, { type: 'triangle', vol: 0.03, out, attack: 0.25 }));
   // Schlagzeug
   const d = T.drums;
   if (d === 'rock') { if (s === 0 || s === 4) noise(t, 0.09, 0.16, 110, out); if (s === 2 || s === 6) noise(t, 0.12, 0.11, 1900, out); noise(t, 0.03, 0.04, 7000, out); }
   if (d === 'march') { if (s === 0 || s === 3 || s === 4) noise(t, 0.09, 0.15, 110, out); if (s === 2 || s === 6) noise(t, 0.12, 0.1, 1900, out); if (s === 7) noise(t, 0.06, 0.05, 1900, out); }
+  if (d === 'double') { noise(t, 0.07, s % 4 === 0 ? 0.16 : 0.1, 100, out); if (s === 2 || s === 6) noise(t, 0.13, 0.12, 2000, out); noise(t, 0.025, 0.035, 8000, out); noise(t + beat / 2, 0.025, 0.025, 8000, out); }
+  if (d === 'tribal') { if (s === 0 || s === 3 || s === 6) noise(t, 0.1, 0.17, 90, out); if (s === 2 || s === 5 || s === 7) noise(t, 0.12, 0.11, 320, out); if (s === 4) noise(t, 0.12, 0.1, 2000, out); noise(t, 0.02, 0.03, 7000, out); }
   if (d === 'soft' && s % 2 === 0) noise(t, 0.03, s === 0 ? 0.05 : 0.03, 6000, out);
 }
 function schedule() {

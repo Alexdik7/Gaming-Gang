@@ -63,13 +63,18 @@ class BattleScene {
     this.slide = 0; this.foeDark = o.trainer ? 0 : 1; this.foeBoxK = 0; this.ownBoxK = 0; this.rings = [];
     this.trainerOwn = { x: 0, vis: true }; this.trainerFoe = { x: 0, vis: !!o.trainer };
     this.hpD = { p: this.b.p.hp, f: this.b.f.hp }; this.xpD = this.b.p.xp;
+    // Angezeigter Stand (die Kampflogik rechnet eine Runde voraus – gezeigt wird erst, wenn das Ereignis abgespielt ist)
+    this.dF = this.b.f; this.dP = this.b.p; this.dLvl = {}; for (const m of this.b.team) this.dLvl[m.uid] = m.lvl;
     this.parts = []; this.tweens = []; this.crystal = null; this.bolts = [];
     this.showFoeBox = false; this.showOwnBox = false;
   }
   // ---------------------------------------------------------- Ablauf
   async run() {
     const b = this.b, o = this.o;
-    setMusic(o.music || o.trainer?.music || (o.intro === 'legend' ? 'legend' : o.trainer ? 'trainer' : 'battle'));
+    // Abwechslung: wilde Kämpfe je nach Umgebung, Trainer je nach Name
+    const wild = ['hoehle', 'wasser', 'schnee', 'ruine'].includes(o.bg) ? 'battle3' : ['wald'].includes(o.bg) || this.g.isNight?.() ? 'battle2' : ['battle', 'battle', 'battle2', 'battle3'][Math.floor(Math.random() * 4)];
+    const tr = o.trainer ? (o.trainer.name.length % 2 ? 'trainer2' : 'trainer') : null;
+    setMusic(o.music || o.trainer?.music || (o.intro === 'legend' ? 'legend' : tr || wild));
     // Auftritt: beide Plattformen gleiten mit den Trainern ins Bild
     await this.tween(0.85, k => (this.slide = easeOut(k)));
     if (o.trainer) {
@@ -134,7 +139,7 @@ class BattleScene {
   note(t) { this.msg = t; this.chars = 0; this.mode = 'busy'; }
   // Bindball im Bogen werfen, aufleuchten lassen und die Kreatur freisetzen
   async throwCrystal(side) {
-    const t = this.center(side), m = side === 'f' ? this.b.f : this.b.p;
+    const t = this.center(side), m = side === 'f' ? this.dF : this.dP;
     const from = side === 'f' ? { x: FOE.x + 46 + this.trainerFoe.x - 260 * (1 - this.slide), y: FOE.y + 22 } : { x: OWN.x + 46 + this.trainerOwn.x, y: OWN.y + 40 };
     const col = SPECIES[m.sp]?.model?.glow || '#bff8ff';
     this.crystal = { x: from.x, y: from.y, r: 0, img: crystalIcon((side === 'p' && ITEMS[m.ball]?.col) || this.o.crystalCol || '#7fe3ff') }; sfx('throw');
@@ -214,19 +219,32 @@ class BattleScene {
         case 'stat': this.sparkle(e.side, e.up ? '#ffb24a' : '#6aa8ff', e.up); sfx(e.up ? 'buff' : 'debuff'); await wait(450); break;
         case 'status': this.burst(e.side, { brand: '#ff6a2b', gift: '#b45ce0', starre: '#ffd23a' }[e.status], 20); await wait(300); break;
         case 'faint': await this.faint(e.side); break;
-        case 'send': this.note(e.text); if (e.side === 'p') { this.xpD = this.b.p.xp; this.hpD.p = this.b.p.hp; } else this.hpD.f = this.b.f.hp; await this.throwCrystal(e.side); if (e.side === 'f') this.g.markDex(this.b.f.sp); await this.showBox(e.side); await wait(250); break;
+        case 'send': {
+          let shift = null;
+          // Wie im Original: Vor der nächsten gegnerischen Kreatur darf man wechseln
+          if (e.side === 'f' && this.o.trainer && !this.o.remote && this.dP && this.b.p.hp > 0 && this.b.team.some(m => !m.egg && m.hp > 0 && m !== this.b.p)) {
+            await this.say(`${this.o.trainer.name} wird ${monName(e.mon)} einsetzen.`, 400);
+            this.mode = 'busy';
+            if (await ask(`Möchtest du ${monName(this.b.p)} auswechseln?`)) { const ti = await party(this.teamState(), { select: true, prompt: 'Welche Kreatur einwechseln?', filter: m => !m.egg && m.hp > 0 && m !== this.b.p }); if (ti !== null) shift = ti; }
+          }
+          this.note(e.text);
+          if (e.side === 'p') { this.dP = e.mon || this.b.p; this.xpD = this.dP.xp; this.hpD.p = this.dP.hp; this.dLvl[this.dP.uid] = this.dP.lvl; } else { this.dF = e.mon || this.b.f; this.hpD.f = this.dF.hp; }
+          await this.throwCrystal(e.side); if (e.side === 'f') this.g.markDex(this.dF.sp); await this.showBox(e.side); await wait(250);
+          if (shift !== null) await this.play([{ t: 'recall', side: 'p', text: `${monName(this.b.p)}, komm zurück!` }, ...this.b.forcedSwitch(shift)]);
+          break;
+        }
         case 'recall': await this.recall(e.side, e.text); break;
         case 'reso': await this.resoAnim(e.side); break;
         case 'catch': await this.catchAnim(e.shakes, e.ok, e.crit, e.col); break;
-        case 'xp': { const m = this.b.team.find(x => x.uid === e.uid); if (m === this.b.p) await this.fillXp(); break; }
-        case 'lvl': { { const fm = this.b.team.find(x => x.uid === e.uid); if (fm) fm.friendship = Math.min(255, (fm.friendship || 70) + 3); } sfx('lvl'); this.sparkle('p', '#ffe27a', true); this.hpD.p = this.b.p.hp; await this.say(e.text); const lm = this.b.team.find(x => x.uid === e.uid); if (lm && e.lvl && !this.o.remote) await this.statWin(lm, e.lvl); break; }
+        case 'xp': { const m = this.b.team.find(x => x.uid === e.uid); if (m === this.dP) await this.fillXp(); break; }
+        case 'lvl': { const lm = this.b.team.find(x => x.uid === e.uid); if (lm) { lm.friendship = Math.min(255, (lm.friendship || 70) + 3); this.dLvl[lm.uid] = e.lvl || lm.lvl; } const act = lm === this.dP; sfx('lvl'); if (act) { this.sparkle('p', '#ffe27a', true); this.hpD.p = this.b.p.hp; this.xpD = xpForLevel(e.lvl || lm.lvl); } await this.say(e.text); if (lm && e.lvl && !this.o.remote) await this.statWin(lm, e.lvl); if (act) await this.fillXp(); break; }
         case 'learn': await this.learn(this.b.team.find(m => m.uid === e.uid), e.id); break;
       }
     }
   }
   drainTo(side, hp) { const from = this.hpD[side]; return this.tween(Math.min(0.9, 0.25 + Math.abs(from - hp) * 0.02), k => (this.hpD[side] = from + (hp - from) * k)); }
   async fillXp() {
-    const m = this.b.p, from = this.xpD, to = m.xp;
+    const m = this.dP, from = this.xpD, to = Math.min(m.xp, xpForLevel((this.dLvl[m.uid] ?? m.lvl) + 1));
     await this.tween(0.6, k => (this.xpD = from + (to - from) * k));
   }
   async learn(m, id) {
@@ -265,14 +283,14 @@ class BattleScene {
     for (let i = 0; i < 18; i++) { const a = i / 18 * 6.28; this.emit(c.x, c.y + 20, Math.cos(a) * 50, Math.sin(a) * 25, '#bff8ff', 0.4); }
     await this.tween(0.32, k => (o.s = backOut(k)));
     this.tween(0.35, k => (o.flash = 1 - k));
-    cry(SPECIES[side === 'f' ? this.b.f.sp : this.b.p.sp].cry);
-    const mm = side === 'f' ? this.b.f : this.b.p;
+    cry(SPECIES[side === 'f' ? this.dF.sp : this.dP.sp].cry);
+    const mm = side === 'f' ? this.dF : this.dP;
     if (mm?.shiny) { await wait(200); sfx('shiny'); for (let k = 0; k < 3; k++) { for (let i = 0; i < 8; i++) { const a = i / 8 * 6.28; this.emit(c.x + (k - 1) * 12, c.y + 6 - k * 6, Math.cos(a) * 40, Math.sin(a) * 40, k % 2 ? '#fff6a8' : '#ffffff', 0.5, 2); } await wait(180); } }
     await wait(250);
   }
   async faint(side) {
     const o = side === 'f' ? this.foeOff : this.ownOff;
-    cry(SPECIES[side === 'f' ? this.b.f.sp : this.b.p.sp].cry); sfx('faint');
+    cry(SPECIES[side === 'f' ? this.dF.sp : this.dP.sp].cry); sfx('faint');
     await this.tween(0.5, k => (o.y = k * 64));
     o.vis = false; o.y = 0;
     await this.hideBox(side);
@@ -331,7 +349,7 @@ class BattleScene {
         for (let i = 0; i < 30; i++) this.emit(t.x + (Math.random() - 0.5) * 40, t.y + (Math.random() - 0.5) * 30, (Math.random() - .5) * 10, -8, col, 0.9, 4);
         await wait(450); break;
       case 'roar':
-        cry(SPECIES[this.b.mon(side).sp].cry);
+        cry(SPECIES[(side === 'f' ? this.dF : this.dP).sp].cry);
         await this.tween(0.4, k => (o.s = 1 + Math.sin(k * Math.PI) * 0.15)); o.s = 1; break;
       default:
         await this.tween(0.3, k => (o.s = 1 + Math.sin(k * Math.PI) * 0.08)); o.s = 1;
@@ -454,11 +472,12 @@ class BattleScene {
     for (const [cx, cy, rx, ry] of [[178 + sF, 70, 46, 10], [60 + sO, 112, 56, 12]]) { const pa = platArt(this.bgKey, this.bg, rx, ry); ctx.drawImage(pa, Math.round(cx - pa.width / 2), Math.round(cy - ry - 2)); }
     // Gegner
     const fo = this.foeOff;
-    if (fo.vis && b.f) { const im = monSprite(b.f.sp, 'front', b.f.shiny, b.f.mut); if (b.f.reso) this.aura(ctx, im, b.f.sp, FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72); this.drawSprite(ctx, b.f.reso ? resoSprite(im, resoColor(b.f.sp)) : im, FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72, fo.flash, this.foeDark); }
+    const vF = this.dF, vP = this.dP;
+    if (fo.vis && vF) { const im = monSprite(vF.sp, 'front', vF.shiny, vF.mut); if (vF.reso) this.aura(ctx, im, vF.sp, FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72); this.drawSprite(ctx, vF.reso ? resoSprite(im, resoColor(vF.sp)) : im, FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72, fo.flash, this.foeDark); }
     if (this.trainerFoe.vis && this.o.trainer) ctx.drawImage(trainerSprite(this.o.trainer.look), FOE.x + this.trainerFoe.x + sF, FOE.y + 2);
     // eigene Seite
     const oo = this.ownOff;
-    if (oo.vis) { const im = monSprite(b.p.sp, 'back', b.p.shiny, b.p.mut); if (b.p.reso) this.aura(ctx, im, b.p.sp, OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114); this.drawSprite(ctx, b.p.reso ? resoSprite(im, resoColor(b.p.sp)) : im, OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114, oo.flash); }
+    if (oo.vis) { const im = monSprite(vP.sp, 'back', vP.shiny, vP.mut); if (vP.reso) this.aura(ctx, im, vP.sp, OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114); this.drawSprite(ctx, vP.reso ? resoSprite(im, resoColor(vP.sp)) : im, OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114, oo.flash); }
     if (this.trainerOwn.vis) ctx.drawImage(trainerSprite(this.s.look, true), OWN.x + this.trainerOwn.x + sO, OWN.y + 4);
     // Lichtringe beim Öffnen des Kristalls
     for (const r of this.rings) if (r.t > 0) { ctx.globalAlpha = Math.max(0, 1 - r.t / 0.45); ctx.strokeStyle = r.c; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(r.x, r.y, 4 + r.t * 90, 2 + r.t * 40, 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
@@ -482,8 +501,8 @@ class BattleScene {
     }
     if (this.popup) { const p = this.popup, k = Math.min(1, p.t * 6); ctx.globalAlpha = Math.min(1, (1.1 - p.t) * 4); text(p.text, p.x, p.y - p.t * 10, p.c, 6 + k * 4, 'center', '#202030', true); ctx.globalAlpha = 1; }
     // Infoboxen
-    if (this.showFoeBox && b.f) this.infoBox(ctx, b.f, 6 - 130 * (1 - this.foeBoxK), 8, false);
-    if (this.showOwnBox) this.infoBox(ctx, b.p, 128 + 130 * (1 - this.ownBoxK), 72, true);
+    if (this.showFoeBox && vF) this.infoBox(ctx, vF, 6 - 130 * (1 - this.foeBoxK), 8, false);
+    if (this.showOwnBox) this.infoBox(ctx, vP, 128 + 130 * (1 - this.ownBoxK), 72, true);
     this.drawLvlWin();
     // Text & Menüs
     box(0, 113, W, 47, 'dark');
@@ -527,7 +546,8 @@ class BattleScene {
       const px = gd === 1 ? ['..###', '...##', '.##.#', '#..#.', '#..#.', '.##..'] : ['.##.', '#..#', '#..#', '.##.', '.#..', '###.', '.#..'];
       px.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '#') ctx.fillRect(gx + i, gy + j, 1, 1); }));
     }
-    text('Lv' + m.lvl, x + w - (own ? 8 : 14), y + 4, COL.ink, 7.5, 'right', COL.shadow, true);
+    const lv = this.dLvl[m.uid] ?? m.lvl, mx = maxHp({ ...m, lvl: lv });
+    text('Lv' + lv, x + w - (own ? 8 : 14), y + 4, COL.ink, 7.5, 'right', COL.shadow, true);
     if (!own && this.mode !== undefined && !this.o.trainer && this.g.state.dex.caught[m.sp]) ctx.drawImage(crystalIcon('#7fe3ff'), x + w - 46, y + 3, 9, 9);
     const hx = x + (own ? 30 : 26);
     if (m.status) text({ brand: 'BRD', gift: 'GIF', starre: 'STR' }[m.status], x + (own ? 10 : 6), y + 15, '#c84848', 6.5, 'left', null, true);
@@ -535,10 +555,10 @@ class BattleScene {
     ctx.fillStyle = '#f8b030'; ctx.fillRect(hx + 1, y + 16, 12, 4.5);
     text('KP', hx + 7, y + 15.2, '#583000', 5.5, 'center', null, true);
     const hpd = own ? this.hpD.p : this.hpD.f;
-    bar(hx + 15, y + 16.5, 54, 3.5, hpd / maxHp(m));
+    bar(hx + 15, y + 16.5, 54, 3.5, hpd / mx);
     if (own) {
-      text(`${Math.max(0, Math.round(hpd))}/ ${maxHp(m)}`, x + w - 8, y + 22.5, COL.ink, 7.5, 'right', COL.shadow, true);
-      const lo = xpForLevel(m.lvl), hi = xpForLevel(m.lvl + 1);
+      text(`${Math.max(0, Math.round(hpd))}/ ${mx}`, x + w - 8, y + 22.5, COL.ink, 7.5, 'right', COL.shadow, true);
+      const lo = xpForLevel(lv), hi = xpForLevel(lv + 1);
       ctx.fillStyle = '#3c4844'; ctx.fillRect(x + 14, y + 32, 86, 4.5);
       text('EP', x + 20, y + 32, '#f8f8f8', 4.5, 'center', null, true);
       bar(x + 27, y + 33, 72, 2.5, (Math.min(this.xpD, hi) - lo) / (hi - lo), 'xp');

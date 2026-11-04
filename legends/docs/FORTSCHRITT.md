@@ -599,3 +599,25 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
 - **Beutel:** Unter der Tasche erscheint ein Bild des gewählten Items (`itemIcon(id, ITEMS[id])`): Bälle, Sprühflaschen in drei Farben, Beeren, Beleber, Attacken-Kristall-Scheibe, goldene VM-Scheibe, Angel, Wellenreiter, Amulett, Herzsteine und Paket. `choose` gibt dafür den Index an `side(ctx, i)` weiter.
 
 - **v2.5.1 – zweite Namensrunde:** international und klangvoll, Tier + Element + Mythos, z. B. Fennix → Infernyx, Axolulu → Maelotl, Sprigo → Rootan, Tweeko → Galeko, Glupsi → Toxiglup, Bunzel → Luxlapin, Pinguo → Emperon, Shadefenn → Duskfenn, Emberchick → Flarooster. Übersicht aller 150 Arten: `docs/kreaturen.png`.
+
+## v2.6 – Kampfablauf wie im Original und neue Kampfmusik
+- **Keine Vorschau mehr:** Die Kampfszene zeigt den *angezeigten* Stand (`dF`, `dP`, `dLvl`) statt des vorausberechneten Rundenergebnisses.
+  - Die nächste gegnerische Kreatur erscheint erst nach dem `send`-Ereignis, also nachdem die alte besiegt ist.
+  - Level, KP-Maximum und EP-Balken springen erst beim `lvl`-Ereignis. Der EP-Balken füllt sich bis zur Levelgrenze, leert sich beim Aufstieg und füllt den Rest nach.
+- **Wechseln nach einem Sieg** (Trainerkämpfe): „X wird Y einsetzen. Möchtest du Z auswechseln?“ Bei Ja wird das eigene Team gewählt, die alte Kreatur zurückgerufen und die neue geschickt, ohne dass der Gegner angreift.
+- **Neue Musik** (`TRACKS` in music.js; Engine-Erweiterung in audio.js):
+  - Neue Klänge: Sägezahn-Lead, zweite Stimme `harm`, Bass `drive`, Arpeggio `fast` in 16teln, Schlagzeug `double` und `tribal`.
+  - Wilde Kämpfe: `battle`, `battle2` (Wald, Nacht), `battle3` (Wasser, Höhle, Schnee), zufällig gemischt.
+  - Trainer: `trainer` und `trainer2`, je nach Name.
+  - Jeder Arenaleiter hat ein eigenes Thema (`ldr0`–`ldr7`):
+
+    | Thema | Leiter | Stil |
+    |---|---|---|
+    | `ldr0` | Gorm | Stampf-Rock |
+    | `ldr1` | Selma | Flamenco-Rock |
+    | `ldr2` | Meri | fließende Arpeggios |
+    | `ldr3` | Halvar | kristallklares Eis |
+    | `ldr4` | Morwen | düstere Trommeln |
+    | `ldr5` | Sahra | orientalische Tonleiter |
+    | `ldr6` | Brann | episch |
+    | `ldr7` | Vala | Doppelbass-Finale |
