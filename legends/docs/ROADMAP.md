@@ -10,7 +10,7 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 | **1b – Handheld-Edition** | 240×160-Darstellung, Steuerkreuz, Charakter-Editor, 45 Kreaturen, Brutstätte & Mutationen, Arena 1 | ✅ v0.2 |
 | **2a – Grafik & Koop** | eigene 2D-Pixel-Art statt 3D-Renderings, 3D-Teil entfernt, Online-Welt, Mitspieler auf der Karte, Freundschaftskampf (Server berechnet), Tausch, Chat | ✅ v0.3 |
 | **2b – Koop-Ausbau** | Doppelkämpfe 2 gegen 2, Koop gegen Trainer-Duo und Boss, Tausch-Entwicklungen, Server-Sicherung & Geräte-Übertragung, Zu Freund reisen | ✅ v0.4 |
-| **3 – Hauptspiel** | Regionen Ignis, Aqualis, Frostheim · Arenen 2–4 mit Rätseln · Team Eklipse · Rivalin Lyra · 75 Kreaturen · Items (Beeren, Attacken-Kristalle) · Nebenquests | ⏳ Ignis ✅ v0.5 · Aqualis ✅ v0.6 |
+| **3 – Hauptspiel** | Regionen Ignis, Aqualis, Frostheim · Arenen 2–4 mit Rätseln · Team Eklipse · Rivalin Lyra · 75 Kreaturen · Items (Beeren, Attacken-Kristalle) · Nebenquests | ⏳ Ignis ✅ v0.5 · Aqualis ✅ v0.6 · Frostheim ✅ v0.7 |
 | **4 – Endgame** | Regionen Nocturna, Solaria, Drakmor · Arenen 5–8 · Top 4 · Champion · legendäre Hüter · Geheimorte nur zu viert · Postgame · 150 Kreaturen | geplant |
 | **5 – Qualität** | komponierte Musik, Animationen, Balancing, Performance, Windows-App (Tauri), Store-Apps (Capacitor) | geplant |
 
@@ -34,8 +34,8 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 | 3.2 | Region Ignis: Route 3 (Aschepfad), Stadt Ignis, Arena 2 (Selma, Feuer, Lava-Labyrinth), 10 Kreaturen, 3 Attacken | ✅ v0.5 |
 | 3.3 | Team Eklipse: Rüpel besetzen die Arena, Kommandantin Nyx, Versteck auf der Insel, Meeres-Herzstein | ✅ v0.5/v0.6 |
 | 3.4 | Region Aqualis: Route 4, Surfen (Wellenreiter), Arena 3 (Meri, Wasser), Eklipse-Versteck, 10 Kreaturen | ✅ v0.6 |
-| 3.5 | Region Frostheim: Eisrutsch-Rätsel, Arena 4, Rivalin Lyra, 10 Kreaturen | ⏳ als Nächstes |
-| 3.6 | Items (Beeren, Attacken-Kristalle), Nebenquests, Balancing bis Level 40 | geplant |
+| 3.5 | Region Frostheim: Frostpass mit Eissee, Arena 4 (Halvar, Eisrutsch-Rätsel), Rivalin Lyra, 10 Kreaturen | ✅ v0.7 |
+| 3.6 | Items (Beeren, Attacken-Kristalle), Nebenquests, Eisgrotte (Herzstein-Finale von Phase 3), Balancing bis Level 40 | ⏳ als Nächstes |
 
 ## Story-Leitfaden (Entwurf für alle Phasen)
 

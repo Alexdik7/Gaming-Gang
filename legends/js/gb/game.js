@@ -26,12 +26,20 @@ const GYMS = {
     outro: ['Gorm: Östlich von hier führt der Aschepfad nach Ignis, der Stadt am Vulkan.', 'Dort wartet Selma, die Arenaleiterin des Feuers. Mit meinem Orden lässt dich der Wächter durch!'],
     after: ['Der Felsorden steht dir gut.', 'Der Aschepfad im Osten führt nach Ignis. Selma wartet dort auf dich!'],
   },
+  halvar: {
+    badge: 3, badgeName: 'FROSTORDEN', team: [['frosteule', 30], ['eiszapfling', 31], ['kaiserpingu', 32], ['gletscherkoloss', 34]], reward: 4000, bg: 'schnee',
+    intro: ['Du hast den Weg über das Eis gefunden. Das gelingt nicht vielen.', 'Ich bin Halvar. Das Eis lehrt Geduld – und Geduld macht stark.', 'Zeig mir, ob dein Feuer meinen Winter schmelzen kann!'],
+    lose: 'Das Eis… ist gebrochen. Gut gemacht, junger Trainer.',
+    gift: { text: ['Halvar: Nimm diese Supertränke und Sternkristalle für den Weg, der vor dir liegt.'], items: { supertrank: 4, sternkristall: 4 } },
+    outro: ['Halvar: Vier Orden. Du hast die Hälfte der Region bereist.', 'Lyra war vor dir hier. Sie sucht die Eisgrotte im Norden – und Team Eklipse ebenso.', '(Ende von Phase 3 · Teil 3. Als Nächstes: Items, Nebenquests und Balancing – danach die Regionen Nocturna, Solaria und Drakmor!)'],
+    after: ['Der Frostorden steht dir! Das Eis wird sich an dich erinnern.'],
+  },
   meri: {
     badge: 2, badgeName: 'WELLENORDEN', team: [['sternquappe', 24], ['perlpanzer', 25], ['wogenross', 27]], reward: 3000,
     intro: ['Danke, dass du mir im Versteck geholfen hast!', 'Ich bin Meri. Meine Kreaturen fließen wie das Meer – mal sanft, mal als Sturmflut.', 'Mal sehen, ob du gegen den Strom schwimmen kannst!'],
     lose: 'Was für eine Welle! Du hast mich einfach weggespült.',
     gift: { text: ['Meri: Nimm diese Sternkristalle. Im Meer gibt es seltene Kreaturen zu finden!'], items: { sternkristall: 4 } },
-    outro: ['Meri: Team Eklipse sammelt die Herzsteine. Einen haben wir gerettet – aber Nyx sprach von einem Stein im ewigen Eis.', 'Hinter den Bergen im Norden liegt Frostheim.', '(Ende des aktuellen Abschnitts. Frostheim folgt in der nächsten Lieferung!)'],
+    outro: ['Meri: Team Eklipse sammelt die Herzsteine. Einen haben wir gerettet – aber Nyx sprach von einem Stein im ewigen Eis.', 'Frostheim liegt hoch im Norden. Der Frostpass beginnt am Nordrand von Felsenau.', 'Mit drei Orden lässt dich der Bergwächter durch!'],
     after: ['Der Wellenorden steht dir! Pass gut auf den Meeres-Herzstein auf.'],
   },
   selma: {
@@ -202,6 +210,11 @@ class Game {
   // ---------------------------------------------------------- Bewegungs-Sperren & Ereignisse
   blockEdge(map, to) {
     const s = this.state;
+    if (map === 'felsenau' && to === 'route5' && !s.badges[2]) {
+      this.ow.busy = true;
+      (async () => { await say(['Ein Bergwächter versperrt den Frostpass: Lawinengefahr!', 'Nur wer drei Orden besitzt – Fels, Glut und Welle –, darf in die Berge.']); this.ow.busy = false; })();
+      return true;
+    }
     if (map === 'felsenau' && to === 'route3' && !s.badges[0]) {
       this.ow.busy = true;
       (async () => { await say(['Ein Wächter hält dich auf: Der Aschepfad ist gefährlich!', 'Nur Trainer mit dem Felsorden aus der Arena von Felsenau dürfen hier durch.']); this.ow.busy = false; })();
@@ -479,7 +492,10 @@ class Game {
       case 'kid2': return say(['Wasser ist stark gegen Feuer und Erde. Pflanze schlägt Wasser!', 'Und Elektro kann Erde gar nichts anhaben – merk dir das für die Arena!'], N);
       case 'fan': return say(['Arenaleiter Gorm benutzt Erd- und Metall-Kreaturen.', 'Wasser, Pflanze und Feuer haben es leichter gegen ihn!'], N);
       case 'guide': return say(['Hey, Champion in spe! Gorm wartet ganz oben.', 'Seine Kreaturen sind hart wie Stein. Wasser- und Pflanzenattacken helfen enorm!'], N);
-      case 'gorm': case 'selma': case 'meri': return this.gym(n);
+      case 'gorm': case 'selma': case 'meri': case 'halvar': return this.gym(n);
+      case 'guide4': return say(['Halvars Arena ist ein einziger Eisspiegel. Wer losrutscht, hält erst am nächsten Hindernis!', 'Feuer-, Metall- und Kampfgeist helfen gegen Eis. Viel Glück!'], N);
+      case 'fh_kind': return say(['Auf dem zugefrorenen Teich kann man super rutschen!', 'Aber pass auf: Wenn du einmal losrutschst, kannst du nicht mehr bremsen.'], N);
+      case 'fh_oma': return say(s.flags.lyra_met ? ['Ein Mädchen mit eisblauem Haar ist durch die Stadt gekommen. Lyra hieß sie, glaube ich.', 'Sie fragte nach der Eisgrotte im Norden. Dort soll ein uralter Stein im Eis schlafen…'] : ['Frostheim ist die kälteste Stadt der Welt.', 'Aber unsere Herzen sind warm!'], N);
       case 'malu':
         if (s.bag.wellenreiter) return say(['Das Meer ist heute spiegelglatt – perfekt zum Surfen!', 'Auf der Insel vor Aqualis haben sich Leute in dunklen Uniformen verschanzt…'], N);
         if (!s.badges[1]) return say(['Ich bin Malu! Ich verleihe Wellenreiter – aber nur an Trainer mit dem Glutorden aus Ignis.', 'Das Meer ist nichts für Anfänger!'], N);
@@ -501,6 +517,16 @@ class Game {
   // ---------------------------------------------------------- Story-Ereignisse nach Trainerkämpfen
   async story() {
     const s = this.state, ow = this.ow;
+    if (ow.id === 'route5' && s.flags.lyra1 && !s.flags.lyra_met) {
+      ow.busy = true;
+      const N = { name: 'Lyra' };
+      await say(['Team Eklipse will die Herzsteine vereinen, um die Zeit anzuhalten.', 'Du hältst sie für Bösewichte. Ich halte sie für die Einzigen, die verstanden haben, dass unsere Welt zerfällt.', 'Wir sehen uns in Frostheim – oder in der Eisgrotte. Bis dahin: Werde stärker.'], N);
+      await fade(1, 300);
+      s.flags.lyra_met = true; ow.npcs = ow.npcs.filter(n => n.id !== 'lyra1');
+      await fade(0, 300);
+      ow.busy = false; this.save(true);
+      return;
+    }
     if (ow.id === 'versteck' && s.flags.nyx2 && !s.flags.eklipse2) {
       ow.busy = true;
       const N = { name: 'Kommandantin Nyx' };

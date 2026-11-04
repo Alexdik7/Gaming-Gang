@@ -1,6 +1,27 @@
 # Fortschritt
 
-## v0.6 – Phase 3, Teil 2: Aqualis (aktuell)
+## v0.7 – Phase 3, Teil 3: Frostheim (aktuell)
+
+### ✅ Neu und getestet
+- **Route 5 · Frostpass:**
+  - Beginnt am Nordrand von Felsenau, nur mit 3 Orden.
+  - Tiefschnee, verschneite Tannen und 2 Trainer
+  - **Eissee mit Rutsch-Rätsel:** Auf Eis rutschst du, bis dich ein Fels stoppt.
+- **Rivalin Lyra:**
+  - Erster Kampf am Pass
+  - Danach verrät sie, dass sie Team Eklipse für die Einzigen hält, die verstanden haben, dass die Welt zerfällt.
+- **Stadt Frostheim** mit zugefrorenem Teich zum Rutschen, Heilzentrum und Laden.
+- **Arena 4:**
+  - Eisspiegel-Rätsel mit mindestens 5 Rutschzügen, 2 Arena-Trainer
+  - **Arenaleiter Halvar** (Eis) → **Frostorden** + Supertränke und Sternkristalle
+- **10 neue Kreaturen:** Schneehase, Frostfuchs → Polarfuchs, Pinguk → Kaiserpingu, Frosteule, Eiszapfling, Nordlicht (episch, nachts), Firnwurm, Schneeglock
+  - Insgesamt sind es jetzt 75 Arten.
+- **4 neue Attacken:** Blizzard, Hagelschlag, Frostbiss, Eisschild.
+- **Neuer Kampfhintergrund** „Schnee“.
+- **Kartenprüfung** simuliert jetzt auch das Rutschen auf Eis. Ein Löser-Skript hat beide Eisrätsel auf Lösbarkeit geprüft.
+- Alle 25 Karten sind fehlerfrei.
+
+## v0.6 – Phase 3, Teil 2: Aqualis
 
 ### ✅ Neu und getestet
 - **Route 4 · Küstenweg** südlich von Ignis:

@@ -121,6 +121,30 @@ const DRAW = {
   rug: (x, f, s) => { x.fillStyle = '#c84848'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#f8d870'; x.fillRect(1, 1, 14, 1); x.fillRect(1, 14, 14, 1); x.fillStyle = '#e86868'; x.fillRect(3, 4, 10, 8); },
   mat: (x, f, s) => { DRAW.floor(x, f, s); x.fillStyle = '#7a2838'; x.fillRect(2, 4, 12, 10); x.fillStyle = '#b84858'; x.fillRect(3, 5, 10, 8); },
   orbs: (x, f, s) => { DRAW.table(x, f, s); for (const [a, c] of [[3, '#ff7a33'], [8, '#3d9bff'], [13, '#4fcf5c']]) { x.fillStyle = '#202030'; x.beginPath(); x.arc(a, 6.5, 2.4, 0, 7); x.fill(); x.fillStyle = c; x.beginPath(); x.arc(a, 6.5, 1.7, 0, 7); x.fill(); x.fillStyle = '#fff'; x.fillRect(a - 1, 5, 1, 1); } },
+  // Region Frostheim
+  snow: (x, f, s) => {
+    const r = mulberry(s + 13); x.fillStyle = '#eef4fa'; x.fillRect(0, 0, 16, 16);
+    for (let i = 0; i < 6; i++) { x.fillStyle = r() < 0.6 ? '#d4e0ee' : '#ffffff'; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), r() < 0.5 ? 2 : 1, 1); }
+    if (s % 4 === 1) { x.fillStyle = '#b8c8dc'; x.fillRect(4, 11, 3, 1); }
+  },
+  snowtall: (x, f, s) => { x.fillStyle = '#d8e4f0'; x.fillRect(0, 0, 16, 16); tallBlades(x, f, 0, 'snow'); },
+  ice: (x, f, s) => {
+    x.fillStyle = '#a8d4f0'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#c4e4f8'; x.fillRect(0, 0, 16, 2); x.fillRect(0, 8, 16, 1);
+    x.fillStyle = '#ffffff'; x.fillRect(3 + (s % 3), 3, 4, 1); x.fillRect(4 + (s % 3), 4, 2, 1); x.fillRect(10, 11, 3, 1);
+    x.fillStyle = '#88b8dc'; x.fillRect(12, 2, 1, 4); x.fillRect(1, 12, 4, 1);
+  },
+  snowpine: (x, f, s) => {
+    DRAW.snow(x, f, s); const o = '#1e3a3a';
+    x.fillStyle = 'rgba(40,60,90,.2)'; x.fillRect(3, 14, 10, 2);
+    x.fillStyle = '#5a3a24'; x.fillRect(7, 12, 2, 4);
+    for (const [y, w] of [[1, 2], [3, 6], [6, 10], [9, 14]]) { x.fillStyle = o; x.fillRect(8 - w / 2 - 1, y, w + 2, 4); }
+    for (const [y, w] of [[1, 2], [3, 6], [6, 10], [9, 14]]) { x.fillStyle = '#2e6a5a'; x.fillRect(8 - w / 2, y + 1, w, 3); x.fillStyle = '#f4f8ff'; x.fillRect(8 - w / 2, y + 1, Math.max(1, w * 0.6), 1); }
+  },
+  snowrock: (x, f, s) => {
+    DRAW.snow(x, f, s); x.fillStyle = '#3a4658'; x.beginPath(); x.ellipse(8, 9, 7, 6, 0, 0, 7); x.fill();
+    x.fillStyle = '#8a98aa'; x.beginPath(); x.ellipse(8, 9, 6, 5, 0, 0, 7); x.fill();
+    x.fillStyle = '#f4f8ff'; x.beginPath(); x.ellipse(7, 6, 5, 2.5, 0, 0, 7); x.fill(); x.fillStyle = '#5a687a'; x.fillRect(9, 11, 4, 1);
+  },
   // Eklipse-Versteck
   metal: (x, f, s) => {
     x.fillStyle = '#5a6070'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#48505e'; x.fillRect(0, 0, 16, 1); x.fillRect(0, 0, 1, 16); x.fillRect(8, 0, 1, 16); x.fillRect(0, 8, 16, 1);
@@ -174,7 +198,7 @@ function treeTop(x, c1, c2, c3, o) {
   x.fillStyle = c3; x.fillRect(4, 3, 3, 1); x.fillRect(3, 4, 2, 2); x.fillRect(8, 2, 2, 1); x.fillRect(7, 6, 2, 1); x.fillRect(10, 4, 1, 1);
   x.fillStyle = o; x.fillRect(5, 10, 1, 1); x.fillRect(11, 9, 1, 1);
 }
-const BLADE = { green: ['#2e7a30', '#48a040', '#90d868'], ash: ['#4a4038', '#7a6a58', '#b8a488'] };
+const BLADE = { green: ['#2e7a30', '#48a040', '#90d868'], ash: ['#4a4038', '#7a6a58', '#b8a488'], snow: ['#7a98b8', '#c8dcf0', '#ffffff'] };
 export function tallBlades(x, f, oy, pal = 'green') {
   const o = f ? 1 : 0, [c1, c2, c3] = BLADE[pal];
   for (const [a, b] of [[1, 2], [6, 0], [11, 2], [3, 8], [9, 7], [13, 9]]) {

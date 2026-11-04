@@ -51,12 +51,12 @@ export class Overworld {
     if (this.emote) { this.emote.t -= dt; if (this.emote.t <= 0) this.emote = null; }
     this.updateNpcs(dt);
     if (p.moving) {
-      const dur = p.jump ? 0.42 : (input.held('b') && !this.M.indoor ? 0.13 : 0.22);
+      const dur = p.jump ? 0.42 : p.slide ? 0.1 : (input.held('b') && !this.M.indoor ? 0.13 : 0.22);
       p.t += dt / dur;
       const k = Math.min(1, p.t);
       p.px = (p.fx + (p.tx - p.fx) * k) * 16; p.py = (p.fy + (p.ty - p.fy) * k) * 16;
       p.hop = p.jump ? Math.sin(k * Math.PI) * 10 : 0;
-      p.frame = k > 0.25 && k < 0.75 ? (p.step % 2 ? 1 : 2) : 0;
+      p.frame = p.slide ? 0 : k > 0.25 && k < 0.75 ? (p.step % 2 ? 1 : 2) : 0;
       if (k >= 1) { p.moving = false; p.x = p.tx; p.y = p.ty; p.jump = 0; p.hop = 0; p.step++; this.arrive(); }
       return;
     }
@@ -102,11 +102,17 @@ export class Overworld {
     if (this.M.indoor && c === 'm') return this.exitInterior();
     const wp = (this.M.warps || []).find(w => w.x === p.x && w.y === p.y);
     if (wp) return this.warp(wp.to, wp.tx, wp.ty, wp.dir);
+    // Eis: in Laufrichtung weiterrutschen, bis ein Hindernis kommt
+    if (c === 'i') {
+      const [dx, dy] = DX[p.dir], nx = p.x + dx, ny = p.y + dy;
+      if (nx >= 0 && ny >= 0 && nx < this.w && ny < this.h && !this.solid(nx, ny) && !this.bldAt(nx, ny)) { p.slide = true; this.startMove(nx, ny, false); return; }
+    }
+    p.slide = false;
     if (p.surf && c !== '~') { p.surf = false; s.surf = false; this.music(); }
     if (await this.checkTrainers()) return;
     if (p.surf && this.M.surfEnc) { if (Math.random() < ENC[this.M.surfEnc].rate) await this.g.wildBattle(this.M.surfEnc, 'wasser'); return; }
     const encId = this.M.enc;
-    if (encId && ((c === ':' || c === 'h') || (this.M.cave && c === 'c'))) {
+    if (encId && ((c === ':' || c === 'h' || c === 'y') || (this.M.cave && c === 'c'))) {
       if (Math.random() < ENC[encId].rate) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.id === 'altwald' ? 'wald' : this.M.bg || 'gras');
     }
   }
@@ -234,7 +240,7 @@ export class Overworld {
     for (let y = y0; y <= y0 + 11; y++) for (let x = x0; x <= x0 + 15; x++) {
       const c = this.ch(x, y); if (c === null) continue;
       let name = TILE[c] || 'void', fr = 0;
-      if (c === '~' || c === 'v') fr = f3; else if (c === ',' || c === ':' || c === 'h' || c === 'e' || c === 'V' || c === 'M' || c === 'Q') fr = f2;
+      if (c === '~' || c === 'v') fr = f3; else if (c === ',' || c === ':' || c === 'h' || c === 'y' || c === 'e' || c === 'V' || c === 'M' || c === 'Q') fr = f2;
       if (c === 'r') { const id = this.M.runes?.[x + ',' + y]; if (flags[id]) { name = 'runeOn'; fr = f2; } }
       if (c === 'A') fr = runesOn >= 3 ? f2 : 0;
       if (c === 'R' && this.M.cave) name = 'crock';
@@ -252,7 +258,7 @@ export class Overworld {
       if (a.me && p.surf) { const sm = this.g.surfMon?.(); const bob = Math.round(Math.sin(G.t * 4)); if (sm) ctx.drawImage(monSprite(sm.sp, 'icon', sm.shiny, sm.mut), a.px - cx - 8, a.py - cy - 6 + bob); drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 7 + bob); continue; }
       if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
       else drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
-      { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h') && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : 'green'), a.px - cx, a.py - cy + 8); }
+      { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h' || tc === 'y') && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : tc === 'y' ? 'snow' : 'green'), a.px - cx, a.py - cy + 8); }
       if (a.name) { const w = a.name.length * 4.2 + 6; ctx.fillStyle = 'rgba(20,40,80,.8)'; ctx.fillRect(a.px - cx + 8 - w / 2, a.py - cy - 12, w, 8); text(a.name, a.px - cx + 8, a.py - cy - 11.5, '#ffd36b', 6, 'center', null); }
     }
     if (this.emote) {

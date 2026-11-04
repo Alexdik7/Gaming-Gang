@@ -11,7 +11,7 @@ import { choose, party, evoScene, typeTag, say, ask, waitMsg } from './gbui.js';
 import { ITEMS } from './maps.js';
 
 const BG = {
-  gras: ['#a8e0f8', '#e0f8d0', '#78c858', '#58a848'], hoehle: ['#3a2a20', '#6a5040', '#9a7a58', '#7a5a40'], vulkan: ['#3a1a1a', '#b8583a', '#8a7a68', '#6a5a4a'], arena: ['#d8c8a8', '#f0e8d0', '#c8a878', '#a88858'],
+  gras: ['#a8e0f8', '#e0f8d0', '#78c858', '#58a848'], hoehle: ['#3a2a20', '#6a5040', '#9a7a58', '#7a5a40'], vulkan: ['#3a1a1a', '#b8583a', '#8a7a68', '#6a5a4a'], schnee: ['#a8c8e8', '#eef6ff', '#e0ecf8', '#c0d4e8'], arena: ['#d8c8a8', '#f0e8d0', '#c8a878', '#a88858'],
 };
 // Sprite-Positionen (linke obere Ecke, Größe 64 × Skalierung)
 const POS = { f0: { x: 116, y: 0, s: 0.85 }, f1: { x: 168, y: 12, s: 0.85 }, p0: { x: 0, y: 46, s: 1 }, p1: { x: 58, y: 54, s: 1 } };

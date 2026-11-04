@@ -65,7 +65,11 @@ for (const id of Object.keys(MAPS)) {
         if (seen.has(k)) continue;
         if (M.rows[ny]?.[nx] === 'L' && dy === 1 && walk(nx, ny + 1)) { const k2 = nx + ',' + (ny + 1); if (!seen.has(k2)) { seen.add(k2); q.push([nx, ny + 1]); } continue; }
         if (!ok(nx, ny) || block.has(k)) continue;
-        seen.add(k); q.push([nx, ny]);
+        // Eis: weiterrutschen, bis ein Hindernis kommt
+        let sx = nx, sy = ny;
+        while (M.rows[sy][sx] === 'i' && ok(sx + dx, sy + dy) && !block.has((sx + dx) + ',' + (sy + dy))) { sx += dx; sy += dy; }
+        const ks = sx + ',' + sy; if (seen.has(ks)) continue;
+        seen.add(ks); q.push([sx, sy]);
       }
     }
     return seen;
