@@ -130,6 +130,25 @@ const DRAW = {
     const c = s % 2 ? ['#4a68e8', '#a8c0ff'] : ['#e83a4a', '#ffb0b8'];
     for (const [a, b] of [[4, 6], [9, 4], [11, 9], [6, 10]]) { x.fillStyle = c[0]; x.fillRect(a, b, 2, 2); x.fillStyle = c[1]; x.fillRect(a, b, 1, 1); }
   },
+  // Region Drakmor
+  mground: (x, f, s) => {
+    const r = mulberry(s + 41); x.fillStyle = '#a8987a'; x.fillRect(0, 0, 16, 16);
+    for (let i = 0; i < 7; i++) { x.fillStyle = r() < 0.5 ? '#8a7a60' : '#c0b090'; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), r() < 0.4 ? 2 : 1, 1); }
+    if (s % 5 === 2) { x.fillStyle = '#6a8a48'; x.fillRect(3, 12, 2, 2); x.fillRect(5, 13, 1, 1); }
+  },
+  mgrass: (x, f, s) => { x.fillStyle = '#7a8a5a'; x.fillRect(0, 0, 16, 16); tallBlades(x, f, 0, 'mount'); },
+  cliff: (x, f, s) => {
+    x.fillStyle = '#4a4038'; x.fillRect(0, 0, 16, 16);
+    x.fillStyle = '#6a5c4c'; x.fillRect(1, 1, 7, 6); x.fillRect(9, 3, 6, 5); x.fillRect(2, 9, 6, 5); x.fillRect(10, 10, 5, 5);
+    x.fillStyle = '#8a7a64'; x.fillRect(1, 1, 7, 1); x.fillRect(9, 3, 6, 1); x.fillRect(2, 9, 6, 1); x.fillRect(10, 10, 5, 1);
+    x.fillStyle = '#2e2620'; x.fillRect(0, 7, 16, 1); x.fillRect(8, 0, 1, 7);
+  },
+  hole: (x, f, s) => {
+    const fl = DRAW.__floor || DRAW.gym; fl(x, f, s);
+    x.fillStyle = '#1a1410'; x.beginPath(); x.ellipse(8, 8.5, 6.5, 5.5, 0, 0, 7); x.fill();
+    x.fillStyle = '#3a2e24'; x.fillRect(3, 5, 10, 1); x.fillStyle = '#0a0806'; x.beginPath(); x.ellipse(8, 9.5, 4.5, 3.5, 0, 0, 7); x.fill();
+  },
+  holeFilled: (x, f, s) => { DRAW.gym(x, f, s); x.fillStyle = '#8a7a6a'; x.beginPath(); x.ellipse(8, 8.5, 6, 5, 0, 0, 7); x.fill(); x.fillStyle = '#a89888'; x.fillRect(5, 6, 4, 2); },
   // Region Solaria
   dune: (x, f, s) => {
     const r = mulberry(s + 21); x.fillStyle = '#f0d898'; x.fillRect(0, 0, 16, 16);
@@ -241,7 +260,7 @@ function treeTop(x, c1, c2, c3, o) {
   x.fillStyle = c3; x.fillRect(4, 3, 3, 1); x.fillRect(3, 4, 2, 2); x.fillRect(8, 2, 2, 1); x.fillRect(7, 6, 2, 1); x.fillRect(10, 4, 1, 1);
   x.fillStyle = o; x.fillRect(5, 10, 1, 1); x.fillRect(11, 9, 1, 1);
 }
-const BLADE = { green: ['#2e7a30', '#48a040', '#90d868'], ash: ['#4a4038', '#7a6a58', '#b8a488'], snow: ['#7a98b8', '#c8dcf0', '#ffffff'], dry: ['#8a6a30', '#b8944a', '#e8d08a'] };
+const BLADE = { green: ['#2e7a30', '#48a040', '#90d868'], ash: ['#4a4038', '#7a6a58', '#b8a488'], snow: ['#7a98b8', '#c8dcf0', '#ffffff'], dry: ['#8a6a30', '#b8944a', '#e8d08a'], mount: ['#3a5a30', '#6a8a48', '#a8c870'] };
 export function tallBlades(x, f, oy, pal = 'green') {
   const o = f ? 1 : 0, [c1, c2, c3] = BLADE[pal];
   for (const [a, b] of [[1, 2], [6, 0], [11, 2], [3, 8], [9, 7], [13, 9]]) {

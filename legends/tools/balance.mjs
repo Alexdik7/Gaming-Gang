@@ -4,8 +4,8 @@
 import { MAPS, ENC } from '../js/gb/maps.js';
 import { COOP } from '../js/data/coop.js';
 
-const ORDER = ['route1', 'quellbach', 'route2', 'altwald', 'hoehle', 'felsenau', 'arena', 'route3', 'ignis', 'arena2', 'route4', 'aqualis', 'versteck', 'arena3', 'route5', 'frostheim', 'arena4', 'eisgrotte', 'route6', 'nocturna', 'arena5', 'mondruine', 'route7', 'solaria', 'arena6', 'tempel'];
-const LEADERS = { arena: [13, 14, 16], arena2: [19, 20, 22], arena3: [24, 25, 27], arena4: [30, 31, 32, 34], arena5: [35, 36, 37, 38], mondruine: [40], arena6: [40, 41, 42, 43], tempel: [42, 43, 42, 44, 45] };
+const ORDER = ['route1', 'quellbach', 'route2', 'altwald', 'hoehle', 'felsenau', 'arena', 'route3', 'ignis', 'arena2', 'route4', 'aqualis', 'versteck', 'arena3', 'route5', 'frostheim', 'arena4', 'eisgrotte', 'route6', 'nocturna', 'arena5', 'mondruine', 'route7', 'solaria', 'arena6', 'tempel', 'route8', 'drakmor', 'arena7', 'hq', 'drachenhort', 'arena8'];
+const LEADERS = { arena: [13, 14, 16], arena2: [19, 20, 22], arena3: [24, 25, 27], arena4: [30, 31, 32, 34], arena5: [35, 36, 37, 38], mondruine: [40], arena6: [40, 41, 42, 43], tempel: [42, 43, 42, 44, 45], arena7: [46, 47, 48, 49], hq: [49, 50, 49, 50, 52], arena8: [50, 51, 52, 54] };
 let prevTop = 5, warn = 0;
 console.log('Gebiet       Wild      Trainer (Ø/max)  Leiter/Boss');
 for (const id of ORDER) {

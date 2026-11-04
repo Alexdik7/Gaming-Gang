@@ -41,6 +41,22 @@ const GYMS = {
     outro: ['Morwen: Die Mondruine liegt östlich der Stadt. Der Wächter wird dich nun einlassen.', 'Dort wacht Lunareth über den Mond-Herzstein. Sei respektvoll – es ist älter als jede Stadt.'],
     after: ['Der Schattenorden steht dir. Die Mondruine erwartet dich im Osten.'],
   },
+  brann: {
+    badge: 6, badgeName: 'ERZORDEN', team: [['erzkaefer', 46], ['eisenbock', 47], ['zackenruecken', 48], ['tempelgolem', 49]], reward: 6000, bg: 'berg',
+    intro: ['Du hast meine Brocken bewegt! Kraft und Köpfchen – genau, was ich sehen wollte.', 'Ich bin Brann. Meine Kreaturen sind aus Erz geschmiedet. Mal sehen, ob du sie verbiegen kannst!'],
+    lose: 'Wie geschmolzenes Eisen… Du hast mich weich gekocht!',
+    gift: { text: ['Brann: Nimm die hier – Beleber und Supertränke. Im Hauptquartier wirst du sie brauchen.'], items: { beleber: 4, supertrank: 5 } },
+    outro: ['Brann: Team Eklipse hat sich östlich der Stadt in den Berg gegraben.', 'Mit meinem Orden kannst du ihr Stahltor aufbrechen. Aber sei vorsichtig: Ihr Anführer Umbra ist dort.'],
+    after: ['Der Erzorden steht dir! Das Hauptquartier liegt im Osten.'],
+  },
+  vala: {
+    badge: 7, badgeName: 'DRACHENORDEN', team: [['wyvernix', 50], ['kristallwyrm', 51], ['schwelwyrm', 52], ['flugdrache', 54]], reward: 8000, bg: 'berg',
+    intro: ['Du hast Umbra die Stirn geboten. Die Drachen haben es gespürt.', 'Ich bin Vala, Meisterin des Drachenhorts. Dies ist die letzte Arena.', 'Zeig mir, ob dein Herz so stark ist wie ein Drachenherz!'],
+    lose: 'Die Drachen verneigen sich vor dir. Und ich mich auch.',
+    gift: { text: ['Vala: Acht Orden. Nimm diese Sternkristalle und Beleber für die Siegesstraße.'], items: { sternkristall: 6, beleber: 4 } },
+    outro: ['Vala: Mit acht Orden darfst du die Siegesstraße betreten – und danach die Top 4 herausfordern.', 'Umbra hat noch drei Herzsteine nicht. Er wird sie dort suchen, wo die Stärksten sind.', '(Ende von Phase 4.3. Als Nächstes: Siegesstraße, Top 4, Champion und Lyras Entscheidung!)'],
+    after: ['Der Drachenorden steht dir. Die Siegesstraße wartet!'],
+  },
   sahra: {
     badge: 5, badgeName: 'SONNENORDEN', team: [['fatamor', 40], ['sonnenkaefer', 41], ['tempelgolem', 42], ['sonnfalke', 43]], reward: 5400, bg: 'wueste',
     intro: ['Die Tore meiner Arena öffnen sich nur denen, die das Licht lesen können. Du hast es geschafft.', 'Ich bin Sahra. Das Licht der Wüste blendet die Unachtsamen – und wärmt die Mutigen.'],
@@ -296,6 +312,21 @@ class Game {
   // ---------------------------------------------------------- Bewegungs-Sperren & Ereignisse
   blockEdge(map, to) {
     const s = this.state;
+    if (map === 'solaria' && to === 'route8' && !s.bag.herzstein_sonne) {
+      this.ow.busy = true;
+      (async () => { await say(['Ein Felssturz versperrt den Drachensteig.', 'Die Leute in Solaria sagen, erst wenn der Sonnentempel seinen Stein freigibt, wird der Weg nach Drakmor sicher.']); this.ow.busy = false; })();
+      return true;
+    }
+    if (map === 'drakmor' && to === 'hq' && !s.badges[6]) {
+      this.ow.busy = true;
+      (async () => { await say(['Ein schweres Stahltor im Fels. Ein Eklipse-Rüpel ruft: „Nur Mitglieder!“', 'Der Bergältere meint, mit Branns Erzorden könntest du das Tor aufbrechen.']); this.ow.busy = false; })();
+      return true;
+    }
+    if (map === 'drakmor' && to === 'drachenhort' && !s.flags.umbra1) {
+      this.ow.busy = true;
+      (async () => { await say(['Drachenhüterin: Der Hort ist versiegelt, solange Team Eklipse im Berg sitzt.', 'Vertreibe sie aus ihrem Hauptquartier im Osten – dann öffnen wir dir den Weg.']); this.ow.busy = false; })();
+      return true;
+    }
     if (map === 'nocturna' && to === 'route7' && !s.bag.herzstein_mond) {
       this.ow.busy = true;
       (async () => { await say(['Am Stadtrand tobt ein Sandsturm. Ohne Schutz kommst du hier nicht weiter.', 'Die Leute sagen, nur wer den Segen des Mondes trägt, findet den Weg durch das Sandmeer.']); this.ow.busy = false; })();
@@ -625,7 +656,10 @@ class Game {
       case 'ria': case 'rio': return this.coopNpc('zwillinge', n);
       case 'koloss': return this.coopNpc('koloss', n);
       case 'nyx3': case 'lyra3': return this.coopNpc('finale', n);
-      case 'morwen': case 'sahra': return this.gym(n);
+      case 'morwen': case 'sahra': case 'brann': case 'vala': return this.gym(n);
+      case 'dk_alt': return say(s.flags.umbra1 ? ['Ihr habt Umbra vertrieben! Seit hundert Jahren hat niemand gewagt, sich ihm entgegenzustellen.', 'Der Drachenhort im Westen ist jetzt offen. Vala, die Drachenmeisterin, wartet.'] : ['Im Osten hat Team Eklipse den Berg ausgehöhlt. Dort steht ihr Hauptquartier.', 'Mit Branns Erzorden bekommst du das Stahltor auf. Schiebe die Felsbrocken, wo der Weg versperrt ist!'], N);
+      case 'dk_kind': return say(['Wenn du einen Felsbrocken in ein Loch schiebst, kann man darüber laufen!', 'Aber man kann Brocken nur schieben, nicht ziehen. Überleg vorher!'], N);
+      case 'hort_waechter': return say(['Willkommen im Drachenhort. Hier kämpft Vala, die Meisterin aller Drachen.', 'Wer ihren Orden trägt, hat alle acht Arenen bezwungen.'], N);
       case 'so_waechter': return say(s.badges[5] ? ['Der Tempel liegt östlich der Stadt. Tritt auf die goldenen Platten, um die Tore zu öffnen.', 'Vorhin ist eine Frau in dunklem Mantel hineingegangen…'] : ['Ich bewache den Sonnentempel im Osten.', 'Erst wenn Sahra dir ihren Orden gibt, lasse ich dich ein.'], N);
       case 'so_haendler': return say(['Wasser, frisches Wasser! … Ach, du hast ja schon Beeren.', 'Im Sandmeer gibt es Kaktlinge. Wer ihnen den Hut zurückgibt, hat einen Freund fürs Leben.'], N);
       case 'nc_waechter': return say(s.badges[4] ? ['Die Ruine im Osten ist offen für dich. Pass auf – dort drinnen ist es stockfinster.', 'Ganz hinten soll der Hüter Lunareth wachen.'] : ['Ich bewache die Mondruine. Nur Trägern des Schattenordens lasse ich Einlass.', 'Morwen, unsere Arenaleiterin, entscheidet, wer würdig ist.'], N);
@@ -641,6 +675,14 @@ class Game {
   // ---------------------------------------------------------- Story-Ereignisse nach Trainerkämpfen
   async story() {
     const s = this.state, ow = this.ow;
+    if (ow.id === 'hq' && s.flags.umbra && !s.flags.umbra1) {
+      ow.busy = true;
+      await say(['Umbra: Du kämpfst, als hättest du nichts zu verlieren. Oder als hättest du schon alles verloren.', 'Umbra: Behalte den Drachen-Herzstein. Ich brauche ihn nicht mehr, wenn ich die letzten drei finde.', 'Umbra: Wir sehen uns dort, wo die Stärksten kämpfen.'], { name: 'Umbra' });
+      await fade(1, 300); s.flags.umbra1 = true; ow.npcs = ow.npcs.filter(n => n.id !== 'umbra'); await fade(0, 300);
+      s.bag.herzstein_drache = 1; sfx('caught');
+      await say([`${s.name} findet im Tresor den DRACHEN-HERZSTEIN!`, 'Fünf von sieben Herzsteinen sind jetzt in Sicherheit.', 'Die Drachenhüterin öffnet den Weg zum Drachenhort westlich von Drakmor.']);
+      ow.busy = false; this.save(true); return;
+    }
     if (ow.id === 'tempel' && s.flags.nyx4 && !s.flags.nyx4_gone) {
       ow.busy = true;
       await say(['Nyx: … Er wird mich nicht mehr brauchen, wenn ich noch einmal versage.', 'Nyx: Umbra wartet im Drachengebirge Drakmor. Dort laufen alle Fäden zusammen.', 'Nyx: Wenn du klug bist, kommst du nie dorthin.'], { name: 'Kommandantin Nyx' });

@@ -1,6 +1,31 @@
 # Fortschritt
 
-## v0.10 – Phase 4.2: Solaria (aktuell)
+## v0.11 – Phase 4.3: Drakmor (aktuell)
+
+### ✅ Neu und getestet
+- **Neue Mechanik: Felsbrocken schieben.**
+  - Ein Brocken, den du in ein Felsloch schiebst, füllt es und macht den Weg frei.
+  - Brocken lassen sich auch auf Druckplatten schieben.
+  - Positionen und gefüllte Löcher werden gespeichert.
+- **Route 8 · Drachensteig** südlich von Solaria:
+  - nur mit dem Sonnen-Herzstein zugänglich
+  - Bergpfad mit Felswänden, Berggras und 3 Trainern
+- **Bergstadt Drakmor.**
+- **Arena 7:**
+  - Schiebe-Rätsel, 4 Brocken für 2 Lochreihen, vom Löser geprüft (33 Züge)
+  - **Arenaleiter Brann** (Metall) → **Erzorden**
+- **Eklipse-Hauptquartier** im Berg (nur mit Erzorden):
+  - Schiebe-Rätsel (41 Züge), 2 Rüpel
+  - **erster Kampf gegen Anführer Umbra** (5 Kreaturen, Lv 49–52)
+  - Er erklärt seinen Plan, die Zeit anzuhalten → **Drachen-Herzstein** (5/7)
+- **Drachenhort** westlich der Stadt, öffnet sich nach Umbra:
+  - **Arena 8** mit **Arenaleiterin Vala** (Drache) → **Drachenorden**, dem 8. Orden
+- **10 neue Kreaturen**, jetzt 107 insgesamt: Drachling → Flugdrache, Erzkäfer, Felsadler, Kristallwyrm, Eisenbock, Schwelwyrm, Gipfelgolem, Wyvernix, Zackenrücken
+- **3 neue Attacken:** Drachenwut, Erzschlag, Steinhagel.
+- **Beutel:** Die Herzsteine aus Mondruine und Sonnentempel erscheinen jetzt korrekt.
+- Alle 40 Karten sind fehlerfrei, der Levelverlauf steigt gleichmäßig bis 54.
+
+## v0.10 – Phase 4.2: Solaria
 
 ### ✅ Neu und getestet
 - **Route 7 · Sandmeer** südlich von Nocturna:

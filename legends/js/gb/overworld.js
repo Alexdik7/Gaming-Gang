@@ -20,6 +20,8 @@ export class Overworld {
     s.surf = !!s.surf && M.rows[y]?.[x] === '~'; this.p.surf = s.surf;
     this.npcs = (M.npcs || []).filter(n => !(n.hideIf && s.flags[n.hideIf]) && !(n.showIf && !s.flags[n.showIf])).map(n => ({ ...n, ox: n.x, oy: n.y, px: n.x * 16, py: n.y * 16, moving: false, wt: 1 + Math.random() * 3, step: 0 }));
     this.items = (M.items || []).filter(i => !s.flags[i.id]);
+    s.bpos ||= {};
+    this.boulders = (s.bpos[id] || (M.boulders || []).map(b => [...b])).filter(Boolean).map(([bx, by]) => ({ x: bx, y: by }));
     this.blds = M.buildings || [];
     this.banner = (M.outdoor || M.cave || M.banner) ? { t: 2.2, name: M.name } : null;
     this.music();
@@ -29,10 +31,14 @@ export class Overworld {
 
   ch(x, y) { return x < 0 || y < 0 || x >= this.w || y >= this.h ? null : this.M.rows[y][x]; }
   bldAt(x, y) { return this.blds.find(b => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h); }
+  boulderAt(x, y) { return this.boulders?.find(b => b.x === x && b.y === y); }
+  holeOpen(x, y) { return this.ch(x, y) === '@' && !this.g.state.flags[`hole:${this.id}:${x},${y}`]; }
   npcAt(x, y) { return this.npcs.find(n => (n.x === x && n.y === y) || (n.moving && n.tx === x && n.ty === y)); }
   solid(x, y, forNpc = false) {
     const c = this.ch(x, y); if (c === null) return true;
     if (SOLID.has(c)) return true;
+    if (c === '@' && this.holeOpen(x, y)) return true;
+    if (this.boulderAt(x, y)) return true;
     if (c === 'E' && !this.g.state.flags[this.M.gates?.[x + ',' + y]]) return true;
     if (c === 'L') return true;
     const b = this.bldAt(x, y); if (b && !(x === b.x + b.door && y === b.y + b.h - 1)) return true;
@@ -89,6 +95,16 @@ export class Overworld {
     const b = this.bldAt(nx, ny);
     if (b && nx === b.x + b.door && ny === b.y + b.h - 1) { if (d === 'up') return this.enterDoor(b); return this.bump(); }
     if (p.surf && c === '~' && !this.npcAt(nx, ny)) return this.startMove(nx, ny, false);
+    const bo = this.boulderAt(nx, ny);
+    if (bo) {
+      const bx = nx + dx, by = ny + dy, bc = this.ch(bx, by);
+      if (bc === null || this.boulderAt(bx, by) || this.npcAt(bx, by) || (SOLID.has(bc)) || bc === '~' || (bc === 'E' && !this.g.state.flags[this.M.gates?.[bx + ',' + by]]) || this.bldAt(bx, by)) return this.bump();
+      const s = this.g.state;
+      if (this.holeOpen(bx, by)) { s.flags[`hole:${this.id}:${bx},${by}`] = true; this.boulders = this.boulders.filter(b => b !== bo); sfx('faint'); G.shake = 0.6; this.notify('Der Brocken füllt das Loch!'); }
+      else { bo.x = bx; bo.y = by; sfx('hit'); G.shake = 0.2; const pf = bc === 'N' && this.M.plates?.[bx + ',' + by]; if (pf && !s.flags[pf]) { s.flags[pf] = true; this.notify('Klick! Irgendwo hat sich ein Tor geöffnet.'); } }
+      s.bpos[this.id] = this.boulders.map(b => [b.x, b.y]);
+      return;
+    }
     if (this.solid(nx, ny)) return this.bump();
     if (this.g.blockMove?.(this.id, nx, ny, d)) return;
     this.startMove(nx, ny, false);
@@ -116,7 +132,7 @@ export class Overworld {
     if (await this.checkTrainers()) return;
     if (p.surf && this.M.surfEnc) { if (Math.random() < ENC[this.M.surfEnc].rate) await this.g.wildBattle(this.M.surfEnc, 'wasser'); return; }
     const encId = this.M.enc;
-    if (encId && ((c === ':' || c === 'h' || c === 'y' || c === 'f') || (this.M.cave && c === 'c'))) {
+    if (encId && ((c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%') || (this.M.cave && c === 'c'))) {
       if (Math.random() < ENC[encId].rate) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.id === 'altwald' ? 'wald' : this.M.bg || 'gras');
     }
   }
@@ -245,16 +261,18 @@ export class Overworld {
     for (let y = y0; y <= y0 + 11; y++) for (let x = x0; x <= x0 + 15; x++) {
       const c = this.ch(x, y); if (c === null) continue;
       let name = TILE[c] || 'void', fr = 0;
-      if (c === '~' || c === 'v') fr = f3; else if (c === ',' || c === ':' || c === 'h' || c === 'y' || c === 'f' || c === 'N' || c === 'e' || c === 'V' || c === 'M' || c === 'Q') fr = f2;
+      if (c === '~' || c === 'v') fr = f3; else if (c === ',' || c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%' || c === 'N' || c === 'e' || c === 'V' || c === 'M' || c === 'Q') fr = f2;
       if (c === 'r') { const id = this.M.runes?.[x + ',' + y]; if (flags[id]) { name = 'runeOn'; fr = f2; } }
       if (c === 'A') fr = runesOn >= 3 ? f2 : 0;
       if (c === 'R' && this.M.cave) name = 'crock';
       if (c === 'E' && flags[this.M.gates?.[x + ',' + y]]) name = 'gateOpen';
       if (c === 'N' && flags[this.M.plates?.[x + ',' + y]]) name = 'plateOn';
+      if (c === '@' && flags[`hole:${this.id}:${x},${y}`]) name = 'holeFilled';
       ctx.drawImage(tile(name, fr, (x * 7 + y * 13) % 5), x * 16 - cx, y * 16 - cy);
     }
     const night = this.g.isNight();
     for (const b of this.blds) ctx.drawImage(building({ ...b, night }), b.x * 16 - cx, b.y * 16 - cy);
+    for (const b of this.boulders || []) ctx.drawImage(tile('rockTop'), b.x * 16 - cx, b.y * 16 - cy);
     for (const i of this.items) ctx.drawImage(this.ball, i.x * 16 - cx, i.y * 16 - cy - Math.round(Math.sin(G.t * 3 + i.x) * 1));
     // Figuren nach y sortiert
     const actors = [...this.npcs.map(n => ({ mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
@@ -265,7 +283,7 @@ export class Overworld {
       if (a.me && p.surf) { const sm = this.g.surfMon?.(); const bob = Math.round(Math.sin(G.t * 4)); if (sm) ctx.drawImage(monSprite(sm.sp, 'icon', sm.shiny, sm.mut), a.px - cx - 8, a.py - cy - 6 + bob); drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 7 + bob); continue; }
       if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
       else drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
-      { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h' || tc === 'y' || tc === 'f') && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : tc === 'y' ? 'snow' : tc === 'f' ? 'dry' : 'green'), a.px - cx, a.py - cy + 8); }
+      { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h' || tc === 'y' || tc === 'f' || tc === '%') && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : tc === 'y' ? 'snow' : tc === 'f' ? 'dry' : tc === '%' ? 'mount' : 'green'), a.px - cx, a.py - cy + 8); }
       if (a.name) { const w = a.name.length * 4.2 + 6; ctx.fillStyle = 'rgba(20,40,80,.8)'; ctx.fillRect(a.px - cx + 8 - w / 2, a.py - cy - 12, w, 8); text(a.name, a.px - cx + 8, a.py - cy - 11.5, '#ffd36b', 6, 'center', null); }
     }
     if (this.emote) {
