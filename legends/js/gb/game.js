@@ -41,6 +41,14 @@ const GYMS = {
     outro: ['Morwen: Die Mondruine liegt östlich der Stadt. Der Wächter wird dich nun einlassen.', 'Dort wacht Lunareth über den Mond-Herzstein. Sei respektvoll – es ist älter als jede Stadt.'],
     after: ['Der Schattenorden steht dir. Die Mondruine erwartet dich im Osten.'],
   },
+  sahra: {
+    badge: 5, badgeName: 'SONNENORDEN', team: [['fatamor', 40], ['sonnenkaefer', 41], ['tempelgolem', 42], ['sonnfalke', 43]], reward: 5400, bg: 'wueste',
+    intro: ['Die Tore meiner Arena öffnen sich nur denen, die das Licht lesen können. Du hast es geschafft.', 'Ich bin Sahra. Das Licht der Wüste blendet die Unachtsamen – und wärmt die Mutigen.'],
+    lose: 'Du strahlst heller als die Mittagssonne. Respekt!',
+    gift: { text: ['Sahra: Nimm diese Beleber und Supertränke. Im Tempel ist es heiß.'], items: { beleber: 3, supertrank: 4 } },
+    outro: ['Sahra: Der Sonnentempel liegt östlich der Stadt. Mit meinem Orden lässt dich der Wächter ein.', 'Drinnen musst du die alten Siegelplatten finden. Und sei vorsichtig: Seit gestern ist dort jemand.'],
+    after: ['Der Sonnenorden steht dir! Der Tempel wartet im Osten.'],
+  },
   halvar: {
     badge: 3, badgeName: 'FROSTORDEN', team: [['frosteule', 30], ['eiszapfling', 31], ['kaiserpingu', 32], ['gletscherkoloss', 34]], reward: 4000, bg: 'schnee',
     intro: ['Du hast den Weg über das Eis gefunden. Das gelingt nicht vielen.', 'Ich bin Halvar. Das Eis lehrt Geduld – und Geduld macht stark.', 'Zeig mir, ob dein Feuer meinen Winter schmelzen kann!'],
@@ -242,6 +250,19 @@ class Game {
     await say([`${s.name} erhält den MOND-HERZSTEIN!`, 'Drei von sieben Herzsteinen sind jetzt in Sicherheit.', '(Ende von Phase 4.1. Als Nächstes: die Wüstenregion Solaria!)']);
     this.save(true);
   }
+  async sunAltar() {
+    const s = this.state;
+    if (s.bag.herzstein_sonne) return say('Der Altar ist leer. Durch ein Loch in der Decke fällt warmes Licht.');
+    if (!s.flags.nyx4) return say('Nyx versperrt den Weg zum Altar.');
+    await say(['Auf dem Altar glüht ein goldener Stein – der Sonnen-Herzstein!', 'Plötzlich wird es gleißend hell. Mit einem Schrei wie ein Sonnensturm stößt eine gewaltige Gestalt aus dem Licht herab…']);
+    const r = await this.wildBattle(null, 'wueste', createMon('solarion', 45));
+    if (!r || r.result === 'lose' || r.result === 'fled') return;
+    if (r.result === 'caught') { s.flags.solarion = true; await say('Solarion hat dich als würdig erkannt und schließt sich dir an!'); }
+    else await say('Solarion steigt hinauf ins Licht und lässt den Stein zurück.');
+    s.bag.herzstein_sonne = 1; sfx('caught');
+    await say([`${s.name} erhält den SONNEN-HERZSTEIN!`, 'Vier von sieben Herzsteinen sind jetzt in Sicherheit.', '(Ende von Phase 4.2. Als Nächstes: das Drachengebirge Drakmor und das Hauptquartier von Team Eklipse!)']);
+    this.save(true);
+  }
   // Nebenquest „Zeig mir …“: eine bestimmte Kreatur im Team vorzeigen
   async quest(n, q) {
     const s = this.state, N = { name: n.name }, f = 'quest_' + n.id;
@@ -275,6 +296,16 @@ class Game {
   // ---------------------------------------------------------- Bewegungs-Sperren & Ereignisse
   blockEdge(map, to) {
     const s = this.state;
+    if (map === 'nocturna' && to === 'route7' && !s.bag.herzstein_mond) {
+      this.ow.busy = true;
+      (async () => { await say(['Am Stadtrand tobt ein Sandsturm. Ohne Schutz kommst du hier nicht weiter.', 'Die Leute sagen, nur wer den Segen des Mondes trägt, findet den Weg durch das Sandmeer.']); this.ow.busy = false; })();
+      return true;
+    }
+    if (map === 'solaria' && to === 'tempel' && !s.badges[5]) {
+      this.ow.busy = true;
+      (async () => { await say(['Tempelwächter: Der Sonnentempel ist versiegelt.', 'Nur wer Sahras Sonnenorden trägt, darf die Siegel berühren.']); this.ow.busy = false; })();
+      return true;
+    }
     if (map === 'aqualis' && to === 'route6' && !s.bag.herzstein_eis) {
       this.ow.busy = true;
       (async () => { await say(['Ein Seemann hält dich auf: Der Dämmerwald ist verflucht! Seit Jahren geht dort die Sonne nicht mehr auf.', 'Komm wieder, wenn du dich in Frostheim bewährt hast – man erzählt von einem Stein im Eis…']); this.ow.busy = false; })();
@@ -497,6 +528,7 @@ class Game {
   }
   async altar() {
     if (this.ow.id === 'mondruine') return this.moonAltar();
+    if (this.ow.id === 'tempel') return this.sunAltar();
     const s = this.state, n = ['rune_nord', 'rune_insel', 'rune_hain'].filter(r => s.flags[r]).length;
     if (n < 3) return say(['Ein uralter Altar mit einem matten Kristall.', '„Drei Steine, drei Lieder: Einer wacht im Norden über die Ruinen, einer ruht auf einer Insel im Wasser, einer schläft im westlichen Dickicht.“', `Leuchtende Runen: ${n}/3`]);
     if (s.flags.sylvaron) return say('Der Kristall pulsiert sanft. Der Wald ist ruhig.');
@@ -593,7 +625,9 @@ class Game {
       case 'ria': case 'rio': return this.coopNpc('zwillinge', n);
       case 'koloss': return this.coopNpc('koloss', n);
       case 'nyx3': case 'lyra3': return this.coopNpc('finale', n);
-      case 'morwen': return this.gym(n);
+      case 'morwen': case 'sahra': return this.gym(n);
+      case 'so_waechter': return say(s.badges[5] ? ['Der Tempel liegt östlich der Stadt. Tritt auf die goldenen Platten, um die Tore zu öffnen.', 'Vorhin ist eine Frau in dunklem Mantel hineingegangen…'] : ['Ich bewache den Sonnentempel im Osten.', 'Erst wenn Sahra dir ihren Orden gibt, lasse ich dich ein.'], N);
+      case 'so_haendler': return say(['Wasser, frisches Wasser! … Ach, du hast ja schon Beeren.', 'Im Sandmeer gibt es Kaktlinge. Wer ihnen den Hut zurückgibt, hat einen Freund fürs Leben.'], N);
       case 'nc_waechter': return say(s.badges[4] ? ['Die Ruine im Osten ist offen für dich. Pass auf – dort drinnen ist es stockfinster.', 'Ganz hinten soll der Hüter Lunareth wachen.'] : ['Ich bewache die Mondruine. Nur Trägern des Schattenordens lasse ich Einlass.', 'Morwen, unsere Arenaleiterin, entscheidet, wer würdig ist.'], N);
       case 'nc_frau': return say(['Seit ich ein Kind war, ist es in Nocturna Nacht. Die Alten sagen, ein Hüter halte die Sonne fern.', 'Manche sagen, er beschütze damit etwas. Andere sagen, er sei einfach einsam.'], N);
       case 'lyra4': {
@@ -607,6 +641,13 @@ class Game {
   // ---------------------------------------------------------- Story-Ereignisse nach Trainerkämpfen
   async story() {
     const s = this.state, ow = this.ow;
+    if (ow.id === 'tempel' && s.flags.nyx4 && !s.flags.nyx4_gone) {
+      ow.busy = true;
+      await say(['Nyx: … Er wird mich nicht mehr brauchen, wenn ich noch einmal versage.', 'Nyx: Umbra wartet im Drachengebirge Drakmor. Dort laufen alle Fäden zusammen.', 'Nyx: Wenn du klug bist, kommst du nie dorthin.'], { name: 'Kommandantin Nyx' });
+      await fade(1, 300); s.flags.nyx4_gone = true; ow.npcs = ow.npcs.filter(n => n.id !== 'nyx4'); await fade(0, 300);
+      await say('Der Weg zum Altar ist frei.');
+      ow.busy = false; this.save(true); return;
+    }
     if (ow.id === 'route5' && s.flags.lyra1 && !s.flags.lyra_met) {
       ow.busy = true;
       const N = { name: 'Lyra' };

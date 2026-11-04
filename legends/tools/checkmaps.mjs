@@ -55,9 +55,11 @@ for (const id of Object.keys(MAPS)) {
   // Erreichbarkeit (Figuren/Fundstücke zählen als Hindernis, außer Trainer, die man besiegt)
   if (!starts.length) continue;
   const block = new Set([...(M.npcs || []).filter(n => !n.trainer && !n.hideIf).map(n => n.x + ',' + n.y), ...(M.items || []).map(i => i.x + ',' + i.y)]);
+  // Tore öffnen sich, sobald ihre Druckplatte erreichbar ist → wiederholen bis nichts Neues aufgeht
+  let opened = new Set();
   const bfs = surf => {
     const seen = new Set([starts[0].join(',')]), q = [starts[0]];
-    const ok = (x, y) => walk(x, y) || (surf && M.rows[y]?.[x] === '~');
+    const ok = (x, y) => (walk(x, y) && !(M.rows[y][x] === 'E' && !opened.has(M.gates?.[x + ',' + y]))) || (surf && M.rows[y]?.[x] === '~');
     while (q.length) {
       const [x, y] = q.shift();
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -74,7 +76,11 @@ for (const id of Object.keys(MAPS)) {
     }
     return seen;
   };
-  const surfMap = !!M.surfEnc, seen = bfs(surfMap), walkOnly = surfMap ? bfs(false) : seen;
+  const surfMap = !!M.surfEnc;
+  let seen = bfs(surfMap);
+  for (;;) { const nw = Object.entries(M.plates || {}).filter(([k, f]) => seen.has(k) && !opened.has(f)).map(([, f]) => f); if (!nw.length) break; nw.forEach(f => opened.add(f)); seen = bfs(surfMap); }
+  for (const [k, f] of Object.entries(M.gates || {})) if (!opened.has(f)) warn(id, `Tor ${k} (${f}) lässt sich nie öffnen`);
+  const walkOnly = surfMap ? bfs(false) : seen;
   for (const it of M.items || []) if (surfMap && seen.has(it.x + ',' + it.y) && !walkOnly.has(it.x + ',' + it.y)) console.log(`· ${id}: Fundstück ${it.id} nur mit Surfen erreichbar`);
   const near = (x, y) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => seen.has((x + dx) + ',' + (y + dy)));
   for (const s of starts) if (!seen.has(s.join(','))) warn(id, `Übergang (${s}) nicht vom ersten Eingang erreichbar`);

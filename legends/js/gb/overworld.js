@@ -33,6 +33,7 @@ export class Overworld {
   solid(x, y, forNpc = false) {
     const c = this.ch(x, y); if (c === null) return true;
     if (SOLID.has(c)) return true;
+    if (c === 'E' && !this.g.state.flags[this.M.gates?.[x + ',' + y]]) return true;
     if (c === 'L') return true;
     const b = this.bldAt(x, y); if (b && !(x === b.x + b.door && y === b.y + b.h - 1)) return true;
     if (forNpc && b) return true;
@@ -108,11 +109,14 @@ export class Overworld {
       if (nx >= 0 && ny >= 0 && nx < this.w && ny < this.h && !this.solid(nx, ny) && !this.bldAt(nx, ny)) { p.slide = true; this.startMove(nx, ny, false); return; }
     }
     p.slide = false;
+    // Druckplatte: öffnet zugehörige Tore
+    const pf = c === 'N' && this.M.plates?.[p.x + ',' + p.y];
+    if (pf && !s.flags[pf]) { s.flags[pf] = true; sfx('lvl'); G.shake = 0.4; this.notify('Klick! Irgendwo hat sich ein Tor geöffnet.'); }
     if (p.surf && c !== '~') { p.surf = false; s.surf = false; this.music(); }
     if (await this.checkTrainers()) return;
     if (p.surf && this.M.surfEnc) { if (Math.random() < ENC[this.M.surfEnc].rate) await this.g.wildBattle(this.M.surfEnc, 'wasser'); return; }
     const encId = this.M.enc;
-    if (encId && ((c === ':' || c === 'h' || c === 'y') || (this.M.cave && c === 'c'))) {
+    if (encId && ((c === ':' || c === 'h' || c === 'y' || c === 'f') || (this.M.cave && c === 'c'))) {
       if (Math.random() < ENC[encId].rate) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.id === 'altwald' ? 'wald' : this.M.bg || 'gras');
     }
   }
@@ -241,10 +245,12 @@ export class Overworld {
     for (let y = y0; y <= y0 + 11; y++) for (let x = x0; x <= x0 + 15; x++) {
       const c = this.ch(x, y); if (c === null) continue;
       let name = TILE[c] || 'void', fr = 0;
-      if (c === '~' || c === 'v') fr = f3; else if (c === ',' || c === ':' || c === 'h' || c === 'y' || c === 'e' || c === 'V' || c === 'M' || c === 'Q') fr = f2;
+      if (c === '~' || c === 'v') fr = f3; else if (c === ',' || c === ':' || c === 'h' || c === 'y' || c === 'f' || c === 'N' || c === 'e' || c === 'V' || c === 'M' || c === 'Q') fr = f2;
       if (c === 'r') { const id = this.M.runes?.[x + ',' + y]; if (flags[id]) { name = 'runeOn'; fr = f2; } }
       if (c === 'A') fr = runesOn >= 3 ? f2 : 0;
       if (c === 'R' && this.M.cave) name = 'crock';
+      if (c === 'E' && flags[this.M.gates?.[x + ',' + y]]) name = 'gateOpen';
+      if (c === 'N' && flags[this.M.plates?.[x + ',' + y]]) name = 'plateOn';
       ctx.drawImage(tile(name, fr, (x * 7 + y * 13) % 5), x * 16 - cx, y * 16 - cy);
     }
     const night = this.g.isNight();
@@ -259,7 +265,7 @@ export class Overworld {
       if (a.me && p.surf) { const sm = this.g.surfMon?.(); const bob = Math.round(Math.sin(G.t * 4)); if (sm) ctx.drawImage(monSprite(sm.sp, 'icon', sm.shiny, sm.mut), a.px - cx - 8, a.py - cy - 6 + bob); drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 7 + bob); continue; }
       if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
       else drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
-      { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h' || tc === 'y') && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : tc === 'y' ? 'snow' : 'green'), a.px - cx, a.py - cy + 8); }
+      { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h' || tc === 'y' || tc === 'f') && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : tc === 'y' ? 'snow' : tc === 'f' ? 'dry' : 'green'), a.px - cx, a.py - cy + 8); }
       if (a.name) { const w = a.name.length * 4.2 + 6; ctx.fillStyle = 'rgba(20,40,80,.8)'; ctx.fillRect(a.px - cx + 8 - w / 2, a.py - cy - 12, w, 8); text(a.name, a.px - cx + 8, a.py - cy - 11.5, '#ffd36b', 6, 'center', null); }
     }
     if (this.emote) {
@@ -271,6 +277,16 @@ export class Overworld {
       const dark = (night ? 0.45 : this.g.dusk() * 0.25) + (this.M.dark || 0) + (this.M.cave ? 0.15 : 0);
       if (this.M.night && !this.M.darkRadius) { ctx.fillStyle = 'rgba(10,8,34,.38)'; ctx.fillRect(0, 0, W, H); }
       if (dark > 0) { ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = `rgba(${night ? '40,50,120' : '120,80,90'},${Math.min(0.7, dark)})`; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over'; }
+    }
+    // Sandsturm: wehende Sandschleier
+    if (this.M.sandstorm) {
+      const gust = 0.24 + Math.sin(G.t * 0.7) * 0.08;
+      ctx.fillStyle = `rgba(226,186,110,${gust})`; ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < 110; i++) {
+        const sp = 150 + (i % 7) * 35, x = ((i * 53 + G.t * sp) % (W + 60)) - 30, y = ((i * 37 + Math.sin(G.t * 2 + i) * 8) % H);
+        ctx.fillStyle = i % 3 ? 'rgba(255,236,180,.75)' : 'rgba(176,126,60,.6)'; ctx.fillRect(x, y, 8 + (i % 5) * 3, 1);
+        if (i % 9 === 0) ctx.fillRect(x + 4, y + 1, 4, 1);
+      }
     }
     // Dunkelheit mit Lichtkreis um den Spieler (Ruinen, Schatten-Arena)
     if (this.M.darkRadius) {

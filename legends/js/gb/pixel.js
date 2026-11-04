@@ -130,6 +130,40 @@ const DRAW = {
     const c = s % 2 ? ['#4a68e8', '#a8c0ff'] : ['#e83a4a', '#ffb0b8'];
     for (const [a, b] of [[4, 6], [9, 4], [11, 9], [6, 10]]) { x.fillStyle = c[0]; x.fillRect(a, b, 2, 2); x.fillStyle = c[1]; x.fillRect(a, b, 1, 1); }
   },
+  // Region Solaria
+  dune: (x, f, s) => {
+    const r = mulberry(s + 21); x.fillStyle = '#f0d898'; x.fillRect(0, 0, 16, 16);
+    x.fillStyle = '#e0c480'; x.fillRect(0, 5 + (s % 3), 16, 1); x.fillRect(0, 12 - (s % 2), 16, 1);
+    x.fillStyle = '#f8ecc0'; x.fillRect(0, 4 + (s % 3), 16, 1);
+    for (let i = 0; i < 4; i++) { x.fillStyle = r() < 0.5 ? '#d0b070' : '#fff4d0'; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), 1, 1); }
+  },
+  brush: (x, f, s) => { DRAW.dune(x, f, s); tallBlades(x, f, 0, 'dry'); },
+  cactus: (x, f, s) => {
+    DRAW.dune(x, f, s); x.fillStyle = 'rgba(120,80,20,.25)'; x.fillRect(4, 14, 9, 2);
+    x.fillStyle = '#1e5a2a'; x.fillRect(6, 1, 5, 15); x.fillRect(2, 5, 3, 6); x.fillRect(12, 3, 3, 6); x.fillRect(4, 9, 3, 2); x.fillRect(10, 7, 3, 2);
+    x.fillStyle = '#3a9a48'; x.fillRect(7, 2, 3, 13); x.fillRect(3, 6, 1, 4); x.fillRect(13, 4, 1, 4);
+    x.fillStyle = '#7ad078'; x.fillRect(7, 2, 1, 12);
+    x.fillStyle = s % 2 ? '#f878a8' : '#f8e0a0'; x.fillRect(8, 0, 2, 2);
+  },
+  sandwall: (x, f, s) => {
+    x.fillStyle = '#a8784a'; x.fillRect(0, 0, 16, 16);
+    x.fillStyle = '#c8985a'; x.fillRect(0, 0, 7, 3); x.fillRect(8, 0, 8, 3); x.fillRect(0, 4, 3, 3); x.fillRect(4, 4, 8, 3); x.fillRect(13, 4, 3, 3); x.fillRect(0, 8, 7, 3); x.fillRect(8, 8, 8, 3);
+    x.fillStyle = '#e0b878'; x.fillRect(0, 0, 7, 1); x.fillRect(8, 0, 8, 1); x.fillRect(4, 4, 8, 1); x.fillRect(0, 8, 7, 1); x.fillRect(8, 8, 8, 1);
+    x.fillStyle = '#6a4828'; x.fillRect(0, 12, 16, 4); x.fillStyle = '#8a5e34'; x.fillRect(0, 12, 16, 1);
+  },
+  tfloor: (x, f, s) => {
+    x.fillStyle = '#d8b878'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#b8945a'; x.fillRect(0, 0, 16, 1); x.fillRect(0, 0, 1, 16);
+    x.fillStyle = '#e8cc90'; x.fillRect(1, 1, 14, 1); if (s % 4 === 0) { x.fillStyle = '#c8a46a'; x.fillRect(5, 7, 6, 1); x.fillRect(7, 5, 2, 5); }
+  },
+  gate: (x, f, s) => {
+    DRAW.tfloor(x, f, s); x.fillStyle = '#4a3a2a'; x.fillRect(1, 0, 14, 16);
+    x.fillStyle = '#c89838'; for (let i = 0; i < 4; i++) x.fillRect(2 + i * 3.5, 1, 2, 14);
+    x.fillStyle = '#f8d870'; for (let i = 0; i < 4; i++) x.fillRect(2 + i * 3.5, 1, 1, 14);
+    x.fillStyle = '#8a6a2a'; x.fillRect(1, 7, 14, 2);
+  },
+  gateOpen: (x, f, s) => { DRAW.tfloor(x, f, s); x.fillStyle = '#8a6a2a'; x.fillRect(1, 0, 14, 2); x.fillStyle = '#c89838'; for (let i = 0; i < 4; i++) x.fillRect(2 + i * 3.5, 0, 2, 1); },
+  plate: (x, f, s) => { DRAW.tfloor(x, f, s); x.fillStyle = '#6a5038'; x.fillRect(2, 2, 12, 12); x.fillStyle = '#a88858'; x.fillRect(3, 3, 10, 10); x.fillStyle = '#f8d870'; x.fillRect(6, 6, 4, 4); x.fillStyle = '#fff4c0'; x.fillRect(6, 6, 2, 1); },
+  plateOn: (x, f, s) => { DRAW.tfloor(x, f, s); x.fillStyle = '#4a3a28'; x.fillRect(2, 2, 12, 12); x.fillStyle = '#7a6040'; x.fillRect(3, 3, 10, 10); x.fillStyle = f ? '#88f8f8' : '#58d8e8'; x.fillRect(6, 6, 4, 4); },
   // Region Frostheim
   snow: (x, f, s) => {
     const r = mulberry(s + 13); x.fillStyle = '#eef4fa'; x.fillRect(0, 0, 16, 16);
@@ -207,7 +241,7 @@ function treeTop(x, c1, c2, c3, o) {
   x.fillStyle = c3; x.fillRect(4, 3, 3, 1); x.fillRect(3, 4, 2, 2); x.fillRect(8, 2, 2, 1); x.fillRect(7, 6, 2, 1); x.fillRect(10, 4, 1, 1);
   x.fillStyle = o; x.fillRect(5, 10, 1, 1); x.fillRect(11, 9, 1, 1);
 }
-const BLADE = { green: ['#2e7a30', '#48a040', '#90d868'], ash: ['#4a4038', '#7a6a58', '#b8a488'], snow: ['#7a98b8', '#c8dcf0', '#ffffff'] };
+const BLADE = { green: ['#2e7a30', '#48a040', '#90d868'], ash: ['#4a4038', '#7a6a58', '#b8a488'], snow: ['#7a98b8', '#c8dcf0', '#ffffff'], dry: ['#8a6a30', '#b8944a', '#e8d08a'] };
 export function tallBlades(x, f, oy, pal = 'green') {
   const o = f ? 1 : 0, [c1, c2, c3] = BLADE[pal];
   for (const [a, b] of [[1, 2], [6, 0], [11, 2], [3, 8], [9, 7], [13, 9]]) {

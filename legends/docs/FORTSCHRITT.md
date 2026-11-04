@@ -1,6 +1,27 @@
 # Fortschritt
 
-## v0.9 – Phase 4.1: Nocturna (aktuell)
+## v0.10 – Phase 4.2: Solaria (aktuell)
+
+### ✅ Neu und getestet
+- **Route 7 · Sandmeer** südlich von Nocturna:
+  - nur mit dem Mond-Herzstein zugänglich
+  - **sichtbarer Sandsturm**, Kakteen, trockenes Gestrüpp und 3 Trainer
+- **Wüstenstadt Solaria** mit Oase.
+- **Arena 6:**
+  - **Druckplatten öffnen goldene Tore.** Man muss die richtigen Platten finden, um zur Leiterin zu kommen.
+  - **Arenaleiterin Sahra** (Licht) → **Sonnenorden**
+- **Sonnentempel** (nur mit Sonnenorden):
+  - Drei Siegelplatten öffnen nacheinander die Tore.
+  - **Kampf gegen Nyx** (4 Kreaturen, Lv 42–44). Sie verrät, dass Umbra in Drakmor wartet.
+  - Der legendäre Hüter **Solarion** (Lv 45, fangbar) gibt den **Sonnen-Herzstein** frei.
+- **10 neue Kreaturen + 1 Legendäres**, jetzt 97 insgesamt: Sandechse → Dünenwaran, Sonnenkäfer, Kaktling → Kaktoroc, Dünenwurm, Fatamor, Sonnfalke, Tempelgolem, Sandspringer, **Solarion**
+- **3 neue Attacken:** Sandsturm, Lichtklinge, Fata Morgana.
+- **Kartenprüfung:**
+  - Sie kennt jetzt Tore und Platten und prüft, dass jedes Tor sich öffnen lässt.
+  - Alle 34 Karten sind fehlerfrei.
+  - Ein Löser hat bestätigt, dass der Tempel-Altar nur mit allen drei Platten erreichbar ist.
+
+## v0.9 – Phase 4.1: Nocturna
 
 ### ✅ Neu und getestet
 - **Route 6 · Dämmerwald** südlich von Aqualis:
