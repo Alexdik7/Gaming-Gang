@@ -133,7 +133,7 @@ export const MAPS = {
       { id: 'tr_timo', x: 7, y: 17, dir: 'right', look: LOOK.bug, name: 'Käfersammler Timo', trainer: { team: [['kaeferix', 4], ['zirpfink', 4]], reward: 160, sight: 4, lines: ['Halt! Meine Käfer wollen kämpfen!'], lose: 'Meine armen Käfer…' } },
       { id: 'tr_lea', x: 12, y: 8, dir: 'left', look: LOOK.lass, name: 'Wanderin Lea', trainer: { team: [['hoppel', 5], ['glibbo', 5]], reward: 200, sight: 4, lines: ['Du siehst stark aus. Lass uns kämpfen!'], lose: 'Wow, du bist wirklich gut!' } },
     ],
-    items: [{ id: 'it_r1_vm', x: 1, y: 26, item: 'sternkristall', n: 2 }, { id: 'it_r1a', x: 17, y: 5, item: 'kristall', n: 2 }, { id: 'it_r1b', x: 1, y: 20, item: 'trank', n: 1 }],
+    items: [{ id: 'it_b52_1', x: 1, y: 28, item: 'ball52', n: 1 }, { id: 'it_r1_vm', x: 1, y: 26, item: 'sternkristall', n: 2 }, { id: 'it_r1a', x: 17, y: 5, item: 'kristall', n: 2 }, { id: 'it_r1b', x: 1, y: 20, item: 'trank', n: 1 }],
     edges: { s: { to: 'moosgrund', dx: 0 }, n: { to: 'quellbach', dx: 3 } },
   },
   quellbach: {
@@ -203,7 +203,7 @@ export const MAPS = {
     npcs: [
       { id: 'tr_sera', x: 14, y: 8, dir: 'left', look: LOOK.sage, name: 'Ruinenwächterin Sera', trainer: { team: [['schemenohr', 11], ['irrlicht', 12]], reward: 600, sight: 3, lines: ['Die Ruinen sind heilig. Zeig mir, dass du würdig bist!'], lose: 'Du bist würdig. Achte auf die Runensteine…' } },
     ],
-    items: [{ id: 'it_aw1', x: 5, y: 14, item: 'sternkristall', n: 1 }, { id: 'it_aw2', x: 17, y: 1, item: 'trank', n: 2 }],
+    items: [{ id: 'it_b52_2', x: 21, y: 10, item: 'ball52', n: 1 }, { id: 'it_aw1', x: 5, y: 14, item: 'sternkristall', n: 1 }, { id: 'it_aw2', x: 17, y: 1, item: 'trank', n: 2 }],
     edges: { s: { to: 'quellbach', dx: 0 } },
     warps: [{ x: 10, y: 2, to: 'riss', tx: 10, ty: 14, dir: 'up' }],
   },
@@ -251,7 +251,7 @@ export const MAPS = {
     warps: [{ x: 0, y: 6, to: 'route2', tx: 28, ty: 5, dir: 'left' }, { x: 23, y: 6, to: 'felsenau', tx: 1, ty: 7, dir: 'right' }],
     npcs: [
       { id: 'koloss', x: 20, y: 3, dir: 'down', mon: 'brockolith', look: {}, name: 'Felsenkoloss', hideIf: 'coop_koloss' },{ id: 'tr_ida', x: 6, y: 5, dir: 'down', look: LOOK.ida, name: 'Forscherin Ida', trainer: { team: [['flatterlo', 11], ['frostglibber', 12]], reward: 500, sight: 4, lines: ['Psst! Ich erforsche die Höhlenkreaturen. Kampf?'], lose: 'Faszinierend! Deine Kreaturen sind stark.' } }],
-    items: [{ id: 'it_h1', x: 21, y: 9, item: 'sternkristall', n: 1 }, { id: 'it_h2', x: 5, y: 11, item: 'trank', n: 1 }],
+    items: [{ id: 'it_b52_11', x: 1, y: 10, item: 'ball52', n: 1 }, { id: 'it_b52_3', x: 22, y: 4, item: 'ball52', n: 1 }, { id: 'it_h1', x: 21, y: 9, item: 'sternkristall', n: 1 }, { id: 'it_h2', x: 5, y: 11, item: 'trank', n: 1 }],
   },
   felsenau: {
     name: 'Felsenau', outdoor: true, enc: null,
@@ -498,7 +498,7 @@ export const MAPS = {
       { id: 'tr_ski', x: 6, y: 19, dir: 'right', look: LOOK.skier, name: 'Skifahrerin Nele', trainer: { team: [['schneehase', 25], ['pinguk', 26]], reward: 1040, sight: 4, lines: ['Achtung, Piste! Und Kampf!'], lose: 'Ich bin gestürzt…' } },
       { id: 'tr_berg', x: 15, y: 22, dir: 'left', look: LOOK.hiker, name: 'Bergführer Sepp', trainer: { team: [['eiszapfling', 26], ['frostling', 26], ['brockolith', 27]], reward: 1080, sight: 4, lines: ['Ohne Kampf kommt keiner über den Pass!'], lose: 'Du bist bergtauglich.' } },
     ],
-    items: [{ id: 'it_r5a', x: 1, y: 1, item: 'ak_orkan', n: 1 }, { id: 'it_r5b', x: 18, y: 26, item: 'sternkristall', n: 2 }],
+    items: [{ id: 'it_b52_4', x: 18, y: 6, item: 'ball52', n: 1 }, { id: 'it_r5a', x: 1, y: 1, item: 'ak_orkan', n: 1 }, { id: 'it_r5b', x: 18, y: 26, item: 'sternkristall', n: 2 }],
     signs: { },
     edges: { s: { to: 'felsenau', dx: 0 }, n: { to: 'frostheim', dx: 2 } },
   },
@@ -578,7 +578,7 @@ export const MAPS = {
       { id: 'tr_ek6', x: 4, y: 16, dir: 'right', look: LOOK.grunt, name: 'Eklipse-Rüpel', trainer: { team: [['frostglibber', 29], ['vampyra', 30]], reward: 1200, sight: 4, lines: ['Die Kommandantin ist fast am Ziel! Verschwinde!'], lose: 'Brr… kalt und besiegt.' } },
       { id: 'tr_ek7', x: 13, y: 16, dir: 'left', look: LOOK.grunt2, name: 'Eklipse-Rüpelin', trainer: { team: [['schlackgolem', 30], ['quallissima', 30]], reward: 1250, sight: 4, lines: ['Für die ewige Dämmerung!'], lose: 'Das Eis hat mich verraten…' } },
     ],
-    items: [{ id: 'it_eg1', x: 1, y: 20, item: 'beleber', n: 1 }, { id: 'it_eg2', x: 18, y: 16, item: 'ak_blizzard', n: 1 }],
+    items: [{ id: 'it_b52_5', x: 15, y: 3, item: 'ball52', n: 1 }, { id: 'it_eg1', x: 1, y: 20, item: 'beleber', n: 1 }, { id: 'it_eg2', x: 18, y: 16, item: 'ak_blizzard', n: 1 }],
     edges: { s: { to: 'frostheim', dx: 2 } },
   },
   route6: {
@@ -724,7 +724,7 @@ export const MAPS = {
       { id: 'tr_nom2', x: 19, y: 13, dir: 'left', look: LOOK.forscherin, name: 'Archäologin Mira', trainer: { team: [['sonnenkaefer', 39], ['tempelgolem', 40]], reward: 1600, sight: 4, lines: ['Ich suche den Sonnentempel! Erst ein Kampf zur Pause.'], lose: 'Zurück zu meinen Karten…' } },
       { id: 'tr_nom3', x: 8, y: 21, dir: 'up', look: LOOK.jogger, name: 'Wüstenläufer Taro', trainer: { team: [['sandspringer', 38], ['sonnfalke', 40]], reward: 1600, sight: 3, lines: ['Hier rennt man nur morgens. Und kämpft immer!'], lose: 'Ich brauche Wasser…' } },
     ],
-    items: [{ id: 'it_r7a', x: 24, y: 1, item: 'beleber', n: 2 }, { id: 'it_r7b', x: 1, y: 24, item: 'ak_felsgranate', n: 1 }],
+    items: [{ id: 'it_b52_6', x: 24, y: 19, item: 'ball52', n: 1 }, { id: 'it_r7a', x: 24, y: 1, item: 'beleber', n: 2 }, { id: 'it_r7b', x: 1, y: 24, item: 'ak_felsgranate', n: 1 }],
     edges: { n: { to: 'nocturna', dx: 0 }, s: { to: 'solaria', dx: 0 } },
   },
   solaria: {
@@ -786,7 +786,7 @@ export const MAPS = {
       { id: 'nyx4', x: 9, y: 2, dir: 'down', look: LOOK.nyx, name: 'Kommandantin Nyx', hideIf: 'nyx4', trainer: { team: [['nachtmahr', 42], ['finsterfuchs', 43], ['quallissima', 42], ['magmawurm', 44]], reward: 3600, sight: 1, lines: ['Du hast die Siegel gelöst. Danke – das spart mir Zeit.', 'Aber der Sonnen-Herzstein gehört Umbra. Zum letzten Mal: Geh mir aus dem Weg!'], lose: 'Schon wieder… Umbra wird mich…' } },
       { id: 'tr_ek8', x: 9, y: 8, dir: 'down', look: LOOK.grunt, name: 'Eklipse-Rüpel', trainer: { team: [['grabwurm', 40], ['vampyra', 40]], reward: 1600, sight: 3, lines: ['Die Kommandantin darf nicht gestört werden!'], lose: 'Ich hab versagt…' } },
     ],
-    items: [{ id: 'it_tp1', x: 9, y: 11, item: 'ak_sonnenstrahl', n: 1 }, { id: 'it_tp2', x: 1, y: 8, item: 'supertrank', n: 3 }],
+    items: [{ id: 'it_b52_7', x: 18, y: 2, item: 'ball52', n: 1 }, { id: 'it_tp1', x: 9, y: 11, item: 'ak_sonnenstrahl', n: 1 }, { id: 'it_tp2', x: 1, y: 8, item: 'supertrank', n: 3 }],
     edges: { w: { to: 'solaria', dy: -6 } },
   },
   arena6: {
@@ -835,7 +835,7 @@ export const MAPS = {
       { id: 'tr_dr1', x: 16, y: 9, dir: 'left', look: LOOK.feuer, name: 'Drachenzähmer Kai', trainer: { team: [['drachling', 44], ['wyvernix', 45]], reward: 1800, sight: 4, lines: ['Meine Drachen sind hungrig nach Kämpfen!'], lose: 'Ihr habt euch tapfer geschlagen, meine Kleinen.' } },
       { id: 'tr_berg3', x: 6, y: 19, dir: 'right', look: LOOK.hiker, name: 'Bergführer Anton', trainer: { team: [['eisenbock', 44], ['gipfelgolem', 45]], reward: 1800, sight: 4, lines: ['Keiner kommt ohne Kampf durch den Steig!'], lose: 'Bergheil…' } },
     ],
-    items: [{ id: 'it_r8a', x: 22, y: 1, item: 'beleber', n: 2 }, { id: 'it_r8b', x: 1, y: 24, item: 'ak_orkan', n: 1 }],
+    items: [{ id: 'it_b52_8', x: 22, y: 6, item: 'ball52', n: 1 }, { id: 'it_r8a', x: 22, y: 1, item: 'beleber', n: 2 }, { id: 'it_r8b', x: 1, y: 24, item: 'ak_orkan', n: 1 }],
     edges: { n: { to: 'solaria', dx: 0 }, s: { to: 'drakmor', dx: 0 } },
   },
   drakmor: {
@@ -1087,7 +1087,7 @@ export const MAPS = {
       { id: 'h_maristra', x: 9, y: 2, dir: 'down', mon: 'maristra', look: {}, name: 'Maristra', hideIf: 'h_maristra' },
       { id: 'tr_pg2', x: 3, y: 10, dir: 'right', look: LOOK.surfer, name: 'Taucherin Nami', trainer: { team: [['perlnixe', 60], ['nachtkrake', 61], ['wogenross', 62]], reward: 4960, sight: 4, lines: ['Hörst du das Singen? Es kommt von ganz hinten in der Grotte.', 'Erst musst du an mir vorbei!'], lose: 'Du schwimmst wie ein Fisch.' } },
     ],
-    items: [{ id: 'it_pg3', x: 7, y: 5, item: 'ak_wellenschlag', n: 1 }, { id: 'it_pg4', x: 15, y: 6, item: 'beleber', n: 2 }],
+    items: [{ id: 'it_b52_9', x: 13, y: 2, item: 'ball52', n: 1 }, { id: 'it_pg3', x: 7, y: 5, item: 'ak_wellenschlag', n: 1 }, { id: 'it_pg4', x: 15, y: 6, item: 'beleber', n: 2 }],
   },
   frostgipfel: {
     name: 'Frostgipfel', outdoor: true, enc: 'gipfel_frost', bg: 'schnee', banner: true,
@@ -1137,7 +1137,7 @@ export const MAPS = {
       { id: 'h_ferrodrakon', x: 9, y: 2, dir: 'down', mon: 'ferrodrakon', look: {}, name: 'Ferrodrakon', hideIf: 'h_ferrodrakon' },
       { id: 'tr_pg4', x: 2, y: 8, dir: 'right', look: LOOK.vala, name: 'Drachenmeisterin Ysolde', trainer: { team: [['donnerdrache', 61], ['flugdrache', 62], ['obsidrak', 63]], reward: 5040, sight: 5, lines: ['Vala hat mir von dir erzählt.', 'Der Urdrache dort oben prüft jeden. Ich prüfe dich zuerst!'], lose: 'Die Drachen haben richtig gewählt.' } },
     ],
-    items: [{ id: 'it_pg7', x: 18, y: 7, item: 'ak_orkan', n: 1 }, { id: 'it_pg8', x: 1, y: 11, item: 'beleber', n: 2 }],
+    items: [{ id: 'it_b52_10', x: 18, y: 11, item: 'ball52', n: 1 }, { id: 'it_pg7', x: 18, y: 7, item: 'ak_orkan', n: 1 }, { id: 'it_pg8', x: 1, y: 11, item: 'beleber', n: 2 }],
   },
   riss: {
     name: 'Dimensionsriss', enc: 'riss', cave: true, night: true, dark: 0.1, bg: 'ruine', banner: true,
@@ -1268,6 +1268,7 @@ export const ITEMS = {
   ak_schattenball: { name: 'AK Schattenball', desc: 'Attacken-Kristall: lehrt Schattenball (Geist). Einmal nutzbar.', tm: 'schattenball' },
   ak_sonnenstrahl: { name: 'AK Sonnenstrahl', desc: 'Attacken-Kristall: lehrt Sonnenstrahl (Licht). Einmal nutzbar.', tm: 'sonnenstrahl' },
   ak_blitzschlag: { name: 'AK Blitzschlag', desc: 'Attacken-Kristall: lehrt Blitzschlag (Elektro). Einmal nutzbar.', tm: 'blitzschlag' },
+  ball52: { name: '52-Ball', desc: 'Der legendäre Ball der Gaming Gang. Fängt jede Kreatur – garantiert. Nur 11 Stück sind in der Welt versteckt.', ball: 255, col: '#e8c020', master: true },
   urkristall: { name: 'Urball', desc: 'Ein uralter Ball von Dr. Vato, mit Runen verziert. Bindet mit zehnfacher Chance.', ball: 10, col: '#d8a830' },
   hypertrank: { name: 'Hypertrank', desc: 'Heilt 200 KP.', heal: 200 },
   vk_zerschneider: { name: 'VM01 Zerschneider', desc: 'Versteckte Maschine: lehrt Zerschneider. Unbegrenzt nutzbar. Außerhalb von Kämpfen zerschneidet sie kleine Büsche.', tm: 'zerschneider', hm: true, key: true },

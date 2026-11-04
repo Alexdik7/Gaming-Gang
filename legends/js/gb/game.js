@@ -761,6 +761,7 @@ class Game {
   async pickup(it) {
     const s = this.state; s.flags[it.id] = true; s.bag[it.item] = (s.bag[it.item] || 0) + it.n; sfx('caught');
     await say(`${s.name} findet ${it.n > 1 ? it.n + '× ' : ''}${ITEMS[it.item].name}!`);
+    if (it.item === 'ball52') { sfx('shiny'); const n = Object.keys(s.flags).filter(k => k.startsWith('it_b52_')).length; await say([`Ein echter 52-Ball! Er fängt jede Kreatur – garantiert.`, `Das ist Nummer ${n} von 11. Irgendwo in der Welt sind noch ${11 - n} versteckt …`]); }
   }
   async rest() { await say('Du legst dich kurz hin…'); await fade(1, 300); this.state.team.forEach(healMon); sfx('heal'); await fade(0, 300); await say('Du fühlst dich erholt! Dein Team ist geheilt.'); }
   async heal(who) {

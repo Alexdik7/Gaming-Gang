@@ -183,7 +183,7 @@ class BattleScene {
         const q = await this.aim(it.col || '#7fe3ff');
         const caughtBefore = !!this.s.dex.caught[b.f.sp];
         const crit = q.grade === 3 ? Math.random() < (caughtBefore ? 0.6 : 0.4) : q.grade === 2 && Math.random() < 0.12;
-        return done({ t: 'catch', bonus: it.ball * this.ballCond(it) * q.mult * (SPECIES[b.f.sp].legendary ? 1.2 : 1), item: opts[c].k, name: it.name, col: it.col, crit });
+        return done({ t: 'catch', bonus: it.ball * this.ballCond(it) * q.mult * (SPECIES[b.f.sp].legendary ? 1.2 : 1), item: opts[c].k, name: it.name, col: it.col, crit, master: !!it.master });
       }
       const ti = await party(this.s, { select: true, prompt: it.revive ? 'Wen beleben?' : it.cure ? 'Wen kurieren?' : 'Wen heilen?', filter: itemFilter(it) });
       if (ti === null) { this.mode = 'menu'; return; }

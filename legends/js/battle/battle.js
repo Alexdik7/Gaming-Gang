@@ -295,7 +295,8 @@ export class Battle {
     const shakeP = Math.pow(p, 0.25);
     let shakes = 0, ok;
     // Kritischer Fang (perfekter Wurf): nur eine einzige Prüfung, der Kristall wackelt nur einmal
-    if (act.crit) { ok = this.rnd() < Math.min(1, shakeP * 1.15); shakes = ok ? 1 : 0; }
+    if (act.master) { ok = true; shakes = 3; }
+    else if (act.crit) { ok = this.rnd() < Math.min(1, shakeP * 1.15); shakes = ok ? 1 : 0; }
     else { while (shakes < 4 && this.rnd() < shakeP) shakes++; ok = shakes >= 4; }
     ev.push({ t: 'catch', shakes: Math.min(3, shakes), ok, crit: !!act.crit, col: act.col });
     if (ok) {

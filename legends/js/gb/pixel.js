@@ -638,7 +638,8 @@ export function drawChar(ctx, look, dir, frame, x, y, hop = 0) {
 // ---------------------------------------------------------------- Bälle (eigenes Design, jede Sorte eigen verziert)
 // Oben farbig, unten cremeweiß, dunkles Band mit Knopf; Embleme: „52“ (Gaming Gang), Stern, Mond, Welle, Blitz, Ringe, Herz, Runen
 const BALLS = {
-  bind: { top: ['#0e5a52', '#178073', '#22a291', '#5fd0bd'], em: 'n52' },
+  bind: { top: ['#0e5a52', '#178073', '#22a291', '#5fd0bd'], em: 'chev' },
+  b52: { top: ['#0a0a10', '#18181f', '#26262f', '#4a4a58'], em: 'n52', gold: true },
   stern: { top: ['#1a2a6a', '#24408e', '#3058b8', '#7a98e8'], em: 'star' },
   nacht: { top: ['#18122e', '#2a2050', '#3c2e70', '#6a58a8'], em: 'moon' },
   flut: { top: ['#0a3a7a', '#1458a8', '#2a7ad0', '#78b8f0'], em: 'wave' },
@@ -647,7 +648,7 @@ const BALLS = {
   freund: { top: ['#8a2048', '#c03a6a', '#e86a98', '#ffb0cc'], em: 'heart' },
   ur: { top: ['#3a2a10', '#6a5020', '#a88a38', '#e8d080'], em: 'rune', bottom: ['#2a2420', '#3a3430', '#4a4440'] },
 };
-const BALL_COL = { '#7fe3ff': 'bind', '#ffd84a': 'stern', '#5a4ad8': 'nacht', '#3aa8ff': 'flut', '#ff8a3a': 'tempo', '#c86aff': 'echo', '#ff7ab0': 'freund', '#d8a830': 'ur' };
+const BALL_COL = { '#e8c020': 'b52', '#7fe3ff': 'bind', '#ffd84a': 'stern', '#5a4ad8': 'nacht', '#3aa8ff': 'flut', '#ff8a3a': 'tempo', '#c86aff': 'echo', '#ff7ab0': 'freund', '#d8a830': 'ur' };
 const ballCache = new Map();
 export function ballIcon(kind = 'bind') {
   if (ballCache.has(kind)) return ballCache.get(kind);
@@ -670,7 +671,8 @@ export function ballIcon(kind = 'bind') {
   const P = (col, pts) => { x.fillStyle = col; for (const [a, b] of pts) x.fillRect(a, b, 1, 1); };
   const W = '#ffffff', Y = '#ffe14a';
   switch (B.em) {
-    case 'n52': { const D5 = ['###', '#..', '##.', '..#', '##.'], D2 = ['##.', '..#', '.#.', '#..', '###']; for (const [g, ox] of [[D5, 4], [D2, 9]]) g.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '#') P(W, [[ox + i, 3 + j]]); })); break; }
+    case 'chev': P(W, [[4, 6], [5, 5], [6, 4], [7, 3], [8, 3], [9, 4], [10, 5], [11, 6], [5, 6], [6, 5], [7, 4], [8, 4], [9, 5], [10, 6]]); break;
+    case 'n52': { const D5 = ['###', '#..', '##.', '..#', '##.'], D2 = ['##.', '..#', '.#.', '#..', '###']; for (const [g, ox] of [[D5, 4], [D2, 9]]) g.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '#') P(B.gold ? (j < 2 ? '#fff4b0' : '#ffd23a') : W, [[ox + i, 3 + j]]); })); break; }
     case 'star': P(Y, [[7, 2], [8, 2], [7, 3], [8, 3], [4, 4], [5, 4], [6, 4], [7, 4], [8, 4], [9, 4], [10, 4], [11, 4], [5, 5], [6, 5], [7, 5], [8, 5], [9, 5], [10, 5], [6, 6], [7, 6], [8, 6], [9, 6], [5, 7], [6, 7], [9, 7], [10, 7]]); P('#fff8d0', [[7, 3], [7, 4]]); break;
     case 'moon': P('#fff4b0', [[6, 2], [7, 2], [8, 2], [5, 3], [6, 3], [4, 4], [5, 4], [4, 5], [5, 5], [5, 6], [6, 6], [6, 7], [7, 7], [8, 7]]); P(W, [[10, 3], [11, 5], [9, 6]]); break;
     case 'wave': P(W, [[3, 6], [4, 5], [5, 5], [6, 6], [7, 6], [8, 5], [9, 5], [10, 6], [11, 6], [12, 5], [4, 3], [5, 2], [6, 2], [7, 3], [8, 3], [9, 2], [10, 2], [11, 3]]); break;
@@ -679,6 +681,7 @@ export function ballIcon(kind = 'bind') {
     case 'heart': P(W, [[5, 2], [6, 2], [9, 2], [10, 2], [4, 3], [5, 3], [6, 3], [7, 3], [8, 3], [9, 3], [10, 3], [11, 3], [4, 4], [5, 4], [6, 4], [7, 4], [8, 4], [9, 4], [10, 4], [11, 4], [5, 5], [6, 5], [7, 5], [8, 5], [9, 5], [10, 5], [6, 6], [7, 6], [8, 6], [9, 6], [7, 7], [8, 7]]); break;
     case 'rune': P('#1a1620', [[3, 6], [4, 4], [6, 3], [9, 3], [11, 4], [12, 6]]); P('#fff0a0', [[7, 4], [8, 4], [6, 5], [9, 5], [7, 6], [8, 6], [7, 5], [8, 5]]); break;
   }
+  if (B.gold) { x.fillStyle = '#e8c020'; x.fillRect(2, 9, 4, 1); x.fillRect(10, 9, 4, 1); x.fillStyle = '#ffe680'; x.fillRect(12, 3, 1, 1); x.fillRect(2, 6, 1, 1); }
   // Glanzpunkt
   x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(4, 2, 2, 1); x.fillRect(3, 3, 1, 1);
   ballCache.set(kind, c); return c;

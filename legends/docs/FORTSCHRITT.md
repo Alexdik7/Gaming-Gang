@@ -557,3 +557,7 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
 
 - `crystalIcon(col)` bleibt als Brücke erhalten und liefert jetzt den passenden Ball. Item-IDs bleiben gleich, alte Spielstände funktionieren also.
 - Alle Texte sind angepasst: Bindbälle, Beutel-Tasche BÄLLE, Starter liegen in Bällen. Beim Einwechseln fliegt der Ball, in dem die Kreatur gefangen wurde. Der Trainer-Übergang zeigt einen drehenden Ball.
+- **52-Ball** (`ball52`, `master: true`): schwarz mit goldener „52“, fängt jede Kreatur garantiert.
+  - 11 Stück, so viele wie es legendäre Kreaturen gibt, liegen in Sackgassen: Route 1, Altwald, Kieselhöhle (2×), Route 5, Eisgrotte, Route 7, Tempel, Route 8, Gezeitengrotte und Drachengipfel (`it_b52_1…11`).
+  - Beim Fund zählt das Spiel mit („Nummer n von 11“).
+  - Der normale Bindball trägt jetzt ein Winkel-Emblem.
