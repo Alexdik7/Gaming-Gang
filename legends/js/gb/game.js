@@ -18,6 +18,7 @@ import { Online } from './online.js';
 import { doubleBattle, localDouble } from './double2d.js';
 import { COOP, foeSlots } from '../data/coop.js';
 import { DoubleBattle } from '../battle/double.js';
+import { HUETER } from '../data/creatures9.js';
 
 const SAVE = 'lu2-save', OPT = 'lu2-opt', DAY = 24 * 60;
 const QUESTS = {
@@ -286,6 +287,7 @@ class Game {
   // Mondruine: Hüter Lunareth bewacht den Mond-Herzstein
   async moonAltar() {
     const s = this.state;
+    if (s.bag.herzstein_mond && s.flags.linde_pg && !s.flags.lunareth) return this.rematch('lunareth', 'ruine', ['Über dem Altar flackert Sternenlicht…', 'Lunareth ist zurückgekehrt! Die vereinten Herzsteine haben es gerufen.']);
     if (s.bag.herzstein_mond) return say('Der Altar ist leer. Über der Ruine schimmert zum ersten Mal ein schwaches Morgenrot.');
     await say(['Auf dem Altar liegt ein silbern glühender Stein – der Mond-Herzstein!', 'Als du die Hand ausstreckst, erhebt sich aus dem Schatten eine riesige Gestalt mit einem Geweih aus Sternenlicht…']);
     const r = await this.wildBattle(null, 'ruine', createMon('lunareth', 40));
@@ -298,6 +300,7 @@ class Game {
   }
   async sunAltar() {
     const s = this.state;
+    if (s.bag.herzstein_sonne && s.flags.linde_pg && !s.flags.solarion) return this.rematch('solarion', 'ruine', ['Durch die Decke bricht gleißendes Licht…', 'Solarion ist zurückgekehrt! Die vereinten Herzsteine haben es gerufen.']);
     if (s.bag.herzstein_sonne) return say('Der Altar ist leer. Durch ein Loch in der Decke fällt warmes Licht.');
     if (!s.flags.nyx4) return say('Nyx versperrt den Weg zum Altar.');
     await say(['Auf dem Altar glüht ein goldener Stein – der Sonnen-Herzstein!', 'Plötzlich wird es gleißend hell. Mit einem Schrei wie ein Sonnensturm stößt eine gewaltige Gestalt aus dem Licht herab…']);
@@ -403,7 +406,12 @@ class Game {
     return false;
   }
   blockMove(map, x, y) {
-    const s = this.state;
+    const s = this.state, pg = { ignis: [12, 0], route4: [22, 14], frostheim: [20, 10], drakmor: [24, 1] }[map];
+    if (pg && pg[0] === x && pg[1] === y && !s.flags.linde_pg) {
+      this.ow.busy = true;
+      (async () => { await say(s.flags.champion ? ['Der Bann vor dem Eingang flackert, als würde er dich erkennen.', 'Prof. Linde in Moosgrund weiß bestimmt, was das bedeutet.'] : ['Ein uralter Bann aus Licht versiegelt den Eingang.', 'Nur jemand, der stärker ist als alle Trainer der Liga, könnte ihn brechen.']); this.ow.busy = false; })();
+      return true;
+    }
     if (map === 'drachenhort' && x === 10 && y === 0) {
       if (!s.badges[7]) { this.ow.busy = true; (async () => { await say(['Drachenhüterin: Dort beginnt die Siegesstraße.', 'Nur wer alle acht Orden trägt, darf sie betreten.']); this.ow.busy = false; })(); return true; }
       if (!s.flags.lyra5) { this.lyraDecision(); return true; }
@@ -469,7 +477,7 @@ class Game {
     const foe = mon || this.pickWild(encId);
     this.markDex(foe.sp);
     sfx('encounter'); await this.flashIn();
-    const r = await battle(this, { foeTeam: [foe], bg, intro: foe.sp === 'sylvaron' ? 'legend' : 'wild' });
+    const r = await battle(this, { foeTeam: [foe], bg, intro: SPECIES[foe.sp].legendary ? 'legend' : 'wild' });
     await this.afterBattle(r);
     return r;
   }
@@ -655,6 +663,7 @@ class Game {
     switch (n.id) {
       case 'mama':
         if (!s.flags.starter) return say(['Prof. Linde wartet im Labor auf dich, Schatz!', 'Das Labor ist das große Haus mit dem grauen Dach im Süden.'], N);
+        if (s.flags.champion && !s.flags.linde_pg) await say(['Prof. Linde hat angerufen! Sie möchte dich dringend im Labor sprechen.', 'Sie klang… nervös. So kenne ich sie gar nicht.'], N);
         await say('Du siehst erschöpft aus. Ruh dich kurz aus!', N); s.team.forEach(healMon); sfx('heal'); return say('Dein Team ist wieder fit. Pass auf dich auf!', N);
       case 'nachbarin': return say(['Hast du schon gehört? In Quellbach gibt es eine Brutstätte.', 'Wenn man zwei Kreaturen dort lässt, finden die manchmal ein Ei. Und was da rauskommt… unglaublich!'], N);
       case 'kid1': return say(s.flags.starter ? 'Mit dem SELECT-Knopf siehst du sofort dein Team!' : 'Im hohen Gras leben wilde Kreaturen! Ohne eigene darfst du da nicht rein.', N);
@@ -662,6 +671,9 @@ class Game {
       case 'linde':
         if (!s.flags.lindeTalked) { s.flags.lindeTalked = true; return say([`Da bist du ja, ${s.name}!`, 'Jeder Trainer braucht einen Partner. Auf dem Tisch dort liegen drei Kristalle mit Kreaturen.', 'Feuer, Wasser oder Pflanze – wähle weise! Sieh sie dir am Tisch an.'], N); }
         if (!s.flags.starter) return say('Die Kristalle liegen auf dem Tisch. Sieh sie dir an!', N);
+        if (s.flags.champion && !s.flags.linde_pg) return this.lindeSecret(n);
+        if (s.flags.linde_pg && !s.bag.urkristall && HUETER.some(k => !s.dex.caught[k])) { s.bag.urkristall = 3; sfx('caught'); await say(['Keine Urkristalle mehr? Ich habe noch ein paar gefunden.', `${s.name} erhält 3× URKRISTALL!`], N); }
+        if (s.flags.linde_pg) { const h = HUETER.filter(k => s.dex.caught[k]).length; await say(`Hüter in deiner Chronik: ${h} von 7.${h < 7 ? ' Krater von Ignis, Grotte vor Route 4, Frostgipfel, Drachengipfel – und die Altäre von Mondruine und Sonnentempel.' : ' Alle sieben! Du bist der erste Mensch, dem das gelingt.'}`, N); }
         { const c = Object.keys(s.dex.caught).length, m = Object.keys(s.dex.caught).filter(k => SPECIES[k]?.fusion).length;
           return say([`Deine Chronik: ${Object.keys(s.dex.seen).length} gesehen, ${c} gebunden.`, m ? `Und ${m} Mutation${m > 1 ? 'en' : ''}! So etwas habe ich noch nie gesehen!` : 'Versuch doch mal die Brutstätte in Quellbach – Mutationen sind mein Forschungsgebiet!'], N); }
       case 'nia': return this.heal('Heilerin Nia');
@@ -699,6 +711,7 @@ class Game {
       case 'koloss': return this.coopNpc('koloss', n);
       case 'nyx3': case 'lyra3': return this.coopNpc('finale', n);
       case 'morwen': case 'sahra': case 'brann': case 'vala': return this.gym(n);
+      case 'h_ignarok': case 'h_maristra': case 'h_boreon': case 'h_ferrodrakon': return this.hueter(n);
       case 'e4_1': case 'e4_2': case 'e4_3': case 'e4_4': case 'aurin': return this.liga(n);
       case 'liga_waechter': return say(s.flags.champion ? ['Champion! Die Top 4 nehmen jede Herausforderung an – so oft du willst.'] : ['Dies ist die Liga. Vier Meister und ein Champion warten dort drinnen.', 'Zwischen den Kämpfen gibt es keine Heilung. Wer verliert, fängt von vorn an.'], N);
       case 'dk_alt': return say(s.flags.umbra1 ? ['Ihr habt Umbra vertrieben! Seit hundert Jahren hat niemand gewagt, sich ihm entgegenzustellen.', 'Der Drachenhort im Westen ist jetzt offen. Vala, die Drachenmeisterin, wartet.'] : ['Im Osten hat Team Eklipse den Berg ausgehöhlt. Dort steht ihr Hauptquartier.', 'Mit Branns Erzorden bekommst du das Stahltor auf. Schiebe die Felsbrocken, wo der Weg versperrt ist!'], N);
@@ -924,8 +937,42 @@ class Game {
     await fade(1, 300);
     this.ow.load('home', 2, 3, 'down');
     await fade(0, 500);
-    if (first) await say(['Zuhause riecht es nach Pfannkuchen.', 'Mama: Champion! Ich habe es immer gewusst!', '(Ende der Hauptgeschichte. In Phase 4.5 folgen Hüter-Legenden, Raids zu viert und ein Postgame.)']);
+    if (first) await say(['Zuhause riecht es nach Pfannkuchen.', 'Mama: Champion! Ich habe es immer gewusst!', 'Mama: Ach ja – Prof. Linde hat angerufen. Sie möchte dich dringend im Labor sprechen.']);
     this.save(true);
+  }
+
+  // ---------------------------------------------------------- Phase 4.5: Postgame, Hüter
+  async lindeSecret(n) {
+    const s = this.state, N = { name: n.name };
+    await say([`${s.name}… Champion. Ich bin so stolz auf dich.`, 'Aber ich schulde dir die Wahrheit.', 'Vor vielen Jahren habe ich zusammen mit Umbra Team Eklipse gegründet.', 'Wir wollten die Herzsteine erforschen, nicht missbrauchen. Als Umbra davon sprach, die Zeit anzuhalten, bin ich gegangen.', 'Deshalb erforsche ich Mutationen. Ich wollte beweisen, dass Veränderung etwas Gutes ist.'], N);
+    await say(['Und jetzt hast du alle sieben Herzsteine vereint. Damit sind die vier schlafenden Hüter erwacht.', 'Ignarok im Krater von Ignis, Maristra in einer Grotte vor Route 4, Boreon auf dem Frostgipfel und Ferrodrakon auf dem Drachengipfel.', 'Und wer Lunareth oder Solarion nicht gebunden hat, findet sie wieder an ihren Altären.'], N);
+    s.bag.urkristall = (s.bag.urkristall || 0) + 8; s.flags.linde_pg = true; sfx('caught');
+    await say(`${s.name} erhält 8× URKRISTALL!`);
+    await say(['Diese Urkristalle habe ich damals aus dem Hauptquartier mitgenommen. Sie binden zehnmal besser als normale Kristalle.', 'Noch etwas… In den Herzsteinen höre ich ein Echo. Etwas lebt zwischen den Welten und wartet.', 'Wenn es erwacht, schafft das niemand allein. Dann braucht ihr euch alle vier.'], N);
+    this.save(true);
+  }
+  async hueter(n) {
+    const s = this.state, sp = n.mon, S = SPECIES[sp];
+    const intro = {
+      ignarok: ['Der Boden glüht. Aus der Lava erhebt sich ein Koloss mit Hörnern aus Feuer!'],
+      maristra: ['Das Wasser der Grotte beginnt zu singen. Eine riesige Schlange mit einer Krone aus Perlen taucht auf!'],
+      boreon: ['Ein eisiger Sturm reißt dich fast von den Füßen. Über dem Gipfel kreist ein Vogel aus Nordlicht!'],
+      ferrodrakon: ['Ein Brüllen erschüttert den Gipfel. Ein Drache mit stählernem Panzer schlägt die Augen auf!'],
+    }[sp] || [`${S.name} erscheint!`];
+    await say([...intro, `${S.name} greift an!`]);
+    cry(S.cry);
+    const r = await this.wildBattle(null, n.bg || this.ow.M.bg || 'ruine', createMon(sp, 65));
+    if (!r || r.result === 'lose') return;
+    if (r.result === 'caught') { s.flags[n.id] = true; this.ow.npcs = this.ow.npcs.filter(x => x !== n); await say(`${S.name} hat dich als würdig anerkannt!`); this.save(true); return; }
+    this.ow.npcs = this.ow.npcs.filter(x => x !== n);
+    await say(r.result === 'win' ? `${S.name} zieht sich zurück… Wenn du wiederkommst, wartet es erneut auf dich.` : `${S.name} sieht dir nach. Es wird hier auf dich warten.`);
+  }
+  async rematch(sp, bg, lines) {
+    const s = this.state;
+    await say(lines);
+    const r = await this.wildBattle(null, bg, createMon(sp, 60));
+    if (r?.result === 'caught') { s.flags[sp] = true; await say(`${SPECIES[sp].name} hat dich als würdig anerkannt!`); this.save(true); }
+    else if (r?.result === 'win') await say(`${SPECIES[sp].name} verschwindet im Licht. Es kommt wieder.`);
   }
 
   async gym(n) {

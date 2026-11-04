@@ -1,6 +1,30 @@
 # Fortschritt
 
-## v0.12 – Phase 4.4: Liga & Finale (aktuell)
+## v0.13 – Phase 4.5a: Postgame & Hüter (aktuell)
+
+### ✅ Neu und getestet
+- **Lindes Geheimnis:**
+  - Nach dem Champion-Titel ruft Prof. Linde an.
+  - Sie gesteht, dass sie Team Eklipse einst mit Umbra gegründet hat.
+  - Sie erzählt von den erwachten Hütern und gibt dir **8 Urkristalle** (zehnfache Bindchance). Hast du keine mehr, legt sie 3 nach.
+- **Vier Heiligtümer**, deren Eingänge bis dahin ein Bann versiegelt:
+  - **Kraterherz** im Norden von Ignis, mit **Ignarok** (Feuer/Erde)
+  - **Gezeitengrotte** auf der Insel vor Route 4 (nur per Surfen), mit **Maristra** (Wasser/Magie)
+  - **Frostgipfel** nordöstlich von Frostheim, mit **Boreon** (Eis/Luft)
+  - **Drachengipfel** nordöstlich von Drakmor, mit **Ferrodrakon** (Drache/Metall)
+- **Die Hüter:**
+  - Lv 65, bis zum Binden immer wieder herausforderbar.
+  - Jedes Heiligtum hat eigene wilde Kreaturen (Lv 56–64), einen Meistertrainer und Fundstücke.
+- **Revanche:** Lunareth und Solarion kehren an ihre Altäre zurück, falls du sie nicht gebunden hast (Lv 60).
+- **Linde zählt deine Hüter:** 7 Regionen, 7 Hüter.
+- **14 neue Kreaturen**, jetzt 121:
+  - Funkwiesel → Blitzwiesel, Glutviper, Obsidrak, Perlnixe, Nachtkrake, Firnwolf, Sturmyak, Donnerdrache, Wolkenwal
+  - die 4 Hüter
+  - 4 neue Hüter-Attacken
+- **Balancing per Simulation:** Ein einfacher Bot gewinnt auf Lv 60 gegen Ignarok, Boreon und Ferrodrakon meistens. Maristra ist die schwerste Hüterin. Mit 5 Urkristallen gelingt das Binden pro Versuch zu etwa 20–45 %.
+- Alle 51 Karten sind fehlerfrei.
+
+## v0.12 – Phase 4.4: Liga & Finale
 
 ### ✅ Neu und getestet
 - **Lyras Entscheidung** am Nordausgang des Drachenhorts (ab 8 Orden):

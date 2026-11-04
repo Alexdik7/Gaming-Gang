@@ -11,7 +11,7 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 | **2a – Grafik & Koop** | eigene 2D-Pixel-Art statt 3D-Renderings, 3D-Teil entfernt, Online-Welt, Mitspieler auf der Karte, Freundschaftskampf (Server berechnet), Tausch, Chat | ✅ v0.3 |
 | **2b – Koop-Ausbau** | Doppelkämpfe 2 gegen 2, Koop gegen Trainer-Duo und Boss, Tausch-Entwicklungen, Server-Sicherung & Geräte-Übertragung, Zu Freund reisen | ✅ v0.4 |
 | **3 – Hauptspiel** | Regionen Ignis, Aqualis, Frostheim · Arenen 2–4 mit Rätseln · Team Eklipse · Rivalin Lyra · 75 Kreaturen · Items (Beeren, Attacken-Kristalle) · Nebenquests | ✅ v0.5–v0.8 |
-| **4 – Endgame** ⏳ läuft (4.1 ✅ v0.9 · 4.2 ✅ v0.10 · 4.3 ✅ v0.11 · 4.4 ✅ v0.12) | Regionen Nocturna, Solaria, Drakmor · Arenen 5–8 · Top 4 · Champion · legendäre Hüter · Geheimorte nur zu viert · Postgame · 150 Kreaturen | geplant |
+| **4 – Endgame** ⏳ läuft (4.1 ✅ v0.9 · 4.2 ✅ v0.10 · 4.3 ✅ v0.11 · 4.4 ✅ v0.12 · 4.5a ✅ v0.13) | Regionen Nocturna, Solaria, Drakmor · Arenen 5–8 · Top 4 · Champion · legendäre Hüter · Geheimorte nur zu viert · Postgame · 150 Kreaturen | geplant |
 | **5 – Qualität** | komponierte Musik, Animationen, Balancing, Performance, Windows-App (Tauri), Store-Apps (Capacitor) | geplant |
 
 ## Phase 2b – erledigt (v0.4)
@@ -45,7 +45,8 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 | 4.2 | Region Solaria (Wüste & Tempel, Licht/Magie), Arena 6, Herzstein 4 | ✅ v0.10 |
 | 4.3 | Region Drakmor (Drachengebirge), Arenen 7–8, Team-Eklipse-Hauptquartier | ✅ v0.11 |
 | 4.4 | Lyras Entscheidung, Siegesstraße, Top 4 und Champion, Umbras Finale | ✅ v0.12 |
-| 4.5 | Legendäre Hüter, Geheimorte nur zu viert (Koop-Raids), Postgame, Ziel 150 Kreaturen, Level bis 60+ | ⏳ als Nächstes |
+| 4.5a | Postgame: Lindes Geheimnis, 4 erwachte Hüter in 4 Heiligtümern, Revanchen für Lunareth und Solarion, 14 neue Kreaturen (121), Level bis 65 | ✅ v0.13 |
+| 4.5b | Koop-Raids zu viert (Raid-Kampf 4 gegen 1), Dimensionsriss, Nihilux, weitere Kreaturen Richtung 150 | ⏳ als Nächstes |
 
 ## Story-Leitfaden (Entwurf für alle Phasen)
 
