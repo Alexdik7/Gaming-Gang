@@ -11,7 +11,7 @@ export const RARITY = {
 
 export const SPECIES = {
   funkfux: {
-    num: 1, name: 'Funkfux', types: ['feuer'], rarity: 'selten',
+    num: 1, name: 'Glimmrik', types: ['feuer'], rarity: 'selten',
     stats: { hp: 39, atk: 55, def: 43, spa: 60, spd: 50, spe: 65 }, catchRate: 45, xp: 62,
     learn: [[1, 'kratzer'], [1, 'knurren'], [5, 'glutfunke'], [11, 'flammenbiss'], [19, 'feuerwirbel']],
     evo: { to: 'glutfux', lvl: 16 },
@@ -20,7 +20,7 @@ export const SPECIES = {
     cry: { f: 620, f2: 900, len: 0.28, wave: 'square', wob: 12 },
   },
   glutfux: {
-    num: 2, name: 'Glutfux', types: ['feuer', 'magie'], rarity: 'episch',
+    num: 2, name: 'Pyrovulp', types: ['feuer', 'magie'], rarity: 'episch',
     stats: { hp: 64, atk: 75, def: 62, spa: 95, spd: 72, spe: 92 }, catchRate: 30, xp: 160,
     learn: [[1, 'kratzer'], [1, 'glutfunke'], [16, 'runenblitz'], [24, 'feuerwirbel']],
     lore: 'Seine drei Flammenschweife zeichnen Runen in die Luft. Alte Verdantianer hielten ihn für einen Boten der Waldgeister.',
@@ -28,7 +28,7 @@ export const SPECIES = {
     cry: { f: 480, f2: 980, len: 0.4, wave: 'sawtooth', wob: 9 },
   },
   tropfmolch: {
-    num: 3, name: 'Tropfmolch', types: ['wasser'], rarity: 'selten',
+    num: 3, name: 'Plätscho', types: ['wasser'], rarity: 'selten',
     stats: { hp: 50, atk: 48, def: 55, spa: 55, spd: 58, spe: 44 }, catchRate: 45, xp: 62,
     learn: [[1, 'rempler'], [1, 'panzern'], [5, 'wasserstrahl'], [11, 'blasenwirbel'], [19, 'flutwelle']],
     evo: { to: 'gezeitenmolch', lvl: 16 },
@@ -37,7 +37,7 @@ export const SPECIES = {
     cry: { f: 330, f2: 520, len: 0.35, wave: 'sine', wob: 6 },
   },
   gezeitenmolch: {
-    num: 4, name: 'Gezeitenmolch', types: ['wasser', 'drache'], rarity: 'episch',
+    num: 4, name: 'Tidalotl', types: ['wasser', 'drache'], rarity: 'episch',
     stats: { hp: 78, atk: 72, def: 80, spa: 85, spd: 82, spe: 60 }, catchRate: 30, xp: 160,
     learn: [[1, 'rempler'], [1, 'wasserstrahl'], [16, 'blasenwirbel'], [24, 'flutwelle']],
     lore: 'Man sagt, er könne mit einem Schwanzschlag die Strömung eines ganzen Flusses umkehren.',
@@ -45,7 +45,7 @@ export const SPECIES = {
     cry: { f: 220, f2: 420, len: 0.5, wave: 'triangle', wob: 4 },
   },
   sprossling: {
-    num: 5, name: 'Sprossling', types: ['pflanze'], rarity: 'selten',
+    num: 5, name: 'Knöspi', types: ['pflanze'], rarity: 'selten',
     stats: { hp: 48, atk: 52, def: 60, spa: 52, spd: 58, spe: 45 }, catchRate: 45, xp: 62,
     learn: [[1, 'rempler'], [1, 'knurren'], [5, 'rankenhieb'], [9, 'wurzelkraft'], [13, 'blattsturm'], [20, 'dornenwall']],
     evo: { to: 'knorrwurz', lvl: 16 },
@@ -54,15 +54,15 @@ export const SPECIES = {
     cry: { f: 760, f2: 600, len: 0.22, wave: 'triangle', wob: 18 },
   },
   knorrwurz: {
-    num: 6, name: 'Knorrwurz', types: ['pflanze', 'erde'], rarity: 'episch',
+    num: 6, name: 'Wurzelgrimm', types: ['pflanze', 'erde'], rarity: 'episch',
     stats: { hp: 80, atk: 82, def: 88, spa: 70, spd: 72, spe: 48 }, catchRate: 30, xp: 160,
     learn: [[1, 'rankenhieb'], [1, 'wurzelkraft'], [16, 'bodenstoss'], [22, 'dornenwall']],
-    lore: 'Wo Knorrwurz eine Nacht lang ruht, wächst am nächsten Morgen ein kleiner Hain.',
+    lore: 'Wo Wurzelgrimm eine Nacht lang ruht, wächst am nächsten Morgen ein kleiner Hain.',
     model: { kind: 'sprout', main: '#4f9f3e', accent: '#a5774a', glow: '#ffd36a', stage: 2, size: 1.35 },
     cry: { f: 260, f2: 190, len: 0.5, wave: 'triangle', wob: 5 },
   },
   zirpfink: {
-    num: 7, name: 'Zirpfink', types: ['luft'], rarity: 'gewoehnlich',
+    num: 7, name: 'Piepsix', types: ['luft'], rarity: 'gewoehnlich',
     stats: { hp: 40, atk: 45, def: 38, spa: 35, spd: 35, spe: 66 }, catchRate: 220, xp: 45,
     learn: [[1, 'rempler'], [3, 'windstoss'], [10, 'sturzflug']],
     lore: 'Zirpfinken singen im Morgengrauen in perfekter Harmonie – jeder Schwarm hat seine eigene Melodie.',
@@ -71,7 +71,7 @@ export const SPECIES = {
     habitat: { time: 'day', zones: ['wiese', 'wald'], weight: 30 },
   },
   voltmotte: {
-    num: 8, name: 'Voltmotte', types: ['elektro', 'luft'], rarity: 'ungewoehnlich',
+    num: 8, name: 'Voltaflor', types: ['elektro', 'luft'], rarity: 'ungewoehnlich',
     stats: { hp: 45, atk: 35, def: 42, spa: 68, spd: 55, spe: 70 }, catchRate: 120, xp: 70,
     learn: [[1, 'windstoss'], [4, 'funkenschlag'], [14, 'donnerflug']],
     lore: 'Ihre Flügelstaub-Funken locken nachts Glühwürmchen an. Gewitter machen sie euphorisch.',
@@ -80,16 +80,16 @@ export const SPECIES = {
     habitat: { time: 'night', zones: ['wiese', 'wald'], weight: 20, weatherBoost: 'regen' },
   },
   sporlich: {
-    num: 9, name: 'Sporlich', types: ['gift', 'pflanze'], rarity: 'gewoehnlich',
+    num: 9, name: 'Sporello', types: ['gift', 'pflanze'], rarity: 'gewoehnlich',
     stats: { hp: 55, atk: 40, def: 50, spa: 55, spd: 55, spe: 30 }, catchRate: 190, xp: 50,
     learn: [[1, 'rempler'], [4, 'sporenwolke'], [9, 'giftnebel'], [15, 'wurzelkraft']],
-    lore: 'Wenn Sporlich niest, wachsen um ihn herum winzige Pilze. Bei Regen tanzt er ausgelassen.',
+    lore: 'Wenn Sporello niest, wachsen um ihn herum winzige Pilze. Bei Regen tanzt er ausgelassen.',
     model: { kind: 'mushroom', main: '#c94a6a', accent: '#fff2dc', glow: '#ffd6f2', size: 0.65 },
     cry: { f: 500, f2: 380, len: 0.25, wave: 'triangle', wob: 22 },
     habitat: { time: 'any', zones: ['wald'], weight: 25, weatherBoost: 'regen' },
   },
   kieselkrebs: {
-    num: 10, name: 'Kieselkrebs', types: ['erde', 'metall'], rarity: 'ungewoehnlich',
+    num: 10, name: 'Kieskneif', types: ['erde', 'metall'], rarity: 'ungewoehnlich',
     stats: { hp: 50, atk: 65, def: 85, spa: 25, spd: 40, spe: 30 }, catchRate: 120, xp: 72,
     learn: [[1, 'kratzer'], [1, 'panzern'], [6, 'steinwurf'], [12, 'eisenkralle'], [18, 'bodenstoss']],
     lore: 'Er poliert Flusskiesel, bis sie glänzen, und schmückt damit seinen Panzer.',
@@ -98,7 +98,7 @@ export const SPECIES = {
     habitat: { time: 'any', zones: ['ufer'], weight: 20 },
   },
   schemenohr: {
-    num: 11, name: 'Schemenohr', types: ['schatten'], rarity: 'selten',
+    num: 11, name: 'Lauschatt', types: ['schatten'], rarity: 'selten',
     stats: { hp: 48, atk: 70, def: 45, spa: 50, spd: 45, spe: 80 }, catchRate: 75, xp: 85,
     learn: [[1, 'kratzer'], [3, 'nachtschleier'], [8, 'schattenbiss']],
     lore: 'Nur bei Nacht zu sehen. Seine riesigen Ohren hören, was Menschen flüstern – und es vergisst nichts.',
@@ -107,7 +107,7 @@ export const SPECIES = {
     habitat: { time: 'night', zones: ['wald', 'ruinen'], weight: 12 },
   },
   moospanzer: {
-    num: 12, name: 'Moospanzer', types: ['pflanze', 'erde'], rarity: 'ungewoehnlich',
+    num: 12, name: 'Moosgrumm', types: ['pflanze', 'erde'], rarity: 'ungewoehnlich',
     stats: { hp: 70, atk: 50, def: 80, spa: 40, spd: 60, spe: 20 }, catchRate: 100, xp: 80,
     learn: [[1, 'rempler'], [1, 'panzern'], [7, 'rankenhieb'], [13, 'steinwurf'], [18, 'wurzelkraft']],
     lore: 'Auf seinem Panzer wächst ein kleines Biotop. Manche Exemplare tragen Blumen, die es nirgends sonst gibt.',

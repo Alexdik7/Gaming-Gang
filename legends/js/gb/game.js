@@ -4,7 +4,7 @@ import { MAPS, LOOK, ENC, SHOP, ITEMS } from './maps.js';
 import { Overworld } from './overworld.js';
 import { battle } from './battle2d.js';
 import { say, ask, choose, party, summary, dex, card, inputName, hatchScene, settings, typeTag, dexEntry, healAnim } from './gbui.js';
-import { drawChar } from './pixel.js';
+import { drawChar, itemIcon } from './pixel.js';
 import { monSprite, trainerSprite } from './sprites.js';
 import { SPECIES, STARTERS } from '../data/creatures.js';
 import '../data/creatures2.js';
@@ -42,9 +42,9 @@ async function unpackSave(code) {
   } catch { return null; }
 }
 const QUESTS = {
-  ig_kid: { want: 'flammeule', ask: ['Ich habe noch nie eine Flammeule aus der Nähe gesehen!', 'Sie fliegen nur nachts über den Aschepfad. Bringst du mir eine zum Anschauen?'], thanks: ['WOW! {mon} ist ja wunderschön!', 'Danke! Hier, das hab ich am Vulkan gefunden.'], reward: { ak_magmaflut: 1, beleber: 2 }, after: 'Ich will später auch mal eine Flammeule haben!' },
-  aq_fischer: { want: 'geisterflosse', ask: ['Seit Jahren jage ich die Geisterflosse. Man sagt, sie schwimmt nachts vor der Küste.', 'Wenn du eine fängst, zeig sie mir. Ich will wissen, ob sie wirklich lächelt!'], thanks: ['Sie lächelt tatsächlich… {mon} ist echt!', 'Jetzt kann ich in Ruhe in Rente gehen. Nimm das hier!'], reward: { ak_wellenschlag: 1, sternkristall: 3 }, after: 'Ich träume immer noch von dem Lächeln der Geisterflosse.' },
-  fh_oma: { want: 'schneeglock', ask: ['Früher blühten überall in Frostheim Schneeglocks. Heute sieht man sie kaum noch.', 'Wenn du eines findest – bei Tag am Frostpass –, würdest du es mir zeigen?'], thanks: ['Ach, wie schön! {mon} läutet ja richtig!', 'Das erinnert mich an meine Jugend. Hier, für deine Reise.'], reward: { ak_sonnenstrahl: 1, klarbeere: 5 }, after: 'Danke noch mal für das Schneeglock. Mein Herz ist ganz warm.' },
+  ig_kid: { want: 'flammeule', ask: ['Ich habe noch nie eine Lohuhu aus der Nähe gesehen!', 'Sie fliegen nur nachts über den Aschepfad. Bringst du mir eine zum Anschauen?'], thanks: ['WOW! {mon} ist ja wunderschön!', 'Danke! Hier, das hab ich am Vulkan gefunden.'], reward: { ak_magmaflut: 1, beleber: 2 }, after: 'Ich will später auch mal eine Lohuhu haben!' },
+  aq_fischer: { want: 'geisterflosse', ask: ['Seit Jahren jage ich die Phantomflos. Man sagt, sie schwimmt nachts vor der Küste.', 'Wenn du eine fängst, zeig sie mir. Ich will wissen, ob sie wirklich lächelt!'], thanks: ['Sie lächelt tatsächlich… {mon} ist echt!', 'Jetzt kann ich in Ruhe in Rente gehen. Nimm das hier!'], reward: { ak_wellenschlag: 1, sternkristall: 3 }, after: 'Ich träume immer noch von dem Lächeln der Phantomflos.' },
+  fh_oma: { want: 'schneeglock', ask: ['Früher blühten überall in Frostheim Schneeglimms. Heute sieht man sie kaum noch.', 'Wenn du eines findest – bei Tag am Frostpass –, würdest du es mir zeigen?'], thanks: ['Ach, wie schön! {mon} läutet ja richtig!', 'Das erinnert mich an meine Jugend. Hier, für deine Reise.'], reward: { ak_sonnenstrahl: 1, klarbeere: 5 }, after: 'Danke noch mal für das Schneeglimm. Mein Herz ist ganz warm.' },
 };
 // Top 4 und Champion: Teams, Texte, Belohnung
 const RAID3 = ['r_chronoth', 'r_vortyx', 'r_prismora'];
@@ -300,12 +300,13 @@ class Game {
       const POCK = [['ITEMS', k => !ITEMS[k].ball && !ITEMS[k].tm && !ITEMS[k].key && !/beere/.test(k), '#e8a040'], ['BÄLLE', k => ITEMS[k].ball, '#5ab0e8'], ['A-KRISTALLE', k => ITEMS[k].tm, '#b070e0'], ['BEEREN', k => /beere/.test(k) && !ITEMS[k].key, '#e85a6a'], ['BASIS-ITEMS', k => ITEMS[k].key && !ITEMS[k].tm, '#58b868']];
       this.pocket = this.pocket || 0;
       const [pn, pf, pc] = POCK[this.pocket], keys = all.filter(pf);
-      const side = ctx => { // Beutel-Grafik links
+      const side = (ctx, ci) => { // Beutel-Grafik links, darunter das gewählte Item
         ctx.fillStyle = '#f0e8d0'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#e2d8bc'; for (let y = 0; y < H; y += 6) ctx.fillRect(0, y, W, 2); ctx.fillStyle = shadeHex(pc); ctx.fillRect(0, 0, 76, 113);
-        const bx = 14, by = 26; ctx.fillStyle = '#28202c'; ctx.fillRect(bx - 1, by - 1, 50, 50); ctx.fillStyle = pc; ctx.fillRect(bx, by, 48, 48);
+        const bx = 14, by = 10; ctx.fillStyle = '#28202c'; ctx.fillRect(bx - 1, by - 1, 50, 50); ctx.fillStyle = pc; ctx.fillRect(bx, by, 48, 48);
         ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(bx + 2, by + 2, 44, 6); ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(bx, by + 30, 48, 18);
         ctx.fillStyle = '#28202c'; ctx.fillRect(bx + 16, by - 9, 16, 3); ctx.fillRect(bx + 14, by - 7, 3, 7); ctx.fillRect(bx + 31, by - 7, 3, 7); ctx.fillStyle = '#f8d870'; ctx.fillRect(bx + 20, by + 18, 8, 6);
-        text(pn, 38, 82, COL.ink, 7, 'center', COL.shadow, true);
+        text(pn, 38, 61, COL.ink, 7, 'center', COL.shadow, true);
+        const ik = keys[ci]; if (ik) { ctx.fillStyle = '#28202c'; ctx.fillRect(21, 70, 34, 23); ctx.fillStyle = '#fbf8ee'; ctx.fillRect(22, 71, 32, 21); ctx.drawImage(itemIcon(ik, ITEMS[ik]), 0, 0, 16, 16, 30, 73, 16, 16); }
         POCK.forEach((_, q) => { ctx.fillStyle = q === this.pocket ? '#e84a5f' : '#a8a090'; ctx.fillRect(18 + q * 9, 96, 6, 4); });
         text('◀  ▶', 38, 102, COL.inkSoft, 6.5, 'center');
       };

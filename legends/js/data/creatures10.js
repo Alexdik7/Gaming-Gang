@@ -17,35 +17,35 @@ function C(id, num, name, types, rarity, stats, catchRate, xp, learn, evo, lore,
 }
 
 // ---------------------------------------------------------------- Wilde Kreaturen des Risses
-C('splitterling', 122, 'Splitterling', ['magie'], 'ungewoehnlich', [60, 65, 70, 75, 70, 70], 90, 110,
+C('splitterling', 122, 'Splittix', ['magie'], 'ungewoehnlich', [60, 65, 70, 75, 70, 70], 90, 110,
   '1:funkelstaub 1:kratzer 20:splitterhieb 34:runenblitz 46:mondstrahl', { to: 'splitterdrache', lvl: 50 },
   'Ein Bruchstück einer anderen Welt, das plötzlich lebendig wurde. Es klirrt bei jedem Schritt.',
   { kind: 'lizard', main: '#c8a8f8', accent: '#f8f0ff', glow: '#78f8f8', size: 0.75, extras: ['gem'] }, { f: 1800, f2: 2400, len: 0.2, wave: 'sine', wob: 30 });
-C('splitterdrache', 123, 'Splitterdrache', ['magie', 'drache'], 'selten', [90, 105, 95, 105, 90, 90], 45, 210,
+C('splitterdrache', 123, 'Fraktodrak', ['magie', 'drache'], 'selten', [90, 105, 95, 105, 90, 90], 45, 210,
   '1:splitterhieb 1:drachenklaue 50:drachenwut 56:mondstrahl', null,
   'Seine Flügel sind aus Glas, das andere Himmel spiegelt. Wer hineinsieht, sieht fremde Sterne.',
   { kind: 'lizard', main: '#9a78e8', accent: '#f0e8ff', glow: '#68f8f8', size: 1.25, extras: ['wings', 'gem', 'spikes'] }, { f: 900, f2: 1900, len: 0.5, wave: 'sine', wob: 14 });
-C('leerfalter', 124, 'Leerfalter', ['schatten', 'luft'], 'ungewoehnlich', [65, 55, 60, 95, 75, 100], 90, 140,
+C('leerfalter', 124, 'Nullfalter', ['schatten', 'luft'], 'ungewoehnlich', [65, 55, 60, 95, 75, 100], 90, 140,
   '1:windstoss 1:nachtschleier 30:leersog 40:orkan', null,
   'Wo er flattert, verschwinden für einen Moment die Farben. Danach riecht es nach Regen.',
   { kind: 'moth', main: '#1a1428', accent: '#5a4a8a', glow: '#f8f8ff', size: 0.9 }, { f: 1300, f2: 800, len: 0.4, wave: 'sine', wob: 20 });
-C('zeitkaefer', 125, 'Zeitkäfer', ['metall', 'magie'], 'selten', [80, 90, 115, 80, 95, 45], 60, 170,
+C('zeitkaefer', 125, 'Tickskarab', ['metall', 'magie'], 'selten', [80, 90, 115, 80, 95, 45], 60, 170,
   '1:eisenkralle 1:funkelstaub 30:metallstoss 40:zeitriss', null,
   'Auf seinem Panzer drehen sich Zeiger. Niemand weiß, welche Zeit sie anzeigen.',
   { kind: 'beetle', main: '#c8b070', accent: '#f8f0d8', glow: '#78d8f8', size: 0.95, extras: ['gem'] }, { f: 700, f2: 700, len: 0.3, wave: 'square', wob: 60 });
-C('nebelmolch', 126, 'Nebelmolch', ['gift', 'geist'], 'ungewoehnlich', [75, 60, 70, 90, 85, 65], 90, 140,
+C('nebelmolch', 126, 'Nebelotl', ['gift', 'geist'], 'ungewoehnlich', [75, 60, 70, 90, 85, 65], 90, 140,
   '1:giftnebel 1:spukgriff 30:schattenball 40:schlammbombe', null,
   'Halb hier, halb woanders. Fasst man ihn an, greift man durch kalten Nebel.',
   { kind: 'axolotl', main: '#88a898', accent: '#d8f0e0', glow: '#c878f8', size: 0.9 }, { f: 400, f2: 600, len: 0.5, wave: 'sine', wob: 9 });
-C('sternqualle', 127, 'Sternqualle', ['licht', 'wasser'], 'selten', [85, 50, 75, 100, 105, 70], 60, 170,
+C('sternqualle', 127, 'Astromedu', ['licht', 'wasser'], 'selten', [85, 50, 75, 100, 105, 70], 60, 170,
   '1:lichtpfeil 1:gischt 30:flutwelle 40:prismastrahl', null,
   'Sie treibt durch den Riss wie durch ein Meer aus Sternen. In ihr leuchtet eine kleine Galaxie.',
   { kind: 'blob', main: '#a8d8f8', accent: '#fff8d0', glow: '#ffffff', size: 1.0, extras: ['aura'] }, { f: 1500, f2: 1100, len: 0.6, wave: 'sine', wob: 6 });
-C('echopilz', 128, 'Echopilz', ['pflanze', 'geist'], 'ungewoehnlich', [90, 70, 85, 80, 90, 40], 90, 145,
+C('echopilz', 128, 'Resonpilz', ['pflanze', 'geist'], 'ungewoehnlich', [90, 70, 85, 80, 90, 40], 90, 145,
   '1:rankenhieb 1:spukgriff 30:schattenball 40:urwaldzorn', null,
   'Er wiederholt jedes Geräusch, das er hört – nur ein paar Sekunden zu spät.',
   { kind: 'mushroom', main: '#7a5aa8', accent: '#e8e0f8', glow: '#a8ff88', size: 0.9 }, { f: 600, f2: 1200, len: 0.4, wave: 'triangle', wob: 25 });
-C('phasenhase', 129, 'Phasenhase', ['normal', 'magie'], 'ungewoehnlich', [70, 85, 60, 70, 65, 115], 90, 140,
+C('phasenhase', 129, 'Phasmümmel', ['normal', 'magie'], 'ungewoehnlich', [70, 85, 60, 70, 65, 115], 90, 140,
   '1:sprungtritt 1:funkelstaub 30:splitterhieb 40:mondstrahl', null,
   'Er springt nicht – er ist einfach plötzlich woanders. Fangen ist sehr, sehr schwer.',
   { kind: 'bunny', main: '#f0e8ff', accent: '#a888e8', glow: '#78f8f8', size: 0.75, extras: ['ears'] }, { f: 1900, f2: 2600, len: 0.15, wave: 'square', wob: 50 });

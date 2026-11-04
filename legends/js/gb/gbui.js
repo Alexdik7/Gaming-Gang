@@ -71,7 +71,7 @@ class Choice {
   pick() { const it = this.items[this.i]; if (it.disabled) { sfx('weak'); return; } sfx('click'); this.close(this.i); }
   close(v) { pop(this); this.res(v); }
   draw(ctx) {
-    this.o.side?.(ctx);
+    this.o.side?.(ctx, this.i);
     const dsc = this.items[this.i]?.desc;
     if (dsc !== undefined) { box(0, 113, W, 47, 'dark'); wrap(dsc, 224, 8).slice(0, 2).forEach((l, i) => text(l, 9, 121 + i * 14, '#fff', 8, 'left', '#50586a')); }
     box(this.x, this.y, this.w, this.h);

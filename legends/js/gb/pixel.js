@@ -751,6 +751,38 @@ export function ballIcon(kind = 'bind') {
   x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(4, 2, 2, 1); x.fillRect(3, 3, 1, 1);
   ballCache.set(kind, c); return c;
 }
+// Symbol für ein Item im Beutel (16×16): Bälle, Tränke, Beeren, Attacken-Kristalle, VMs, Basis-Items
+const itemCache = new Map();
+export function itemIcon(id, I = {}) {
+  if (itemCache.has(id)) return itemCache.get(id);
+  let c;
+  if (I.master) c = ballIcon('b52');
+  else if (I.ball) c = crystalIcon(I.col || '#7fe3ff');
+  else {
+    const [cc, x] = cv(16, 16); c = cc;
+    const ink = '#1a1620', O = (f) => { x.fillStyle = ink; f(1); };
+    if (/trank/.test(id)) { // Sprühflasche
+      const col = id === 'supertrank' ? '#e85a8a' : id === 'hypertrank' ? '#f0c030' : '#a868e8';
+      x.fillStyle = ink; x.fillRect(4, 5, 8, 10); x.fillRect(6, 1, 4, 5); x.fillStyle = '#e8e8f0'; x.fillRect(7, 2, 2, 3); x.fillStyle = '#9098a8'; x.fillRect(5, 4, 6, 2);
+      x.fillStyle = col; x.fillRect(5, 6, 6, 8); x.fillStyle = shade(col, 0.4); x.fillRect(5, 6, 2, 7); x.fillStyle = '#ffffff'; x.fillRect(6, 9, 4, 2); x.fillStyle = col; x.fillRect(7, 9, 2, 2);
+    } else if (/beere/.test(id)) { // Beere mit Blatt
+      const col = id === 'klarbeere' ? '#4a8ae8' : '#e83a4a';
+      x.fillStyle = ink; x.beginPath(); x.arc(8, 10, 5.5, 0, 7); x.fill(); x.fillStyle = col; x.beginPath(); x.arc(8, 10, 4.5, 0, 7); x.fill();
+      x.fillStyle = shade(col, 0.5); x.fillRect(6, 7, 2, 2); x.fillStyle = '#3a9a34'; x.fillRect(8, 2, 4, 3); x.fillStyle = '#6ad050'; x.fillRect(9, 2, 2, 1); x.fillStyle = '#5a3a20'; x.fillRect(8, 4, 1, 2);
+    } else if (id === 'beleber') { x.fillStyle = ink; x.beginPath(); x.moveTo(8, 1); x.lineTo(14, 8); x.lineTo(8, 15); x.lineTo(2, 8); x.fill(); x.fillStyle = '#ffd23a'; x.beginPath(); x.moveTo(8, 3); x.lineTo(12, 8); x.lineTo(8, 13); x.lineTo(4, 8); x.fill(); x.fillStyle = '#fff8c0'; x.fillRect(7, 5, 2, 4); }
+    else if (I.tm || I.hm) { // Attacken-Kristall bzw. VM-Scheibe
+      const col = I.hm ? '#e8c020' : '#b070e0';
+      x.fillStyle = ink; x.beginPath(); x.arc(8, 8, 7, 0, 7); x.fill(); x.fillStyle = col; x.beginPath(); x.arc(8, 8, 6, 0, 7); x.fill();
+      x.fillStyle = shade(col, 0.45); x.beginPath(); x.arc(8, 8, 6, Math.PI, Math.PI * 1.5); x.lineTo(8, 8); x.fill();
+      x.fillStyle = ink; x.beginPath(); x.arc(8, 8, 2, 0, 7); x.fill(); x.fillStyle = '#f0f0f0'; x.fillRect(7, 7, 2, 2);
+    } else if (id === 'angel') { x.strokeStyle = '#7a4a2a'; x.lineWidth = 2; x.beginPath(); x.moveTo(2, 14); x.lineTo(13, 2); x.stroke(); x.strokeStyle = '#d8d8e0'; x.lineWidth = 1; x.beginPath(); x.moveTo(13, 2); x.lineTo(13, 11); x.stroke(); x.fillStyle = '#e84a4a'; x.fillRect(12, 11, 3, 3); }
+    else if (id === 'wellenreiter') { x.fillStyle = ink; x.beginPath(); x.ellipse(8, 8, 4, 7.5, 0.5, 0, 7); x.fill(); x.fillStyle = '#3aa8ff'; x.beginPath(); x.ellipse(8, 8, 3, 6.5, 0.5, 0, 7); x.fill(); x.fillStyle = '#ffffff'; x.fillRect(7, 4, 1, 8); }
+    else if (id === 'glanzamulett') { x.strokeStyle = '#c8a040'; x.beginPath(); x.arc(8, 5, 4, Math.PI, 0); x.stroke(); x.fillStyle = ink; x.beginPath(); x.arc(8, 10, 4.5, 0, 7); x.fill(); x.fillStyle = '#ff7ad9'; x.beginPath(); x.arc(8, 10, 3.5, 0, 7); x.fill(); x.fillStyle = '#ffffff'; x.fillRect(6, 8, 2, 2); }
+    else if (/herzstein/.test(id)) { const col = { zeit: '#9fb0bf', ursprung: '#ffffff', mond: '#8a7dd6', sonne: '#ffb02a', drache: '#7a5cff', eis: '#8fe8ff', meer: '#3d9bff' }[id.split('_')[1]] || '#e84a5f'; x.fillStyle = ink; x.beginPath(); x.moveTo(8, 15); x.lineTo(1, 7); x.arc(4.5, 5, 3.6, Math.PI * 0.9, 0); x.arc(11.5, 5, 3.6, Math.PI, Math.PI * 0.1); x.closePath(); x.fill(); x.fillStyle = col; x.beginPath(); x.moveTo(8, 13.5); x.lineTo(2.4, 7); x.arc(4.6, 5.2, 2.6, Math.PI * 0.9, 0); x.arc(11.4, 5.2, 2.6, Math.PI, Math.PI * 0.1); x.closePath(); x.fill(); x.fillStyle = '#ffffff'; x.fillRect(4, 4, 2, 2); }
+    else { x.fillStyle = ink; x.fillRect(2, 4, 12, 10); x.fillStyle = '#c89058'; x.fillRect(3, 5, 10, 8); x.fillStyle = '#e8b878'; x.fillRect(3, 5, 10, 2); x.fillStyle = '#e84a4a'; x.fillRect(7, 4, 2, 10); }
+  }
+  itemCache.set(id, c); return c;
+}
 // Kompatibel: bisherige Aufrufe übergeben die Farbe der Ballsorte
 export function crystalIcon(color = '#7fe3ff') { return ballIcon(BALL_COL[color] || 'bind'); }
 export function eggSprite(size, c1 = '#f8f0d8', c2 = '#7fd0ff', crack = 0) {

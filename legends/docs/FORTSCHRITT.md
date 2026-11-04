@@ -590,3 +590,10 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
   - **Arena:** Säulen am Eingang, goldgerahmtes Schild.
   - **Labor:** Blechdach, Satellitenschüssel, Antenne.
 - **Marktstände** (Karten-Feld `props`, `standArt`): Obststand in Felsenau, Hafenstand in Aqualis, Nachtmarkt in Nocturna, jeder mit eigenem Sortiment (`game.shop(list, name, hello)`).
+
+## v2.5 – Neue Kreaturen-Namen und Item-Bilder
+- **139 neue Namen**: ausgefallen und eigen, mit gemeinsamer Wurzel je Entwicklungslinie.
+  - Beispiele: Glimmrik → Pyrovulp, Plätscho → Tidalotl, Knöspi → Wurzelgrimm, Piepsix → Piepsturm, Mümmel → Mümmelux, Quabbel → Quabbelissa, Pinguli → Imperguin, Umbravulp → Noctivulp.
+  - Die 11 Legendären behalten ihre Namen.
+  - IDs bleiben unverändert, alte Spielstände funktionieren also. Texte und Aufträge wurden mit angepasst.
+- **Beutel:** Unter der Tasche erscheint ein Bild des gewählten Items (`itemIcon(id, ITEMS[id])`): Bälle, Sprühflaschen in drei Farben, Beeren, Beleber, Attacken-Kristall-Scheibe, goldene VM-Scheibe, Angel, Wellenreiter, Amulett, Herzsteine und Paket. `choose` gibt dafür den Index an `side(ctx, i)` weiter.
