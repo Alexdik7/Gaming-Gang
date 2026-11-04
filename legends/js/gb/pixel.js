@@ -635,13 +635,56 @@ export function drawChar(ctx, look, dir, frame, x, y, hop = 0) {
 }
 
 // ---------------------------------------------------------------- Objekte
-export function crystalIcon(color = '#7fe3ff') {
-  const [c, x] = cv(16, 16);
-  x.fillStyle = '#203040'; x.beginPath(); x.moveTo(8, 1); x.lineTo(14, 8); x.lineTo(8, 15); x.lineTo(2, 8); x.fill();
-  x.fillStyle = color; x.beginPath(); x.moveTo(8, 2.5); x.lineTo(12.5, 8); x.lineTo(8, 13.5); x.lineTo(3.5, 8); x.fill();
-  x.fillStyle = '#ffffff'; x.fillRect(6, 5, 2, 3); x.fillStyle = shade(color, -0.3); x.fillRect(8, 8, 3, 4);
-  return c;
+// ---------------------------------------------------------------- Bälle (eigenes Design, jede Sorte eigen verziert)
+// Oben farbig, unten cremeweiß, dunkles Band mit Knopf; Embleme: „52“ (Gaming Gang), Stern, Mond, Welle, Blitz, Ringe, Herz, Runen
+const BALLS = {
+  bind: { top: ['#0e5a52', '#178073', '#22a291', '#5fd0bd'], em: 'n52' },
+  stern: { top: ['#1a2a6a', '#24408e', '#3058b8', '#7a98e8'], em: 'star' },
+  nacht: { top: ['#18122e', '#2a2050', '#3c2e70', '#6a58a8'], em: 'moon' },
+  flut: { top: ['#0a3a7a', '#1458a8', '#2a7ad0', '#78b8f0'], em: 'wave' },
+  tempo: { top: ['#7a2a08', '#b84a14', '#e8701e', '#ffb070'], em: 'bolt' },
+  echo: { top: ['#3a1260', '#5a2088', '#8038b0', '#c088e0'], em: 'ring' },
+  freund: { top: ['#8a2048', '#c03a6a', '#e86a98', '#ffb0cc'], em: 'heart' },
+  ur: { top: ['#3a2a10', '#6a5020', '#a88a38', '#e8d080'], em: 'rune', bottom: ['#2a2420', '#3a3430', '#4a4440'] },
+};
+const BALL_COL = { '#7fe3ff': 'bind', '#ffd84a': 'stern', '#5a4ad8': 'nacht', '#3aa8ff': 'flut', '#ff8a3a': 'tempo', '#c86aff': 'echo', '#ff7ab0': 'freund', '#d8a830': 'ur' };
+const ballCache = new Map();
+export function ballIcon(kind = 'bind') {
+  if (ballCache.has(kind)) return ballCache.get(kind);
+  const B = BALLS[kind] || BALLS.bind, bot = B.bottom || ['#b8b0a0', '#e0dace', '#f8f4ea'], ink = '#1a1620';
+  const [c, x] = cv(16, 16), cx = 7.5, cy = 7.5, R = 6.6;
+  for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+    const dx = px - cx, dy = py - cy, d = Math.hypot(dx, dy);
+    if (d > R + 0.5) continue;
+    if (d > R - 0.6) { x.fillStyle = ink; x.fillRect(px, py, 1, 1); continue; }
+    const l = 0.55 - dx / R * 0.35 - dy / R * 0.3 - (d / R) * 0.25; // Licht oben links, Kugel-Abfall
+    if (py === 9) x.fillStyle = ink;
+    else if (py < 9) x.fillStyle = B.top[Math.max(0, Math.min(3, Math.floor(l * 4 + 0.4)))];
+    else x.fillStyle = bot[Math.max(0, Math.min(2, Math.floor(l * 3 + 0.5)))];
+    x.fillRect(px, py, 1, 1);
+  }
+  // Knopf
+  x.fillStyle = ink; x.fillRect(6, 8, 4, 3); x.fillRect(7, 7, 2, 5);
+  x.fillStyle = '#f8f8f0'; x.fillRect(7, 8, 2, 3); x.fillStyle = '#ffffff'; x.fillRect(7, 8, 1, 1); x.fillStyle = '#c8c4b8'; x.fillRect(8, 10, 1, 1);
+  // Emblem auf der oberen Hälfte
+  const P = (col, pts) => { x.fillStyle = col; for (const [a, b] of pts) x.fillRect(a, b, 1, 1); };
+  const W = '#ffffff', Y = '#ffe14a';
+  switch (B.em) {
+    case 'n52': { const D5 = ['###', '#..', '##.', '..#', '##.'], D2 = ['##.', '..#', '.#.', '#..', '###']; for (const [g, ox] of [[D5, 4], [D2, 9]]) g.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '#') P(W, [[ox + i, 3 + j]]); })); break; }
+    case 'star': P(Y, [[7, 2], [8, 2], [7, 3], [8, 3], [4, 4], [5, 4], [6, 4], [7, 4], [8, 4], [9, 4], [10, 4], [11, 4], [5, 5], [6, 5], [7, 5], [8, 5], [9, 5], [10, 5], [6, 6], [7, 6], [8, 6], [9, 6], [5, 7], [6, 7], [9, 7], [10, 7]]); P('#fff8d0', [[7, 3], [7, 4]]); break;
+    case 'moon': P('#fff4b0', [[6, 2], [7, 2], [8, 2], [5, 3], [6, 3], [4, 4], [5, 4], [4, 5], [5, 5], [5, 6], [6, 6], [6, 7], [7, 7], [8, 7]]); P(W, [[10, 3], [11, 5], [9, 6]]); break;
+    case 'wave': P(W, [[3, 6], [4, 5], [5, 5], [6, 6], [7, 6], [8, 5], [9, 5], [10, 6], [11, 6], [12, 5], [4, 3], [5, 2], [6, 2], [7, 3], [8, 3], [9, 2], [10, 2], [11, 3]]); break;
+    case 'bolt': P(Y, [[9, 2], [8, 3], [9, 3], [7, 4], [8, 4], [6, 5], [7, 5], [8, 5], [9, 5], [10, 5], [8, 6], [9, 6], [7, 7], [8, 7]]); P('#ffffff', [[3, 5], [4, 5], [11, 4], [12, 4]]); break;
+    case 'ring': P('#f0d8ff', [[6, 4], [7, 4], [8, 4], [9, 4], [5, 5], [10, 5], [5, 6], [10, 6], [6, 7], [9, 7], [4, 2], [5, 2], [6, 2], [9, 2], [10, 2], [11, 2], [3, 3], [12, 3]]); P(W, [[7, 5], [8, 5], [7, 6], [8, 6]]); break;
+    case 'heart': P(W, [[5, 2], [6, 2], [9, 2], [10, 2], [4, 3], [5, 3], [6, 3], [7, 3], [8, 3], [9, 3], [10, 3], [11, 3], [4, 4], [5, 4], [6, 4], [7, 4], [8, 4], [9, 4], [10, 4], [11, 4], [5, 5], [6, 5], [7, 5], [8, 5], [9, 5], [10, 5], [6, 6], [7, 6], [8, 6], [9, 6], [7, 7], [8, 7]]); break;
+    case 'rune': P('#1a1620', [[3, 6], [4, 4], [6, 3], [9, 3], [11, 4], [12, 6]]); P('#fff0a0', [[7, 4], [8, 4], [6, 5], [9, 5], [7, 6], [8, 6], [7, 5], [8, 5]]); break;
+  }
+  // Glanzpunkt
+  x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(4, 2, 2, 1); x.fillRect(3, 3, 1, 1);
+  ballCache.set(kind, c); return c;
 }
+// Kompatibel: bisherige Aufrufe übergeben die Farbe der Ballsorte
+export function crystalIcon(color = '#7fe3ff') { return ballIcon(BALL_COL[color] || 'bind'); }
 export function eggSprite(size, c1 = '#f8f0d8', c2 = '#7fd0ff', crack = 0) {
   const [c, x] = cv(size, size), s = size / 32;
   x.scale(s, s);
@@ -653,11 +696,9 @@ export function eggSprite(size, c1 = '#f8f0d8', c2 = '#7fd0ff', crack = 0) {
   return c;
 }
 export function itemBall() {
-  // Fundstück: kleiner leuchtender Kristall auf einem Sockel (eigenes Design)
+  // Fundstück: ein Bindball am Boden mit Schatten
   const [c, x] = cv(16, 16);
   x.fillStyle = 'rgba(0,0,0,.25)'; x.beginPath(); x.ellipse(8, 14, 5, 1.6, 0, 0, 7); x.fill();
-  x.fillStyle = '#28202c'; x.beginPath(); x.moveTo(8, 1); x.lineTo(13, 7); x.lineTo(8, 14); x.lineTo(3, 7); x.fill();
-  x.fillStyle = '#ffd36b'; x.beginPath(); x.moveTo(8, 2.5); x.lineTo(11.6, 7); x.lineTo(8, 12.5); x.lineTo(4.4, 7); x.fill();
-  x.fillStyle = '#fff6c8'; x.fillRect(6, 5, 2, 3); x.fillStyle = '#c8901a'; x.fillRect(8, 8, 2, 3);
+  x.drawImage(ballIcon('bind'), 0, 0, 16, 16, 1.5, 1, 13, 13);
   return c;
 }

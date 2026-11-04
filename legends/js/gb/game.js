@@ -81,7 +81,7 @@ const GYMS = {
     badge: 0, badgeName: 'FELSORDEN', team: [['kaeferix', 13], ['kieselkrebs', 14], ['brockel', 16]], reward: 1600,
     intro: ['Willkommen in der Arena von Felsenau! Ich bin Gorm.', 'Meine Kreaturen sind so standhaft wie die Berge selbst.', 'Zeig mir, ob dein Wille stärker ist als Stein!'],
     lose: 'Unglaublich… Du hast meine Felsen zertrümmert!',
-    gift: { text: ['Gorm: Und nimm diese drei Sternkristalle. Du hast sie dir verdient.'], items: { sternkristall: 3 } },
+    gift: { text: ['Gorm: Und nimm diese drei Sternbälle. Du hast sie dir verdient.'], items: { sternkristall: 3 } },
     outro: ['Gorm: Östlich von hier führt der Aschepfad nach Ignis, der Stadt am Vulkan.', 'Dort wartet Selma, die Arenaleiterin des Feuers. Mit meinem Orden lässt dich der Wächter durch!'],
     after: ['Der Felsorden steht dir gut.', 'Der Aschepfad im Osten führt nach Ignis. Selma wartet dort auf dich!'],
   },
@@ -105,7 +105,7 @@ const GYMS = {
     badge: 7, badgeName: 'DRACHENORDEN', team: [['wyvernix', 50], ['kristallwyrm', 51], ['schwelwyrm', 52], ['flugdrache', 54]], reward: 8000, bg: 'berg',
     intro: ['Du hast Umbra die Stirn geboten. Die Drachen haben es gespürt.', 'Ich bin Vala, Meisterin des Drachenhorts. Dies ist die letzte Arena.', 'Zeig mir, ob dein Herz so stark ist wie ein Drachenherz!'],
     lose: 'Die Drachen verneigen sich vor dir. Und ich mich auch.',
-    gift: { text: ['Vala: Acht Orden. Nimm diese Sternkristalle und Beleber für die Siegesstraße.'], items: { sternkristall: 6, beleber: 4 } },
+    gift: { text: ['Vala: Acht Orden. Nimm diese Sternbälle und Beleber für die Siegesstraße.'], items: { sternkristall: 6, beleber: 4 } },
     outro: ['Vala: Mit acht Orden darfst du die Siegesstraße betreten – und danach die Top 4 herausfordern.', 'Umbra sucht die beiden ältesten Herzsteine. Man sagt, der Champion der Liga hütet sie.', 'Der Eingang zur Siegesstraße liegt im Norden des Hortes.'],
     after: ['Der Drachenorden steht dir. Die Siegesstraße wartet!'],
   },
@@ -121,7 +121,7 @@ const GYMS = {
     badge: 3, badgeName: 'FROSTORDEN', team: [['frosteule', 30], ['eiszapfling', 31], ['kaiserpingu', 32], ['gletscherkoloss', 34]], reward: 4000, bg: 'schnee',
     intro: ['Du hast den Weg über das Eis gefunden. Das gelingt nicht vielen.', 'Ich bin Halvar. Das Eis lehrt Geduld – und Geduld macht stark.', 'Zeig mir, ob dein Feuer meinen Winter schmelzen kann!'],
     lose: 'Das Eis… ist gebrochen. Gut gemacht, junger Trainer.',
-    gift: { text: ['Halvar: Nimm diese Supertränke und Sternkristalle für den Weg, der vor dir liegt.'], items: { supertrank: 4, sternkristall: 4 } },
+    gift: { text: ['Halvar: Nimm diese Supertränke und Sternbälle für den Weg, der vor dir liegt.'], items: { supertrank: 4, sternkristall: 4 } },
     outro: ['Halvar: Vier Orden. Du hast die Hälfte der Region bereist.', 'Lyra war vor dir hier. Sie sucht die Eisgrotte im Norden – und Team Eklipse ebenso.', '(Ende von Phase 3 · Teil 3. Als Nächstes: Items, Nebenquests und Balancing – danach die Regionen Nocturna, Solaria und Drakmor!)'],
     after: ['Der Frostorden steht dir! Das Eis wird sich an dich erinnern.'],
   },
@@ -129,7 +129,7 @@ const GYMS = {
     badge: 2, badgeName: 'WELLENORDEN', team: [['sternquappe', 24], ['perlpanzer', 25], ['wogenross', 27]], reward: 3000,
     intro: ['Danke, dass du mir im Versteck geholfen hast!', 'Ich bin Meri. Meine Kreaturen fließen wie das Meer – mal sanft, mal als Sturmflut.', 'Mal sehen, ob du gegen den Strom schwimmen kannst!'],
     lose: 'Was für eine Welle! Du hast mich einfach weggespült.',
-    gift: { text: ['Meri: Nimm diese Sternkristalle. Im Meer gibt es seltene Kreaturen zu finden!'], items: { sternkristall: 4 } },
+    gift: { text: ['Meri: Nimm diese Sternbälle. Im Meer gibt es seltene Kreaturen zu finden!'], items: { sternkristall: 4 } },
     outro: ['Meri: Team Eklipse sammelt die Herzsteine. Einen haben wir gerettet – aber Nyx sprach von einem Stein im ewigen Eis.', 'Frostheim liegt hoch im Norden. Der Frostpass beginnt am Nordrand von Felsenau.', 'Mit drei Orden lässt dich der Bergwächter durch!'],
     after: ['Der Wellenorden steht dir! Pass gut auf den Meeres-Herzstein auf.'],
   },
@@ -273,7 +273,7 @@ class Game {
   async startMenu() {
     const s = this.state, ow = this.ow; ow.busy = true;
     const items = [...(s.flags.dex ? ['CHRONIK'] : []), ...(s.team.length ? ['TEAM'] : []), 'BEUTEL', s.name.toUpperCase(), 'ONLINE', 'SPEICHERN', 'OPTIONEN', 'ZURÜCK'];
-    const D = { CHRONIK: 'Ein Verzeichnis aller Kreaturen, die du gesehen oder gebunden hast.', TEAM: 'Zeigt dein Team, Werte und Attacken. Hier kannst du auch die Reihenfolge ändern.', BEUTEL: 'Gegenstände, Kristalle und Basis-Items, die du gesammelt hast.', ONLINE: 'Mit Freunden kämpfen, tauschen, gemeinsam spielen und Raids bestreiten.', SPEICHERN: 'Fortschritt speichern oder als Sicherungs-Code teilen.', OPTIONEN: 'Textgeschwindigkeit, Musik und Ton einstellen.', 'ZURÜCK': 'Das Menü schließen und weiterspielen.' };
+    const D = { CHRONIK: 'Ein Verzeichnis aller Kreaturen, die du gesehen oder gebunden hast.', TEAM: 'Zeigt dein Team, Werte und Attacken. Hier kannst du auch die Reihenfolge ändern.', BEUTEL: 'Gegenstände, Bälle und Basis-Items, die du gesammelt hast.', ONLINE: 'Mit Freunden kämpfen, tauschen, gemeinsam spielen und Raids bestreiten.', SPEICHERN: 'Fortschritt speichern oder als Sicherungs-Code teilen.', OPTIONEN: 'Textgeschwindigkeit, Musik und Ton einstellen.', 'ZURÜCK': 'Das Menü schließen und weiterspielen.' };
     const opts = items.map(k => ({ label: k, desc: D[k] || 'Dein Trainerpass mit Orden, Geld und Spielzeit.' }));
     for (;;) {
       const i = await choose(opts, { above: false, x: W - 86, w: 83 });
@@ -297,7 +297,7 @@ class Game {
       const all = Object.keys(ITEMS).filter(k => s.bag[k]);
       if (!all.length) return say('Der Beutel ist leer.');
       // Taschen wie im Original: mit ← → wechseln
-      const POCK = [['ITEMS', k => !ITEMS[k].ball && !ITEMS[k].tm && !ITEMS[k].key && !/beere/.test(k), '#e8a040'], ['KRISTALLE', k => ITEMS[k].ball, '#5ab0e8'], ['A-KRISTALLE', k => ITEMS[k].tm, '#b070e0'], ['BEEREN', k => /beere/.test(k) && !ITEMS[k].key, '#e85a6a'], ['BASIS-ITEMS', k => ITEMS[k].key && !ITEMS[k].tm, '#58b868']];
+      const POCK = [['ITEMS', k => !ITEMS[k].ball && !ITEMS[k].tm && !ITEMS[k].key && !/beere/.test(k), '#e8a040'], ['BÄLLE', k => ITEMS[k].ball, '#5ab0e8'], ['A-KRISTALLE', k => ITEMS[k].tm, '#b070e0'], ['BEEREN', k => /beere/.test(k) && !ITEMS[k].key, '#e85a6a'], ['BASIS-ITEMS', k => ITEMS[k].key && !ITEMS[k].tm, '#58b868']];
       this.pocket = this.pocket || 0;
       const [pn, pf, pc] = POCK[this.pocket], keys = all.filter(pf);
       const side = ctx => { // Beutel-Grafik links
@@ -924,7 +924,7 @@ class Game {
     s.flags[id] = true; sfx('rune');
     s.bag.sternkristall = (s.bag.sternkristall || 0) + 1;
     const n = ['rune_nord', 'rune_insel', 'rune_hain'].filter(r => s.flags[r]).length;
-    await say([`Die Rune beginnt zu leuchten! (${n}/3)`, 'Am Fuß des Steins liegt ein Sternkristall!']);
+    await say([`Die Rune beginnt zu leuchten! (${n}/3)`, 'Am Fuß des Steins liegt ein Sternball!']);
     if (n === 3) await say('Ein tiefes Summen geht durch den ganzen Wald… Der Altar in den Ruinen ruft dich – bei Nacht.');
   }
   async altar() {
@@ -941,10 +941,10 @@ class Game {
   }
   async orbs() {
     const s = this.state;
-    if (s.flags.starter) return say('Auf dem Tisch liegen nur noch zwei Kristalle. Die gehören Dr. Vato.');
-    if (!s.flags.lindeTalked) return say('Drei Kristalle leuchten auf dem Tisch. Vielleicht sollte ich zuerst mit Dr. Vato sprechen.');
+    if (s.flags.starter) return say('Auf dem Tisch liegen nur noch zwei Bälle. Die gehören Dr. Vato.');
+    if (!s.flags.lindeTalked) return say('Drei Bälle liegen auf dem Tisch. Vielleicht sollte ich zuerst mit Dr. Vato sprechen.');
     for (;;) {
-      const i = await choose(STARTERS.map(id => ({ label: SPECIES[id].name, right: SPECIES[id].types[0].toUpperCase() })), { title: 'Welcher Kristall?' });
+      const i = await choose(STARTERS.map(id => ({ label: SPECIES[id].name, right: SPECIES[id].types[0].toUpperCase() })), { title: 'Welcher Ball?' });
       if (i === null) return;
       const sp = STARTERS[i], S = SPECIES[sp];
       const pv = new Preview(sp); push(pv); cry(S.cry);
@@ -968,7 +968,7 @@ class Game {
         s.flags.kian1 = true;
         this.ow.npcs = this.ow.npcs.filter(n => n !== kian);
       }
-      await say(['Dr. Vato: Fantastisch! Hier, nimm diese Chronik – sie zeichnet jede Kreatur auf, die du siehst oder bindest.', 'Und 5 Bindkristalle! Schwäche wilde Kreaturen und wirf dann einen Kristall.', 'In Quellbach, nördlich von hier, gibt es ein Heilzentrum und eine Brutstätte. Dort entstehen aus zwei Kreaturen sogar neue Mutationen!'], {});
+      await say(['Dr. Vato: Fantastisch! Hier, nimm diese Chronik – sie zeichnet jede Kreatur auf, die du siehst oder bindest.', 'Und 5 Bindbälle! Schwäche wilde Kreaturen und wirf dann einen Ball.', 'In Quellbach, nördlich von hier, gibt es ein Heilzentrum und eine Brutstätte. Dort entstehen aus zwei Kreaturen sogar neue Mutationen!'], {});
       s.flags.dex = true; s.flags.gotBalls = true; s.bag.kristall = (s.bag.kristall || 0) + 5; sfx('lvl');
       this.save(true);
       return;
@@ -992,10 +992,10 @@ class Game {
         if (s.flags.starter && !s.bag.vk_zerschneider) { await say(['Na, du hast ja jetzt eine eigene Kreatur!', 'Dann kannst du mir einen Gefallen tun: Überall wuchern kleine Büsche. Mit dieser Technik bekommst du sie weg.'], N); s.bag.vk_zerschneider = 1; sfx('caught'); await say(`${s.name} erhält VM01 ZERSCHNEIDER!`); return say(['Bring sie einer Kreatur bei – im Beutel unter A-KRISTALLE. VMs kann man immer wieder benutzen.', 'Stell dich dann vor einen Busch und drück A. Auf Route 1 und 2 gibt es welche, hinter denen etwas liegt!'], N); }
         return say(['Am Teich kann man angeln – wenn man eine Angel hat.', 'Angler Jo in Quellbach verschenkt manchmal welche.'], N);
       case 'linde':
-        if (!s.flags.lindeTalked) { s.flags.lindeTalked = true; return say([`Da bist du ja, ${s.name}!`, 'Jeder Trainer braucht einen Partner. Auf dem Tisch dort liegen drei Kristalle mit Kreaturen.', 'Feuer, Wasser oder Pflanze – wähle weise! Sieh sie dir am Tisch an.'], N); }
-        if (!s.flags.starter) return say('Die Kristalle liegen auf dem Tisch. Sieh sie dir an!', N);
+        if (!s.flags.lindeTalked) { s.flags.lindeTalked = true; return say([`Da bist du ja, ${s.name}!`, 'Jeder Trainer braucht einen Partner. Auf dem Tisch dort liegen drei Bälle mit Kreaturen.', 'Feuer, Wasser oder Pflanze – wähle weise! Sieh sie dir am Tisch an.'], N); }
+        if (!s.flags.starter) return say('Die Bälle liegen auf dem Tisch. Sieh sie dir an!', N);
         if (s.flags.champion && !s.flags.linde_pg) return this.lindeSecret(n);
-        if (s.flags.linde_pg && !s.bag.urkristall && HUETER.some(k => !s.dex.caught[k])) { s.bag.urkristall = 3; sfx('caught'); await say(['Keine Urkristalle mehr? Ich habe noch ein paar gefunden.', `${s.name} erhält 3× URKRISTALL!`], N); }
+        if (s.flags.linde_pg && !s.bag.urkristall && HUETER.some(k => !s.dex.caught[k])) { s.bag.urkristall = 3; sfx('caught'); await say(['Keine Urbälle mehr? Ich habe noch ein paar gefunden.', `${s.name} erhält 3× URBALL!`], N); }
         if (s.flags.linde_pg && !s.flags.nihilux) await say('Der Riss am Altar im Altwald ist noch offen. Dort warten Kian, Lyra und Nyx – und Nihilux.', N);
         if (s.flags.linde_pg) { const h = HUETER.filter(k => s.dex.caught[k]).length; await say(`Hüter in deiner Chronik: ${h} von 7.${h < 7 ? ' Krater von Ignis, Grotte vor Route 4, Frostgipfel, Drachengipfel – und die Altäre von Mondruine und Sonnentempel.' : ' Alle sieben! Du bist der erste Mensch, dem das gelingt.'}`, N); }
         { const c = Object.keys(s.dex.caught).length, m = Object.keys(s.dex.caught).filter(k => SPECIES[k]?.fusion).length;
@@ -1279,8 +1279,8 @@ class Game {
     await say([`${s.name}… Champion. Ich bin so stolz auf dich.`, 'Aber ich schulde dir die Wahrheit.', 'Vor vielen Jahren habe ich zusammen mit Umbra Team Eklipse gegründet.', 'Wir wollten die Herzsteine erforschen, nicht missbrauchen. Als Umbra davon sprach, die Zeit anzuhalten, bin ich gegangen.', 'Deshalb erforsche ich Mutationen. Ich wollte beweisen, dass Veränderung etwas Gutes ist.'], N);
     await say(['Und jetzt hast du alle sieben Herzsteine vereint. Damit sind die vier schlafenden Hüter erwacht.', 'Ignarok im Krater von Ignis, Maristra in einer Grotte vor Route 4, Boreon auf dem Frostgipfel und Ferrodrakon auf dem Drachengipfel.', 'Und wer Lunareth oder Solarion nicht gebunden hat, findet sie wieder an ihren Altären.'], N);
     s.bag.urkristall = (s.bag.urkristall || 0) + 8; s.flags.linde_pg = true; sfx('caught');
-    await say(`${s.name} erhält 8× URKRISTALL!`);
-    await say(['Diese Urkristalle habe ich damals aus dem Hauptquartier mitgenommen. Sie binden zehnmal besser als normale Kristalle.', 'Noch etwas… In den Herzsteinen höre ich ein Echo. Etwas lebt zwischen den Welten und wartet.', 'Wenn es erwacht, schafft das niemand allein. Dann braucht ihr euch alle vier.', 'Seit gestern klafft am alten Altar im Altwald ein Riss. Kian, Lyra und Nyx warten dort schon auf dich.'], N);
+    await say(`${s.name} erhält 8× URBALL!`);
+    await say(['Diese Urbälle habe ich damals aus dem Hauptquartier mitgenommen. Sie binden zehnmal besser als normale Bälle.', 'Noch etwas… In den Herzsteinen höre ich ein Echo. Etwas lebt zwischen den Welten und wartet.', 'Wenn es erwacht, schafft das niemand allein. Dann braucht ihr euch alle vier.', 'Seit gestern klafft am alten Altar im Altwald ein Riss. Kian, Lyra und Nyx warten dort schon auf dich.'], N);
     this.save(true);
   }
   async hueter(n) {

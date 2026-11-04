@@ -139,11 +139,14 @@ export function frame(dt) {
     if (G.fadeA === G.fadeTo && G.fadeRes) { const r = G.fadeRes; G.fadeRes = null; r(); }
   }
   if (G.fadeA > 0) { ctx.fillStyle = `rgba(0,0,0,${G.fadeA})`; ctx.fillRect(0, 0, W, VH); }
-  if (G.iris) { // Trainerkampf: Kreis schließt sich, Kristall dreht sich in der Mitte
+  if (G.iris) { // Trainerkampf: Kreis schließt sich, Ball dreht sich in der Mitte
     const ir = G.iris; ir.t += dt; const k = Math.min(1, ir.t / ir.dur), r = Math.hypot(W, VH) / 2 * Math.pow(1 - k, 1.6);
     ctx.fillStyle = '#000'; ctx.beginPath(); ctx.rect(0, 0, W, VH); ctx.arc(W / 2, VH / 2, Math.max(0, r), 0, Math.PI * 2, true); ctx.fill('evenodd');
     ctx.save(); ctx.translate(W / 2, VH / 2); ctx.rotate(ir.t * 9); const s = 6 + k * 10;
-    ctx.fillStyle = '#7fe3ff'; ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(s * 0.6, 0); ctx.lineTo(0, s); ctx.lineTo(-s * 0.6, 0); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.fillRect(-1, -s * 0.5, 2, s * 0.4); ctx.restore();
+    // Ball: oben türkis, unten creme, Band und Knopf
+    ctx.fillStyle = '#1a1620'; ctx.beginPath(); ctx.arc(0, 0, s + 1, 0, 7); ctx.fill();
+    ctx.fillStyle = '#22a291'; ctx.beginPath(); ctx.arc(0, 0, s, Math.PI, 0); ctx.fill(); ctx.fillStyle = '#f0ece0'; ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = '#1a1620'; ctx.fillRect(-s, -1, s * 2, 2); ctx.beginPath(); ctx.arc(0, 0, s * 0.32, 0, 7); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, s * 0.18, 0, 7); ctx.fill(); ctx.restore();
     if (k >= 1) { G.iris = null; G.fadeA = G.fadeTo = 1; ir.res(); }
   }
   if (G.wipe) {

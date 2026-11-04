@@ -177,7 +177,7 @@ class DoubleScene {
   }
   async appear(id) {
     const o = this.off[id], c = this.center(id), m = this.b.mon(id); if (!m) return;
-    // Bindkristall vom Bildrand im Bogen werfen (Bosse erscheinen direkt)
+    // Bindball vom Bildrand im Bogen werfen (Bosse erscheinen direkt)
     if (!(this.o.boss && SIDE(id) === 'f')) {
       const from = SIDE(id) === 'f' ? { x: W + 10, y: 10 } : { x: -10, y: 100 }, land = { x: c.x, y: c.y + 14 };
       this.crystal = { x: from.x, y: from.y, r: 0, img: crystalIcon('#7fe3ff') }; sfx('throw');

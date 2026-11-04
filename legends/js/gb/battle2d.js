@@ -87,7 +87,7 @@ class BattleScene {
       await this.say(o.intro === 'legend' ? `Das legendäre ${SPECIES[b.f.sp].name} erscheint!` : `Ein wildes ${SPECIES[b.f.sp].name} erscheint!`);
     }
     this.showFoeBox = true; await this.tween(0.25, k => (this.foeBoxK = easeOut(k)));
-    // eigener Trainer wirft den Kristall und läuft aus dem Bild
+    // eigener Trainer wirft den Ball und läuft aus dem Bild
     this.note(`Los, ${monName(b.p)}!`);
     await this.tween(0.15, k => (this.trainerOwn.x = 4 * Math.sin(k * Math.PI)));
     const exit = this.tween(0.55, k => (this.trainerOwn.x = -120 * ease(k)));
@@ -131,15 +131,15 @@ class BattleScene {
   }
   // Text anzeigen, ohne auf eine Taste zu warten (läuft neben Animationen)
   note(t) { this.msg = t; this.chars = 0; this.mode = 'busy'; }
-  // Bindkristall im Bogen werfen, aufleuchten lassen und die Kreatur freisetzen
+  // Bindball im Bogen werfen, aufleuchten lassen und die Kreatur freisetzen
   async throwCrystal(side) {
     const t = this.center(side), m = side === 'f' ? this.b.f : this.b.p;
     const from = side === 'f' ? { x: FOE.x + 46 + this.trainerFoe.x - 260 * (1 - this.slide), y: FOE.y + 22 } : { x: OWN.x + 46 + this.trainerOwn.x, y: OWN.y + 40 };
     const col = SPECIES[m.sp]?.model?.glow || '#bff8ff';
-    this.crystal = { x: from.x, y: from.y, r: 0, img: crystalIcon(this.o.crystalCol || '#7fe3ff') }; sfx('throw');
+    this.crystal = { x: from.x, y: from.y, r: 0, img: crystalIcon((side === 'p' && ITEMS[m.ball]?.col) || this.o.crystalCol || '#7fe3ff') }; sfx('throw');
     const land = { x: t.x, y: t.y + 8 }, peak = side === 'f' ? 26 : 52;
     await this.tween(0.55, k => { this.crystal.x = from.x + (land.x - from.x) * k; this.crystal.y = from.y + (land.y - from.y) * k - Math.sin(k * Math.PI) * peak; this.crystal.r = k * 14; });
-    // kurzes Wackeln, dann öffnet sich der Kristall mit Lichtring
+    // kurzes Wackeln, dann öffnet sich der Ball mit Lichtring
     await this.tween(0.16, k => (this.crystal.r = Math.sin(k * Math.PI * 2) * 0.4));
     this.crystal = null; sfx('whoosh');
     this.rings.push({ x: land.x, y: land.y, t: 0, c: col }, { x: land.x, y: land.y, t: -0.08, c: '#ffffff' });
@@ -353,7 +353,7 @@ class BattleScene {
     await this.tween(0.5, k => { o.flash = 1 - k; o.s = 1 + Math.sin(k * Math.PI) * 0.18; }); o.s = 1;
     sfx('shiny'); await wait(300);
   }
-  // Sonderwirkung der Kristallarten
+  // Sonderwirkung der Ballsorten
   ballCond(it) {
     const b = this.b, S = SPECIES[b.f.sp], g = this.g;
     switch (it.cond) {

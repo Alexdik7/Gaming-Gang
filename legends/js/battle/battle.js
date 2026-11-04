@@ -286,7 +286,7 @@ export class Battle {
 
   tryCatch(ev, bonus, act = {}) {
     const f = this.f;
-    ev.push({ t: 'msg', text: `Du wirfst einen ${act.name || 'Bindkristall'}!` });
+    ev.push({ t: 'msg', text: `Du wirfst einen ${act.name || 'Bindball'}!` });
     if (!this.canCatch) { ev.push({ t: 'msg', text: 'Diese Kreatur lässt sich nicht binden!' }); return false; }
     const max = maxHp(f);
     const statusB = f.status ? 1.5 : 1;

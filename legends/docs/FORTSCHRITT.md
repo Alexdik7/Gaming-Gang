@@ -540,3 +540,20 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
   - Der Spielstand wird gzip-komprimiert und als Text kodiert (`LUS1-…`, ca. 8 000 Zeichen bei 120 Box-Kreaturen; ohne `CompressionStream` `LUS0-…`).
 - Titelbild → **CODE LADEN**: Code einfügen, prüfen, Nachfrage, danach geht es direkt ins Spiel. So kommt der Spielstand auf ein neues Handy.
 - Code: `packSave` / `unpackSave`, `game.exportSave` / `importSave`.
+
+## v2.3 – Bälle statt Kristalle
+- Eigene Ball-Designs (`ballIcon(kind)` in pixel.js): oben farbig, unten creme, dunkles Band, kleiner runder Knopf, je Sorte ein eigenes Emblem.
+
+  | Ball | Emblem |
+  |---|---|
+  | Bindball (türkis) | weiße „52“ |
+  | Sternball | Stern |
+  | Nachtball | Mond |
+  | Flutball | Wellen |
+  | Tempoball | Blitz |
+  | Echoball | Ringe |
+  | Freundball | Herz |
+  | Urball | Gold mit Runen |
+
+- `crystalIcon(col)` bleibt als Brücke erhalten und liefert jetzt den passenden Ball. Item-IDs bleiben gleich, alte Spielstände funktionieren also.
+- Alle Texte sind angepasst: Bindbälle, Beutel-Tasche BÄLLE, Starter liegen in Bällen. Beim Einwechseln fliegt der Ball, in dem die Kreatur gefangen wurde. Der Trainer-Übergang zeigt einen drehenden Ball.
