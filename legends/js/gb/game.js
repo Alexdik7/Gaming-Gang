@@ -17,6 +17,7 @@ import { mulberry } from '../core/noise.js';
 import { Online } from './online.js';
 import { doubleBattle, localDouble } from './double2d.js';
 import { COOP, foeSlots } from '../data/coop.js';
+import { DoubleBattle } from '../battle/double.js';
 
 const SAVE = 'lu2-save', OPT = 'lu2-opt', DAY = 24 * 60;
 const QUESTS = {
@@ -24,6 +25,35 @@ const QUESTS = {
   aq_fischer: { want: 'geisterflosse', ask: ['Seit Jahren jage ich die Geisterflosse. Man sagt, sie schwimmt nachts vor der Küste.', 'Wenn du eine fängst, zeig sie mir. Ich will wissen, ob sie wirklich lächelt!'], thanks: ['Sie lächelt tatsächlich… {mon} ist echt!', 'Jetzt kann ich in Ruhe in Rente gehen. Nimm das hier!'], reward: { ak_wellenschlag: 1, sternkristall: 3 }, after: 'Ich träume immer noch von dem Lächeln der Geisterflosse.' },
   fh_oma: { want: 'schneeglock', ask: ['Früher blühten überall in Frostheim Schneeglocks. Heute sieht man sie kaum noch.', 'Wenn du eines findest – bei Tag am Frostpass –, würdest du es mir zeigen?'], thanks: ['Ach, wie schön! {mon} läutet ja richtig!', 'Das erinnert mich an meine Jugend. Hier, für deine Reise.'], reward: { ak_sonnenstrahl: 1, klarbeere: 5 }, after: 'Danke noch mal für das Schneeglock. Mein Herz ist ganz warm.' },
 };
+// Top 4 und Champion: Teams, Texte, Belohnung
+const LIGA = {
+  e4_1: {
+    team: [['sporanox', 52], ['tangechse', 53], ['schneeglock', 53], ['kaktoroc', 54], ['hainfeste', 55]], reward: 6600,
+    intro: ['Willkommen in der Liga. Ich bin Ranka, die Erste der Top 4.', 'Meine Kreaturen wurzeln tief. Gift und Dornen – wer sie unterschätzt, bleibt hängen.', 'Und denk daran: Zwischen den Räumen gibt es keine Heilung!'],
+    lose: 'Du hast meine Wurzeln durchtrennt. Geh weiter – Aeris wartet.', after: 'Das Tor ist offen. Viel Glück bei den anderen!',
+  },
+  e4_2: {
+    team: [['sturmmoewe', 53], ['donnerfalter', 54], ['felsadler', 54], ['vampyra', 55], ['flugdrache', 56]], reward: 6720,
+    intro: ['Spürst du den Wind? Ich bin Aeris, die Zweite der Top 4.', 'Meine Kreaturen gehören dem Himmel. Mal sehen, ob du sie herunterholst!'],
+    lose: 'Ein Sturm, der sich legt… und du stehst noch. Respekt!', after: 'Der Wind trägt dich weiter. Mirella wartet.',
+  },
+  e4_3: {
+    team: [['seelenlaterne', 54], ['geisterflosse', 55], ['gruftkaefer', 55], ['spukflamme', 56], ['grabwurm', 57]], reward: 6840,
+    intro: ['Psst… Hörst du sie flüstern? Ich bin Mirella, die Dritte der Top 4.', 'Meine Geister kennen jede Angst. Auch deine.'],
+    lose: 'Die Geister sind still geworden. Das ist selten.', after: 'Geh. Thalor ist der Letzte vor dem Champion.',
+  },
+  e4_4: {
+    team: [['runenkaefer', 55], ['fatamor', 56], ['nordlicht', 56], ['sternuhu', 57], ['kristallwyrm', 58]], reward: 6960,
+    intro: ['Ich bin Thalor, der Stärkste der Top 4. Magie ist die älteste Kraft der Welt.', 'Hinter mir liegt die Champion-Halle. Aber vorhin kam jemand durch diese Tür – ohne mich herauszufordern.', 'Erst ich, dann er. Los!'],
+    lose: 'Meine Runen sind erloschen. Geh – und halte ihn auf!', after: 'Die Champion-Halle liegt im Norden. Beeil dich!',
+  },
+  aurin: {
+    team: [['hoppelion', 57], ['tiefenkiemer', 58], ['gletscherkoloss', 58], ['lavawaran', 58], ['hornkoloss', 59], ['drakonar', 60]], reward: 20000,
+    intro: ['Aurin: Ich habe viele Herausforderer gesehen. Aber keinen, der vorher die Zeit selbst überzeugt hat.', 'Aurin: Ich bin Aurin, Champion der Liga. Keine Rücksicht, keine Gnade – so wie es sich gehört.', 'Aurin: Zeig mir alles, was du hast!'],
+    lose: 'Aurin: … Die Liga hat einen neuen Champion.', after: 'Aurin: Du bist der Champion. Komm jederzeit wieder – ich trainiere schon für die Revanche!',
+  },
+};
+
 const GYMS = {
   gorm: {
     badge: 0, badgeName: 'FELSORDEN', team: [['kaeferix', 13], ['kieselkrebs', 14], ['brockel', 16]], reward: 1600,
@@ -54,7 +84,7 @@ const GYMS = {
     intro: ['Du hast Umbra die Stirn geboten. Die Drachen haben es gespürt.', 'Ich bin Vala, Meisterin des Drachenhorts. Dies ist die letzte Arena.', 'Zeig mir, ob dein Herz so stark ist wie ein Drachenherz!'],
     lose: 'Die Drachen verneigen sich vor dir. Und ich mich auch.',
     gift: { text: ['Vala: Acht Orden. Nimm diese Sternkristalle und Beleber für die Siegesstraße.'], items: { sternkristall: 6, beleber: 4 } },
-    outro: ['Vala: Mit acht Orden darfst du die Siegesstraße betreten – und danach die Top 4 herausfordern.', 'Umbra hat noch drei Herzsteine nicht. Er wird sie dort suchen, wo die Stärksten sind.', '(Ende von Phase 4.3. Als Nächstes: Siegesstraße, Top 4, Champion und Lyras Entscheidung!)'],
+    outro: ['Vala: Mit acht Orden darfst du die Siegesstraße betreten – und danach die Top 4 herausfordern.', 'Umbra sucht die beiden ältesten Herzsteine. Man sagt, der Champion der Liga hütet sie.', 'Der Eingang zur Siegesstraße liegt im Norden des Hortes.'],
     after: ['Der Drachenorden steht dir. Die Siegesstraße wartet!'],
   },
   sahra: {
@@ -372,10 +402,22 @@ class Game {
     }
     return false;
   }
+  blockMove(map, x, y) {
+    const s = this.state;
+    if (map === 'drachenhort' && x === 10 && y === 0) {
+      if (!s.badges[7]) { this.ow.busy = true; (async () => { await say(['Drachenhüterin: Dort beginnt die Siegesstraße.', 'Nur wer alle acht Orden trägt, darf sie betreten.']); this.ow.busy = false; })(); return true; }
+      if (!s.flags.lyra5) { this.lyraDecision(); return true; }
+    }
+    return false;
+  }
   remoteActors(id) { return this.online.actors(id); }
   async onMapLoad(id) {
     const s = this.state;
     this.online.pos(true);
+    // Wer das Plateau betritt, beginnt die Liga von vorn (wie es sich gehört)
+    if (id === 'liga') for (const k of ['e4_1', 'e4_2', 'e4_3', 'e4_4', 'aurin']) delete s.flags[k];
+    if (id === 'liga' && !s.flags.kian3) await this.kianFinal();
+    if (id === 'ligachamp' && !s.flags.umbra_end) await this.lyraHeal();
     if (id === 'route2' && s.flags.gotBalls && !s.flags.kian2) {
       this.ow.busy = true;
       await wait(500);
@@ -657,6 +699,8 @@ class Game {
       case 'koloss': return this.coopNpc('koloss', n);
       case 'nyx3': case 'lyra3': return this.coopNpc('finale', n);
       case 'morwen': case 'sahra': case 'brann': case 'vala': return this.gym(n);
+      case 'e4_1': case 'e4_2': case 'e4_3': case 'e4_4': case 'aurin': return this.liga(n);
+      case 'liga_waechter': return say(s.flags.champion ? ['Champion! Die Top 4 nehmen jede Herausforderung an – so oft du willst.'] : ['Dies ist die Liga. Vier Meister und ein Champion warten dort drinnen.', 'Zwischen den Kämpfen gibt es keine Heilung. Wer verliert, fängt von vorn an.'], N);
       case 'dk_alt': return say(s.flags.umbra1 ? ['Ihr habt Umbra vertrieben! Seit hundert Jahren hat niemand gewagt, sich ihm entgegenzustellen.', 'Der Drachenhort im Westen ist jetzt offen. Vala, die Drachenmeisterin, wartet.'] : ['Im Osten hat Team Eklipse den Berg ausgehöhlt. Dort steht ihr Hauptquartier.', 'Mit Branns Erzorden bekommst du das Stahltor auf. Schiebe die Felsbrocken, wo der Weg versperrt ist!'], N);
       case 'dk_kind': return say(['Wenn du einen Felsbrocken in ein Loch schiebst, kann man darüber laufen!', 'Aber man kann Brocken nur schieben, nicht ziehen. Überleg vorher!'], N);
       case 'hort_waechter': return say(['Willkommen im Drachenhort. Hier kämpft Vala, die Meisterin aller Drachen.', 'Wer ihren Orden trägt, hat alle acht Arenen bezwungen.'], N);
@@ -675,9 +719,10 @@ class Game {
   // ---------------------------------------------------------- Story-Ereignisse nach Trainerkämpfen
   async story() {
     const s = this.state, ow = this.ow;
+    if (ow.id === 'ligachamp' && s.flags.umbra2 && !s.flags.umbra_end) return this.umbraEnd();
     if (ow.id === 'hq' && s.flags.umbra && !s.flags.umbra1) {
       ow.busy = true;
-      await say(['Umbra: Du kämpfst, als hättest du nichts zu verlieren. Oder als hättest du schon alles verloren.', 'Umbra: Behalte den Drachen-Herzstein. Ich brauche ihn nicht mehr, wenn ich die letzten drei finde.', 'Umbra: Wir sehen uns dort, wo die Stärksten kämpfen.'], { name: 'Umbra' });
+      await say(['Umbra: Du kämpfst, als hättest du nichts zu verlieren. Oder als hättest du schon alles verloren.', 'Umbra: Behalte den Drachen-Herzstein. Die zwei ältesten Steine hütet der Champion der Liga – die hole ich mir zuerst. Den Rest danach von dir.', 'Umbra: Wir sehen uns dort, wo die Stärksten kämpfen.'], { name: 'Umbra' });
       await fade(1, 300); s.flags.umbra1 = true; ow.npcs = ow.npcs.filter(n => n.id !== 'umbra'); await fade(0, 300);
       s.bag.herzstein_drache = 1; sfx('caught');
       await say([`${s.name} findet im Tresor den DRACHEN-HERZSTEIN!`, 'Fünf von sieben Herzsteinen sind jetzt in Sicherheit.', 'Die Drachenhüterin öffnet den Weg zum Drachenhort westlich von Drakmor.']);
@@ -767,6 +812,122 @@ class Game {
     if (id === 'finale') await this.finale();
   }
 
+  // ---------------------------------------------------------- Phase 4.4: Lyras Entscheidung, Kian, Liga, Umbras Ende
+  spawn(id, name, look, x, y, dir) { const n = { id, name, look, x, y, dir, px: x * 16, py: y * 16, moving: false, step: 0 }; this.ow.npcs.push(n); return n; }
+  async lyraDecision() {
+    const s = this.state, ow = this.ow, p = ow.p;
+    ow.busy = true; p.dir = 'up';
+    const ly = this.spawn('lyra5', 'Lyra', LOOK.lyra, 3, 1, 'right');
+    await say('Eine Stimme ruft: Warte!');
+    await ow.npcWalkTo(ly, 9, 1); ly.dir = 'right'; p.dir = 'left';
+    const L = { name: 'Lyra' };
+    await say(['Lyra: Seit der Eisgrotte habe ich über alles nachgedacht.', 'Lyra: Umbra will die Zeit anhalten, damit nie wieder etwas verloren geht. Aber dann würde auch nie wieder etwas Neues beginnen.', 'Lyra: Kein erster Schnee, kein Ei, das schlüpft. Kein Wiedersehen.', 'Lyra: Ich habe mich entschieden. Ich stehe auf deiner Seite.'], L);
+    const nyx = this.spawn('nyx5', 'Kommandantin Nyx', LOOK.nyx, 18, 1, 'left');
+    ow.emote = { n: nyx, t: 0.8 }; sfx('encounter');
+    await ow.npcWalkTo(nyx, 12, 1);
+    const vx = this.spawn('vorax', 'Elite Vorax', LOOK.grunt, 18, 1, 'left');
+    await ow.npcWalkTo(vx, 13, 1); p.dir = 'right';
+    await say(['Nyx: Wie rührend. Die Verräterin und das Kind.', 'Nyx: Umbra ist schon auf dem Weg zur Liga. Der Champion hütet die beiden ältesten Herzsteine – Zeit und Ursprung.', 'Nyx: Vorax und ich sorgen dafür, dass ihr nie dort ankommt!'], { name: 'Kommandantin Nyx' });
+    await say('Lyra: Zusammen – so wie damals in der Eisgrotte. Nur diesmal auf der richtigen Seite!', L);
+    if (!s.team.some(m => !m.egg && m.hp > 0)) { ow.busy = false; return; }
+    const rnd = mulberry(4711), mk = t => t.map(([sp, l]) => createMon(sp, l, rnd));
+    const b = new DoubleBattle({ slots: {
+      p0: { pool: s.team, owner: s.name },
+      p1: { pool: mk([['kaiserpingu', 53], ['geisterflosse', 53], ['polarfuchs', 54]]), owner: 'Lyra', ai: true },
+      f0: { pool: mk([['nachtmahr', 52], ['finsterfuchs', 53], ['magmawurm', 54]]), owner: 'Nyx', ai: true },
+      f1: { pool: mk([['wyvernix', 52], ['grabwurm', 53], ['zackenruecken', 54]]), owner: 'Vorax', ai: true },
+    } });
+    sfx('encounter'); await this.flashIn();
+    const r = await doubleBattle(this, { b, mine: ['p0'], bg: 'berg', title: 'Nyx & Vorax', trainers: [{ look: LOOK.nyx }, { look: LOOK.grunt }], ownLooks: [s.look, LOOK.lyra] });
+    if (r.result !== 'win') {
+      ow.npcs = ow.npcs.filter(n => !['lyra5', 'nyx5', 'vorax'].includes(n.id));
+      await this.afterBattle(r);
+      if (ow.id === 'drachenhort') await say('Lyra ruft dir nach: Wir versuchen es noch einmal!');
+      return;
+    }
+    await this.afterBattle(r); ow.busy = true;
+    s.money += 6000; await say('Du erhältst 6000 ◈ Preisgeld!');
+    await say(['Nyx: … Ich habe immer gewonnen, wenn es darauf ankam. Bis du kamst.', 'Nyx: Umbra wartet in der Champion-Halle der Liga, hinter der Siegesstraße.', 'Nyx: Ich bin fertig mit ihm. Und mit Team Eklipse.'], { name: 'Kommandantin Nyx' });
+    await fade(1, 300); ow.npcs = ow.npcs.filter(n => !['nyx5', 'vorax'].includes(n.id)); await fade(0, 300);
+    await say('Lyra: Komm, ich heile deine Kreaturen.', L);
+    await fade(0.6, 200); sfx('heal'); s.team.forEach(healMon); await wait(700); await fade(0, 200);
+    await say(['Lyra: Die Siegesstraße ist der härteste Weg der Welt. Ich gehe vor und warne die Liga.', 'Lyra: Wir sehen uns oben!'], L);
+    await fade(1, 300); s.flags.lyra5 = true; ow.npcs = ow.npcs.filter(n => n.id !== 'lyra5'); await fade(0, 300);
+    ow.busy = false; this.save(true);
+  }
+  async kianFinal() {
+    const s = this.state, ow = this.ow, p = ow.p;
+    if (!s.flags.kian2 || !s.team.some(m => !m.egg && m.hp > 0)) return;
+    await wait(450); ow.busy = true;
+    const n = this.spawn('kian3', 'Kian', LOOK.kian, 11, 7, 'down');
+    ow.emote = { n, t: 0.8 }; sfx('encounter'); await wait(600);
+    await ow.npcWalkTo(n, p.x, p.y - 1); n.dir = 'down'; p.dir = 'up';
+    const K = { name: 'Kian' };
+    await say(['Kian: Da bist du ja endlich! Ich habe auch alle acht Orden.', 'Kian: Seit dem Labor laufe ich dir hinterher. Bevor du in die Liga gehst, will ich es wissen.', 'Kian: Ein letztes Mal – du gegen mich!'], K);
+    const fin = { funkfux: 'glutfux', tropfmolch: 'gezeitenmolch', sprossling: 'knorrwurz' }[this.counterOf()] || 'glutfux';
+    const won = await this.trainerFight({ name: 'Rivale Kian', look: LOOK.kian, team: [['vampyra', 53], ['wogenross', 54], ['hornkoloss', 54], ['donnerfalter', 54], [fin, 56]], reward: 5600, lose: 'Wieder du… Aber diesmal war es knapp, oder?', bg: 'berg' });
+    s.flags.kian3 = true;
+    if (won) await say(['Kian: Du warst immer einen Schritt voraus. Weißt du was? Das ist okay.', 'Kian: Geh in die Liga und zeig ihnen, was in dir steckt. Ich feuere dich an!'], K);
+    else await say(['Kian: Ha! Endlich! … Aber die Top 4 sind härter als ich. Trainier weiter!'], K);
+    ow.npcs = ow.npcs.filter(x => x !== n);
+    ow.busy = false; this.save(true);
+  }
+  async lyraHeal() {
+    const s = this.state, ow = this.ow;
+    await wait(450); ow.busy = true;
+    const ly = this.spawn('lyra_h', 'Lyra', LOOK.lyra, 7, 11, 'left'); ow.p.dir = 'right';
+    await say(['Lyra: Warte! Ich bin dir durch die Liga gefolgt.', 'Lyra: Umbra steht da vorne. Gegen ihn brauchst du jede Kreatur in Bestform.'], { name: 'Lyra' });
+    await fade(0.6, 200); sfx('heal'); s.team.forEach(healMon); await wait(700); await fade(0, 200);
+    await say(['Dein Team wurde vollständig geheilt!', 'Lyra: Ich halte hier die Tür. Geh!']);
+    ow.npcs = ow.npcs.filter(x => x !== ly); ow.p.dir = 'up';
+    ow.busy = false;
+  }
+  async liga(n) {
+    const s = this.state, N = { name: n.name }, L = LIGA[n.id];
+    if (n.id === 'aurin' && !s.flags.umbra_end) return say(['Aurin: Umbra… Er hat mich im Schlaf der Zeit gefangen und die Steine genommen.', 'Aurin: Halte ihn auf!'], N);
+    if (s.flags[n.id]) return say(L.after, N);
+    await say(L.intro, N);
+    const won = await this.trainerFight({ name: n.name, look: n.look, team: L.team, reward: L.reward, lose: L.lose, bg: 'liga' });
+    if (!won) return;
+    s.flags[n.id] = true;
+    if (n.id === 'aurin') return this.hallOfFame();
+    sfx('lvl'); G.shake = 0.3;
+    await say([L.after, 'Das Tor im Norden hat sich geöffnet!'], N);
+    this.save(true);
+  }
+  async umbraEnd() {
+    const s = this.state, ow = this.ow, U = { name: 'Umbra' };
+    ow.busy = true;
+    await say(['Umbra: Ich habe die Zeit in meinen Händen gehalten…', 'Umbra: Und trotzdem rinnt sie mir durch die Finger.'], U);
+    for (let i = 0; i < 3; i++) { await fade(0.9, 120); await fade(0, 120); }
+    sfx('evo'); G.shake = 1;
+    await say(['Die Herzsteine leuchten auf! Für einen Augenblick steht alles still…', 'Kein Laut. Kein Wind. Nicht einmal ein Herzschlag.', '…dann schlägt die Zeit weiter.']);
+    await say(['Umbra: Sie gehorchen mir nicht. Sie haben dich gewählt.', 'Umbra: Ich wollte, dass nie wieder etwas verloren geht. Aber ich habe vergessen, dass man nur verlieren kann, was man einmal hatte.', 'Umbra: Nimm sie. Alle sieben gehören zusammen.'], U);
+    s.bag.herzstein_zeit = 1; s.bag.herzstein_ursprung = 1; sfx('caught');
+    await say([`${s.name} erhält den ZEIT-HERZSTEIN und den URSPRUNGS-HERZSTEIN!`, 'Alle sieben Herzsteine sind jetzt vereint – und in Sicherheit.']);
+    const ly = this.spawn('lyra6', 'Lyra', LOOK.lyra, 6, 11, 'up');
+    await ow.npcWalkTo(ly, 6, 6); ly.dir = 'up';
+    await say(['Lyra: Es ist vorbei, Umbra. Komm mit.', 'Lyra: Die Welt zerfällt nicht. Sie verändert sich nur.'], { name: 'Lyra' });
+    await say('Umbra: … Vielleicht ist das dasselbe. Vielleicht auch nicht. Ich werde es herausfinden.', U);
+    await fade(1, 400); ow.npcs = ow.npcs.filter(n => !['lyra6', 'umbra2'].includes(n.id)); s.flags.umbra_end = true; await fade(0, 400);
+    await say(['Aurin: Danke. Umbra hat mich mit dem Schlaf der Zeit überrascht, bevor ich kämpfen konnte.', 'Aurin: Lass mich deine Kreaturen heilen. Du sollst mich nicht geschwächt herausfordern.'], { name: 'Champion Aurin' });
+    await fade(0.6, 200); sfx('heal'); s.team.forEach(healMon); await wait(800); await fade(0, 200);
+    await say('Aurin: Sprich mich an, wenn du bereit bist.', { name: 'Champion Aurin' });
+    ow.busy = false; this.save(true);
+  }
+  async hallOfFame() {
+    const s = this.state, first = !s.flags.champion;
+    s.flags.champion = true; s.hof = (s.hof || 0) + 1;
+    await say(['Aurin: Komm mit. Es ist Zeit, dich in der Ruhmeshalle zu verewigen.']);
+    await fade(1, 500);
+    await new Promise(res => { push(new HallScene(this, res)); fade(0, 300); });
+    await fade(1, 300);
+    this.ow.load('home', 2, 3, 'down');
+    await fade(0, 500);
+    if (first) await say(['Zuhause riecht es nach Pfannkuchen.', 'Mama: Champion! Ich habe es immer gewusst!', '(Ende der Hauptgeschichte. In Phase 4.5 folgen Hüter-Legenden, Raids zu viert und ein Postgame.)']);
+    this.save(true);
+  }
+
   async gym(n) {
     const s = this.state, N = { name: n.name }, G = GYMS[n.id];
     if (s.badges[G.badge]) return say(G.after, N);
@@ -818,6 +979,42 @@ class Game {
         await say(`Du hast ${monName(m)} zurückbekommen. Es ist jetzt Level ${m.lvl}!`, N);
       }
     }
+  }
+}
+
+// Ruhmeshalle mit Abspann
+class HallScene {
+  constructor(g, res) {
+    this.g = g; this.res = res; this.t = 0; const s = g.state;
+    this.team = s.team.filter(m => !m.egg);
+    const seen = Object.keys(s.dex.seen).length, caught = Object.keys(s.dex.caught).length;
+    this.credits = ['LEGENDS UNITED', '', `Champion: ${s.name}`, `Chronik: ${seen} gesehen, ${caught} gebunden`, `Orden: ${s.badges.filter(Boolean).length} · Herzsteine: 7/7`, '', 'Rivale: Kian', 'Verbündete: Lyra', 'Anführer von Team Eklipse: Umbra', '', 'Arenaleiter', 'Gorm · Selma · Meri · Halvar', 'Morwen · Sahra · Brann · Vala', '', 'Top 4', 'Ranka · Aeris · Mirella · Thalor', 'Champion a.D.: Aurin', '', 'Idee & Spieltest: Gaming Gang', 'Code, Pixel-Art & Musik: mit Claude', '', 'Danke fürs Spielen!'];
+    this.tEnd = 2 + this.team.length * 0.7 + 3 + this.credits.length * 0.9 + 2;
+    setMusic('day');
+  }
+  update(dt) {
+    this.t += dt;
+    if (this.t > 3 && (input.pressed('a') || input.pressed('start') || input.tap) && this.t < this.tEnd - 2) this.t = Math.max(this.t, this.tEnd - 2);
+    else if (this.t >= this.tEnd && (input.pressed('a') || input.pressed('b') || input.tap)) { pop(this); this.res(); }
+  }
+  draw(ctx) {
+    const t = this.t, g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#2a1a5a'); g.addColorStop(1, '#8a5ab8'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    for (let i = 0; i < 40; i++) { const a = (Math.sin(t * 2 + i) + 1) / 2; ctx.fillStyle = `rgba(255,240,180,${a * 0.7})`; ctx.fillRect((i * 61) % W, (i * 37 + t * 8) % H, 1, 1); }
+    const tTeam = 2 + this.team.length * 0.7 + 3;
+    if (t < tTeam) {
+      text('RUHMESHALLE', W / 2, 8, '#ffe8a0', 11, 'center', '#3a2050');
+      this.team.forEach((m, i) => {
+        const at = 1 + i * 0.7; if (t < at) return;
+        const x = 18 + (i % 3) * 72, y = 26 + Math.floor(i / 3) * 64, k = Math.min(1, (t - at) * 3);
+        ctx.globalAlpha = k; ctx.drawImage(monSprite(m.sp, 'front', m.shiny, m.mut), x + 6, y, 48, 48); ctx.globalAlpha = 1;
+        text(monName(m), x + 30, y + 48, '#ffffff', 7, 'center', '#3a2050'); text('Lv ' + m.lvl, x + 30, y + 56, '#ffe8a0', 6.5, 'center', '#3a2050');
+      });
+      if (t > 1 + this.team.length * 0.7) text(`${this.g.state.name} – Champion der Liga!`, W / 2, 150, '#ffffff', 8, 'center', '#3a2050');
+      return;
+    }
+    const y0 = H - (t - tTeam) * 14;
+    this.credits.forEach((l, i) => { const y = y0 + i * 14; if (y > -10 && y < H + 4) text(l, W / 2, y, i === 0 ? '#ffe8a0' : '#ffffff', i === 0 ? 11 : 8, 'center', '#3a2050'); });
+    if (t >= this.tEnd) text('ENDE', W / 2, 70, '#ffe8a0', 14, 'center', '#3a2050');
   }
 }
 

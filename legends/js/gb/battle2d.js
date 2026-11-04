@@ -13,7 +13,7 @@ import { ITEMS } from './maps.js';
 
 const BG = {
   gras: ['#a8e0f8', '#e0f8d0', '#78c858', '#58a848'], wald: ['#406858', '#88b098', '#3e7a48', '#2e6038'], hoehle: ['#3a2a20', '#6a5040', '#9a7a58', '#7a5a40'], vulkan: ['#3a1a1a', '#b8583a', '#8a7a68', '#6a5a4a'], schnee: ['#a8c8e8', '#eef6ff', '#e0ecf8', '#c0d4e8'], wueste: ['#f8c878', '#fff0c8', '#e8c888', '#d0a868'], berg: ['#7898c8', '#d8e4f0', '#a89878', '#8a7a60'],
-  arena: ['#d8c8a8', '#f0e8d0', '#c8a878', '#a88858'], wasser: ['#88c8f8', '#d0f0ff', '#58a8e8', '#3888d0'], ruine: ['#1a1440', '#4a3a7a', '#5a6a5a', '#3a4a3a'],
+  arena: ['#d8c8a8', '#f0e8d0', '#c8a878', '#a88858'], wasser: ['#88c8f8', '#d0f0ff', '#58a8e8', '#3888d0'], ruine: ['#1a1440', '#4a3a7a', '#5a6a5a', '#3a4a3a'], liga: ['#3a2a6a', '#c8b8f0', '#b8a8e0', '#8a78c0'],
 };
 const FOE = { x: 146, y: 8 }, OWN = { x: 26, y: 50 };
 export const itemFilter = it => m => !m.egg && (it.revive ? m.hp <= 0 : it.cure ? m.hp > 0 && !!m.status : m.hp > 0 && m.hp < maxHp(m));

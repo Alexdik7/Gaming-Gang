@@ -56,7 +56,8 @@ for (const id of Object.keys(MAPS)) {
   if (!starts.length) continue;
   const block = new Set([...(M.npcs || []).filter(n => !n.trainer && !n.hideIf).map(n => n.x + ',' + n.y), ...(M.items || []).map(i => i.x + ',' + i.y)]);
   // Tore öffnen sich, sobald ihre Druckplatte erreichbar ist → wiederholen bis nichts Neues aufgeht
-  let opened = new Set();
+  // Tore, deren Flag eine Figur dieser Karte ist, öffnen sich nach dem Sieg gegen sie (Liga)
+  let opened = new Set(Object.values(M.gates || {}).filter(f => (M.npcs || []).some(n => n.id === f)));
   const bfs = surf => {
     const seen = new Set([starts[0].join(',')]), q = [starts[0]];
     const ok = (x, y) => (walk(x, y) && !(M.rows[y][x] === 'E' && !opened.has(M.gates?.[x + ',' + y]))) || (surf && M.rows[y]?.[x] === '~');

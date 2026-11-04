@@ -1,6 +1,32 @@
 # Fortschritt
 
-## v0.11 – Phase 4.3: Drakmor (aktuell)
+## v0.12 – Phase 4.4: Liga & Finale (aktuell)
+
+### ✅ Neu und getestet
+- **Lyras Entscheidung** am Nordausgang des Drachenhorts (ab 8 Orden):
+  - Lyra wechselt die Seite.
+  - **Doppelkampf an ihrer Seite** gegen Kommandantin Nyx und Elite Vorax. Lyra kämpft per KI mit, du steuerst deine Kreaturen.
+  - Danach steigt Nyx bei Team Eklipse aus.
+- **Siegesstraße:** große Höhle mit Brocken-Rätsel (füllt ein Loch → Druckplatte → Steintor), 4 Ass-Trainer (Lv 52–55) und neuen wilden Kreaturen bis Lv 55.
+- **Liga-Plateau** mit Heilzentrum, Laden und Liga-Gebäude:
+  - **letzter Kampf gegen Rivale Kian**
+  - Neu im Laden: **Hypertrank** (heilt 200 KP).
+- **Top 4** in vier Räumen hintereinander, ohne Heilung dazwischen:
+  - **Ranka** (Pflanze/Gift), **Aeris** (Luft), **Mirella** (Geist), **Thalor** (Magie), Lv 52–58
+  - Jeder Sieg öffnet das Tor zum nächsten Raum.
+  - Wer verliert oder das Plateau verlässt, beginnt die Liga von vorn.
+- **Umbras Finale** in der Champion-Halle:
+  - Lyra heilt dich vorher.
+  - Umbra hat 6 Kreaturen (Lv 56–60).
+  - Danach erhältst du den **Zeit-** und den **Ursprungs-Herzstein**. Damit sind **alle 7 Herzsteine** vereint.
+- **Champion Aurin** (6 Kreaturen, Lv 57–60, Ass: Drakonar).
+- **Ruhmeshalle mit Abspann.** Danach geht es zurück nach Hause. Liga-Revanchen sind jederzeit möglich.
+- **Balancing per Simulation:**
+  - Ein einfacher Bot, der Vala auf Lv 52 zu 68 % schlägt, gewinnt gegen Aurin mit 4 Tränken auf Lv 57 zu 49 % und auf Lv 60 zu 81 %.
+  - Gegen Umbra gewinnt derselbe Bot auf Lv 60 zu 93 %.
+- **Karten:** 47 Karten ohne Fehler. Der Kartenprüfer erkennt jetzt Tore, die sich nach einem Sieg öffnen.
+
+## v0.11 – Phase 4.3: Drakmor
 
 ### ✅ Neu und getestet
 - **Neue Mechanik: Felsbrocken schieben.**
