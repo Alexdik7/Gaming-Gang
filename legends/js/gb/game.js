@@ -23,6 +23,24 @@ import { boxScreen } from './boxui.js';
 import { baseMap, DECOR, placeDecor, encodeBase, decodeBase, decorAt } from './base.js';
 
 const SAVE = 'lu2-save', OPT = 'lu2-opt', DAY = 24 * 60;
+// Sicherungs-Code: Spielstand gzip-komprimiert als Text (LUS1-…), ohne Kompression LUS0-…
+const b64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
+async function packSave(state) {
+  const raw = new TextEncoder().encode(JSON.stringify(state));
+  if (typeof CompressionStream === 'undefined') return 'LUS0-' + b64(raw);
+  const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+  return 'LUS1-' + b64(z);
+}
+async function unpackSave(code) {
+  try {
+    const t = String(code).replace(/\s+/g, ''), m = /^LUS([01])-(.+)$/.exec(t); if (!m) return null;
+    let u8 = unb64(m[2]);
+    if (m[1] === '1') u8 = new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+    const s = JSON.parse(new TextDecoder().decode(u8));
+    return s && s.name && Array.isArray(s.team) && s.map ? s : null;
+  } catch { return null; }
+}
 const QUESTS = {
   ig_kid: { want: 'flammeule', ask: ['Ich habe noch nie eine Flammeule aus der Nähe gesehen!', 'Sie fliegen nur nachts über den Aschepfad. Bringst du mir eine zum Anschauen?'], thanks: ['WOW! {mon} ist ja wunderschön!', 'Danke! Hier, das hab ich am Vulkan gefunden.'], reward: { ak_magmaflut: 1, beleber: 2 }, after: 'Ich will später auch mal eine Flammeule haben!' },
   aq_fischer: { want: 'geisterflosse', ask: ['Seit Jahren jage ich die Geisterflosse. Man sagt, sie schwimmt nachts vor der Küste.', 'Wenn du eine fängst, zeig sie mir. Ich will wissen, ob sie wirklich lächelt!'], thanks: ['Sie lächelt tatsächlich… {mon} ist echt!', 'Jetzt kann ich in Ruhe in Rente gehen. Nimm das hier!'], reward: { ak_wellenschlag: 1, sternkristall: 3 }, after: 'Ich träume immer noch von dem Lächeln der Geisterflosse.' },
@@ -191,14 +209,30 @@ class Game {
     const r = await T.done;
     initAudio(); sfx('open'); setMusic(null); setMusic('title');
     const has = !!localStorage.getItem(SAVE);
-    const items = [...(has ? ['WEITER'] : []), 'NEUES SPIEL', 'OPTIONEN'];
+    const items = [...(has ? ['WEITER'] : []), 'NEUES SPIEL', 'CODE LADEN', 'OPTIONEN'];
     for (;;) {
       const i = await choose(items, { x: 70, y: 96, w: 100, cancel: false });
       const k = items[i];
       if (k === 'WEITER') { pop(T); this.state = this.load(); return this.enterWorld(); }
       if (k === 'NEUES SPIEL') { if (has && !(await ask('Dein alter Spielstand wird beim Speichern überschrieben. Trotzdem neu beginnen?'))) continue; pop(T); return this.intro(); }
       if (k === 'OPTIONEN') await this.options();
+      if (k === 'CODE LADEN' && await this.importSave()) { pop(T); this.state = this.load(); return this.enterWorld(); }
     }
+  }
+  // Sicherungs-Code erstellen und teilen
+  async exportSave() {
+    this.save(true);
+    const code = await packSave(this.state);
+    await say(['Dein Sicherungs-Code ist fertig!', 'Tippe auf „Teilen“ und schick ihn dir selbst, z. B. per WhatsApp oder in die Notizen. Mit „CODE LADEN“ im Titelbild holst du deinen Spielstand auf jedes Handy zurück.']);
+    await inputName(`Sicherung (${this.state.team.length} im Team, ${this.state.badges.filter(Boolean).length} Orden)`, code, 400000, { share: true });
+  }
+  async importSave() {
+    const code = await inputName('Sicherungs-Code einfügen', '', 400000); if (!code) return false;
+    const s = await unpackSave(code);
+    if (!s) { sfx('weak'); await say('Dieser Code ist ungültig oder unvollständig. Bitte den ganzen Code kopieren.'); return false; }
+    if (!(await ask(`Spielstand von ${s.name} laden (${s.team.length} im Team, ${(s.badges || []).filter(Boolean).length} Orden)? Ein Spielstand auf diesem Gerät wird ersetzt.`))) return false;
+    try { localStorage.setItem(SAVE, JSON.stringify(s)); } catch { await say('Speichern auf diesem Gerät ist fehlgeschlagen.'); return false; }
+    sfx('caught'); await say(`Willkommen zurück, ${s.name}!`); return true;
   }
 
   async intro() {
@@ -239,7 +273,7 @@ class Game {
   async startMenu() {
     const s = this.state, ow = this.ow; ow.busy = true;
     const items = [...(s.flags.dex ? ['CHRONIK'] : []), ...(s.team.length ? ['TEAM'] : []), 'BEUTEL', s.name.toUpperCase(), 'ONLINE', 'SPEICHERN', 'OPTIONEN', 'ZURÜCK'];
-    const D = { CHRONIK: 'Ein Verzeichnis aller Kreaturen, die du gesehen oder gebunden hast.', TEAM: 'Zeigt dein Team, Werte und Attacken. Hier kannst du auch die Reihenfolge ändern.', BEUTEL: 'Gegenstände, Kristalle und Basis-Items, die du gesammelt hast.', ONLINE: 'Mit Freunden kämpfen, tauschen, gemeinsam spielen und Raids bestreiten.', SPEICHERN: 'Deinen Fortschritt speichern.', OPTIONEN: 'Textgeschwindigkeit, Musik und Ton einstellen.', 'ZURÜCK': 'Das Menü schließen und weiterspielen.' };
+    const D = { CHRONIK: 'Ein Verzeichnis aller Kreaturen, die du gesehen oder gebunden hast.', TEAM: 'Zeigt dein Team, Werte und Attacken. Hier kannst du auch die Reihenfolge ändern.', BEUTEL: 'Gegenstände, Kristalle und Basis-Items, die du gesammelt hast.', ONLINE: 'Mit Freunden kämpfen, tauschen, gemeinsam spielen und Raids bestreiten.', SPEICHERN: 'Fortschritt speichern oder als Sicherungs-Code teilen.', OPTIONEN: 'Textgeschwindigkeit, Musik und Ton einstellen.', 'ZURÜCK': 'Das Menü schließen und weiterspielen.' };
     const opts = items.map(k => ({ label: k, desc: D[k] || 'Dein Trainerpass mit Orden, Geld und Spielzeit.' }));
     for (;;) {
       const i = await choose(opts, { above: false, x: W - 86, w: 83 });
@@ -249,7 +283,7 @@ class Game {
       if (k === 'TEAM') { const po = { field: m => this.fieldOptions(m) }; await party(s, po); if (po.picked) { this.fieldExit = false; await po.picked.run(); if (this.fieldExit) { this.fieldExit = false; break; } } }
       if (k === 'BEUTEL') await this.bagMenu();
       if (k === s.name.toUpperCase()) await card(s);
-      if (k === 'SPEICHERN') { if (await ask('Möchtest du das Spiel speichern?')) { this.save(); await say(`${s.name} hat das Spiel gespeichert.`); } }
+      if (k === 'SPEICHERN') { const c = await choose([{ label: 'Speichern', desc: 'Fortschritt auf diesem Gerät speichern.' }, { label: 'Sicherungs-Code', desc: 'Spielstand als Code teilen – so geht nie etwas verloren, auch bei einem neuen Handy.' }, 'Zurück']); if (c === 0) { this.save(); await say(`${s.name} hat das Spiel gespeichert.`); } else if (c === 1) await this.exportSave(); }
       if (k === 'OPTIONEN') await this.options();
       if (k === 'ONLINE') { await this.online.menu(); break; }
     }

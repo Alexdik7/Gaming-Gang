@@ -534,3 +534,9 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
 - Das Code-Fenster hat die Knöpfe **Teilen** (iOS-Teilen-Menü, z. B. WhatsApp) und **Kopieren**.
 - Beide werden direkt im Fingertipp ausgelöst, denn iOS erlaubt Teilen und Kopieren nur dort.
 - Klappt das Kopieren nicht, wird der Code markiert. `inputName(…, { share: true })`.
+
+## v2.2 – Sicherungs-Code (ohne Server)
+- START → SPEICHERN → **Sicherungs-Code** erzeugt den Code und öffnet das Code-Fenster mit Teilen und Kopieren.
+  - Der Spielstand wird gzip-komprimiert und als Text kodiert (`LUS1-…`, ca. 8 000 Zeichen bei 120 Box-Kreaturen; ohne `CompressionStream` `LUS0-…`).
+- Titelbild → **CODE LADEN**: Code einfügen, prüfen, Nachfrage, danach geht es direkt ins Spiel. So kommt der Spielstand auf ein neues Handy.
+- Code: `packSave` / `unpackSave`, `game.exportSave` / `importSave`.
