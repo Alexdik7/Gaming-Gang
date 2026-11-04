@@ -38,7 +38,7 @@ class DoubleScene {
   // ---------------------------------------------------------- Ablauf
   async run() {
     const b = this.b, o = this.o;
-    setMusic('battle');
+    setMusic(o.music || (this.raid ? 'legend' : o.boss ? 'boss' : 'trainer'));
     await this.say(o.boss ? `${o.title} greift an!` : `${o.title} fordern euch heraus!`);
     this.trainersVis = false;
     for (const id of ['f0', 'f1']) if (b.mon(id)) { if (!o.boss) await this.say(`${b.slots[id].owner} schickt ${monName(b.mon(id))}!`, 500); await this.appear(id); this.g.markDex(b.mon(id).sp); }

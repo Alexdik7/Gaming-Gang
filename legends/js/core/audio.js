@@ -1,4 +1,5 @@
-// Synthetischer Sound: Effekte, Kreaturenrufe, prozedurale Musik (keine Audiodateien nötig)
+// Synthetischer Sound: Effekte, Kreaturenrufe und komponierte Musik (keine Audiodateien nötig)
+import { compiled } from './music.js';
 let ctx = null, master = null, musicGain = null, sfxGain = null;
 export const audioState = { music: true, sfx: true };
 
@@ -70,40 +71,53 @@ export function cry(c) {
   tone(c.f * 1.5, t + 0.02, c.len * 0.8, { type: 'sine', vol: 0.06, f2: c.f2 * 1.5 });
 }
 
-// ---------------------------------------------------------------- Musik
-const SCALES = {
-  day: { root: 60, scale: [0, 2, 4, 7, 9], bpm: 84, chords: [[0, 4, 7], [-3, 0, 4], [-7, -3, 0], [-5, -1, 2]] },
-  night: { root: 57, scale: [0, 3, 5, 7, 10], bpm: 64, chords: [[0, 3, 7], [-4, 0, 3], [-2, 2, 5], [-5, -2, 2]] },
-  battle: { root: 57, scale: [0, 2, 3, 7, 8], bpm: 150, chords: [[0, 3, 7], [-4, 0, 3], [-2, 2, 5], [-5, -1, 2]] },
-  legend: { root: 50, scale: [0, 2, 5, 7, 9], bpm: 100, chords: [[0, 5, 9], [-2, 2, 5], [-5, 0, 4], [-7, -3, 0]] },
-};
+// ---------------------------------------------------------------- Musik (komponierte Stücke aus music.js)
 let mode = null, timer = null, step = 0, nextT = 0;
 const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 export function setMusic(m) {
   if (m === mode) return;
   mode = m; step = 0;
   if (timer) clearInterval(timer), (timer = null);
-  if (!ctx || !m) return;
+  if (!ctx || !m || !compiled(m)) return;
   nextT = ctx.currentTime + 0.1;
   timer = setInterval(schedule, 60);
 }
+export function currentMusic() { return mode; }
+const ARP = [0, 1, 2, 3, 2, 1, 0, 1];
+// Einen Achtel-Schritt eines Stücks ab Zeitpunkt t spielen
+function playStep(T, st, t, beat) {
+  const out = musicGain, s = st % 8, bar = Math.floor(st / 8) % T.chords.length, ch = T.chords[bar];
+  const fast = T.bpm >= 140;
+  // Melodie
+  const e = T.lead[st % T.steps];
+  if (e) tone(mtof(e.midi), t, beat * e.len * 0.95, { type: T.voice, vol: T.voice === 'square' ? 0.045 : 0.075, out, attack: 0.012, wob: e.len > 2 ? 5 : 0 });
+  // Bass
+  const root = ch[0] - 12;
+  if (T.bass === 'walk' && s % 2 === 0) tone(mtof(s % 4 === 0 ? root : root + 7), t, beat * 1.8, { type: 'triangle', vol: 0.11, out });
+  if (T.bass === 'pulse') tone(mtof(root + (s % 2 ? 12 : 0)), t, beat * 0.85, { type: 'triangle', vol: 0.11, out });
+  if (T.bass === 'long' && s % 4 === 0) tone(mtof(root), t, beat * 3.8, { type: 'triangle', vol: 0.1, out, attack: 0.05 });
+  // Begleitung
+  if (T.arp === 'up') { const k = ARP[s], n = k === 3 ? ch[0] + 12 : ch[k]; tone(mtof(n + 12), t, beat * 0.9, { type: fast ? 'square' : 'triangle', vol: fast ? 0.018 : 0.035, out }); }
+  if (T.arp === 'block' && s === 0) ch.forEach(n => tone(mtof(n + 12), t, beat * 7.8, { type: 'triangle', vol: 0.03, out, attack: 0.25 }));
+  // Schlagzeug
+  const d = T.drums;
+  if (d === 'rock') { if (s === 0 || s === 4) noise(t, 0.09, 0.16, 110, out); if (s === 2 || s === 6) noise(t, 0.12, 0.11, 1900, out); noise(t, 0.03, 0.04, 7000, out); }
+  if (d === 'march') { if (s === 0 || s === 3 || s === 4) noise(t, 0.09, 0.15, 110, out); if (s === 2 || s === 6) noise(t, 0.12, 0.1, 1900, out); if (s === 7) noise(t, 0.06, 0.05, 1900, out); }
+  if (d === 'soft' && s % 2 === 0) noise(t, 0.03, s === 0 ? 0.05 : 0.03, 6000, out);
+}
 function schedule() {
   if (!ctx || !mode) return;
-  const S = SCALES[mode], beat = 60 / S.bpm / 2;
-  while (nextT < ctx.currentTime + 0.25) {
-    const bar = Math.floor(step / 16) % 4, s = step % 16, ch = S.chords[bar];
-    if (s === 0) ch.forEach(n => tone(mtof(S.root + n - 12), nextT, beat * 15, { type: 'triangle', vol: mode === 'battle' ? 0.05 : 0.07, out: musicGain, attack: 0.3 }));
-    if (mode === 'battle') {
-      tone(mtof(S.root + ch[0] - 24 + (s % 4 === 2 ? 12 : 0)), nextT, beat * 0.9, { type: 'sawtooth', vol: 0.06, out: musicGain });
-      if (s % 4 === 0) noise(nextT, 0.08, 0.12, 120, musicGain);
-      if (s % 8 === 4) noise(nextT, 0.1, 0.1, 2500, musicGain);
-    } else if (s % 4 === 0) tone(mtof(S.root + ch[0] - 24), nextT, beat * 3.5, { type: 'sine', vol: 0.08, out: musicGain });
-    const r = Math.sin(step * 12.9898 + bar * 78.233) * 43758.5453 % 1;
-    const play = mode === 'battle' ? s % 2 === 0 : (s % 2 === 0 && Math.abs(r) > 0.35);
-    if (play) {
-      const deg = Math.floor(Math.abs(r) * 100) % S.scale.length, oct = Math.abs(r * 7) % 1 > 0.7 ? 12 : 0;
-      tone(mtof(S.root + S.scale[deg] + oct + 12), nextT, beat * (mode === 'battle' ? 1.6 : 2.5), { type: mode === 'night' ? 'sine' : 'triangle', vol: 0.06, out: musicGain, attack: 0.02 });
-    }
-    step++; nextT += beat;
-  }
+  const T = compiled(mode), beat = 60 / T.bpm / 2;
+  while (nextT < ctx.currentTime + 0.25) { playStep(T, step, nextT, beat); step++; nextT += beat; }
+}
+// Ein Stück offline rendern (für Tests und Hörproben): liefert einen AudioBuffer
+export async function renderTrack(name, seconds = 20) {
+  const T = compiled(name); if (!T) return null;
+  const save = [ctx, musicGain, sfxGain];
+  const off = new OfflineAudioContext(1, Math.ceil(44100 * seconds), 44100);
+  ctx = off; musicGain = off.createGain(); musicGain.gain.value = 0.32 * 0.7; musicGain.connect(off.destination); sfxGain = musicGain;
+  const beat = 60 / T.bpm / 2; let t = 0.05, st = 0;
+  while (t < seconds - 0.3) { playStep(T, st, t, beat); st++; t += beat; }
+  [ctx, musicGain, sfxGain] = save;
+  return off.startRendering();
 }

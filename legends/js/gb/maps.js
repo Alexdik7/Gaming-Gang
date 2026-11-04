@@ -60,6 +60,7 @@ export { LOOK };
 
 export const MAPS = {
   moosgrund: {
+    music: 'town',
     name: 'Moosgrund', outdoor: true, enc: null, fishing: true,
     rows: [
       'TTTTTTTTT==TTTTTTTTT',

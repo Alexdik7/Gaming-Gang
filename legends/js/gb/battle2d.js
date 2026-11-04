@@ -34,7 +34,7 @@ class BattleScene {
   // ---------------------------------------------------------- Ablauf
   async run() {
     const b = this.b, o = this.o;
-    setMusic(o.intro === 'legend' ? 'legend' : 'battle');
+    setMusic(o.music || o.trainer?.music || (o.intro === 'legend' ? 'legend' : o.trainer ? 'trainer' : 'battle'));
     await this.tween(0.7, k => (this.foeOff.x = -200 * (1 - ease(k))));
     if (o.trainer) {
       await this.say(`${o.trainer.name} fordert dich heraus!`);

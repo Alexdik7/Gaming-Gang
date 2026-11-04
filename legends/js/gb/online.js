@@ -267,7 +267,7 @@ export class Online {
     const b = new RemoteDouble(this, m);
     sfx('encounter'); await this.g.flashIn();
     const r = await doubleBattle(this.g, {
-      b, remote: true, mine: [m.slot], bg: d.bg, boss: !!d.boss, title: d.name,
+      b, remote: true, mine: [m.slot], bg: d.bg, boss: !!d.boss, title: d.name, music: m.npc === 'r_nihilux' ? 'finale' : undefined,
       trainers: d.looks ? d.looks.map(look => ({ look })) : null, ownLooks: m.looks.map(l => ({ ...DEF_LOOK, ...(l || {}) })),
     });
     this.g.ow.music();

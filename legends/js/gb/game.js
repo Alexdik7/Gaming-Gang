@@ -184,7 +184,7 @@ class Game {
   }
 
   async title() {
-    setMusic('day');
+    setMusic('title');
     const T = new TitleScene(this); push(T);
     const r = await T.done;
     initAudio(); sfx('open');
@@ -486,6 +486,7 @@ class Game {
   async trainerFight(t) {
     const s = this.state;
     if (!s.team.some(m => !m.egg && m.hp > 0)) { await say('Deine Kreaturen sind erschöpft!'); return false; }
+    t.music ||= /Champion/.test(t.name) ? 'finale' : /^Umbra/.test(t.name) ? (this.ow.id === 'ligachamp' ? 'finale' : 'boss') : /Arenaleiter|Top-4|Kommandantin|Rivale|Lyra/.test(t.name) ? 'boss' : undefined;
     const rnd = mulberry(t.name.length * 911);
     const foe = t.team.map(([sp, l]) => createMon(sp, l, rnd));
     foe.forEach(m => this.markDex(m.sp));
@@ -858,7 +859,7 @@ class Game {
       f1: { pool: mk([['wyvernix', 52], ['grabwurm', 53], ['zackenruecken', 54]]), owner: 'Vorax', ai: true },
     } });
     sfx('encounter'); await this.flashIn();
-    const r = await doubleBattle(this, { b, mine: ['p0'], bg: 'berg', title: 'Nyx & Vorax', trainers: [{ look: LOOK.nyx }, { look: LOOK.grunt }], ownLooks: [s.look, LOOK.lyra] });
+    const r = await doubleBattle(this, { b, mine: ['p0'], bg: 'berg', music: 'boss', title: 'Nyx & Vorax', trainers: [{ look: LOOK.nyx }, { look: LOOK.grunt }], ownLooks: [s.look, LOOK.lyra] });
     if (r.result !== 'win') {
       ow.npcs = ow.npcs.filter(n => !['lyra5', 'nyx5', 'vorax'].includes(n.id));
       await this.afterBattle(r);
@@ -997,7 +998,7 @@ class Game {
     const hs = helperSlots(1);
     const b = new DoubleBattle({ slots: { p0: { pool: s.team, owner: s.name }, ...hs, ...foeSlots(id) } });
     this.markDex(b.mon('f0').sp);
-    const r = await doubleBattle(this, { b, mine: ['p0'], bg: d.bg, title: d.name, boss: true, ownLooks: [s.look, ...Object.values(hs).map(h => h.look)] });
+    const r = await doubleBattle(this, { b, mine: ['p0'], bg: d.bg, title: d.name, boss: true, music: id === 'r_nihilux' ? 'finale' : 'legend', ownLooks: [s.look, ...Object.values(hs).map(h => h.look)] });
     if (r.result === 'win') { this.ow.music(); await fade(0, 150); await this.raidReward(id); }
     await this.afterBattle(r);
   }
@@ -1096,7 +1097,7 @@ class HallScene {
     const seen = Object.keys(s.dex.seen).length, caught = Object.keys(s.dex.caught).length;
     this.credits = ['LEGENDS UNITED', '', `Champion: ${s.name}`, `Chronik: ${seen} gesehen, ${caught} gebunden`, `Orden: ${s.badges.filter(Boolean).length} · Herzsteine: 7/7`, '', 'Rivale: Kian', 'Verbündete: Lyra', 'Anführer von Team Eklipse: Umbra', '', 'Arenaleiter', 'Gorm · Selma · Meri · Halvar', 'Morwen · Sahra · Brann · Vala', '', 'Top 4', 'Ranka · Aeris · Mirella · Thalor', 'Champion a.D.: Aurin', '', 'Idee & Spieltest: Gaming Gang', 'Code, Pixel-Art & Musik: mit Claude', '', 'Danke fürs Spielen!'];
     this.tEnd = 2 + this.team.length * 0.7 + 3 + this.credits.length * 0.9 + 2;
-    setMusic('day');
+    setMusic('title');
   }
   update(dt) {
     this.t += dt;

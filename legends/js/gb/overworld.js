@@ -27,7 +27,12 @@ export class Overworld {
     this.music();
     this.g.onMapLoad?.(id);
   }
-  music() { const n = this.g.isNight(); setMusic(this.M.gym ? 'battle' : (n && (this.M.outdoor || this.M.cave)) ? 'night' : 'day'); }
+  music() {
+    const M = this.M, n = this.g.isNight();
+    const town = M.indoor || (M.buildings || []).some(b => b.heal);
+    const dungeon = M.cave || M.banner || (M.dark && !M.outdoor);
+    setMusic(M.music || (M.gym ? 'gym' : dungeon ? 'cave' : n && M.outdoor ? 'night' : town ? 'town' : 'route'));
+  }
 
   ch(x, y) { return x < 0 || y < 0 || x >= this.w || y >= this.h ? null : this.M.rows[y][x]; }
   bldAt(x, y) { return this.blds.find(b => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h); }
