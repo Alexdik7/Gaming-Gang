@@ -264,7 +264,7 @@ export class Battle {
       const res = giveXp(m, amt);
       ev.push({ t: 'xp', uid: m.uid });
       for (const r of res) {
-        if (r.t === 'lvl') ev.push({ t: 'lvl', uid: m.uid, text: `${monName(m)} erreicht Level ${r.lvl}!` });
+        if (r.t === 'lvl') ev.push({ t: 'lvl', uid: m.uid, lvl: r.lvl, text: `${monName(m)} erreicht Level ${r.lvl}!` });
         if (r.t === 'learn') ev.push({ t: 'learn', uid: m.uid, id: r.id });
         if (r.t === 'evo' && !this.pendingEvos.some(p => p.uid === m.uid)) this.pendingEvos.push({ uid: m.uid, to: r.to });
       }

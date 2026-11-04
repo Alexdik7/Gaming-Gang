@@ -68,6 +68,11 @@ export function sfx(name) {
     case 'encounter': for (let i = 0; i < 6; i++) tone(i % 2 ? 660 : 880, t + i * 0.06, 0.06, { type: 'square', vol: 0.12 }); break;
     case 'rune': [392, 523, 659, 784, 1046].forEach((f, i) => tone(f, t + i * 0.13, 0.9, { vol: 0.12 })); break;
     case 'step': noise(t, 0.05, 0.05, 400); break;
+    case 'grass': noise(t, 0.09, 0.12, 3200); noise(t + 0.05, 0.07, 0.08, 2400); break;
+    case 'shiny': [1568, 2093, 2637, 3136].forEach((f, i) => tone(f, t + i * 0.06, 0.18, { type: 'triangle', vol: 0.1 })); tone(4186, t + 0.3, 0.4, { vol: 0.06 }); break;
+    case 'dex': tone(1318, t, 0.07, { type: 'square', vol: 0.08 }); tone(1760, t + 0.09, 0.12, { type: 'square', vol: 0.08 }); break;
+    case 'jHeal': [[523, 0, .18], [659, .18, .18], [784, .36, .18], [659, .54, .18], [1046, .72, .5], [784, 1.22, .2], [1046, 1.42, .6]].forEach(([f, d, l]) => { tone(f, t + d, l, { type: 'square', vol: 0.07 }); tone(f / 2, t + d, l, { type: 'triangle', vol: 0.12 }); }); break;
+    case 'jCatch': [[784, 0, .14], [784, .15, .14], [784, .3, .14], [1046, .45, .3], [988, .78, .14], [880, .93, .14], [988, 1.08, .14], [1175, 1.23, .5]].forEach(([f, d, l]) => { tone(f, t + d, l, { type: 'square', vol: 0.07 }); tone(f / 2, t + d, l, { type: 'triangle', vol: 0.1 }); }); break;
     case 'evo': for (let i = 0; i < 16; i++) tone(300 + i * 60, t + i * 0.09, 0.15, { type: 'triangle', vol: 0.1 }); break;
   }
 }

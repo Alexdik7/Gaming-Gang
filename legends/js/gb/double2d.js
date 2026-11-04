@@ -1,5 +1,6 @@
 // Doppelkampf-Bildschirm (2 gegen 2 oder 2 gegen Boss), lokal oder als Koop über den Server
 import { G, W, H, COL, push, pop, input, text, box, cursor, bar, inRect, wait, wrap, fade } from './engine.js';
+import { bgArt, platArt } from './battlebg.js';
 import { DoubleBattle, SIDE, FOES } from '../battle/double.js';
 import { SPECIES } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
@@ -28,7 +29,7 @@ class DoubleScene {
   // o: { b (DoubleBattle oder RemoteDouble), mine: ['p0','p1'] | ['p0'], trainers: [{name,look}], title, bg, remote, boss }
   constructor(game, o, res) {
     this.g = game; this.o = o; this.res = res; this.s = game.state; this.b = o.b;
-    this.bg = BG[o.bg] || BG.gras; this.msg = ''; this.chars = 0; this.mode = 'msg'; this.cur = 0; this.mcur = 0; this.tcur = 0;
+    this.bgKey = BG[o.bg] ? o.bg : 'gras'; this.bg = BG[this.bgKey]; this.msg = ''; this.chars = 0; this.mode = 'msg'; this.cur = 0; this.mcur = 0; this.tcur = 0;
     this.off = {}; this.hpD = {};
     for (const id of this.b.ids()) { this.off[id] = { x: 0, y: 0, s: 0, vis: false }; const m = this.b.mon(id); this.hpD[id] = m ? m.hp : 0; }
     this.raid = !!this.b.slots.p2;
@@ -260,13 +261,9 @@ class DoubleScene {
   }
 
   draw(ctx) {
-    const [sky, sky2, g1, g2] = this.bg, b = this.b;
-    const gr = ctx.createLinearGradient(0, 0, 0, 114); gr.addColorStop(0, sky); gr.addColorStop(0.55, sky2); gr.addColorStop(0.56, g1); gr.addColorStop(1, g2);
-    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, 114);
-    for (const [cx, cy, rx, ry] of this.raid ? [[178, 64, 58, 11], [92, 112, 98, 9]] : [[178, 64, 58, 11], [62, 112, 64, 12]]) {
-      ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(cx, cy + 2, rx, ry, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = g2; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 7); ctx.fill();
-    }
+    const b = this.b;
+    ctx.drawImage(bgArt(this.bgKey, this.bg), 0, 0);
+    for (const [cx, cy, rx, ry] of this.raid ? [[178, 64, 58, 11], [92, 112, 98, 9]] : [[178, 64, 58, 11], [62, 112, 64, 12]]) { const pa = platArt(this.bgKey, this.bg, rx, ry); ctx.drawImage(pa, Math.round(cx - pa.width / 2), Math.round(cy - ry - 2)); }
     if (this.trainersVis && this.o.trainers) this.o.trainers.forEach((t, k) => ctx.drawImage(trainerSprite(t.look), 124 + k * 50 - (this.o.trainers.length === 1 ? -20 : 0), 2));
     for (const id of ['f1', 'f0', 'p3', 'p2', 'p1', 'p0']) {
       const m = b.mon(id), o = this.off[id]; if (!m || !o?.vis) continue;

@@ -398,3 +398,19 @@
 
 ## 3D-Prototyp (v0.1)
 Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edition weiter.
+
+## v1.3 – Smaragd-Gefühl
+- **Kampfhintergründe:** im Stil der GBA-Ära, je Gebiet eigene Pixel-Art. Gras mit Baumreihen und Bergen, Wald, Meer, Berge, Höhle, Wüste, Schnee, Vulkan, Ruine, Arena und Liga. Dazu passende Grasplattformen mit Halmen.
+- **Statusboxen wie in Smaragd:**
+  - cremefarben mit dunklem Rand und spitzer Seite
+  - Geschlechtssymbol ♂/♀, „KP“-Schild, EP-Balken
+  - Kristall-Symbol bei schon gebundenen Arten
+- **Level-Up-Fenster:** zuerst die Zuwächse (+2 …), dann die neuen Werte.
+- **Fang:**
+  - eigene Fangmelodie
+  - Chronik-Seite beim ersten Fang einer Art (Nr., Typen, Seltenheit, Beschreibung)
+- **Sammelbelohnungen:** Prof. Linde meldet sich bei 5, 10, 20, 30, 45, 60, 80, 100, 125 und 150 gebundenen Arten. Bei 45 gibt es das **Glanzamulett** (schimmernde Kreaturen dreimal so oft).
+- **Massenausbruch:** Jeden Tag taucht in einem Gebiet eine seltene Art gehäuft auf. Beim Betreten gibt es einen Hinweis, im Heilzentrum ein Gerücht.
+- **Schimmernde Kreaturen** funkeln beim Erscheinen.
+- **Heilzentrum:** Heilmaschine, auf der die Kristalle nacheinander aufleuchten, mit eigener Heilmelodie.
+- **Hohes Gras:** raschelt mit Halmen und Geräusch, wenn man hindurchläuft.

@@ -3,7 +3,7 @@ import { G, W, H, COL, push, pop, input, text, box, cursor, wait, fade, wipe, in
 import { MAPS, LOOK, ENC, SHOP, ITEMS } from './maps.js';
 import { Overworld } from './overworld.js';
 import { battle } from './battle2d.js';
-import { say, ask, choose, party, summary, dex, card, inputName, hatchScene, settings, typeTag } from './gbui.js';
+import { say, ask, choose, party, summary, dex, card, inputName, hatchScene, settings, typeTag, dexEntry, healAnim } from './gbui.js';
 import { drawChar } from './pixel.js';
 import { monSprite, trainerSprite } from './sprites.js';
 import { SPECIES, STARTERS } from '../data/creatures.js';
@@ -426,6 +426,7 @@ class Game {
     // Wer das Plateau betritt, beginnt die Liga von vorn (wie es sich gehört)
     if (id === 'liga') for (const k of ['e4_1', 'e4_2', 'e4_3', 'e4_4', 'aurin']) delete s.flags[k];
     if (id === 'liga' && !s.flags.kian3) await this.kianFinal();
+    { const sw = this.swarm(), M = MAPS[id]; if (M?.enc === sw.enc && s.flags.swarmDay !== sw.day && s.team.length) { s.flags.swarmDay = sw.day; this.ow.busy = true; await wait(450); sfx('dex'); await say(`Massenausbruch! Hier im Gebiet tauchen heute besonders viele ${SPECIES[sw.sp].name} auf!`); this.ow.busy = false; } }
     if (id === 'ligachamp' && !s.flags.umbra_end) await this.lyraHeal();
     if (id === 'route2' && s.flags.gotBalls && !s.flags.kian2) {
       this.ow.busy = true;
@@ -466,11 +467,39 @@ class Game {
   }
 
   // ---------------------------------------------------------- Kämpfe
+  // Massenausbruch: jeden Tag taucht eine seltene Art in einem Gebiet gehäuft auf
+  swarm() {
+    const day = Math.floor(Date.now() / 864e5);
+    if (this._sw?.day === day) return this._sw;
+    const maps = Object.values(MAPS).filter(m => m.enc && m.outdoor && ENC[m.enc]?.list?.length > 1);
+    const encs = [...new Set(maps.map(m => m.enc))], enc = encs[(day * 7) % encs.length];
+    const e = ENC[enc].list.filter(x => !SPECIES[x[0]]?.legendary).reduce((a, b) => (b[1] < a[1] ? b : a));
+    return (this._sw = { day, enc, sp: e[0], lv: [e[2], e[3]], name: maps.find(m => m.enc === enc).name });
+  }
+  shinyRoll(m) { if (!m.shiny && this.state.bag.glanzamulett && Math.random() < 2 / 512) m.shiny = true; return m; }
   pickWild(encId) {
+    const sw = this.swarm();
+    if (encId === sw.enc && Math.random() < 0.4) return this.shinyRoll(createMon(sw.sp, sw.lv[0] + Math.floor(Math.random() * (sw.lv[1] - sw.lv[0] + 1))));
     const night = this.isNight(), list = ENC[encId].list.filter(e => !e[4] || (e[4] === 'night') === night);
     let r = Math.random() * list.reduce((a, e) => a + e[1], 0);
-    for (const e of list) { r -= e[1]; if (r <= 0) return createMon(e[0], e[2] + Math.floor(Math.random() * (e[3] - e[2] + 1))); }
-    return createMon(list[0][0], list[0][2]);
+    for (const e of list) { r -= e[1]; if (r <= 0) return this.shinyRoll(createMon(e[0], e[2] + Math.floor(Math.random() * (e[3] - e[2] + 1)))); }
+    return this.shinyRoll(createMon(list[0][0], list[0][2]));
+  }
+  // Prof. Linde belohnt das Füllen der Chronik
+  async dexRewards() {
+    const s = this.state, n = Object.keys(s.dex.caught).filter(id => !SPECIES[id]?.fusion).length;
+    const R = [[5, { kristall: 5 }], [10, { sternkristall: 5 }], [20, { supertrank: 5 }], [30, { hypertrank: 3, sternkristall: 5 }], [45, { glanzamulett: 1 }], [60, { sternkristall: 10 }], [80, { urkristall: 1 }], [100, { hypertrank: 10, money: 20000 }], [125, { sternkristall: 20 }], [150, { urkristall: 2, money: 50000 }]];
+    for (const [k, rew] of R) {
+      if (n < k || s.flags['dexR' + k]) continue;
+      s.flags['dexR' + k] = true; sfx('dex');
+      await say([`Dein Funkgerät klingelt …`, `Prof. Linde: ${s.name}, du hast schon ${k} verschiedene Kreaturen gebunden! Das ist großartig für meine Forschung!`, 'Prof. Linde: Hier, eine kleine Belohnung. Ich schicke sie dir direkt in den Beutel!']);
+      for (const [it, v] of Object.entries(rew)) {
+        if (it === 'money') { s.money += v; sfx('caught'); await say(`${s.name} erhält ${v} ◈!`); continue; }
+        s.bag[it] = (s.bag[it] || 0) + v; sfx('caught'); await say(`${s.name} erhält ${v > 1 ? v + '× ' : ''}${ITEMS[it].name}!`);
+      }
+      if (rew.glanzamulett) await say('Prof. Linde: Mit dem Glanzamulett begegnest du schimmernden Kreaturen viel häufiger. Halt die Augen offen!');
+      const next = R.find(([kk]) => kk > k); if (next) await say(`Prof. Linde: Melde dich wieder, wenn du ${next[0]} Arten gebunden hast!`);
+    }
   }
   async wildBattle(encId, bg, mon) {
     const s = this.state; if (!s.team.some(m => !m.egg && m.hp > 0)) return;
@@ -507,11 +536,16 @@ class Game {
     this.ow.music();
     if (r.result === 'caught') {
       const m = r.caught; m.status = null; delete m._fainted;
+      const isNew = !s.dex.caught[m.sp];
       this.markDex(m.sp, true);
       await fade(0, 150);
-      await say(`${SPECIES[m.sp].name} wurde in deiner Chronik eingetragen!`);
+      if (isNew) {
+        await say(`Die Daten von ${SPECIES[m.sp].name} werden in der Chronik eingetragen.`);
+        await dexEntry(m.sp, Object.keys(s.dex.caught).filter(id => !SPECIES[id]?.fusion).length);
+      }
       if (await ask(`Möchtest du ${SPECIES[m.sp].name} einen Spitznamen geben?`)) m.nick = await inputName('Spitzname', SPECIES[m.sp].name);
       if (s.team.length < 6) s.team.push(m); else { s.box.push(m); await say(`${monName(m)} wurde in die Box im Heilzentrum geschickt.`); }
+      if (isNew) await this.dexRewards();
     }
     for (const m of s.team) delete m._fainted;
     if (r.result === 'lose' && noBlackout) { s.team.forEach(healMon); await fade(0, 150); }
@@ -536,10 +570,12 @@ class Game {
   async heal(who) {
     const s = this.state;
     await say(['Willkommen im Heilzentrum!', 'Ich kümmere mich kurz um deine Kreaturen…'], { name: who });
-    await fade(0.6, 200); sfx('heal'); await wait(900); await fade(0, 200);
+    await healAnim(s.team.length);
     s.team.forEach(healMon);
     s.healPoint = { ...(s.ret || {}), map: s.ret?.map || 'quellbach' };
     await say('Deine Kreaturen sind wieder topfit. Komm jederzeit wieder!', { name: who });
+    const sw = this.swarm();
+    if (!s.dex.caught[sw.sp]) await say(`Übrigens: Heute wurden in ${sw.name} auffällig viele ${SPECIES[sw.sp].name} gesehen!`, { name: who });
   }
   async shop() {
     const s = this.state;

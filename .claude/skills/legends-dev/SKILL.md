@@ -17,9 +17,10 @@ Vanilla-JS-ES-Module, Canvas 2D, 240×160 logische Pixel. Es gibt keinen Build-S
 | `js/gb/pixel.js` | Kachel-Maler `DRAW.<name>`, `noiseFill`, `shadedBlob`, `tallTree`, `building()`, Figuren (`drawChar`), Atmosphäre (`grassFringe`, `shore`, `softShadow`, `cloudShadow`, `glow`). |
 | `js/gb/monart.js`, `sprites.js` | Kreaturenbilder aus `model {kind, main, accent, glow, size, extras}`; `monSprite(sp, view)`. |
 | `js/gb/battle2d.js` | Einzelkampf-Szene: Intro (Plattformen, `throwCrystal`, `appear`), `recall`, `showBox/hideBox`, `animMove` nach `fx`, weiches Ende. |
+| `js/gb/battlebg.js` | Kampfhintergründe `bgArt(key, cols)` und Plattformen `platArt` (gecacht, für beide Kampfszenen). |
 | `js/gb/double2d.js` | Doppel- und Raid-Szene (`p0..p3` gegen `f0/f1`, Boss). |
 | `js/battle/battle.js`, `double.js` | Reine Kampflogik (läuft auch auf dem Server). |
-| `js/gb/gbui.js` | `say(text\|[...], {name})`, `choose(opts,{title})`, `ask(q)`, `party(state,{select,filter})`, `inputName`. |
+| `js/gb/gbui.js` | `say(text\|[...], {name})`, `choose(opts,{title})`, `ask(q)`, `party(state,{select,filter})`, `inputName`, `dexEntry(sp,n)`, `healAnim(n)`. |
 | `js/data/creatures*.js` | Arten per `C(id, num, name, types, rarity, stats[6], catchRate, xp, 'lvl:move …', evo\|null, lore, model, cry, {legendary})`. Neue Datei in `creatures2.js` importieren und in `sw.js` eintragen. |
 | `js/data/coop.js` | `COOP` (Duo-, Boss- und Raid-Gegner), `HELPERS` (Kian/Lyra/Nyx), `foeSlots`, `helperSlots`. |
 | `js/core/audio.js`, `music.js` | `sfx(name)`, `cry`, `setMusic(track)`. `TRACKS` = 8 Takte mit Akkorden und Melodienotation (`C5 - . …`). |

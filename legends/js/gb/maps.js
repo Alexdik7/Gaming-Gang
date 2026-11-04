@@ -1265,6 +1265,7 @@ export const ITEMS = {
   ak_blitzschlag: { name: 'AK Blitzschlag', desc: 'Attacken-Kristall: lehrt Blitzschlag (Elektro). Einmal nutzbar.', tm: 'blitzschlag' },
   urkristall: { name: 'Urkristall', desc: 'Ein uralter Kristall von Prof. Linde. Bindet mit zehnfacher Chance.', ball: 10 },
   hypertrank: { name: 'Hypertrank', desc: 'Heilt 200 KP.', heal: 200 },
+  glanzamulett: { name: 'Glanzamulett', desc: 'Von Prof. Linde. Schimmernde Kreaturen begegnen dir dreimal so oft.', key: true },
   herzstein_zeit: { name: 'Zeit-Herzstein', desc: 'Ein silberweißer Stein. Wer ihn hält, hört ein leises Ticken.', key: true },
   herzstein_ursprung: { name: 'Ursprungs-Herzstein', desc: 'Der älteste aller Herzsteine. Er schimmert in allen Farben.', key: true },
   herzstein_mond: { name: 'Mond-Herzstein', desc: 'Ein silbern glühender Stein aus der Mondruine.', key: true },

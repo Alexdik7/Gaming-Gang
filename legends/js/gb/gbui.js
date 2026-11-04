@@ -6,7 +6,7 @@ import { MOVES } from '../data/moves.js';
 import { TYPES } from '../data/types.js';
 import { calcStats, maxHp, monName, xpForLevel } from '../data/mon.js';
 import { monSprite, trainerSprite } from './sprites.js';
-import { eggSprite } from './pixel.js';
+import { eggSprite, crystalIcon } from './pixel.js';
 import { ITEMS } from './maps.js';
 
 export const settings = { textSpeed: 2 };
@@ -249,6 +249,66 @@ class Dex {
   }
 }
 export const dex = s => new Promise(res => push(new Dex(s, res)));
+
+// ---------------------------------------------------------------- Chronik-Eintrag nach dem ersten Fang (wie die Pokédex-Seite)
+class DexEntry {
+  constructor(sp, count, res) { this.sp = sp; this.n = count; this.res = res; this.t = 0; sfx('dex'); }
+  update(dt) { this.t += dt; if (this.t > 0.8 && (input.pressed('a') || input.pressed('b') || input.tap)) { sfx('click'); pop(this); this.res(); } }
+  draw(ctx) {
+    const S = SPECIES[this.sp], k = Math.min(1, this.t / 0.35);
+    ctx.fillStyle = '#b83030'; ctx.fillRect(0, 0, W, H);
+    for (let y = 0; y < H; y += 4) { ctx.fillStyle = 'rgba(0,0,0,.08)'; ctx.fillRect(0, y, W, 2); }
+    ctx.fillStyle = '#8a2020'; ctx.fillRect(0, 0, W, 16);
+    text('CHRONIK – NEUER EINTRAG', 8, 4, '#fff', 7.5, 'left', null, true);
+    text(`Gebunden: ${this.n}`, 232, 4, '#ffd8d8', 7, 'right', null, true);
+    // Bildschirm mit Raster
+    ctx.fillStyle = '#28303a'; ctx.fillRect(8, 22, 100, 88); ctx.fillStyle = '#d8f0e8'; ctx.fillRect(11, 25, 94, 82);
+    ctx.strokeStyle = 'rgba(40,120,100,.18)'; ctx.lineWidth = 1; for (let i = 0; i < 94; i += 8) { ctx.beginPath(); ctx.moveTo(11 + i + 0.5, 25); ctx.lineTo(11 + i + 0.5, 107); ctx.stroke(); } for (let i = 0; i < 82; i += 8) { ctx.beginPath(); ctx.moveTo(11, 25 + i + 0.5); ctx.lineTo(105, 25 + i + 0.5); ctx.stroke(); }
+    ctx.save(); ctx.globalAlpha = k; ctx.drawImage(monSprite(this.sp, 'front'), 26, 34 + (1 - k) * 10); ctx.restore();
+    // Datenfeld
+    box(114, 22, 120, 88);
+    text('Nr.' + String(S.num).padStart(3, '0'), 122, 29, COL.inkSoft, 7.5, 'left', null, true);
+    text(S.name, 122, 41, COL.ink, 10, 'left', COL.shadow, true);
+    S.types.forEach((t, i) => typeTag(t, 122 + i * 37, 57));
+    const r = RARITY[S.rarity]; if (r) { ctx.fillStyle = r.color; ctx.beginPath(); ctx.arc(125, 75.5, 3, 0, 7); ctx.fill(); text(r.name, 131, 72, COL.inkSoft, 7, 'left', null, true); }
+    const st = S.stats, tot = st.hp + st.atk + st.def + st.spa + st.spd + st.spe;
+    text('Basiswerte ' + tot, 122, 84, COL.inkSoft, 7);
+    ctx.drawImage(crystalIcon('#7fe3ff'), 212, 88, 12, 12);
+    box(6, 114, 228, 43);
+    wrap(S.lore, 210, 7.5).slice(0, 3).forEach((l, i) => text(l, 14, 119 + i * 11, COL.ink, 7.5));
+    if (this.t > 0.8 && Math.sin(G.t * 8) > 0) { ctx.fillStyle = '#e84a5f'; ctx.beginPath(); ctx.moveTo(222, 151); ctx.lineTo(228, 151); ctx.lineTo(225, 155); ctx.fill(); }
+  }
+}
+export const dexEntry = (sp, count) => new Promise(res => push(new DexEntry(sp, count, res)));
+
+// ---------------------------------------------------------------- Heilmaschine im Heilzentrum
+class HealAnim {
+  constructor(n, res) { this.overlay = true; this.n = Math.max(1, Math.min(6, n)); this.res = res; this.t = 0; this.placed = 0; }
+  update(dt) {
+    this.t += dt;
+    const want = Math.min(this.n, Math.floor(this.t / 0.28) + 1);
+    if (want > this.placed && this.t < this.n * 0.28 + 0.1) { this.placed = want; sfx('click'); }
+    if (!this.jingle && this.t > this.n * 0.28 + 0.25) { this.jingle = true; sfx('jHeal'); }
+    if (this.t > this.n * 0.28 + 2.4) { pop(this); this.res(); }
+  }
+  draw(ctx) {
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, 0, W, H);
+    const x = 84, y = 34;
+    ctx.fillStyle = '#3a3a48'; ctx.fillRect(x - 2, y - 2, 76, 56);
+    ctx.fillStyle = '#d8dce8'; ctx.fillRect(x, y, 72, 52); ctx.fillStyle = '#b8bcc8'; ctx.fillRect(x, y + 40, 72, 12);
+    ctx.fillStyle = '#28303a'; ctx.fillRect(x + 6, y + 4, 60, 32);
+    const on = this.jingle && Math.floor(this.t * 6) % 2;
+    ctx.fillStyle = on ? '#78f8c8' : '#3a8a70'; ctx.fillRect(x + 8, y + 6, 56, 2);
+    for (let i = 0; i < this.placed; i++) {
+      const cx = x + 14 + (i % 3) * 18, cy = y + 12 + Math.floor(i / 3) * 12;
+      ctx.fillStyle = '#1a2028'; ctx.fillRect(cx - 1, cy - 1, 12, 10);
+      ctx.drawImage(crystalIcon(on ? '#ffffff' : '#7fe3ff'), cx, cy - 1, 10, 10);
+      if (on) { ctx.fillStyle = 'rgba(255,255,200,.35)'; ctx.beginPath(); ctx.arc(cx + 5, cy + 4, 7, 0, 7); ctx.fill(); }
+    }
+    ctx.fillStyle = '#e84a5f'; ctx.fillRect(x + 30, y + 44, 12, 4);
+  }
+}
+export const healAnim = n => new Promise(res => push(new HealAnim(n, res)));
 
 // ---------------------------------------------------------------- Trainerpass
 class Card {

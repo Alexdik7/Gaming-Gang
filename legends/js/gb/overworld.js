@@ -74,6 +74,7 @@ export class Overworld {
     if (this.notice) { this.notice.t -= dt; if (this.notice.t <= 0) this.notice = null; }
     if (this.emote) { this.emote.t -= dt; if (this.emote.t <= 0) this.emote = null; }
     this.updateNpcs(dt);
+    if (this.rustle) { this.rustle.t -= dt; if (this.rustle.t <= 0) this.rustle = null; }
     for (const q of this.parts) { q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 30 * dt; q.l -= dt; } this.parts = this.parts.filter(q => q.l > 0);
     if (p.moving) { this.stepMove(dt); return; }
     if (!this.dirty) p.frame = 0;
@@ -161,6 +162,11 @@ export class Overworld {
   async arrive() {
     const p = this.p, s = this.g.state, c = this.ch(p.x, p.y);
     s.steps = (s.steps || 0) + 1;
+    if ((c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%') && !p.surf) {
+      this.rustle = { x: p.x, y: p.y, t: 0.32 }; sfx('grass');
+      const col = c === 'y' ? ['#ffffff', '#cfe0f0'] : c === 'h' ? ['#8a7a68', '#b0a088'] : c === 'f' ? ['#c8a860', '#a88a48'] : ['#3c9a3c', '#7ad05a'];
+      for (let i = 0; i < 5; i++) this.parts.push({ x: p.x * 16 + 3 + Math.random() * 10, y: p.y * 16 + 8 + Math.random() * 4, vx: (Math.random() - 0.5) * 40, vy: -22 - Math.random() * 18, c: col[i % 2], l: 0.4, ml: 0.4, sz: i % 2 ? 2 : 1 });
+    }
     this.g.onStep?.();
     if (this.M.indoor && c === 'm') return this.exitInterior();
     const wp = (this.M.warps || []).find(w => w.x === p.x && w.y === p.y);
@@ -342,7 +348,7 @@ export class Overworld {
       if (a.me && p.surf) { const sm = this.g.surfMon?.(); const bob = Math.round(Math.sin(G.t * 4)); if (sm) ctx.drawImage(monSprite(sm.sp, 'icon', sm.shiny, sm.mut), a.px - cx - 8, a.py - cy - 6 + bob); drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 7 + bob); continue; }
       if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
       else drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
-      { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h' || tc === 'y' || tc === 'f' || tc === '%') && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : tc === 'y' ? 'snow' : tc === 'f' ? 'dry' : tc === '%' ? 'mount' : 'green'), a.px - cx, a.py - cy + 8); }
+      { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h' || tc === 'y' || tc === 'f' || tc === '%') && !(a.me && p.jump)) { const rs = a.me && this.rustle ? Math.round(Math.sin(this.rustle.t * 45) * 1.4) : 0; ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : tc === 'y' ? 'snow' : tc === 'f' ? 'dry' : tc === '%' ? 'mount' : 'green'), a.px - cx + rs, a.py - cy + 8 - Math.abs(rs)); } }
       if (a.name) { const w = a.name.length * 4.2 + 6; ctx.fillStyle = 'rgba(20,40,80,.8)'; ctx.fillRect(a.px - cx + 8 - w / 2, a.py - cy - 12, w, 8); text(a.name, a.px - cx + 8, a.py - cy - 11.5, '#ffd36b', 6, 'center', null); }
     }
     // Baumkronen über den Figuren: wer hinter einem Baum steht, verschwindet halb im Laub

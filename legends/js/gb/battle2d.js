@@ -4,7 +4,8 @@ import { Battle } from '../battle/battle.js';
 import { SPECIES } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
 import { TYPES } from '../data/types.js';
-import { maxHp, monName, xpForLevel, evolve } from '../data/mon.js';
+import { maxHp, monName, xpForLevel, evolve, calcStats } from '../data/mon.js';
+import { bgArt, platArt } from './battlebg.js';
 import { sfx, cry, setMusic } from '../core/audio.js';
 import { monSprite, trainerSprite } from './sprites.js';
 import { crystalIcon } from './pixel.js';
@@ -16,6 +17,8 @@ const BG = {
   arena: ['#d8c8a8', '#f0e8d0', '#c8a878', '#a88858'], wasser: ['#88c8f8', '#d0f0ff', '#58a8e8', '#3888d0'], ruine: ['#1a1440', '#4a3a7a', '#5a6a5a', '#3a4a3a'], liga: ['#3a2a6a', '#c8b8f0', '#b8a8e0', '#8a78c0'],
 };
 const FOE = { x: 146, y: 8 }, OWN = { x: 26, y: 50 };
+// Geschlecht: fest aus der Kennung abgeleitet (Legendäre ohne)
+export function genderOf(m) { if (!m || SPECIES[m.sp]?.legendary) return 0; let h = 0; for (const ch of String(m.uid || m.sp)) h = (h * 31 + ch.charCodeAt(0)) | 0; return (Math.abs(h) % 2) + 1; }
 export const itemFilter = it => m => !m.egg && (it.revive ? m.hp <= 0 : it.cure ? m.hp > 0 && !!m.status : m.hp > 0 && m.hp < maxHp(m));
 const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const easeOut = t => 1 - Math.pow(1 - t, 3);
@@ -32,7 +35,7 @@ class BattleScene {
   constructor(game, o, res) {
     this.g = game; this.o = o; this.res = res; this.s = game.state;
     this.b = o.remote || new Battle({ team: this.s.team, foeTeam: o.foeTeam, wild: !o.trainer, trainer: o.trainer, canCatch: o.canCatch !== false });
-    this.bg = BG[o.bg || 'gras'];
+    this.bgKey = BG[o.bg] ? o.bg : 'gras'; this.bg = BG[this.bgKey];
     this.msg = ''; this.chars = 0; this.mode = 'msg'; this.cur = 0; this.mcur = 0;
     this.foeOff = { x: 0, y: 0, s: o.trainer ? 0 : 1, vis: !o.trainer, flash: 0 }; this.ownOff = { x: 0, y: 0, s: 0, vis: false, flash: 0 };
     this.slide = 0; this.foeDark = o.trainer ? 0 : 1; this.foeBoxK = 0; this.ownBoxK = 0; this.rings = [];
@@ -185,7 +188,7 @@ class BattleScene {
         case 'recall': await this.recall(e.side, e.text); break;
         case 'catch': await this.catchAnim(e.shakes, e.ok); break;
         case 'xp': { const m = this.b.team.find(x => x.uid === e.uid); if (m === this.b.p) await this.fillXp(); break; }
-        case 'lvl': sfx('lvl'); this.sparkle('p', '#ffe27a', true); this.hpD.p = this.b.p.hp; await this.say(e.text); break;
+        case 'lvl': { sfx('lvl'); this.sparkle('p', '#ffe27a', true); this.hpD.p = this.b.p.hp; await this.say(e.text); const lm = this.b.team.find(x => x.uid === e.uid); if (lm && e.lvl && !this.o.remote) await this.statWin(lm, e.lvl); break; }
         case 'learn': await this.learn(this.b.team.find(m => m.uid === e.uid), e.id); break;
       }
     }
@@ -232,6 +235,8 @@ class BattleScene {
     await this.tween(0.32, k => (o.s = backOut(k)));
     this.tween(0.35, k => (o.flash = 1 - k));
     cry(SPECIES[side === 'f' ? this.b.f.sp : this.b.p.sp].cry);
+    const mm = side === 'f' ? this.b.f : this.b.p;
+    if (mm?.shiny) { await wait(200); sfx('shiny'); for (let k = 0; k < 3; k++) { for (let i = 0; i < 8; i++) { const a = i / 8 * 6.28; this.emit(c.x + (k - 1) * 12, c.y + 6 - k * 6, Math.cos(a) * 40, Math.sin(a) * 40, k % 2 ? '#fff6a8' : '#ffffff', 0.5, 2); } await wait(180); } }
     await wait(250);
   }
   async faint(side) {
@@ -311,7 +316,7 @@ class BattleScene {
     for (let i = 0; i < shakes; i++) { await wait(400); sfx('wobble'); await this.tween(0.4, k => (this.crystal.r = Math.sin(k * Math.PI * 2) * 0.5)); }
     await wait(350);
     if (ok) {
-      sfx('caught');
+      sfx('jCatch');
       for (let i = 0; i < 3; i++) this.emit(this.crystal.x + (i - 1) * 10, this.crystal.y, (i - 1) * 20, -50, '#fff6a8', 0.8, 3);
       this.crystal.done = true; await wait(700);
     } else {
@@ -323,6 +328,7 @@ class BattleScene {
 
   // ---------------------------------------------------------- Update & Zeichnen
   update(dt) {
+    if (this.pressRes && (input.pressed('a') || input.pressed('b') || input.tap)) { const r = this.pressRes; this.pressRes = null; r(); }
     for (let i = this.tweens.length - 1; i >= 0; i--) { const tw = this.tweens[i]; tw.t += dt; const k = Math.min(1, tw.t / tw.dur); tw.fn(k); if (k >= 1) { this.tweens.splice(i, 1); tw.res(); } }
     for (const p of this.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.l -= dt; } this.parts = this.parts.filter(p => p.l > 0);
     for (const b of this.bolts) b.l -= dt; this.bolts = this.bolts.filter(b => b.l > 0);
@@ -357,16 +363,11 @@ class BattleScene {
   }
 
   draw(ctx) {
-    const [sky, sky2, g1, g2] = this.bg, b = this.b;
-    const gr = ctx.createLinearGradient(0, 0, 0, 114); gr.addColorStop(0, sky); gr.addColorStop(0.55, sky2); gr.addColorStop(0.56, g1); gr.addColorStop(1, g2);
-    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, 114);
+    const b = this.b;
+    ctx.drawImage(bgArt(this.bgKey, this.bg), 0, 0);
     // Plattformen
     const sF = -260 * (1 - this.slide), sO = 260 * (1 - this.slide);
-    for (const [cx, cy, rx, ry] of [[178 + sF, 70, 46, 10], [60 + sO, 112, 56, 12]]) {
-      ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(cx, cy + 2, rx, ry, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = g2; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.beginPath(); ctx.ellipse(cx, cy - 2, rx - 6, ry - 4, 0, 0, 7); ctx.fill();
-    }
+    for (const [cx, cy, rx, ry] of [[178 + sF, 70, 46, 10], [60 + sO, 112, 56, 12]]) { const pa = platArt(this.bgKey, this.bg, rx, ry); ctx.drawImage(pa, Math.round(cx - pa.width / 2), Math.round(cy - ry - 2)); }
     // Gegner
     const fo = this.foeOff;
     if (fo.vis && b.f) this.drawSprite(ctx, monSprite(b.f.sp, 'front', b.f.shiny, b.f.mut), FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72, fo.flash, this.foeDark);
@@ -390,6 +391,7 @@ class BattleScene {
     // Infoboxen
     if (this.showFoeBox && b.f) this.infoBox(ctx, b.f, 6 - 130 * (1 - this.foeBoxK), 8, false);
     if (this.showOwnBox) this.infoBox(ctx, b.p, 128 + 130 * (1 - this.ownBoxK), 72, true);
+    this.drawLvlWin();
     // Text & Menüs
     box(0, 113, W, 47, 'dark');
     if (this.mode === 'moves') return this.drawMoves(ctx);
@@ -413,19 +415,53 @@ class BattleScene {
     ctx.restore();
   }
   infoBox(ctx, m, x, y, own) {
-    const h = own ? 38 : 30;
-    box(x, y, 106, h);
-    text(monName(m), x + 7, y + 5, COL.ink, 8, 'left', COL.shadow, true);
-    text('Lv' + m.lvl, x + 100, y + 5, COL.ink, 7.5, 'right');
-    if (m.status) text({ brand: 'BRD', gift: 'GIF', starre: 'STR' }[m.status], x + 7, y + 16, '#c84848', 6.5, 'left', null, true);
-    text('KP', x + 28, y + 16, '#d07818', 6.5, 'left', null, true);
-    const hpd = own ? this.hpD.p : this.hpD.f;
-    bar(x + 40, y + 17.5, 60, 3.5, hpd / maxHp(m));
-    if (own) {
-      text(`${Math.round(hpd)}/${maxHp(m)}`, x + 100, y + 23, COL.ink, 7.5, 'right');
-      const lo = xpForLevel(m.lvl), hi = xpForLevel(m.lvl + 1);
-      bar(x + 8, y + 33, 92, 1.5, (Math.min(this.xpD, hi) - lo) / (hi - lo), 'xp');
+    const w = 106, h = own ? 39 : 30;
+    // Smaragd-Box: cremefarben, dunkler Rand, spitz zulaufende Seite zur Kreatur hin
+    const shape = (i) => { const L = x + i, T = y + i, Rr = x + w - i, B = y + h - i; ctx.beginPath();
+      if (own) { ctx.moveTo(L + 7, T); ctx.lineTo(Rr - 3, T); ctx.lineTo(Rr, T + 3); ctx.lineTo(Rr, B - 3); ctx.lineTo(Rr - 3, B); ctx.lineTo(L + 7, B); ctx.lineTo(L, B - 9); ctx.lineTo(L, T + 9); }
+      else { ctx.moveTo(L + 3, T); ctx.lineTo(Rr - 7, T); ctx.lineTo(Rr, T + 9); ctx.lineTo(Rr, B - 9); ctx.lineTo(Rr - 7, B); ctx.lineTo(L + 3, B); ctx.lineTo(L, B - 3); ctx.lineTo(L, T + 3); }
+      ctx.closePath(); };
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.save(); ctx.translate(1, 2); shape(0); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#3c4844'; shape(0); ctx.fill();
+    const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, '#fcfcec'); g.addColorStop(1, '#e4e4c4'); ctx.fillStyle = g; shape(1.5); ctx.fill();
+    ctx.fillStyle = 'rgba(160,168,120,.35)'; ctx.fillRect(x + (own ? 8 : 4), y + h - 5, w - 14, 2);
+    const nx = x + (own ? 12 : 7), name = monName(m);
+    text(name, nx, y + 4, COL.ink, 8, 'left', COL.shadow, true);
+    const gd = genderOf(m);
+    if (gd) { // Symbol als Pixel-Grafik
+      const gx = Math.round(nx + name.length * 5.3 + 3), gy = y + 5; ctx.fillStyle = gd === 1 ? '#3878f0' : '#f05068';
+      const px = gd === 1 ? ['..###', '...##', '.##.#', '#..#.', '#..#.', '.##..'] : ['.##.', '#..#', '#..#', '.##.', '.#..', '###.', '.#..'];
+      px.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '#') ctx.fillRect(gx + i, gy + j, 1, 1); }));
     }
+    text('Lv' + m.lvl, x + w - (own ? 8 : 14), y + 4, COL.ink, 7.5, 'right', COL.shadow, true);
+    if (!own && this.mode !== undefined && !this.o.trainer && this.g.state.dex.caught[m.sp]) ctx.drawImage(crystalIcon('#7fe3ff'), x + w - 46, y + 3, 9, 9);
+    const hx = x + (own ? 30 : 26);
+    if (m.status) text({ brand: 'BRD', gift: 'GIF', starre: 'STR' }[m.status], x + (own ? 10 : 6), y + 15, '#c84848', 6.5, 'left', null, true);
+    ctx.fillStyle = '#3c4844'; ctx.fillRect(hx, y + 15, 70, 6.5);
+    ctx.fillStyle = '#f8b030'; ctx.fillRect(hx + 1, y + 16, 12, 4.5);
+    text('KP', hx + 7, y + 15.2, '#583000', 5.5, 'center', null, true);
+    const hpd = own ? this.hpD.p : this.hpD.f;
+    bar(hx + 15, y + 16.5, 54, 3.5, hpd / maxHp(m));
+    if (own) {
+      text(`${Math.max(0, Math.round(hpd))}/ ${maxHp(m)}`, x + w - 8, y + 22.5, COL.ink, 7.5, 'right', COL.shadow, true);
+      const lo = xpForLevel(m.lvl), hi = xpForLevel(m.lvl + 1);
+      ctx.fillStyle = '#3c4844'; ctx.fillRect(x + 14, y + 32, 86, 4.5);
+      text('EP', x + 20, y + 32, '#f8f8f8', 4.5, 'center', null, true);
+      bar(x + 27, y + 33, 72, 2.5, (Math.min(this.xpD, hi) - lo) / (hi - lo), 'xp');
+    }
+  }
+  drawLvlWin() {
+    const L = this.lvlWin; if (!L) return;
+    box(146, 6, 90, 104);
+    [['KP', 'hp'], ['Angriff', 'atk'], ['Vertdg.', 'def'], ['Sp.-Ang.', 'spa'], ['Sp.-Vert.', 'spd'], ['Initiat.', 'spe']].forEach(([n, k], i) => {
+      const y = 14 + i * 15; text(n, 154, y, COL.ink, 7.5, 'left', COL.shadow, true);
+      text(L.ph ? String(L.b[k]) : '+' + (L.b[k] - L.a[k]), 228, y, L.ph ? COL.ink : '#d05030', 7.5, 'right', COL.shadow, true);
+    });
+  }
+  press() { return new Promise(r => { this.pressRes = r; }); }
+  async statWin(m, lvl) {
+    this.lvlWin = { a: calcStats({ ...m, lvl: lvl - 1 }), b: calcStats({ ...m, lvl }), ph: 0 };
+    await this.press(); sfx('click'); this.lvlWin.ph = 1; await this.press(); sfx('click'); this.lvlWin = null;
   }
   drawMoves(ctx) {
     const ms = this.b.p.moves;
