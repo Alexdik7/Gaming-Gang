@@ -3,22 +3,36 @@
 Ihr braucht einen **Weltserver**, der rund um die Uhr läuft. Er speichert eure gemeinsame Welt.
 Das Spiel selbst bekommt jeder einfach über den Link.
 
-## Variante A: Kostenlos bei Render.com (empfohlen, ohne eigenen PC)
+## Variante A: Kostenlos und dauerhaft (Render + MongoDB Atlas) – empfohlen
 
-1. Konto auf https://render.com anlegen (Anmeldung mit GitHub).
-2. **New → Web Service** wählen und das Repository `Gaming-Gang` verbinden.
-3. Einstellungen:
-   - **Root Directory:** `legends/server`
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-   - **Instance Type:** Free
-4. Nach ein paar Minuten bekommt ihr eine Adresse wie `https://legends-united-xyz.onrender.com`.
-5. Im Spiel: **Multiplayer-Welten** → diese Adresse eintragen → **Verbinden**.
+Der Server läuft kostenlos bei Render. Alle Welten und Spielstände liegen dauerhaft in einer kostenlosen MongoDB-Datenbank.
+Der Server pingt sich alle 10 Minuten selbst an und schläft deshalb nicht ein.
 
-**Hinweis:** Der kostenlose Render-Server schläft nach 15 Minuten ohne Spieler ein. Der erste Verbindungsversuch dauert dann bis zu einer Minute.
-Außerdem wird die Speicherdatei bei kostenlosen Diensten bei Neustarts zurückgesetzt.
-Für dauerhafte Welten braucht ihr eine „Persistent Disk“ (ca. 1 €/Monat) und die Umgebungsvariable `DATA_FILE=/var/data/worlds.json`.
-Auch für eine Datenbank ist das der Plan in Phase 2.
+### 1. Datenbank (MongoDB Atlas, ca. 5 Minuten)
+1. https://www.mongodb.com/cloud/atlas/register öffnen und mit Google oder E-Mail registrieren.
+2. **Create Cluster** → Tarif **M0 (Free)**, Anbieter beliebig, Region **Frankfurt** → **Create**.
+3. **Benutzer anlegen** (Fenster „Connect“ bzw. *Database Access*):
+   - Benutzername z. B. `legends`.
+   - Passwort **nur aus Buchstaben und Zahlen**, ohne Sonderzeichen. Aufschreiben!
+4. **Netzwerk:**
+   - Unter *Network Access* → **Add IP Address** → **Allow Access from Anywhere** (`0.0.0.0/0`) → Confirm.
+   - Nötig, weil der kostenlose Render-Server keine feste IP hat.
+5. **Verbindungsadresse kopieren:**
+   - **Connect** → **Drivers** → die Adresse kopieren, sie sieht so aus: `mongodb+srv://legends:<db_password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+   - `<db_password>` durch dein Passwort ersetzen, ohne die spitzen Klammern.
+
+### 2. Server (Render, ca. 5 Minuten)
+1. https://render.com → **Get Started** → mit **GitHub** anmelden und Zugriff auf `Gaming-Gang` erlauben.
+2. **New** → **Blueprint** → Repository `Gaming-Gang` wählen. Render findet die Datei `render.yaml` automatisch.
+3. Bei **MONGODB_URI** die Adresse aus Schritt 1.5 einfügen → **Apply**.
+4. Nach ca. 3–5 Minuten steht im Log `Speicher: mongodb – …` und `Server läuft`.
+   Oben steht dann die Adresse, z. B. `https://legends-united-xxxx.onrender.com`.
+5. Diese Adresse an Claude schicken. Claude trägt sie fest ins Spiel ein, dann muss niemand mehr etwas eintippen.
+
+### Gut zu wissen
+- Kostenlos: Render erlaubt 750 Stunden pro Monat, das reicht für einen Server rund um die Uhr. Atlas M0 bietet 512 MB Speicher, genug für viele tausend Spielstände.
+- Updates: Jeder Push auf `main` startet den Server neu. Die Daten bleiben in der Datenbank.
+- Lokal ohne `MONGODB_URI` speichert der Server wie bisher in `legends/server/data/worlds.json`.
 
 ## Variante B: Auf einem eigenen PC (für Tests im selben WLAN)
 

@@ -1,0 +1,17 @@
+# Render-Blueprint: kostenloser Weltserver für Legends United
+# Render → New → Blueprint → dieses Repository wählen → MONGODB_URI eintragen → Apply
+services:
+  - type: web
+    name: legends-united
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: legends/server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: NODE_VERSION
+        value: "20"

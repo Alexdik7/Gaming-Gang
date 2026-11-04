@@ -49,6 +49,7 @@ Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legend
   - Fangen: Wurf-Timing mit kritischem Fang (`aim` in battle2d), 7 Kristallarten (`ITEMS.cond`), Kreaturen-Spuren (`ow.trail`)
   - Resonanz-Form (`RESO_MIN`, `resoSprite`), Geheimbasis (`base.js`: Plätze, Möbel, Basis-Code `LU-…`, Karten `basis`/`gast` zur Laufzeit)
   - Grafik v2.0: ruhiges Gras, neue Büschel im hohen Gras, Wellen, Kanten, Zäune; `polish()` gibt allen Sprites Sel-Out-Umrisse und Randlicht
+  - Server: dauerhaft in MongoDB Atlas (`server/store.js`, `MONGODB_URI`), Render-Blueprint `render.yaml`, Selbst-Ping gegen Einschlafen
   - PC: Box-Bildschirm `boxui.js` (8×30, `m.slot`, `s.boxMeta`, Greifen/Tauschen)
   - Sammeln: Chronik-Seite beim Erstfang, Belohnungen von Prof. Linde, Massenausbruch pro Tag, Glanzamulett
 - Details in `legends/docs/FORTSCHRITT.md` und `ROADMAP.md`.

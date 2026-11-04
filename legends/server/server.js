@@ -26,11 +26,17 @@ const logicReady = (async () => {
 })().catch(e => console.error('Kampflogik konnte nicht geladen werden:', e));
 
 // ---------------------------------------------------------------- Persistenz
+// MongoDB (MONGODB_URI) oder JSON-Datei; Schreiben gebündelt alle 3 s, beim Beenden sofort
 let db = { worlds: {}, accounts: {} };
-try { db = JSON.parse(fs.readFileSync(DATA, 'utf8')); } catch { fs.mkdirSync(path.dirname(DATA), { recursive: true }); }
-let dirty = false;
-setInterval(() => { if (!dirty) return; dirty = false; fs.writeFile(DATA + '.tmp', JSON.stringify(db), e => { if (!e) fs.rename(DATA + '.tmp', DATA, () => {}); }); }, 3000);
+let dirty = false, store = null, saving = false;
 const markDirty = () => (dirty = true);
+async function flush() {
+  if (!store || !dirty || saving) return;
+  dirty = false; saving = true;
+  try { await store.save(db); } catch (e) { dirty = true; console.error('Speichern fehlgeschlagen:', e.message); } finally { saving = false; }
+}
+setInterval(flush, 3000);
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, async () => { console.log('Beende – sichere Daten …'); dirty = true; saving = false; await flush(); await store?.close(); process.exit(0); });
 
 const code = () => { let c; do { c = Array.from(crypto.randomBytes(6), b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join(''); } while (db.worlds[c]); return c; };
 const hashSecret = s => crypto.createHash('sha256').update(String(s)).digest('hex');
@@ -424,4 +430,13 @@ function endSocial(s, why) {
   s.req = null;
 }
 
-server.listen(PORT, () => console.log(`Legends United Server läuft auf Port ${PORT}`));
+(async () => {
+  store = await require('./store').openStore(DATA);
+  const loaded = await store.load(); if (loaded) db = loaded;
+  db.worlds ||= {}; db.accounts ||= {};
+  console.log(`Speicher: ${store.kind} – ${Object.keys(db.worlds).length} Welten, ${Object.keys(db.accounts).length} Konten`);
+  server.listen(PORT, () => console.log(`Legends United Server läuft auf Port ${PORT}`));
+  // Kostenloser Render-Server schläft nach 15 min ohne Anfragen ein – alle 10 min selbst anpingen
+  const self = process.env.RENDER_EXTERNAL_URL;
+  if (self && process.env.KEEP_AWAKE !== '0') setInterval(() => fetch(self + '/health').catch(() => {}), 10 * 60 * 1000);
+})().catch(e => { console.error('Start fehlgeschlagen:', e); process.exit(1); });
