@@ -16,6 +16,7 @@
 **Updates:**
 - Nach jeder Änderung am Spiel baut GitHub automatisch eine neue APK unter demselben Link.
 - Einfach herunterladen und über die alte App installieren. **Der Spielstand bleibt erhalten**, weil jede Version mit demselben Schlüssel signiert ist.
+- Einen neuen Build kannst du auch von Hand starten: GitHub → **Actions** → **Android-App bauen** → **Run workflow**.
 - Die App **nicht** vorher deinstallieren, sonst wird der Spielstand auf dem Handy gelöscht.
   - Mit Online-Sicherung kannst du ihn vorher über ONLINE → GERÄT WECHSELN mitnehmen.
 
