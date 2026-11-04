@@ -10,8 +10,8 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 | **1b – Handheld-Edition** | 240×160-Darstellung, Steuerkreuz, Charakter-Editor, 45 Kreaturen, Brutstätte & Mutationen, Arena 1 | ✅ v0.2 |
 | **2a – Grafik & Koop** | eigene 2D-Pixel-Art statt 3D-Renderings, 3D-Teil entfernt, Online-Welt, Mitspieler auf der Karte, Freundschaftskampf (Server berechnet), Tausch, Chat | ✅ v0.3 |
 | **2b – Koop-Ausbau** | Doppelkämpfe 2 gegen 2, Koop gegen Trainer-Duo und Boss, Tausch-Entwicklungen, Server-Sicherung & Geräte-Übertragung, Zu Freund reisen | ✅ v0.4 |
-| **3 – Hauptspiel** | Regionen Ignis, Aqualis, Frostheim · Arenen 2–4 mit Rätseln · Team Eklipse · Rivalin Lyra · 75 Kreaturen · Items (Beeren, Attacken-Kristalle) · Nebenquests | ⏳ Ignis ✅ v0.5 · Aqualis ✅ v0.6 · Frostheim ✅ v0.7 |
-| **4 – Endgame** | Regionen Nocturna, Solaria, Drakmor · Arenen 5–8 · Top 4 · Champion · legendäre Hüter · Geheimorte nur zu viert · Postgame · 150 Kreaturen | geplant |
+| **3 – Hauptspiel** | Regionen Ignis, Aqualis, Frostheim · Arenen 2–4 mit Rätseln · Team Eklipse · Rivalin Lyra · 75 Kreaturen · Items (Beeren, Attacken-Kristalle) · Nebenquests | ✅ v0.5–v0.8 |
+| **4 – Endgame** ⏳ als Nächstes | Regionen Nocturna, Solaria, Drakmor · Arenen 5–8 · Top 4 · Champion · legendäre Hüter · Geheimorte nur zu viert · Postgame · 150 Kreaturen | geplant |
 | **5 – Qualität** | komponierte Musik, Animationen, Balancing, Performance, Windows-App (Tauri), Store-Apps (Capacitor) | geplant |
 
 ## Phase 2b – erledigt (v0.4)
@@ -35,7 +35,17 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 | 3.3 | Team Eklipse: Rüpel besetzen die Arena, Kommandantin Nyx, Versteck auf der Insel, Meeres-Herzstein | ✅ v0.5/v0.6 |
 | 3.4 | Region Aqualis: Route 4, Surfen (Wellenreiter), Arena 3 (Meri, Wasser), Eklipse-Versteck, 10 Kreaturen | ✅ v0.6 |
 | 3.5 | Region Frostheim: Frostpass mit Eissee, Arena 4 (Halvar, Eisrutsch-Rätsel), Rivalin Lyra, 10 Kreaturen | ✅ v0.7 |
-| 3.6 | Items (Beeren, Attacken-Kristalle), Nebenquests, Eisgrotte (Herzstein-Finale von Phase 3), Balancing bis Level 40 | ⏳ als Nächstes |
+| 3.6 | Eisgrotte mit Doppel-Finale gegen Nyx & Lyra, Items (Beeren, Klarbeere, Beleber, 8 Attacken-Kristalle), Beerenbüsche, 3 Nebenquests, Balancing-Skript `tools/balance.mjs` | ✅ v0.8 |
+
+## Ablaufplan Phase 4 (Entwurf)
+
+| AP | Inhalt |
+|---|---|
+| 4.1 | Region Nocturna (ewige Nacht, Geister/Schatten), Arena 5, Herzstein 3 |
+| 4.2 | Region Solaria (Wüste & Tempel, Licht/Magie), Arena 6, Herzstein 4 |
+| 4.3 | Region Drakmor (Drachengebirge), Arenen 7–8, Team-Eklipse-Hauptquartier |
+| 4.4 | Lyras Entscheidung, Nyx' Anführer, Siegesstraße, Top 4 und Champion |
+| 4.5 | Legendäre Hüter, Geheimorte nur zu viert (Koop-Raids), Postgame, Ziel 150 Kreaturen, Level bis 60+ |
 
 ## Story-Leitfaden (Entwurf für alle Phasen)
 

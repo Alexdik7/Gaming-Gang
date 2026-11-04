@@ -75,9 +75,11 @@ export class DoubleBattle {
     for (const x of list.filter(x => x.a.t === 'forfeit')) { ev.push({ t: 'msg', text: `${this.slots[x.id].owner} gibt auf!` }); return this.finish(ev, 'lose'); }
     for (const x of list.filter(x => x.a.t === 'switch')) if (this.canSwitchTo(x.id, x.a.i)) this.doSwitch(x.id, x.a.i, ev);
     for (const x of list.filter(x => x.a.t === 'item')) {
-      const s = this.slots[x.id], m = s.pool[x.a.target]; if (!m || m.hp <= 0) continue;
-      const amt = Math.min(maxHp(m) - m.hp, x.a.amount); m.hp += amt;
-      ev.push({ t: 'msg', text: `${monName(m)} wurde um ${amt} KP geheilt.` });
+      const s = this.slots[x.id], m = s.pool[x.a.target]; if (!m || (m.hp <= 0 && !x.a.revive)) continue;
+      if (x.a.cure) { m.status = null; ev.push({ t: 'msg', text: `${monName(m)} ist wieder ganz gesund.` }); continue; }
+      const amt = x.a.revive ? Math.floor(maxHp(m) * x.a.revive) : Math.min(maxHp(m) - m.hp, x.a.amount);
+      m.hp = x.a.revive ? amt : m.hp + amt; delete m._fainted;
+      ev.push({ t: 'msg', text: x.a.revive ? `${monName(m)} ist wieder kampfbereit!` : `${monName(m)} wurde um ${amt} KP geheilt.` });
       const on = this.ids().find(o => this.slots[o].pool === s.pool && this.slots[o].i === x.a.target);
       if (on) ev.push({ t: 'hp', slot: on, hp: m.hp, max: maxHp(m), heal: true });
     }

@@ -16,6 +16,7 @@ const BG = {
   arena: ['#d8c8a8', '#f0e8d0', '#c8a878', '#a88858'], wasser: ['#88c8f8', '#d0f0ff', '#58a8e8', '#3888d0'], ruine: ['#1a1440', '#4a3a7a', '#5a6a5a', '#3a4a3a'],
 };
 const FOE = { x: 146, y: 8 }, OWN = { x: 26, y: 50 };
+export const itemFilter = it => m => !m.egg && (it.revive ? m.hp <= 0 : it.cure ? m.hp > 0 && !!m.status : m.hp > 0 && m.hp < maxHp(m));
 const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
 class BattleScene {
@@ -108,15 +109,15 @@ class BattleScene {
     if (i === 1) {
       this.mode = 'busy';
       const bag = this.s.bag, opts = [];
-      for (const k of ['kristall', 'sternkristall', 'trank', 'supertrank']) if (bag[k]) opts.push({ k, label: ITEMS[k].name, right: '×' + bag[k], disabled: ITEMS[k].ball && !b.canCatch });
+      for (const k of Object.keys(ITEMS)) { const I = ITEMS[k]; if (bag[k] && (I.ball || I.heal || I.cure || I.revive)) opts.push({ k, label: I.name, right: '×' + bag[k], disabled: I.ball && !b.canCatch }); }
       if (!opts.length) { await say('Dein Beutel ist leer.'); this.mode = 'menu'; return; }
       const c = await choose(opts, { title: 'BEUTEL' });
       if (c === null) { this.mode = 'menu'; return; }
       const it = ITEMS[opts[c].k];
       if (it.ball) { bag[opts[c].k]--; return done({ t: 'catch', bonus: it.ball * (SPECIES[b.f.sp].legendary ? 1.2 : 1), item: opts[c].k }); }
-      const ti = await party(this.s, { select: true, prompt: 'Wen heilen?', filter: m => !m.egg && m.hp > 0 && m.hp < maxHp(m) });
+      const ti = await party(this.s, { select: true, prompt: it.revive ? 'Wen beleben?' : it.cure ? 'Wen kurieren?' : 'Wen heilen?', filter: itemFilter(it) });
       if (ti === null) { this.mode = 'menu'; return; }
-      bag[opts[c].k]--; return done({ t: 'item', target: ti, amount: it.heal });
+      bag[opts[c].k]--; return done({ t: 'item', target: ti, amount: it.heal, cure: it.cure, revive: it.revive });
     }
     if (i === 2) {
       this.mode = 'busy';

@@ -9,6 +9,7 @@ import { sfx, cry, setMusic } from '../core/audio.js';
 import { monSprite, trainerSprite } from './sprites.js';
 import { choose, party, evoScene, typeTag, say, ask, waitMsg } from './gbui.js';
 import { ITEMS } from './maps.js';
+import { itemFilter } from './battle2d.js';
 
 const BG = {
   gras: ['#a8e0f8', '#e0f8d0', '#78c858', '#58a848'], hoehle: ['#3a2a20', '#6a5040', '#9a7a58', '#7a5a40'], vulkan: ['#3a1a1a', '#b8583a', '#8a7a68', '#6a5a4a'], schnee: ['#a8c8e8', '#eef6ff', '#e0ecf8', '#c0d4e8'], arena: ['#d8c8a8', '#f0e8d0', '#c8a878', '#a88858'],
@@ -91,12 +92,13 @@ class DoubleScene {
     this.mode = 'busy';
     if (i === 1) {
       if (this.o.remote) { await say('Im Koop-Kampf sind keine Items erlaubt.'); this.mode = 'menu'; return; }
-      const bag = this.s.bag, opts = ['trank', 'supertrank'].filter(k => bag[k]).map(k => ({ k, label: ITEMS[k].name, right: '×' + bag[k] }));
+      const bag = this.s.bag, opts = Object.keys(ITEMS).filter(k => bag[k] && (ITEMS[k].heal || ITEMS[k].cure || ITEMS[k].revive)).map(k => ({ k, label: ITEMS[k].name, right: '×' + bag[k] }));
       if (!opts.length) { await say('Du hast keine Heilmittel.'); this.mode = 'menu'; return; }
       const c = await choose(opts, { title: 'BEUTEL' }); if (c === null) { this.mode = 'menu'; return; }
-      const t = await party({ ...this.s, team: pool }, { select: true, prompt: 'Wen heilen?', filter: m => !m.egg && m.hp > 0 && m.hp < maxHp(m) });
+      const I = ITEMS[opts[c].k];
+      const t = await party({ ...this.s, team: pool }, { select: true, prompt: 'Für wen?', filter: m => itemFilter(I)(m) && !(I.revive && this.b.ids().some(o => this.b.slots[o].pool === pool && pool[this.b.slots[o].i] === m)) });
       if (t === null) { this.mode = 'menu'; return; }
-      this.s.bag[opts[c].k]--; return this.done({ t: 'item', target: t, amount: ITEMS[opts[c].k].heal });
+      this.s.bag[opts[c].k]--; return this.done({ t: 'item', target: t, amount: I.heal, cure: I.cure, revive: I.revive });
     }
     if (i === 2) {
       const k = await party({ ...this.s, team: pool }, { select: true, prompt: 'Welche Kreatur einwechseln?', filter: m => b.canSwitchTo(id, pool.indexOf(m)) });

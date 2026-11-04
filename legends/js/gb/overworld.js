@@ -221,6 +221,7 @@ export class Overworld {
       if (c === 'Y' && this.id === 'home') { await this.g.rest(); return; }
       if (c === '~' && !this.p.surf) { await this.g.water(fx, fy); return; }
       if (c === '~' && this.M.fishing !== false) { await this.g.fish(); return; }
+      if (c === 'U') { await this.g.berry(fx, fy); return; }
       if (c === 'b') { await say('Ein schwerer Felsbrocken. Er bewegt sich keinen Millimeter.'); return; }
     } finally { this.busy = false; }
   }

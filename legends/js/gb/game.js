@@ -9,6 +9,8 @@ import { monSprite, trainerSprite } from './sprites.js';
 import { SPECIES, STARTERS } from '../data/creatures.js';
 import '../data/creatures2.js';
 import { createMon, healMon, maxHp, monName } from '../data/mon.js';
+import { MOVES } from '../data/moves.js';
+import { itemFilter } from './battle2d.js';
 import { ensureSpecies, stepBreeding, hatch, canBreed, compatibility } from '../data/breeding.js';
 import { initAudio, sfx, cry, setMusic, setAudio, audioState } from '../core/audio.js';
 import { mulberry } from '../core/noise.js';
@@ -17,6 +19,11 @@ import { doubleBattle, localDouble } from './double2d.js';
 import { COOP, foeSlots } from '../data/coop.js';
 
 const SAVE = 'lu2-save', OPT = 'lu2-opt', DAY = 24 * 60;
+const QUESTS = {
+  ig_kid: { want: 'flammeule', ask: ['Ich habe noch nie eine Flammeule aus der Nähe gesehen!', 'Sie fliegen nur nachts über den Aschepfad. Bringst du mir eine zum Anschauen?'], thanks: ['WOW! {mon} ist ja wunderschön!', 'Danke! Hier, das hab ich am Vulkan gefunden.'], reward: { ak_magmaflut: 1, beleber: 2 }, after: 'Ich will später auch mal eine Flammeule haben!' },
+  aq_fischer: { want: 'geisterflosse', ask: ['Seit Jahren jage ich die Geisterflosse. Man sagt, sie schwimmt nachts vor der Küste.', 'Wenn du eine fängst, zeig sie mir. Ich will wissen, ob sie wirklich lächelt!'], thanks: ['Sie lächelt tatsächlich… {mon} ist echt!', 'Jetzt kann ich in Ruhe in Rente gehen. Nimm das hier!'], reward: { ak_wellenschlag: 1, sternkristall: 3 }, after: 'Ich träume immer noch von dem Lächeln der Geisterflosse.' },
+  fh_oma: { want: 'schneeglock', ask: ['Früher blühten überall in Frostheim Schneeglocks. Heute sieht man sie kaum noch.', 'Wenn du eines findest – bei Tag am Frostpass –, würdest du es mir zeigen?'], thanks: ['Ach, wie schön! {mon} läutet ja richtig!', 'Das erinnert mich an meine Jugend. Hier, für deine Reise.'], reward: { ak_sonnenstrahl: 1, klarbeere: 5 }, after: 'Danke noch mal für das Schneeglock. Mein Herz ist ganz warm.' },
+};
 const GYMS = {
   gorm: {
     badge: 0, badgeName: 'FELSORDEN', team: [['kaeferix', 13], ['kieselkrebs', 14], ['brockel', 16]], reward: 1600,
@@ -188,13 +195,50 @@ class Game {
       if (i === null || i === keys.length) return;
       const k = keys[i], it = ITEMS[k];
       await say(it.desc);
-      if (it.heal) {
-        const t = await party(s, { select: true, prompt: 'Wen heilen?', filter: m => !m.egg && m.hp > 0 && m.hp < maxHp(m) });
+      if (it.heal || it.cure || it.revive) {
+        const t = await party(s, { select: true, prompt: it.revive ? 'Wen beleben?' : it.cure ? 'Wen kurieren?' : 'Wen heilen?', filter: itemFilter(it) });
         if (t === null) continue;
-        const m = s.team[t], a = Math.min(it.heal, maxHp(m) - m.hp); m.hp += a; s.bag[k]--; sfx('heal');
-        await say(`${monName(m)} wurde um ${a} KP geheilt.`);
+        const m = s.team[t]; s.bag[k]--; sfx('heal');
+        if (it.cure) { m.status = null; await say(`${monName(m)} ist wieder ganz gesund.`); }
+        else if (it.revive) { m.hp = Math.floor(maxHp(m) * it.revive); await say(`${monName(m)} ist wieder kampfbereit!`); }
+        else { const a = Math.min(it.heal, maxHp(m) - m.hp); m.hp += a; await say(`${monName(m)} wurde um ${a} KP geheilt.`); }
       }
+      if (it.tm) await this.useTm(k, it);
     }
+  }
+  // Attacken-Kristall: passende Kreatur (gleicher Typ oder Attacke im Lernset) lernt die Attacke
+  canTm(m, id) { const S = SPECIES[m.sp], M = MOVES[id]; return !m.egg && !m.moves.some(x => x.id === id) && (S.types.includes(M.type) || M.type === 'normal' || S.learn.some(([, l]) => l === id)); }
+  async useTm(k, it) {
+    const s = this.state, M = MOVES[it.tm];
+    const t = await party(s, { select: true, prompt: `Wer soll ${M.name} lernen?`, filter: m => this.canTm(m, it.tm) });
+    if (t === null) return;
+    const m = s.team[t];
+    if (m.moves.length < 4) m.moves.push({ id: it.tm, pp: M.pp });
+    else {
+      const i = await choose([...m.moves.map(x => MOVES[x.id].name), 'Abbrechen'], { title: 'Vergessen:' });
+      if (i === null || i === 4) return;
+      m.moves[i] = { id: it.tm, pp: M.pp };
+    }
+    s.bag[k]--; sfx('lvl'); await say(`${monName(m)} hat ${M.name} erlernt!`);
+  }
+  // Nebenquest „Zeig mir …“: eine bestimmte Kreatur im Team vorzeigen
+  async quest(n, q) {
+    const s = this.state, N = { name: n.name }, f = 'quest_' + n.id;
+    if (s.flags[f]) return say(q.after, N);
+    const has = s.team.find(m => !m.egg && m.sp === q.want);
+    if (!has) return say(q.ask, N);
+    await say(q.thanks.map(t => t.replace('{mon}', monName(has))), N);
+    for (const [k, v] of Object.entries(q.reward)) { s.bag[k] = (s.bag[k] || 0) + v; sfx('caught'); await say(`${s.name} erhält ${v > 1 ? v + '× ' : ''}${ITEMS[k].name}!`); }
+    s.flags[f] = true; this.save(true);
+  }
+  // Beerenbusch: einmal pro Spieltag Beeren pflücken
+  async berry(x, y) {
+    const s = this.state, key = `${this.ow.id},${x},${y}`, day = Math.floor((s.time || 0) / DAY);
+    s.berries ||= {};
+    if (s.berries[key] === day) return say('An diesem Busch hängen noch keine reifen Beeren. Morgen wieder!');
+    const k = (x * 7 + y * 13) % 5 % 2 ? 'klarbeere' : 'heilbeere', n = 1 + ((x + y + day) % 2);
+    s.berries[key] = day; s.bag[k] = (s.bag[k] || 0) + n; sfx('caught');
+    await say(`${s.name} pflückt ${n}× ${ITEMS[k].name}!`);
   }
   async options() {
     for (;;) {
@@ -210,6 +254,11 @@ class Game {
   // ---------------------------------------------------------- Bewegungs-Sperren & Ereignisse
   blockEdge(map, to) {
     const s = this.state;
+    if (map === 'frostheim' && to === 'eisgrotte' && !s.badges[3]) {
+      this.ow.busy = true;
+      (async () => { await say(['Ein eisiger Sturm peitscht dir entgegen.', 'Die Leute in Frostheim sagen, nur wer Halvars Frostorden trägt, übersteht den Weg zur Eisgrotte.']); this.ow.busy = false; })();
+      return true;
+    }
     if (map === 'felsenau' && to === 'route5' && !s.badges[2]) {
       this.ow.busy = true;
       (async () => { await say(['Ein Bergwächter versperrt den Frostpass: Lawinengefahr!', 'Nur wer drei Orden besitzt – Fels, Glut und Welle –, darf in die Berge.']); this.ow.busy = false; })();
@@ -465,6 +514,7 @@ class Game {
   async talk(n) {
     const s = this.state, N = { name: n.name };
     if (n.trainer) { if (s.flags[n.id]) return say(n.trainer.after || n.trainer.lose || 'Guter Kampf!', N); return this.trainerBattle(n); }
+    if (QUESTS[n.id]) return this.quest(n, QUESTS[n.id]);
     switch (n.id) {
       case 'mama':
         if (!s.flags.starter) return say(['Prof. Linde wartet im Labor auf dich, Schatz!', 'Das Labor ist das große Haus mit dem grauen Dach im Süden.'], N);
@@ -510,6 +560,7 @@ class Game {
       case 'ig_kid': return say(['Ignis liegt direkt am Vulkan. Nachts sieht man die Lava glühen!', 'Flammeulen kommen nur in der Dämmerung raus. Ich hab noch nie eine gefangen.'], N);
       case 'ria': case 'rio': return this.coopNpc('zwillinge', n);
       case 'koloss': return this.coopNpc('koloss', n);
+      case 'nyx3': case 'lyra3': return this.coopNpc('finale', n);
       default: return say('…', N);
     }
   }
@@ -575,6 +626,14 @@ class Game {
     if (r.result === 'win') { this.ow.music(); await this.coopReward(id); }
     await this.afterBattle(r);
   }
+  async finale() {
+    const s = this.state;
+    this.ow.npcs = this.ow.npcs.filter(x => !['nyx3', 'lyra3'].includes(x.id));
+    await say(['Nyx ist verschwunden. Nur Lyra bleibt einen Moment stehen.', 'Lyra: Du kämpfst für Leute, die du nicht einmal kennst. Warum?', 'Lyra: … Vielleicht habe ich mich geirrt. Vielleicht auch nicht. Ich muss nachdenken.', 'Lyra geht, ohne sich umzudrehen.'], { name: 'Eisgrotte' });
+    s.bag.herzstein_eis = 1; sfx('caught');
+    await say([`${s.name} nimmt den EIS-HERZSTEIN vom Altar!`, 'Zwei von sieben Herzsteinen sind jetzt in Sicherheit.', '(Ende von Phase 3! Als Nächstes: Phase 4 mit Nocturna, Solaria und Drakmor, den Arenen 5–8 und der Top 4.)']);
+    this.save(true);
+  }
   async coopReward(id) {
     const d = COOP[id], s = this.state;
     if (s.flags['coop_' + id]) { await say('Super Kampf! (Die Belohnung gab es schon.)'); return; }
@@ -583,6 +642,7 @@ class Game {
     s.money += d.reward; await say(`Du erhältst ${d.reward} ◈ Preisgeld!`);
     if (d.item) { s.bag[d.item[0]] = (s.bag[d.item[0]] || 0) + d.item[1]; sfx('caught'); await say(`Du findest ${d.item[1]}× ${ITEMS[d.item[0]].name}!`); }
     if (id === 'koloss') this.ow.npcs = this.ow.npcs.filter(x => x.id !== 'koloss');
+    if (id === 'finale') await this.finale();
   }
 
   async gym(n) {

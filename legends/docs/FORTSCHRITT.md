@@ -1,6 +1,30 @@
 # Fortschritt
 
-## v0.7 – Phase 3, Teil 3: Frostheim (aktuell)
+## v0.8 – Phase 3 abgeschlossen (aktuell)
+
+### ✅ Neu und getestet
+- **Eisgrotte** nördlich von Frostheim, nur mit 4 Orden:
+  - Höhle mit Eis-Kreaturen und 2 Eklipse-Rüpeln
+  - Rutsch-Rätsel, das je nach Startpunkt 5 bis 10 Züge braucht (vom Löser geprüft)
+- **Finale:** Doppelkampf gegen **Nyx & Lyra**, allein mit 2 Kreaturen oder zu zweit online.
+  - Danach erhältst du den **Eis-Herzstein** und Lyra beginnt zu zweifeln.
+  - Simulierte Siegchance allein: Lv 30 etwa 35 %, Lv 33 etwa 80 %.
+- **Neue Items:**
+  - Heilbeere (40 KP), Klarbeere (heilt Status), Beleber (weckt kampfunfähige Kreaturen)
+  - Alle drei funktionieren im Kampf, im Doppelkampf und im Beutel.
+- **8 Attacken-Kristalle (AK):**
+  - Sie lehren starke Attacken, und zwar Kreaturen desselben Typs oder solchen mit der Attacke im Lernset.
+  - Zu finden in Gebieten und als Quest-Belohnung.
+- **6 Beerenbüsche** auf Route 1, 2 und 4: einmal pro Spieltag Beeren pflücken.
+- **3 Nebenquests** „Zeig mir …“:
+  - Kind in Ignis → Flammeule
+  - Fischer in Aqualis → Geisterflosse
+  - Alte Frau in Frostheim → Schneeglock
+- **Laden** mit Heilbeere, Klarbeere und Beleber.
+- **Balancing-Skript** `tools/balance.mjs`: Der Levelverlauf steigt gleichmäßig von 2 bis 34, ohne große Sprünge.
+- Alle 26 Karten sind fehlerfrei.
+
+## v0.7 – Phase 3, Teil 3: Frostheim
 
 ### ✅ Neu und getestet
 - **Route 5 · Frostpass:**

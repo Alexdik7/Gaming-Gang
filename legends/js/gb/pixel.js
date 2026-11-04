@@ -121,6 +121,15 @@ const DRAW = {
   rug: (x, f, s) => { x.fillStyle = '#c84848'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#f8d870'; x.fillRect(1, 1, 14, 1); x.fillRect(1, 14, 14, 1); x.fillStyle = '#e86868'; x.fillRect(3, 4, 10, 8); },
   mat: (x, f, s) => { DRAW.floor(x, f, s); x.fillStyle = '#7a2838'; x.fillRect(2, 4, 12, 10); x.fillStyle = '#b84858'; x.fillRect(3, 5, 10, 8); },
   orbs: (x, f, s) => { DRAW.table(x, f, s); for (const [a, c] of [[3, '#ff7a33'], [8, '#3d9bff'], [13, '#4fcf5c']]) { x.fillStyle = '#202030'; x.beginPath(); x.arc(a, 6.5, 2.4, 0, 7); x.fill(); x.fillStyle = c; x.beginPath(); x.arc(a, 6.5, 1.7, 0, 7); x.fill(); x.fillStyle = '#fff'; x.fillRect(a - 1, 5, 1, 1); } },
+  // Beerenbusch (Variante bestimmt Beerenfarbe)
+  berry: (x, f, s) => {
+    grass(x, s); x.fillStyle = 'rgba(0,40,0,.25)'; x.fillRect(2, 13, 12, 2);
+    x.fillStyle = '#1e4a24'; x.beginPath(); x.arc(8, 8, 7, 0, 7); x.fill();
+    x.fillStyle = '#3a8a3a'; x.beginPath(); x.arc(8, 8, 6, 0, 7); x.fill();
+    x.fillStyle = '#5aaa4a'; x.beginPath(); x.arc(7, 6.5, 4, 0, 7); x.fill();
+    const c = s % 2 ? ['#4a68e8', '#a8c0ff'] : ['#e83a4a', '#ffb0b8'];
+    for (const [a, b] of [[4, 6], [9, 4], [11, 9], [6, 10]]) { x.fillStyle = c[0]; x.fillRect(a, b, 2, 2); x.fillStyle = c[1]; x.fillRect(a, b, 1, 1); }
+  },
   // Region Frostheim
   snow: (x, f, s) => {
     const r = mulberry(s + 13); x.fillStyle = '#eef4fa'; x.fillRect(0, 0, 16, 16);

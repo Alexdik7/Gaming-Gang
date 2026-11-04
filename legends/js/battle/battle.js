@@ -52,10 +52,13 @@ export class Battle {
       ev.push({ t: 'send', side: 'p', mon: this.p, text: `Los, ${monName(this.p)}!` });
     } else if (action.t === 'item') {
       const m = this.team[action.target];
-      const amt = Math.min(maxHp(m) - m.hp, action.amount);
-      m.hp += amt;
-      ev.push({ t: 'msg', text: `${monName(m)} wurde um ${amt} KP geheilt.` });
-      if (action.target === this.pi) ev.push({ t: 'hp', side: 'p', hp: m.hp, max: maxHp(m), heal: true });
+      if (action.cure) { m.status = null; ev.push({ t: 'msg', text: `${monName(m)} ist wieder ganz gesund.` }); }
+      else {
+        const amt = action.revive ? Math.floor(maxHp(m) * action.revive) : Math.min(maxHp(m) - m.hp, action.amount);
+        m.hp = action.revive ? amt : m.hp + amt; delete m._fainted;
+        ev.push({ t: 'msg', text: action.revive ? `${monName(m)} ist wieder kampfbereit!` : `${monName(m)} wurde um ${amt} KP geheilt.` });
+        if (action.target === this.pi) ev.push({ t: 'hp', side: 'p', hp: m.hp, max: maxHp(m), heal: true });
+      }
     } else if (action.t === 'catch') {
       const r = this.tryCatch(ev, action.bonus || 1);
       if (r) return ev;

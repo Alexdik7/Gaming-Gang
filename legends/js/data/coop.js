@@ -12,6 +12,16 @@ export const COOP = {
     intro: ['Ria: Wir kämpfen nur im Doppel!', 'Rio: Zwei gegen zwei – bring zwei Kreaturen mit. Oder einen Freund!'],
     lose: 'Ria & Rio: Ihr seid ein echtes Team!',
   },
+  finale: {
+    name: 'Nyx & Lyra', owners: ['Nyx', 'Lyra'], solo: true, bg: 'schnee', reward: 5000, item: ['beleber', 3],
+    looks: [
+      { skin: '#f0d0c0', hair: '#c8c8e8', outfit: '#1e1a2a', pants: '#2a2440', accent: '#e8d070' },
+      { skin: '#f6e2d8', hair: '#d8e8f8', outfit: '#3a5a8a', pants: '#1e2a40', accent: '#a8e0ff' },
+    ],
+    teams: [[['nachtmahr', 30], ['magmawurm', 31]], [['firnwurm', 30], ['polarfuchs', 32]]],
+    intro: ['Nyx: Da ist der Eis-Herzstein. Und da ist… natürlich. Du.', 'Lyra: Diesmal kämpfen wir zusammen, Nyx. Niemand hält die Dämmerung auf.', 'Nyx: Zwei gegen zwei, Kleines. Hol dir Verstärkung – oder geh unter.'],
+    lose: 'Nyx: Unmöglich… Lyra, wir ziehen uns zurück!',
+  },
   koloss: {
     name: 'Felsenkoloss', owners: ['Felsenkoloss'], solo: false, bg: 'hoehle', reward: 1500, item: ['sternkristall', 2],
     boss: { sp: 'brockolith', lvl: 16, hp: 2, acts: 2 },
