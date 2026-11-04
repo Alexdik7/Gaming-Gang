@@ -597,3 +597,5 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
   - Die 11 Legendären behalten ihre Namen.
   - IDs bleiben unverändert, alte Spielstände funktionieren also. Texte und Aufträge wurden mit angepasst.
 - **Beutel:** Unter der Tasche erscheint ein Bild des gewählten Items (`itemIcon(id, ITEMS[id])`): Bälle, Sprühflaschen in drei Farben, Beeren, Beleber, Attacken-Kristall-Scheibe, goldene VM-Scheibe, Angel, Wellenreiter, Amulett, Herzsteine und Paket. `choose` gibt dafür den Index an `side(ctx, i)` weiter.
+
+- **v2.5.1 – zweite Namensrunde:** international und klangvoll, Tier + Element + Mythos, z. B. Fennix → Infernyx, Axolulu → Maelotl, Sprigo → Rootan, Tweeko → Galeko, Glupsi → Toxiglup, Bunzel → Luxlapin, Pinguo → Emperon, Shadefenn → Duskfenn, Emberchick → Flarooster. Übersicht aller 150 Arten: `docs/kreaturen.png`.
