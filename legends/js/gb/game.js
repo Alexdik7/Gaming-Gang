@@ -17,6 +17,24 @@ import { doubleBattle, localDouble } from './double2d.js';
 import { COOP, foeSlots } from '../data/coop.js';
 
 const SAVE = 'lu2-save', OPT = 'lu2-opt', DAY = 24 * 60;
+const GYMS = {
+  gorm: {
+    badge: 0, badgeName: 'FELSORDEN', team: [['kaeferix', 13], ['kieselkrebs', 14], ['brockel', 16]], reward: 1600,
+    intro: ['Willkommen in der Arena von Felsenau! Ich bin Gorm.', 'Meine Kreaturen sind so standhaft wie die Berge selbst.', 'Zeig mir, ob dein Wille stärker ist als Stein!'],
+    lose: 'Unglaublich… Du hast meine Felsen zertrümmert!',
+    gift: { text: ['Gorm: Und nimm diese drei Sternkristalle. Du hast sie dir verdient.'], items: { sternkristall: 3 } },
+    outro: ['Gorm: Östlich von hier führt der Aschepfad nach Ignis, der Stadt am Vulkan.', 'Dort wartet Selma, die Arenaleiterin des Feuers. Mit meinem Orden lässt dich der Wächter durch!'],
+    after: ['Der Felsorden steht dir gut.', 'Der Aschepfad im Osten führt nach Ignis. Selma wartet dort auf dich!'],
+  },
+  selma: {
+    badge: 1, badgeName: 'GLUTORDEN', team: [['glutling', 19], ['funkenkaefer', 20], ['vulkanox', 22]], reward: 2400, bg: 'vulkan',
+    intro: ['Endlich ist meine Arena wieder frei – danke dir!', 'Ich bin Selma. Mein Feuer brennt für alle, die mutig genug sind.', 'Zeig mir, wie heiß dein Kampfgeist ist!'],
+    lose: 'Was für eine Glut! Du hast mich überstrahlt.',
+    gift: { text: ['Selma: Nimm auch diese Supertränke. Feuer heilt nicht – aber die hier schon!'], items: { supertrank: 3 } },
+    outro: ['Selma: Team Eklipse war hinter der Glut des Vulkans her. Sie sprachen von „Herzsteinen“.', 'Ihre Kommandantin Nyx ist Richtung Küste gezogen – nach Aqualis.', '(Ende des aktuellen Abschnitts. Aqualis und Frostheim folgen in der nächsten Lieferung!)'],
+    after: ['Der Glutorden steht dir! Pass auf dich auf, wenn du Team Eklipse begegnest.'],
+  },
+};
 const LOOKS = {
   skin: ['#f6d2b8', '#e8b892', '#c98e62', '#a06a44', '#6e4a30'],
   hair: ['#2a1d16', '#6b3f22', '#d9a441', '#e8e2d6', '#c4462e', '#3d5bd9', '#9b5de5', '#2e8b57'],
@@ -176,6 +194,11 @@ class Game {
   // ---------------------------------------------------------- Bewegungs-Sperren & Ereignisse
   blockEdge(map, to) {
     const s = this.state;
+    if (map === 'felsenau' && to === 'route3' && !s.badges[0]) {
+      this.ow.busy = true;
+      (async () => { await say(['Ein Wächter hält dich auf: Der Aschepfad ist gefährlich!', 'Nur Trainer mit dem Felsorden aus der Arena von Felsenau dürfen hier durch.']); this.ow.busy = false; })();
+      return true;
+    }
     if (map === 'moosgrund' && to === 'route1' && !s.flags.gotBalls) {
       this.ow.busy = true;
       (async () => {
@@ -260,8 +283,8 @@ class Game {
   async trainerBattle(n) {
     const tr = n.trainer;
     await say(tr.lines, { name: n.name });
-    const won = await this.trainerFight({ name: n.name, look: n.look, team: tr.team, reward: tr.reward, lose: tr.lose });
-    if (won) this.state.flags[n.id] = true;
+    const won = await this.trainerFight({ name: n.name, look: n.look, team: tr.team, reward: tr.reward, lose: tr.lose, bg: this.ow.M.bg });
+    if (won) { this.state.flags[n.id] = true; await this.story(); }
   }
   async afterBattle(r, noBlackout) {
     const s = this.state;
@@ -431,10 +454,33 @@ class Game {
       case 'kid2': return say(['Wasser ist stark gegen Feuer und Erde. Pflanze schlägt Wasser!', 'Und Elektro kann Erde gar nichts anhaben – merk dir das für die Arena!'], N);
       case 'fan': return say(['Arenaleiter Gorm benutzt Erd- und Metall-Kreaturen.', 'Wasser, Pflanze und Feuer haben es leichter gegen ihn!'], N);
       case 'guide': return say(['Hey, Champion in spe! Gorm wartet ganz oben.', 'Seine Kreaturen sind hart wie Stein. Wasser- und Pflanzenattacken helfen enorm!'], N);
-      case 'gorm': return this.gym(n);
+      case 'gorm': case 'selma': return this.gym(n);
+      case 'guide2': return say(['Selma ist die Herrin des Feuers.', 'Wasser- und Erd-Attacken löschen ihre Flammen am schnellsten!'], N);
+      case 'ig_opa': return say(s.flags.eklipse1 ? ['Danke, dass du die Gauner vertrieben hast!', 'Seit Wochen schleichen Leute in dunklen Uniformen um den Krater. Sie suchen etwas, das sie „Herzstein“ nennen…'] : ['Diese Leute in den dunklen Uniformen… Team Eklipse nennen sie sich.', 'Sie haben die Arena besetzt! Kann sie denn niemand vertreiben?'], N);
+      case 'ig_kid': return say(['Ignis liegt direkt am Vulkan. Nachts sieht man die Lava glühen!', 'Flammeulen kommen nur in der Dämmerung raus. Ich hab noch nie eine gefangen.'], N);
       case 'ria': case 'rio': return this.coopNpc('zwillinge', n);
       case 'koloss': return this.coopNpc('koloss', n);
       default: return say('…', N);
+    }
+  }
+
+  // ---------------------------------------------------------- Story-Ereignisse nach Trainerkämpfen
+  async story() {
+    const s = this.state, ow = this.ow;
+    if (ow.id === 'ignis' && s.flags.ek1 && s.flags.ek2 && !s.flags.eklipse1) {
+      ow.busy = true;
+      const p = ow.p, nyx = { id: 'nyx', name: 'Kommandantin Nyx', look: LOOK.nyx, x: p.x, y: Math.min(15, p.y + 1), dir: 'up', px: p.x * 16, py: Math.min(15, p.y + 1) * 16 };
+      if (ow.solid(nyx.x, nyx.y)) { nyx.y = p.y - 1; nyx.py = nyx.y * 16; nyx.dir = 'down'; }
+      await wait(300); ow.npcs.push(nyx); ow.emote = { n: nyx, t: 1 }; sfx('encounter');
+      p.dir = nyx.y > p.y ? 'down' : 'up';
+      const N = { name: 'Kommandantin Nyx' };
+      await say(['So, so. Du bist also das Kind, das meine Rüpel blamiert hat.', 'Ich bin Nyx, Kommandantin von Team Eklipse.', 'Die Glut dieses Vulkans hätte uns einen Herzstein gezeigt. Aber gut – es gibt noch andere.', 'Die Welt zerfällt, und nur wir werden sie anhalten. Merk dir mein Gesicht, Kleines.'], N);
+      await fade(1, 300);
+      s.flags.eklipse1 = true;
+      ow.npcs = ow.npcs.filter(n => !['nyx', 'ek1', 'ek2'].includes(n.id));
+      await fade(0, 300);
+      await say('Team Eklipse ist verschwunden. Die Arena von Ignis ist wieder offen!');
+      ow.busy = false; this.save(true);
     }
   }
 
@@ -468,15 +514,16 @@ class Game {
   }
 
   async gym(n) {
-    const s = this.state, N = { name: n.name };
-    if (s.badges[0]) return say(['Der Felsorden steht dir gut.', 'Die nächsten Arenen liegen jenseits der Berge. Sie werden in der nächsten Entwicklungsphase eröffnet!'], N);
-    await say(['Willkommen in der Arena von Felsenau! Ich bin Gorm.', 'Meine Kreaturen sind so standhaft wie die Berge selbst.', 'Zeig mir, ob dein Wille stärker ist als Stein!'], N);
-    const won = await this.trainerFight({ name: 'Arenaleiter Gorm', look: LOOK.gorm, team: [['kaeferix', 13], ['kieselkrebs', 14], ['brockel', 16]], reward: 1600, lose: 'Unglaublich… Du hast meine Felsen zertrümmert!', bg: 'arena' });
+    const s = this.state, N = { name: n.name }, G = GYMS[n.id];
+    if (s.badges[G.badge]) return say(G.after, N);
+    if (G.badge > 0 && !s.badges[G.badge - 1]) return say('Komm wieder, wenn du die vorherigen Orden hast!', N);
+    await say(G.intro, N);
+    const won = await this.trainerFight({ name: n.name, look: n.look, team: G.team, reward: G.reward, lose: G.lose, bg: G.bg || 'arena' });
     if (!won) return say('Komm wieder, wenn du stärker bist!', N);
-    s.badges[0] = true; sfx('caught');
-    await say([`${s.name} erhält den FELSORDEN!`, 'Gorm: Und nimm diese drei Sternkristalle. Du hast sie dir verdient.']);
-    s.bag.sternkristall = (s.bag.sternkristall || 0) + 3;
-    await say(['Gorm: Hinter den Bergen liegen sechs weitere Regionen mit eigenen Arenen.', '(Ende der aktuellen Entwicklungsphase – weitere Regionen folgen! Du kannst weiter Kreaturen sammeln, züchten und Mutationen entdecken.)'], N);
+    s.badges[G.badge] = true; sfx('caught');
+    await say([`${s.name} erhält den ${G.badgeName}!`, ...G.gift.text]);
+    for (const [k, v] of Object.entries(G.gift.items)) s.bag[k] = (s.bag[k] || 0) + v;
+    await say(G.outro, N);
     this.save(true);
   }
 

@@ -102,8 +102,8 @@ export class Overworld {
     if (wp) return this.warp(wp.to, wp.tx, wp.ty, wp.dir);
     if (await this.checkTrainers()) return;
     const encId = this.M.enc;
-    if (encId && ((c === ':') || (this.M.cave && c === 'c'))) {
-      if (Math.random() < ENC[encId].rate) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.id === 'altwald' ? 'wald' : 'gras');
+    if (encId && ((c === ':' || c === 'h') || (this.M.cave && c === 'c'))) {
+      if (Math.random() < ENC[encId].rate) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.id === 'altwald' ? 'wald' : this.M.bg || 'gras');
     }
   }
 
@@ -228,7 +228,7 @@ export class Overworld {
     for (let y = y0; y <= y0 + 11; y++) for (let x = x0; x <= x0 + 15; x++) {
       const c = this.ch(x, y); if (c === null) continue;
       let name = TILE[c] || 'void', fr = 0;
-      if (c === '~') fr = f3; else if (c === ',' || c === ':' || c === 'V' || c === 'M' || c === 'Q') fr = f2;
+      if (c === '~' || c === 'v') fr = f3; else if (c === ',' || c === ':' || c === 'h' || c === 'e' || c === 'V' || c === 'M' || c === 'Q') fr = f2;
       if (c === 'r') { const id = this.M.runes?.[x + ',' + y]; if (flags[id]) { name = 'runeOn'; fr = f2; } }
       if (c === 'A') fr = runesOn >= 3 ? f2 : 0;
       if (c === 'R' && this.M.cave) name = 'crock';
@@ -245,7 +245,7 @@ export class Overworld {
     for (const a of actors) {
       if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
       else drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
-      if (this.ch(a.x, a.y) === ':' && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2), a.px - cx, a.py - cy + 8);
+      { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h') && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : 'green'), a.px - cx, a.py - cy + 8); }
       if (a.name) { const w = a.name.length * 4.2 + 6; ctx.fillStyle = 'rgba(20,40,80,.8)'; ctx.fillRect(a.px - cx + 8 - w / 2, a.py - cy - 12, w, 8); text(a.name, a.px - cx + 8, a.py - cy - 11.5, '#ffd36b', 6, 'center', null); }
     }
     if (this.emote) {

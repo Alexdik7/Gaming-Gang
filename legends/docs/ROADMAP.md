@@ -10,7 +10,7 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 | **1b – Handheld-Edition** | 240×160-Darstellung, Steuerkreuz, Charakter-Editor, 45 Kreaturen, Brutstätte & Mutationen, Arena 1 | ✅ v0.2 |
 | **2a – Grafik & Koop** | eigene 2D-Pixel-Art statt 3D-Renderings, 3D-Teil entfernt, Online-Welt, Mitspieler auf der Karte, Freundschaftskampf (Server berechnet), Tausch, Chat | ✅ v0.3 |
 | **2b – Koop-Ausbau** | Doppelkämpfe 2 gegen 2, Koop gegen Trainer-Duo und Boss, Tausch-Entwicklungen, Server-Sicherung & Geräte-Übertragung, Zu Freund reisen | ✅ v0.4 |
-| **3 – Hauptspiel** ⏳ als Nächstes | Regionen Ignis, Aqualis, Frostheim · Arenen 2–4 mit Rätseln · Team Eklipse · Rivalin Lyra · 75 Kreaturen · Items (Beeren, Attacken-Kristalle) · Nebenquests | geplant |
+| **3 – Hauptspiel** | Regionen Ignis, Aqualis, Frostheim · Arenen 2–4 mit Rätseln · Team Eklipse · Rivalin Lyra · 75 Kreaturen · Items (Beeren, Attacken-Kristalle) · Nebenquests | ⏳ Teil 1 (Ignis) ✅ v0.5 |
 | **4 – Endgame** | Regionen Nocturna, Solaria, Drakmor · Arenen 5–8 · Top 4 · Champion · legendäre Hüter · Geheimorte nur zu viert · Postgame · 150 Kreaturen | geplant |
 | **5 – Qualität** | komponierte Musik, Animationen, Balancing, Performance, Windows-App (Tauri), Store-Apps (Capacitor) | geplant |
 
@@ -28,14 +28,14 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 
 ## Ablaufplan Phase 3
 
-| AP | Inhalt |
-|---|---|
-| 3.1 | Karten-Werkzeug: Karten aus kompakten Textdateien, Übergänge automatisch |
-| 3.2 | Region Ignis (Vulkanroute, Stadt, Arena 2 Feuer) + 10 Kreaturen |
-| 3.3 | Team Eklipse: Rüpel-Kämpfe, Versteck, erste Story-Wendung |
-| 3.4 | Region Aqualis (Surfen als Feldfähigkeit) + Arena 3 + 10 Kreaturen |
-| 3.5 | Region Frostheim (Eisrutsch-Rätsel) + Arena 4 + 10 Kreaturen |
-| 3.6 | Items und Nebenquests, Balancing bis Level 40 |
+| AP | Inhalt | Status |
+|---|---|---|
+| 3.1 | Karten-Werkzeug: Karten als Textzeilen + Prüfskript `tools/checkmaps.mjs` (Übergänge, Türen, Erreichbarkeit) | ✅ v0.5 |
+| 3.2 | Region Ignis: Route 3 (Aschepfad), Stadt Ignis, Arena 2 (Selma, Feuer, Lava-Labyrinth), 10 Kreaturen, 3 Attacken | ✅ v0.5 |
+| 3.3 | Team Eklipse: Rüpel besetzen die Arena, Kommandantin Nyx, erster Story-Hinweis auf die Herzsteine | ✅ Teil 1 (Versteck folgt in 3.4) |
+| 3.4 | Region Aqualis: Surfen als Feldfähigkeit, Arena 3 (Wasser), Eklipse-Versteck, 10 Kreaturen | ⏳ als Nächstes |
+| 3.5 | Region Frostheim: Eisrutsch-Rätsel, Arena 4, Rivalin Lyra, 10 Kreaturen | geplant |
+| 3.6 | Items (Beeren, Attacken-Kristalle), Nebenquests, Balancing bis Level 40 | geplant |
 
 ## Story-Leitfaden (Entwurf für alle Phasen)
 

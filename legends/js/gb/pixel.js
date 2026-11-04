@@ -36,6 +36,8 @@ const DRAW = {
   sand: (x, f, s) => { const r = mulberry(s + 3); x.fillStyle = PAL.sand; x.fillRect(0, 0, 16, 16); for (let i = 0; i < 4; i++) { x.fillStyle = '#d8c888'; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), 1, 1); } },
   water: (x, f, s) => {
     x.fillStyle = PAL.w1; x.fillRect(0, 0, 16, 16);
+    x.fillStyle = '#3c80d0'; x.fillRect(0, 0, 16, 2); x.fillRect(0, 8, 16, 1);
+    if ((s + f) % 4 === 0) { x.fillStyle = '#e8f8ff'; x.fillRect(6, 5, 1, 1); }
     x.fillStyle = PAL.w2; for (const [a, b] of [[2, 3], [9, 7], [4, 12], [12, 13]]) x.fillRect((a + f * 2) % 16, b, 4, 1);
     x.fillStyle = PAL.w3; for (const [a, b] of [[7, 1], [1, 8], [11, 4]]) x.fillRect((a + 16 - f) % 16, b, 3, 1);
   },
@@ -119,23 +121,56 @@ const DRAW = {
   rug: (x, f, s) => { x.fillStyle = '#c84848'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#f8d870'; x.fillRect(1, 1, 14, 1); x.fillRect(1, 14, 14, 1); x.fillStyle = '#e86868'; x.fillRect(3, 4, 10, 8); },
   mat: (x, f, s) => { DRAW.floor(x, f, s); x.fillStyle = '#7a2838'; x.fillRect(2, 4, 12, 10); x.fillStyle = '#b84858'; x.fillRect(3, 5, 10, 8); },
   orbs: (x, f, s) => { DRAW.table(x, f, s); for (const [a, c] of [[3, '#ff7a33'], [8, '#3d9bff'], [13, '#4fcf5c']]) { x.fillStyle = '#202030'; x.beginPath(); x.arc(a, 6.5, 2.4, 0, 7); x.fill(); x.fillStyle = c; x.beginPath(); x.arc(a, 6.5, 1.7, 0, 7); x.fill(); x.fillStyle = '#fff'; x.fillRect(a - 1, 5, 1, 1); } },
+  // Region Ignis
+  ash: (x, f, s) => {
+    const r = mulberry(s + 31); x.fillStyle = '#9a8a7a'; x.fillRect(0, 0, 16, 16);
+    for (let i = 0; i < 7; i++) { x.fillStyle = r() < 0.5 ? '#867664' : '#b0a090'; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), r() < 0.5 ? 2 : 1, 1); }
+    if (s % 4 === 0) { x.fillStyle = '#5a4a40'; x.fillRect(10, 11, 2, 1); x.fillStyle = '#c8b8a8'; x.fillRect(10, 10, 2, 1); }
+  },
+  ashtall: (x, f, s) => { x.fillStyle = '#8a7a68'; x.fillRect(0, 0, 16, 16); tallBlades(x, f, 0, 'ash'); },
+  lava: (x, f, s) => {
+    x.fillStyle = '#e8481a'; x.fillRect(0, 0, 16, 16);
+    x.fillStyle = '#f88a2a'; for (const [a, b] of [[2, 2], [9, 6], [4, 11], [12, 12]]) x.fillRect((a + f * 2) % 16, b, 4, 2);
+    x.fillStyle = '#ffd860'; for (const [a, b] of [[3, 3], [10, 7], [5, 12]]) x.fillRect((a + f * 2) % 16, b, 2, 1);
+    x.fillStyle = '#8a2010'; for (const [a, b] of [[7, 1], [1, 8], [12, 4]]) x.fillRect((a + 16 - f) % 16, b, 3, 1);
+  },
+  basalt: (x, f, s) => {
+    DRAW.ash(x, f, s);
+    x.fillStyle = '#1e1a1c'; x.fillRect(1, 2, 14, 14); x.fillRect(3, 0, 10, 2);
+    x.fillStyle = '#4a4248'; x.fillRect(2, 2, 12, 12); x.fillRect(4, 1, 8, 1);
+    x.fillStyle = '#6a6068'; x.fillRect(3, 2, 5, 2); x.fillRect(3, 4, 2, 4);
+    x.fillStyle = '#2e282c'; x.fillRect(9, 9, 4, 4); x.fillRect(2, 13, 12, 1);
+    if (s % 3 === 0) { x.fillStyle = '#ff7a2a'; x.fillRect(10, 6, 1, 3); x.fillRect(11, 8, 2, 1); }
+  },
+  ember: (x, f, s) => {
+    x.fillStyle = '#7a3a2a'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#5a2a20'; x.fillRect(0, 0, 16, 1); x.fillRect(0, 0, 1, 16);
+    x.fillStyle = '#9a4a32'; x.fillRect(2, 2, 12, 12); x.fillStyle = '#b85a3a'; x.fillRect(2, 2, 12, 1);
+    if ((s + f) % 3 === 0) { x.fillStyle = '#ffb04a'; x.fillRect(7, 8, 2, 1); }
+  },
   void: x => { x.fillStyle = '#000'; x.fillRect(0, 0, 16, 16); },
   gym: (x, f, s) => { x.fillStyle = '#c8b090'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#a89070'; x.fillRect(0, 0, 16, 1); x.fillRect(0, 0, 1, 16); x.fillStyle = '#e0c8a8'; x.fillRect(2, 2, 3, 2); },
   boulder: (x, f, s) => { DRAW.gym(x, f, s); x.fillStyle = '#404048'; x.beginPath(); x.ellipse(8, 9, 7, 6, 0, 0, 7); x.fill(); x.fillStyle = '#a89888'; x.beginPath(); x.ellipse(8, 8.5, 6, 5, 0, 0, 7); x.fill(); x.fillStyle = '#d0c0b0'; x.fillRect(5, 5, 4, 2); },
 };
 function treeTop(x, c1, c2, c3, o) {
-  x.fillStyle = '#5a3a20'; x.fillRect(6, 11, 4, 5); x.fillStyle = '#7a5030'; x.fillRect(7, 11, 1, 5);
-  x.fillStyle = o; x.beginPath(); x.arc(8, 7, 7.5, 0, 7); x.fill();
-  x.fillStyle = c1; x.beginPath(); x.arc(8, 7, 6.5, 0, 7); x.fill();
-  x.fillStyle = c2; x.beginPath(); x.arc(7, 6, 5, 0, 7); x.fill();
-  x.fillStyle = c3; x.fillRect(4, 3, 3, 2); x.fillRect(8, 2, 2, 1); x.fillRect(3, 6, 1, 2);
+  // Schatten am Boden, Stamm mit Licht-/Schattenkante
+  x.fillStyle = 'rgba(0,40,0,.25)'; x.fillRect(3, 14, 10, 2);
+  x.fillStyle = '#3a2414'; x.fillRect(5, 10, 6, 6);
+  x.fillStyle = '#6a4428'; x.fillRect(6, 10, 4, 6); x.fillStyle = '#8a5a34'; x.fillRect(6, 10, 1, 6); x.fillStyle = '#4a2e1a'; x.fillRect(9, 10, 1, 6);
+  // Krone: Kontur, Grundton, Schattenseite unten rechts, Lichtbüschel oben links
+  x.fillStyle = o; x.beginPath(); x.arc(8, 6.5, 7.5, 0, 7); x.fill(); x.fillRect(1, 6, 14, 5);
+  x.fillStyle = c1; x.beginPath(); x.arc(8, 6.5, 6.5, 0, 7); x.fill(); x.fillRect(2, 6, 12, 4);
+  x.fillStyle = c2; x.beginPath(); x.arc(7, 5.5, 5, 0, 7); x.fill();
+  x.fillStyle = c1; x.fillRect(4, 9, 3, 1); x.fillRect(9, 8, 4, 1);
+  x.fillStyle = c3; x.fillRect(4, 3, 3, 1); x.fillRect(3, 4, 2, 2); x.fillRect(8, 2, 2, 1); x.fillRect(7, 6, 2, 1); x.fillRect(10, 4, 1, 1);
+  x.fillStyle = o; x.fillRect(5, 10, 1, 1); x.fillRect(11, 9, 1, 1);
 }
-export function tallBlades(x, f, oy) {
-  const o = f ? 1 : 0;
+const BLADE = { green: ['#2e7a30', '#48a040', '#90d868'], ash: ['#4a4038', '#7a6a58', '#b8a488'] };
+export function tallBlades(x, f, oy, pal = 'green') {
+  const o = f ? 1 : 0, [c1, c2, c3] = BLADE[pal];
   for (const [a, b] of [[1, 2], [6, 0], [11, 2], [3, 8], [9, 7], [13, 9]]) {
-    x.fillStyle = '#2e7a30'; x.fillRect(a + o, b + 3 - oy, 1, 5); x.fillRect(a + 2, b + 2 - oy, 1, 6);
-    x.fillStyle = '#48a040'; x.fillRect(a + 1, b - oy, 1, 7);
-    x.fillStyle = '#90d868'; x.fillRect(a + 1 + o, b - oy, 1, 2);
+    x.fillStyle = c1; x.fillRect(a + o, b + 3 - oy, 1, 5); x.fillRect(a + 2, b + 2 - oy, 1, 6);
+    x.fillStyle = c2; x.fillRect(a + 1, b - oy, 1, 7);
+    x.fillStyle = c3; x.fillRect(a + 1 + o, b - oy, 1, 2);
   }
 }
 
@@ -146,10 +181,10 @@ export function tile(name, frame = 0, variant = 0) {
   return tileCache.get(k);
 }
 // Hohes Gras: oberer Teil, der über die Füße der Figur gezeichnet wird
-let tallTop = null;
-export function tallOverlay(f) {
-  tallTop ||= [0, 1].map(fr => { const [c, x] = cv(16, 8); x.translate(0, -8); tallBlades(x, fr, 0); return c; });
-  return tallTop[f];
+const tallTop = {};
+export function tallOverlay(f, pal = 'green') {
+  tallTop[pal] ||= [0, 1].map(fr => { const [c, x] = cv(16, 8); x.translate(0, -8); tallBlades(x, fr, 0, pal); return c; });
+  return tallTop[pal][f];
 }
 
 // ---------------------------------------------------------------- Gebäude

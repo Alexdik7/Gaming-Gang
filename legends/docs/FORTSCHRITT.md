@@ -1,6 +1,29 @@
 # Fortschritt
 
-## v0.4 – Phase 2b (aktuell)
+## v0.5 – Phase 3, Teil 1: Ignis (aktuell)
+
+### ✅ Neu und getestet
+- **Route 3 · Aschepfad** (östlich von Felsenau, nur mit Felsorden):
+  - Ascheboden, hohes Aschegras, Lavaseen und Basaltfelsen
+  - 3 Trainer, 2 Fundstücke
+- **Stadt Ignis:** Heilzentrum, Laden und Arena am Vulkan.
+- **Team Eklipse:**
+  - Zwei Rüpel besetzen die Arena.
+  - Sind beide besiegt, tritt Kommandantin Nyx auf und spricht von den „Herzsteinen“.
+- **Arena 2:**
+  - Lava-Labyrinth mit 2 Arena-Trainern
+  - **Arenaleiterin Selma** (Feuer) → **Glutorden** + 3 Supertränke
+- **10 neue Kreaturen:** Aschwurm → Magmawurm, Glutling → Vulkanox, Rauchfalter, Schlackgolem, Funkenkäfer, Kohlenkrebs, Flammeule (selten, nur nachts), Ascheohr
+  - Insgesamt sind es jetzt 55 Arten.
+- **3 neue Attacken:** Lavabrocken, Hitzeschild, Aschesturm.
+- **Neuer Kampfhintergrund** „Vulkan“.
+- **Grafik-Feinschliff** (eigener Stil):
+  - Bäume mit Schatten, Stammkanten und Lichtbüscheln
+  - Wasser mit Tiefenstreifen und Glitzern
+  - Augen leuchten auf dunklen Kreaturen
+- **Karten-Prüfskript** `tools/checkmaps.mjs`: Alle 18 Karten sind fehlerfrei.
+
+## v0.4 – Phase 2b
 
 ### ✅ Neu und getestet (automatisch, mit 2 gleichzeitigen Spielern)
 - **Doppelkämpfe:** 2 gegen 2, Zielauswahl, Wechseln, Tränke.

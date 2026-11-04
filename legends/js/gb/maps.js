@@ -1,13 +1,15 @@
 // Karten der Region Verdantia (Kachelraster). Legende:
 // .=Gras ,=Blumen :=hohes Gras T=Baum P=Tanne D=dunkler Baum ~=Wasser ==Weg s=Sand R=Fels F=Zaun L=Kante S=Schild B=Brücke
 // c=Höhlenboden W=Höhlenwand O=Höhleneingang p=Steinboden I=Säule A=Altar r=Runenstein g=Arenaboden b=Arenafels
+// Ignis: a=Asche h=hohes Aschegras v=Lava X=Basalt e=Glutboden
 // Innen: o=Holzboden x=Fliesen #=Wand w=Fenster K=Regal C=Theke t=Tisch Y=Bett V=TV M=Maschine Q=PC k=Pflanze u=Teppich m=Ausgang Z=Kristalltisch
 export const TILE = {
   '.': 'grass', ',': 'flowers', ':': 'tall', T: 'tree', P: 'pine', D: 'dtree', '~': 'water', '=': 'path', s: 'sand', R: 'rock', F: 'fence', L: 'ledge', S: 'sign', B: 'bridge',
   c: 'cave', W: 'cwall', O: 'hole', p: 'stone', I: 'pillar', A: 'altar', r: 'rune', g: 'gym', b: 'boulder',
+  a: 'ash', h: 'ashtall', v: 'lava', X: 'basalt', e: 'ember',
   o: 'floor', x: 'tilefl', '#': 'wall', w: 'window', K: 'shelf', C: 'counter', t: 'table', Y: 'bed', V: 'tv', M: 'machine', Q: 'pc', k: 'plant', u: 'rug', m: 'mat', Z: 'orbs',
 };
-export const SOLID = new Set('TPD~RFSWIArb#wKCtYVMQkZ'.split(''));
+export const SOLID = new Set('TPD~RFSWIArb#wKCtYVMQkZvX'.split(''));
 
 const LOOK = {
   linde: { skin: '#f0c8a8', hair: '#e8e2d6', outfit: '#f4f4f4', pants: '#5a6b7a', accent: '#6fa8dc' },
@@ -26,6 +28,12 @@ const LOOK = {
   ida: { skin: '#e8b892', hair: '#3d5bd9', outfit: '#5a6a7a', cap: '#f6d23c', accent: '#f6d23c' },
   gorm: { skin: '#a06a44', hair: '#9a9a9a', outfit: '#7a5a3a', pants: '#3a2a1a', accent: '#c9a76a' },
   gymA: { skin: '#e8b892', hair: '#5a3a2a', outfit: '#9a8a74', pants: '#4a3a2a', accent: '#c9a76a' },
+  grunt: { skin: '#e8b892', hair: '#2a2a3a', outfit: '#3a2a5a', pants: '#1e1a2a', cap: '#2a1e40', accent: '#c8a8ff' },
+  grunt2: { skin: '#c98e62', hair: '#5a2a6a', outfit: '#3a2a5a', pants: '#1e1a2a', accent: '#c8a8ff' },
+  nyx: { skin: '#f0d0c0', hair: '#c8c8e8', outfit: '#1e1a2a', pants: '#2a2440', accent: '#e8d070' },
+  selma: { skin: '#e8b892', hair: '#e84a2a', outfit: '#f8f0e0', pants: '#a83a2a', accent: '#ffb030' },
+  feuer: { skin: '#c98e62', hair: '#2a1d16', outfit: '#e86a2a', pants: '#3a2a2a', accent: '#ffd36b' },
+  forscherin: { skin: '#f6d2b8', hair: '#6a4a3a', outfit: '#f4f4f4', pants: '#6a5a4a', cap: '#d8a868', accent: '#d8a868' },
   sage: { skin: '#f0c8a8', hair: '#7a6aaa', outfit: '#3a2a6a', pants: '#2a2a3a', accent: '#9cffc8' },
 };
 export { LOOK };
@@ -233,7 +241,7 @@ export const MAPS = {
       'W....................W',
       'W....................W',
       'W....................W',
-      'O====================W',
+      'O=====================',
       'W...........=........W',
       'W...........=........W',
       'W...........=...,....W',
@@ -249,10 +257,83 @@ export const MAPS = {
       { x: 3, y: 9, w: 5, h: 4, door: 2, roof: '#3a78d8', to: 'shop', sign: 'LADEN', signCol: '#e8f0ff' },
     ],
     warps: [{ x: 0, y: 7, to: 'hoehle', tx: 22, ty: 6, dir: 'left' }],
+    edges: { e: { to: 'route3', dy: 0 } },
     signs: {},
     npcs: [{ id: 'fan', x: 15, y: 9, dir: 'left', look: LOOK.jogger, name: 'Arena-Fan', wander: 2 }],
   },
   // ---------------------------------------------------------------- Innenräume
+  route3: {
+    name: 'Route 3 · Aschepfad', outdoor: true, enc: 'route3', bg: 'vulkan',
+    rows: [
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      'XaaahhhhhaaaaaavvvvaaaaahhhhhaaX',
+      'XaaahhhhhaaXaaavvvvaaaaahhhhhaaX',
+      'XaaaaaaaaaaaaaaavvaaaaaaaaaaaaaX',
+      'XaaaXXaaaaaahhhhaaaaaXXaaaaaaaaX',
+      'XaaaXXaaaaaahhhhaaaaaXXaaaahhhaX',
+      'XaaaaaaaaaaahhhhaaaaaaaaaaahhhaX',
+      '================================',
+      'XaaaaaaaahhhhaaaaaaaaahhhhaaaaaX',
+      'XaaXXaaaahhhhaaaaXXaaahhhhaaaaaX',
+      'XaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX',
+      'XaavvvaaaaahhhhhaaaaaaavvvvaaaaX',
+      'XaavvvaaaaahhhhhaaaaaaavvvvaaaaX',
+      'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+    ],
+    npcs: [
+      { id: 'tr_ben', x: 9, y: 6, dir: 'down', look: LOOK.feuer, name: 'Feuerschlucker Ben', trainer: { team: [['glutling', 15], ['glutechse', 16]], reward: 640, sight: 4, lines: ['Heiß, heißer, ich! Zeig mir, was du kannst!'], lose: 'Ich hab mich verbrannt…' } },
+      { id: 'tr_lava', x: 20, y: 10, dir: 'up', look: LOOK.forscherin, name: 'Vulkanforscherin Lea', trainer: { team: [['aschwurm', 16], ['kohlenkrebs', 16]], reward: 680, sight: 4, lines: ['Psst, hier blubbert es überall! Ein Kampf zur Messung?'], lose: 'Die Messwerte sind eindeutig: Du bist stark!' } },
+      { id: 'tr_ida2', x: 27, y: 2, dir: 'left', look: LOOK.jogger, name: 'Läufer Tom', trainer: { team: [['rauchfalter', 17]], reward: 600, sight: 3, lines: ['Durch die Asche laufen hält fit!'], lose: 'Hust… hust…' } },
+    ],
+    items: [{ id: 'it_r3a', x: 1, y: 12, item: 'supertrank', n: 1 }, { id: 'it_r3b', x: 30, y: 1, item: 'sternkristall', n: 1 }],
+    signs: { },
+    edges: { w: { to: 'felsenau', dy: 0 }, e: { to: 'ignis', dy: 0 } },
+  },
+  ignis: {
+    name: 'Ignis', outdoor: true, enc: null, bg: 'vulkan',
+    rows: [
+      'XXXXXXXXXXXXXXXXXXXXXXXX',
+      'XaaaaaaaaaaaaaaaaaaaaaaX',
+      'XaaaaaaaaaaaaaaaaaaaaaaX',
+      'XaaaaaaaaaaaaaaaaaaaaaaX',
+      'XaaaaaaaaaaaaaaaaaaaaaaX',
+      'XaaaaaaaaaaaaaaaaaaaaaaX',
+      'Xaaaa=aaaaaa=aaaaa=aaaaX',
+      '=======================X',
+      'XaaaaaaaaaaaaaaaaaaaaaaX',
+      'XaavvaaaaaaaaaaaaaaavvaX',
+      'XaavvaaaaaaaaaaaaaaavvaX',
+      'XaaaaaaaaaaaaaaaaaaaaaaX',
+      'XaaaaaaaaaaaaaaaaaaaaaaX',
+      'XaaaaaaaaaaaaaaaaaaaaaaX',
+      'Xaaaaaa=====a=====aaaaaX',
+      'XaaaaaaaaaaaaaaaaaaaaaaX',
+      'XXXXXXXXXXXXXXXXXXXXXXXX',
+    ],
+    buildings: [
+      { x: 2, y: 2, w: 6, h: 4, door: 3, roof: '#3aa868', to: 'heal', sign: 'HEIL', signCol: '#e8fff0', heal: true },
+      { x: 16, y: 2, w: 5, h: 4, door: 2, roof: '#3a78d8', to: 'shop', sign: 'LADEN', signCol: '#e8f0ff' },
+      { x: 8, y: 9, w: 8, h: 5, door: 4, roof: '#c83a2a', wall: '#f0d8c0', to: 'arena2', sign: 'ARENA', signCol: '#ffe0b0' },
+    ],
+    npcs: [
+      { id: 'ek1', x: 12, y: 14, dir: 'down', look: LOOK.grunt, name: 'Eklipse-Rüpel', hideIf: 'eklipse1', trainer: { team: [['ascheohr', 16], ['toxnatter', 16]], reward: 700, sight: 2, lines: ['Halt! Die Arena ist geschlossen – Befehl von Team Eklipse!', 'Wir „leihen“ uns die Glut des Vulkans. Verschwinde!'], lose: 'Grr… Das wird der Kommandantin nicht gefallen!' } },
+      { id: 'ek2', x: 9, y: 15, dir: 'right', look: LOOK.grunt2, name: 'Eklipse-Rüpelin', hideIf: 'eklipse1', trainer: { team: [['flatterlo', 16], ['schlackgolem', 17]], reward: 720, sight: 3, lines: ['Noch so ein Möchtegern-Held? Team Eklipse lässt sich nicht aufhalten!'], lose: 'Unmöglich!' } },
+      { id: 'ig_kid', x: 19, y: 11, dir: 'left', look: LOOK.kid, name: 'Junge', wander: 2 },
+      { id: 'ig_opa', x: 6, y: 8, dir: 'down', look: LOOK.hiker, name: 'Alter Bergmann' },
+    ],
+    signs: { },
+    edges: { w: { to: 'route3', dy: 0 } },
+  },
+  arena2: {
+    name: 'Arena Ignis', indoor: true, gym: true,
+    rows: ['###w###w###', 'eeeeeeeeeee', 'vvvvveevvvv', 'eeeeeeeeeee', 'eevvvvvvvee', 'eeeeeeeeeee', 'vvvveeevvvv', 'eeeeeeeeeee', 'evvvvveeeee', 'eeeeeeeeeee', 'eeevvvvvvee', 'eeeeeeeeeee', 'keeeeeeeeek', 'eeeeeeeeeee', 'eeeeemeeeee'],
+    npcs: [
+      { id: 'selma', x: 5, y: 1, dir: 'down', look: LOOK.selma, name: 'Arenaleiterin Selma' },
+      { id: 'tr_g2a', x: 2, y: 5, dir: 'right', look: LOOK.feuer, name: 'Glutwächter Finn', trainer: { team: [['glutling', 18], ['funkenkaefer', 18]], reward: 720, sight: 4, lines: ['Selmas Feuer brennt heißer als jede Lava!'], lose: 'Erloschen…' } },
+      { id: 'tr_g2b', x: 8, y: 9, dir: 'left', look: LOOK.forscherin, name: 'Funkenbändigerin Ada', trainer: { team: [['rauchfalter', 18], ['aschwurm', 19]], reward: 760, sight: 4, lines: ['Hier wird es dir zu heiß!'], lose: 'Du hast einen kühlen Kopf bewahrt.' } },
+      { id: 'guide2', x: 3, y: 13, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+    ],
+  },
   home: {
     name: 'Zuhause', indoor: true,
     rows: ['K##w##w#', 'oooooooY', 'oottoooo', 'oottooVo', 'oooooooo', 'kooooook', 'ooommooo'],
@@ -307,6 +388,7 @@ export const ENC = {
   route2: { rate: 0.12, list: [['hoppel', 20, 7, 10], ['funkenhase', 15, 7, 10], ['kaeferix', 15, 7, 9], ['glutechse', 12, 8, 10], ['toxnatter', 12, 8, 10], ['zirpfink', 15, 7, 9, 'day'], ['flatterlo', 18, 7, 10, 'night'], ['eulix', 12, 8, 10, 'night'], ['voltmotte', 12, 8, 10, 'night']] },
   hoehle: { rate: 0.07, list: [['brockel', 32, 9, 12], ['flatterlo', 30, 9, 12], ['kieselkrebs', 14, 10, 12], ['frostglibber', 8, 10, 13], ['frostling', 7, 11, 13], ['schuppling', 4, 12, 14]] },
   altwald: { rate: 0.12, list: [['sporlich', 22, 9, 13], ['moospanzer', 14, 10, 13], ['kaeferix', 12, 9, 12], ['runenkaefer', 4, 11, 14], ['hoppel', 12, 9, 12, 'day'], ['schemenohr', 16, 10, 14, 'night'], ['irrlicht', 16, 10, 14, 'night'], ['eulix', 10, 10, 13, 'night']] },
+  route3: { rate: 0.12, list: [['aschwurm', 25, 14, 17], ['glutling', 22, 14, 17], ['rauchfalter', 12, 15, 17], ['funkenkaefer', 12, 15, 18], ['kohlenkrebs', 8, 15, 18], ['glutechse', 14, 14, 17], ['ascheohr', 16, 15, 18, 'night'], ['flammeule', 3, 17, 19, 'night'], ['schlackgolem', 4, 16, 18]] },
   wasser: { rate: 1, list: [['flossling', 60, 5, 12], ['glibbo', 30, 5, 10], ['kieselkrebs', 8, 8, 12], ['tiefenkiemer', 2, 18, 22]] },
 };
 

@@ -311,7 +311,9 @@ function extras(list, M, C, front) {
 
 // Gesicht und Kleinteile direkt pixelgenau
 function face(cv, M, C, big) {
-  const EYE = [32, 24, 40];
+  // Auf sehr dunklen Körpern leuchten die Augen in der Glanzfarbe, sonst wären sie unsichtbar
+  const [, , lum] = rgb2hsl(hex2rgb(C.main));
+  const EYE = lum < 0.36 ? ramp(C.glow)[3] : [32, 24, 40];
   const style = M.eye || 'std';
   for (const [x, y] of M.eyes) {
     if (style === 'glow') { const g = ramp(C.glow); cv.px(x, y, g[4]); cv.px(x + 1, y, g[3]); cv.px(x, y - 1, g[3]); cv.px(x + 1, y - 1, g[2]); cv.px(x - 1, y, g[2]); cv.px(x, y + 1, g[2]); continue; }
