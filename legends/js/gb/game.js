@@ -187,7 +187,7 @@ class Game {
     setMusic('title');
     const T = new TitleScene(this); push(T);
     const r = await T.done;
-    initAudio(); sfx('open');
+    initAudio(); sfx('open'); setMusic(null); setMusic('title');
     const has = !!localStorage.getItem(SAVE);
     const items = [...(has ? ['WEITER'] : []), 'NEUES SPIEL', 'OPTIONEN'];
     for (;;) {
@@ -1210,5 +1210,9 @@ class EditorScene {
 
 const game = new Game();
 window.LU2 = game;
+// Handy/App: beim Wechsel in den Hintergrund oder beim Schließen automatisch speichern
+const autoSave = () => { if (game.started && game.state && game.ow) game.save(true); };
+document.addEventListener('visibilitychange', () => { if (document.hidden) autoSave(); });
+window.addEventListener('pagehide', autoSave);
 game.start();
 if ('serviceWorker' in navigator && location.protocol === 'https:' && !window.Capacitor) navigator.serviceWorker.register('sw.js').catch(() => {});

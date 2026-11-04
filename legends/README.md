@@ -6,6 +6,9 @@ Alles ist eigenständig gestaltet: eigene Kreaturen, Karten und Geschichte. Dazu
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/legends/
 
+**Android-App (APK, läuft offline ohne Browser):** https://github.com/Alexdik7/Gaming-Gang/releases/latest/download/LegendsUnited.apk
+Installation und iPhone-Hinweise: [docs/APP.md](docs/APP.md)
+
 **Zusammen spielen (bis zu 4):** START → ONLINE → Welt erstellen, den Code an Freunde geben.
 Vor einem Mitspieler A drücken → **Kämpfen** oder **Tauschen**; zu zweit gegen Trainer-Duos und Bosse; Spielstand-Sicherung auf dem Server. Den nötigen Weltserver richtet ihr einmalig ein, siehe [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 

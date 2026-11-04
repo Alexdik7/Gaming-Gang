@@ -1,6 +1,24 @@
 # Fortschritt
 
-## v0.14 – Phase 4.5b: Raids & Nihilux (aktuell)
+## v1.0 – Phase 5: Qualität & Android-App (aktuell)
+
+### ✅ Neu und getestet
+- **Android-App:**
+  - Echte App (Capacitor), die komplett offline und ohne Browser läuft.
+  - Nach jeder Änderung baut GitHub automatisch eine neue APK.
+  - Download: https://github.com/Alexdik7/Gaming-Gang/releases/latest/download/LegendsUnited.apk
+  - Installation: [APP.md](APP.md)
+  - Eigenes Icon, Startbild und Vollbild.
+  - Alle Versionen tragen dieselbe Signatur, damit Updates den Spielstand behalten.
+- **Komponierte Musik:** 11 eigene Stücke statt Zufallsmelodien.
+  - Orte: Titel, Stadt, Route, Nacht, Höhle, Arena
+  - Kämpfe: Wildkampf, Trainer, Boss (Arenaleiter, Top 4, Rivalen), Legende (Hüter, Raids), Finale (Champion, Umbra, Nihilux)
+  - Die Zuordnung zu Ort und Kampf ist automatisch.
+- **17 neue Kreaturen**, jetzt **150**. Sie sind über die frühen und mittleren Gebiete verteilt. Neu ist auch die Goldbarbe als seltener Angelfang. Wellenfohlen entwickelt sich zu Wogenross.
+- **Doppel- und Raid-Kämpfe** haben jetzt dieselben Effekt-Animationen wie Einzelkämpfe: Strahlen, Blitze, Sturm, Beben, Wolken, Heilung.
+- **Offline-Schrift:** Pixelify Sans liegt lokal im Spiel. Es gibt keine externen Anfragen mehr.
+
+## v0.14 – Phase 4.5b: Raids & Nihilux
 
 ### ✅ Neu und getestet
 - **Neuer Kampfmodus: Raid, 4 gegen 1.**

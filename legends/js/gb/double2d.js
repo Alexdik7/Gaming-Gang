@@ -178,21 +178,47 @@ class DoubleScene {
   }
   async animMove(id, tg, mv, hit) {
     const M = MOVES[mv], col = TYPES[M.type].color, o = this.off[id], dir = SIDE(id) === 'p' ? 1 : -1;
-    const a = this.center(id), t = this.center(tg || id);
-    if (['dash', 'slash', 'bite'].includes(M.fx)) {
-      sfx('whoosh'); await this.tween(0.15, k => (o.x = dir * 16 * k)); await this.tween(0.2, k => (o.x = dir * 16 * (1 - k)));
-    } else if (tg && tg !== id && M.cat !== 'status') {
-      sfx('whoosh');
-      await this.tween(0.4, k => { const px = a.x + (t.x - a.x) * ease(k), py = a.y + (t.y - a.y) * ease(k) - Math.sin(k * Math.PI) * 16; for (let i = 0; i < 3; i++) this.emit(px, py, (Math.random() - .5) * 20, (Math.random() - .5) * 20, col, 0.25, 3); });
-      if (M.fx === 'quake') G.shake = 1.2;
-    } else await this.tween(0.3, k => (o.s = 1 + Math.sin(k * Math.PI) * 0.08));
-    o.s = 1;
+    const a = this.center(id), t = this.center(tg || id), foeHit = tg && tg !== id && M.cat !== 'status';
+    switch (foeHit ? M.fx : M.cat === 'status' ? (M.fx === 'heal' ? 'heal' : M.fx === 'roar' ? 'roar' : 'buff') : M.fx) {
+      case 'dash': case 'slash': case 'bite':
+        sfx('whoosh'); await this.tween(0.15, k => (o.x = dir * 16 * k));
+        if (hit && M.fx === 'slash') for (let s2 = 0; s2 < 3; s2++) for (let i = 0; i < 7; i++) this.emit(t.x - 12 + i * 4 + s2 * 4, t.y - 12 + i * 4 - s2 * 3, 0, 0, '#ffffff', 0.25, 1.5);
+        if (hit && M.fx === 'bite') for (const sy of [-1, 1]) for (let i = 0; i < 5; i++) this.emit(t.x - 8 + i * 4, t.y + sy * 14, 0, -sy * 55, '#ffffff', 0.2, 2);
+        await this.tween(0.2, k => (o.x = dir * 16 * (1 - k))); break;
+      case 'beam':
+        sfx('whoosh'); await this.tween(0.45, k => { for (let i = 0; i < 3; i++) { const q = Math.random() * k; this.emit(a.x + (t.x - a.x) * q, a.y + (t.y - a.y) * q, 0, 0, col, 0.2, 2.5); } }); break;
+      case 'zap':
+        for (let i = 0; i < 4; i++) { this.bolts.push({ a, t, c: i % 2 ? '#ffffff' : col, l: 0.15 }); sfx('click'); await wait(70); } break;
+      case 'storm':
+        sfx('whoosh'); await this.tween(0.7, k => { for (let i = 0; i < 4; i++) { const ang = k * 16 + i * 1.57, r = 26 - k * 12; this.emit(t.x + Math.cos(ang) * r, t.y + 16 - k * 36 + Math.sin(ang) * r * 0.3, 0, -10, i % 2 ? col : '#fff', 0.3, 2.5); } });
+        G.shake = 0.5; break;
+      case 'quake':
+        G.shake = 1.3; sfx('hit');
+        for (let r = 0; r < 3; r++) { for (let i = 0; i < 12; i++) this.emit(t.x, t.y + 22, (Math.random() - 0.5) * 130, -40 - Math.random() * 60, col, 0.5, 3); await wait(140); } break;
+      case 'cloud':
+        for (let i = 0; i < 26; i++) this.emit(t.x + (Math.random() - 0.5) * 36, t.y + (Math.random() - 0.5) * 26, (Math.random() - .5) * 10, -8, col, 0.9, 4);
+        await wait(400); break;
+      case 'roar':
+        cry(SPECIES[this.b.mon(id).sp].cry); await this.tween(0.4, k => (o.s = 1 + Math.sin(k * Math.PI) * 0.15)); o.s = 1; break;
+      case 'heal':
+        for (let i = 0; i < 16; i++) this.emit(a.x + (Math.random() - 0.5) * 30, a.y + 16, 0, -40 - Math.random() * 30, '#7dffb0', 0.7, 2.5);
+        sfx('heal'); await wait(350); break;
+      case 'buff':
+        await this.tween(0.3, k => (o.s = 1 + Math.sin(k * Math.PI) * 0.08)); o.s = 1; break;
+      default:
+        if (foeHit) {
+          sfx('whoosh');
+          await this.tween(0.4, k => { const px = a.x + (t.x - a.x) * ease(k), py = a.y + (t.y - a.y) * ease(k) - Math.sin(k * Math.PI) * 16; for (let i = 0; i < 3; i++) this.emit(px, py, (Math.random() - .5) * 20, (Math.random() - .5) * 20, col, 0.25, 3); });
+        } else { await this.tween(0.3, k => (o.s = 1 + Math.sin(k * Math.PI) * 0.08)); o.s = 1; }
+    }
   }
+
 
   // ---------------------------------------------------------- Update & Zeichnen
   update(dt) {
     for (let i = this.tweens.length - 1; i >= 0; i--) { const tw = this.tweens[i]; tw.t += dt; const k = Math.min(1, tw.t / tw.dur); tw.fn(k); if (k >= 1) { this.tweens.splice(i, 1); tw.res(); } }
     for (const p of this.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.l -= dt; } this.parts = this.parts.filter(p => p.l > 0);
+    for (const bo of this.bolts) bo.l -= dt; this.bolts = this.bolts.filter(bo => bo.l > 0);
     const tp = input.tap;
     if (this.mode === 'msg') {
       this.chars += dt * 70;
@@ -236,6 +262,7 @@ class DoubleScene {
     }
     if (this.ownTrainers && this.o.ownLooks) this.o.ownLooks.forEach((l, k) => ctx.drawImage(trainerSprite(l, true), 6 + k * 56, 50));
     if (this.mode === 'target') { const p = this.pos(this.tlist[this.tcur]); const x = p.x + 32 * p.s, y = p.y + 2 + Math.sin(G.t * 8) * 2; ctx.fillStyle = '#e84a5f'; ctx.beginPath(); ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y); ctx.lineTo(x, y + 6); ctx.fill(); }
+    for (const bo of this.bolts) { ctx.strokeStyle = bo.c; ctx.lineWidth = 2; ctx.beginPath(); let x = bo.a.x, y = bo.a.y; ctx.moveTo(x, y); for (let i = 1; i <= 6; i++) { x = bo.a.x + (bo.t.x - bo.a.x) * i / 6 + (i < 6 ? (Math.random() - 0.5) * 14 : 0); y = bo.a.y + (bo.t.y - bo.a.y) * i / 6 + (i < 6 ? (Math.random() - 0.5) * 14 : 0); ctx.lineTo(x, y); } ctx.stroke(); }
     for (const p of this.parts) { ctx.globalAlpha = Math.min(1, p.l / p.ml * 1.5); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.sz / 2, p.y - p.sz / 2, p.sz, p.sz); }
     ctx.globalAlpha = 1;
     if (this.showBoxes) {

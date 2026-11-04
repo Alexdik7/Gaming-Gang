@@ -99,7 +99,7 @@ export function inputName(title, def = '', max = 12) {
     const o = document.getElementById('nameinput'); o.hidden = false;
     o.innerHTML = `<div class="ni"><label>${title}</label><input maxlength="${max}" value="${def}" autocapitalize="off" autocomplete="off"><button>OK</button></div>`;
     const inp = o.querySelector('input'); setTimeout(() => inp.focus(), 50);
-    const done = () => { const v = inp.value.trim() || (max === 12 ? def || 'Alex' : ''); o.hidden = true; res(v.slice(0, max)); };
+    const done = () => { const v = inp.value.trim() || (max === 12 ? def || 'Alex' : ''); inp.blur(); o.hidden = true; res(v.slice(0, max)); };
     o.querySelector('button').onclick = done; inp.onkeydown = e => { if (e.key === 'Enter') done(); };
   });
 }

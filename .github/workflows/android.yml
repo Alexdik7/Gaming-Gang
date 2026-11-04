@@ -1,5 +1,6 @@
-# Baut die Android-App (APK) von Legends United und legt sie als Download in das Release "app".
-# Download-Link: https://github.com/Alexdik7/Gaming-Gang/releases/download/app/LegendsUnited.apk
+# Baut die Android-App (APK) von Legends United und veröffentlicht sie als neues Release (app-v1.N).
+# Fester Download-Link auf die neueste Version:
+# https://github.com/Alexdik7/Gaming-Gang/releases/latest/download/LegendsUnited.apk
 name: Android-App bauen
 
 on:
@@ -63,9 +64,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           NOTES="Version 1.${GITHUB_RUN_NUMBER} vom $(date -u +%d.%m.%Y). LegendsUnited.apk herunterladen und auf dem Android-Handy öffnen. Bei der ersten Installation muss das Installieren aus dieser Quelle erlaubt werden. Updates einfach drüber installieren – der Spielstand bleibt erhalten."
-          gh release view app >/dev/null 2>&1 || gh release create app --title "Legends United – Android-App" --notes "$NOTES"
-          gh release upload app LegendsUnited.apk --clobber
-          gh release edit app --notes "$NOTES"
+          # Releases sind unveränderlich: jede Version bekommt ein eigenes Release mit der APK
+          gh release create "app-v1.${GITHUB_RUN_NUMBER}" LegendsUnited.apk --title "Legends United – App 1.${GITHUB_RUN_NUMBER}" --notes "$NOTES" --latest
 
       - uses: actions/upload-artifact@v4
         with:

@@ -4,6 +4,8 @@ Sammlung von Browser-Spielen, spielbar am Handy als installierbare Web-App (PWA)
 
 **Live:** https://alexdik7.github.io/Gaming-Gang/
 
+**Legends United als Android-App (APK):** https://github.com/Alexdik7/Gaming-Gang/releases/latest/download/LegendsUnited.apk – Anleitung in [`legends/docs/APP.md`](legends/docs/APP.md)
+
 ## Spiele
 
 | Spiel | Ordner | Beschreibung |

@@ -12,7 +12,8 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 | **2b – Koop-Ausbau** | Doppelkämpfe 2 gegen 2, Koop gegen Trainer-Duo und Boss, Tausch-Entwicklungen, Server-Sicherung & Geräte-Übertragung, Zu Freund reisen | ✅ v0.4 |
 | **3 – Hauptspiel** | Regionen Ignis, Aqualis, Frostheim · Arenen 2–4 mit Rätseln · Team Eklipse · Rivalin Lyra · 75 Kreaturen · Items (Beeren, Attacken-Kristalle) · Nebenquests | ✅ v0.5–v0.8 |
 | **4 – Endgame** ✅ (4.1 v0.9 · 4.2 v0.10 · 4.3 v0.11 · 4.4 v0.12 · 4.5a v0.13 · 4.5b v0.14) | Regionen Nocturna, Solaria, Drakmor · Arenen 5–8 · Top 4 · Champion · legendäre Hüter · Geheimorte nur zu viert · Postgame · 150 Kreaturen | geplant |
-| **5 – Qualität** | komponierte Musik, Animationen, Balancing, Performance, Windows-App (Tauri), Store-Apps (Capacitor) | geplant |
+| **5 – Qualität** ✅ v1.0 | 11 komponierte Musikstücke, volle Effekt-Animationen im Doppel-/Raid-Kampf, 150 Kreaturen, Android-App (Capacitor, automatischer APK-Build), Offline-Schrift | ✅ v1.0 |
+| **später** | Windows-App (Tauri), Play-Store-/App-Store-Veröffentlichung, Freundesliste, Spielerhäuser | optional |
 
 ## Phase 2b – erledigt (v0.4)
 
