@@ -26,12 +26,20 @@ const GYMS = {
     outro: ['Gorm: Östlich von hier führt der Aschepfad nach Ignis, der Stadt am Vulkan.', 'Dort wartet Selma, die Arenaleiterin des Feuers. Mit meinem Orden lässt dich der Wächter durch!'],
     after: ['Der Felsorden steht dir gut.', 'Der Aschepfad im Osten führt nach Ignis. Selma wartet dort auf dich!'],
   },
+  meri: {
+    badge: 2, badgeName: 'WELLENORDEN', team: [['sternquappe', 24], ['perlpanzer', 25], ['wogenross', 27]], reward: 3000,
+    intro: ['Danke, dass du mir im Versteck geholfen hast!', 'Ich bin Meri. Meine Kreaturen fließen wie das Meer – mal sanft, mal als Sturmflut.', 'Mal sehen, ob du gegen den Strom schwimmen kannst!'],
+    lose: 'Was für eine Welle! Du hast mich einfach weggespült.',
+    gift: { text: ['Meri: Nimm diese Sternkristalle. Im Meer gibt es seltene Kreaturen zu finden!'], items: { sternkristall: 4 } },
+    outro: ['Meri: Team Eklipse sammelt die Herzsteine. Einen haben wir gerettet – aber Nyx sprach von einem Stein im ewigen Eis.', 'Hinter den Bergen im Norden liegt Frostheim.', '(Ende des aktuellen Abschnitts. Frostheim folgt in der nächsten Lieferung!)'],
+    after: ['Der Wellenorden steht dir! Pass gut auf den Meeres-Herzstein auf.'],
+  },
   selma: {
     badge: 1, badgeName: 'GLUTORDEN', team: [['glutling', 19], ['funkenkaefer', 20], ['vulkanox', 22]], reward: 2400, bg: 'vulkan',
     intro: ['Endlich ist meine Arena wieder frei – danke dir!', 'Ich bin Selma. Mein Feuer brennt für alle, die mutig genug sind.', 'Zeig mir, wie heiß dein Kampfgeist ist!'],
     lose: 'Was für eine Glut! Du hast mich überstrahlt.',
     gift: { text: ['Selma: Nimm auch diese Supertränke. Feuer heilt nicht – aber die hier schon!'], items: { supertrank: 3 } },
-    outro: ['Selma: Team Eklipse war hinter der Glut des Vulkans her. Sie sprachen von „Herzsteinen“.', 'Ihre Kommandantin Nyx ist Richtung Küste gezogen – nach Aqualis.', '(Ende des aktuellen Abschnitts. Aqualis und Frostheim folgen in der nächsten Lieferung!)'],
+    outro: ['Selma: Team Eklipse war hinter der Glut des Vulkans her. Sie sprachen von „Herzsteinen“.', 'Ihre Kommandantin Nyx ist Richtung Küste gezogen – nach Aqualis, südlich von hier.', 'Auf dem Küstenweg verleiht Surferin Malu Wellenreiter. Mit meinem Orden gibt sie dir bestimmt einen!'],
     after: ['Der Glutorden steht dir! Pass auf dich auf, wenn du Team Eklipse begegnest.'],
   },
 };
@@ -365,7 +373,24 @@ class Game {
     await wait(600 + Math.random() * 1400);
     if (Math.random() < 0.3) return say('Nichts beißt an…');
     sfx('encounter'); await say('Oh! Etwas beißt an!');
-    await this.wildBattle('wasser', 'wasser');
+    await this.wildBattle(this.ow.M.fishEnc || 'wasser', 'wasser');
+  }
+  // Surfen: erste kampffähige Wasser-Kreatur im Team zieht dich übers Wasser
+  surfMon() { return this.state.team.find(m => !m.egg && m.hp > 0 && SPECIES[m.sp].types.includes('wasser')); }
+  async water(x, y) {
+    const s = this.state;
+    if (this.ow.M.indoor) return say('Im Becken der Arena ist Surfen verboten – nimm die Stege!');
+    if (!s.bag.wellenreiter) return this.fish();
+    const sm = this.surfMon();
+    const opts = [...(sm ? ['Surfen'] : []), ...(s.bag.angel ? ['Angeln'] : []), 'Nichts'];
+    if (!sm) await say('Mit dem Wellenreiter könntest du surfen – aber dazu brauchst du eine Wasser-Kreatur im Team.');
+    const c = await choose(opts, { title: 'Wasser' });
+    if (c === null || opts[c] === 'Nichts') return;
+    if (opts[c] === 'Angeln') return this.fish();
+    await say(`${monName(sm)} zieht dich auf dem Wellenreiter übers Wasser!`);
+    cry(SPECIES[sm.sp].cry);
+    const p = this.ow.p; p.surf = true; s.surf = true;
+    this.ow.startMove(x, y, false);
   }
   async rune(id) {
     const s = this.state;
@@ -454,7 +479,16 @@ class Game {
       case 'kid2': return say(['Wasser ist stark gegen Feuer und Erde. Pflanze schlägt Wasser!', 'Und Elektro kann Erde gar nichts anhaben – merk dir das für die Arena!'], N);
       case 'fan': return say(['Arenaleiter Gorm benutzt Erd- und Metall-Kreaturen.', 'Wasser, Pflanze und Feuer haben es leichter gegen ihn!'], N);
       case 'guide': return say(['Hey, Champion in spe! Gorm wartet ganz oben.', 'Seine Kreaturen sind hart wie Stein. Wasser- und Pflanzenattacken helfen enorm!'], N);
-      case 'gorm': case 'selma': return this.gym(n);
+      case 'gorm': case 'selma': case 'meri': return this.gym(n);
+      case 'malu':
+        if (s.bag.wellenreiter) return say(['Das Meer ist heute spiegelglatt – perfekt zum Surfen!', 'Auf der Insel vor Aqualis haben sich Leute in dunklen Uniformen verschanzt…'], N);
+        if (!s.badges[1]) return say(['Ich bin Malu! Ich verleihe Wellenreiter – aber nur an Trainer mit dem Glutorden aus Ignis.', 'Das Meer ist nichts für Anfänger!'], N);
+        await say(['Der Glutorden! Respekt. Dann bist du bereit fürs Meer.', 'Hier, nimm diesen Wellenreiter! Stell dich ans Wasser, drück A – und eine Wasser-Kreatur zieht dich.'], N);
+        s.bag.wellenreiter = 1; sfx('caught'); return say(`${s.name} erhält den WELLENREITER!`);
+      case 'guide3': return say(['Meri lässt dich über ihre Wasserbecken laufen – nur über die Stege!', 'Pflanzen- und Elektro-Attacken sind gegen ihre Kreaturen spitze.'], N);
+      case 'aq_fischer': return say(s.flags.eklipse2 ? ['Seit die Uniformierten weg sind, beißen die Fische wieder!'] : ['Auf der Insel im Osten ist eine Höhle. Seit Tagen gehen dort Leute in dunklen Uniformen ein und aus.', 'Ohne Boot kommt man nicht hin… oder man surft!'], N);
+      case 'aq_girl': return say(['Nachts leuchten die Quallos in der Bucht. Wunderschön!', 'Aber nicht anfassen – die nesseln!'], N);
+      case 'aq_mann': return say(['Arenaleiterin Meri ist zur Insel rausgeschwommen. Sie wollte nachsehen, was Team Eklipse dort treibt.', 'Seitdem ist die Arena zu.'], N);
       case 'guide2': return say(['Selma ist die Herrin des Feuers.', 'Wasser- und Erd-Attacken löschen ihre Flammen am schnellsten!'], N);
       case 'ig_opa': return say(s.flags.eklipse1 ? ['Danke, dass du die Gauner vertrieben hast!', 'Seit Wochen schleichen Leute in dunklen Uniformen um den Krater. Sie suchen etwas, das sie „Herzstein“ nennen…'] : ['Diese Leute in den dunklen Uniformen… Team Eklipse nennen sie sich.', 'Sie haben die Arena besetzt! Kann sie denn niemand vertreiben?'], N);
       case 'ig_kid': return say(['Ignis liegt direkt am Vulkan. Nachts sieht man die Lava glühen!', 'Flammeulen kommen nur in der Dämmerung raus. Ich hab noch nie eine gefangen.'], N);
@@ -467,6 +501,18 @@ class Game {
   // ---------------------------------------------------------- Story-Ereignisse nach Trainerkämpfen
   async story() {
     const s = this.state, ow = this.ow;
+    if (ow.id === 'versteck' && s.flags.nyx2 && !s.flags.eklipse2) {
+      ow.busy = true;
+      const N = { name: 'Kommandantin Nyx' };
+      await say(['Zweimal… Zweimal von einem Kind besiegt.', 'Behalte den Meeres-Herzstein meinetwegen. Es gibt sieben davon – und der nächste schläft im ewigen Eis von Frostheim.', 'Wenn du dort auftauchst, werde ich nicht mehr spielen.'], N);
+      await fade(1, 300);
+      s.flags.eklipse2 = true; s.bag.herzstein_meer = 1;
+      ow.npcs = ow.npcs.filter(n => n.id !== 'nyx2');
+      await fade(0, 300);
+      sfx('caught'); await say([`${s.name} erhält den MEERES-HERZSTEIN!`, 'Draußen ist Arenaleiterin Meri zurück in Aqualis. Ihre Arena ist jetzt offen!']);
+      ow.busy = false; this.save(true);
+      return;
+    }
     if (ow.id === 'ignis' && s.flags.ek1 && s.flags.ek2 && !s.flags.eklipse1) {
       ow.busy = true;
       const p = ow.p, nyx = { id: 'nyx', name: 'Kommandantin Nyx', look: LOOK.nyx, x: p.x, y: Math.min(15, p.y + 1), dir: 'up', px: p.x * 16, py: Math.min(15, p.y + 1) * 16 };

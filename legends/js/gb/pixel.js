@@ -121,6 +121,16 @@ const DRAW = {
   rug: (x, f, s) => { x.fillStyle = '#c84848'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#f8d870'; x.fillRect(1, 1, 14, 1); x.fillRect(1, 14, 14, 1); x.fillStyle = '#e86868'; x.fillRect(3, 4, 10, 8); },
   mat: (x, f, s) => { DRAW.floor(x, f, s); x.fillStyle = '#7a2838'; x.fillRect(2, 4, 12, 10); x.fillStyle = '#b84858'; x.fillRect(3, 5, 10, 8); },
   orbs: (x, f, s) => { DRAW.table(x, f, s); for (const [a, c] of [[3, '#ff7a33'], [8, '#3d9bff'], [13, '#4fcf5c']]) { x.fillStyle = '#202030'; x.beginPath(); x.arc(a, 6.5, 2.4, 0, 7); x.fill(); x.fillStyle = c; x.beginPath(); x.arc(a, 6.5, 1.7, 0, 7); x.fill(); x.fillStyle = '#fff'; x.fillRect(a - 1, 5, 1, 1); } },
+  // Eklipse-Versteck
+  metal: (x, f, s) => {
+    x.fillStyle = '#5a6070'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#48505e'; x.fillRect(0, 0, 16, 1); x.fillRect(0, 0, 1, 16); x.fillRect(8, 0, 1, 16); x.fillRect(0, 8, 16, 1);
+    x.fillStyle = '#6e7686'; x.fillRect(1, 1, 7, 1); x.fillRect(9, 9, 7, 1); x.fillStyle = '#8a92a2'; x.fillRect(3, 4, 1, 1); x.fillRect(12, 12, 1, 1);
+    if (s % 5 === 0) { x.fillStyle = '#9a7ae8'; x.fillRect(5, 11, 6, 1); }
+  },
+  mwall: (x, f, s) => {
+    x.fillStyle = '#1e1a2a'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#2e2840'; x.fillRect(1, 1, 14, 11); x.fillStyle = '#3e3656'; x.fillRect(1, 1, 14, 2);
+    x.fillStyle = '#140f1e'; x.fillRect(0, 13, 16, 3); x.fillStyle = f ? '#c8a8ff' : '#8a6ad8'; x.fillRect(6, 6, 4, 2);
+  },
   // Region Ignis
   ash: (x, f, s) => {
     const r = mulberry(s + 31); x.fillStyle = '#9a8a7a'; x.fillRect(0, 0, 16, 16);

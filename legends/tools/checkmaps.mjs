@@ -55,19 +55,23 @@ for (const id of Object.keys(MAPS)) {
   // Erreichbarkeit (Figuren/Fundstücke zählen als Hindernis, außer Trainer, die man besiegt)
   if (!starts.length) continue;
   const block = new Set([...(M.npcs || []).filter(n => !n.trainer && !n.hideIf).map(n => n.x + ',' + n.y), ...(M.items || []).map(i => i.x + ',' + i.y)]);
-  const seen = new Set(), q = [starts[0]];
-  seen.add(starts[0].join(','));
-  while (q.length) {
-    const [x, y] = q.shift();
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = x + dx, ny = y + dy, k = nx + ',' + ny;
-      if (seen.has(k)) continue;
-      // Kante nach unten springen
-      if (M.rows[ny]?.[nx] === 'L' && dy === 1 && walk(nx, ny + 1)) { const k2 = nx + ',' + (ny + 1); if (!seen.has(k2)) { seen.add(k2); q.push([nx, ny + 1]); } continue; }
-      if (!walk(nx, ny) || block.has(k)) continue;
-      seen.add(k); q.push([nx, ny]);
+  const bfs = surf => {
+    const seen = new Set([starts[0].join(',')]), q = [starts[0]];
+    const ok = (x, y) => walk(x, y) || (surf && M.rows[y]?.[x] === '~');
+    while (q.length) {
+      const [x, y] = q.shift();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy, k = nx + ',' + ny;
+        if (seen.has(k)) continue;
+        if (M.rows[ny]?.[nx] === 'L' && dy === 1 && walk(nx, ny + 1)) { const k2 = nx + ',' + (ny + 1); if (!seen.has(k2)) { seen.add(k2); q.push([nx, ny + 1]); } continue; }
+        if (!ok(nx, ny) || block.has(k)) continue;
+        seen.add(k); q.push([nx, ny]);
+      }
     }
-  }
+    return seen;
+  };
+  const surfMap = !!M.surfEnc, seen = bfs(surfMap), walkOnly = surfMap ? bfs(false) : seen;
+  for (const it of M.items || []) if (surfMap && seen.has(it.x + ',' + it.y) && !walkOnly.has(it.x + ',' + it.y)) console.log(`· ${id}: Fundstück ${it.id} nur mit Surfen erreichbar`);
   const near = (x, y) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => seen.has((x + dx) + ',' + (y + dy)));
   for (const s of starts) if (!seen.has(s.join(','))) warn(id, `Übergang (${s}) nicht vom ersten Eingang erreichbar`);
   for (const b of M.buildings || []) if (!seen.has(`${b.x + b.door},${b.y + b.h}`)) err(id, `Tür von ${b.to} nicht erreichbar`);

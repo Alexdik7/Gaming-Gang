@@ -1,6 +1,29 @@
 # Fortschritt
 
-## v0.5 – Phase 3, Teil 1: Ignis (aktuell)
+## v0.6 – Phase 3, Teil 2: Aqualis (aktuell)
+
+### ✅ Neu und getestet
+- **Route 4 · Küstenweg** südlich von Ignis:
+  - Strand und Meer, 3 Trainer
+  - eine kleine Insel mit Sternkristallen, nur surfend erreichbar
+- **Surfen:**
+  - Surferin Malu gibt dir mit dem Glutorden den **Wellenreiter**.
+  - Am Wasser A drücken → „Surfen“: Deine erste Wasser-Kreatur zieht dich und ist dabei sichtbar.
+  - Auf dem Meer gibt es eigene Begegnungen. An Land steigst du automatisch ab.
+- **Stadt Aqualis** am Meer, mit Steg, Heilzentrum und Laden.
+  - Die Arena ist verschlossen: Leiterin Meri ist zur Insel aufgebrochen.
+- **Eklipse-Versteck** in der Höhle auf der Insel:
+  - Labyrinth aus Metallgängen mit 3 Rüpeln
+  - **Kampf gegen Kommandantin Nyx** → du erhältst den **Meeres-Herzstein**, Nyx deutet auf Frostheim.
+- **Arena 3:**
+  - Wasserbecken mit Stegen, Surfen ist dort verboten.
+  - 2 Arena-Trainer, **Arenaleiterin Meri** (Wasser) → **Wellenorden** + 4 Sternkristalle
+- **10 neue Kreaturen:** Möwix → Sturmmöwe, Quallo → Quallissima, Perlpanzer, Wogenross, Korallgolem, Sternquappe, Geisterflosse (nachts), Tangechse
+  - Insgesamt sind es jetzt 65 Arten.
+- **4 neue Attacken:** Wellenschlag, Gischt, Perlenglanz, Nesselhieb.
+- **Kartenprüfung** kennt jetzt Wege, die nur surfend erreichbar sind: alle 22 Karten fehlerfrei.
+
+## v0.5 – Phase 3, Teil 1: Ignis
 
 ### ✅ Neu und getestet
 - **Route 3 · Aschepfad** (östlich von Felsenau, nur mit Felsorden):

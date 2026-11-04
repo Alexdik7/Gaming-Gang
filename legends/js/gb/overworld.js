@@ -17,10 +17,11 @@ export class Overworld {
     this.w = M.rows[0].length; this.h = M.rows.length;
     const s = this.g.state; s.map = id;
     this.p = { x, y, dir: dir || s.dir || 'down', px: x * 16, py: y * 16, moving: false, step: 0, turnT: 0, jump: 0 };
+    s.surf = !!s.surf && M.rows[y]?.[x] === '~'; this.p.surf = s.surf;
     this.npcs = (M.npcs || []).filter(n => !(n.hideIf && s.flags[n.hideIf]) && !(n.showIf && !s.flags[n.showIf])).map(n => ({ ...n, ox: n.x, oy: n.y, px: n.x * 16, py: n.y * 16, moving: false, wt: 1 + Math.random() * 3, step: 0 }));
     this.items = (M.items || []).filter(i => !s.flags[i.id]);
     this.blds = M.buildings || [];
-    if (M.outdoor || M.cave) { this.banner = { t: 2.2, name: M.name }; }
+    this.banner = (M.outdoor || M.cave || M.banner) ? { t: 2.2, name: M.name } : null;
     this.music();
     this.g.onMapLoad?.(id);
   }
@@ -86,6 +87,7 @@ export class Overworld {
     // Tür (nur von unten)
     const b = this.bldAt(nx, ny);
     if (b && nx === b.x + b.door && ny === b.y + b.h - 1) { if (d === 'up') return this.enterDoor(b); return this.bump(); }
+    if (p.surf && c === '~' && !this.npcAt(nx, ny)) return this.startMove(nx, ny, false);
     if (this.solid(nx, ny)) return this.bump();
     if (this.g.blockMove?.(this.id, nx, ny, d)) return;
     this.startMove(nx, ny, false);
@@ -100,7 +102,9 @@ export class Overworld {
     if (this.M.indoor && c === 'm') return this.exitInterior();
     const wp = (this.M.warps || []).find(w => w.x === p.x && w.y === p.y);
     if (wp) return this.warp(wp.to, wp.tx, wp.ty, wp.dir);
+    if (p.surf && c !== '~') { p.surf = false; s.surf = false; this.music(); }
     if (await this.checkTrainers()) return;
+    if (p.surf && this.M.surfEnc) { if (Math.random() < ENC[this.M.surfEnc].rate) await this.g.wildBattle(this.M.surfEnc, 'wasser'); return; }
     const encId = this.M.enc;
     if (encId && ((c === ':' || c === 'h') || (this.M.cave && c === 'c'))) {
       if (Math.random() < ENC[encId].rate) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.id === 'altwald' ? 'wald' : this.M.bg || 'gras');
@@ -126,6 +130,7 @@ export class Overworld {
     this.g.save(true);
   }
   async enterDoor(b) {
+    if (b.lock && !this.g.state.flags[b.lock]) { this.busy = true; await say('Die Tür ist verschlossen. Ein Zettel hängt daran: „Bin bei der Insel im Osten. – Meri“'); this.busy = false; return; }
     const s = this.g.state; s.ret = { map: this.id, x: b.x + b.door, y: b.y + b.h, heal: !!b.heal };
     if (b.heal) s.healPoint = { map: this.id, x: b.x + b.door, y: b.y + b.h };
     const I = MAPS[b.to]; let mx = 0, my = 0;
@@ -208,6 +213,7 @@ export class Overworld {
       if (c === 'K') { await say(['Ein Regal voller Bücher.', '„Mutationen – Wenn zwei Kreaturen ein Ei teilen“, Band 3…'][Math.floor(Math.random() * 2)]); return; }
       if (c === 'M') { await say('Eine summende Maschine. Lämpchen blinken in allen Farben.'); return; }
       if (c === 'Y' && this.id === 'home') { await this.g.rest(); return; }
+      if (c === '~' && !this.p.surf) { await this.g.water(fx, fy); return; }
       if (c === '~' && this.M.fishing !== false) { await this.g.fish(); return; }
       if (c === 'b') { await say('Ein schwerer Felsbrocken. Er bewegt sich keinen Millimeter.'); return; }
     } finally { this.busy = false; }
@@ -243,6 +249,7 @@ export class Overworld {
       ...(this.g.remoteActors?.(this.id) || [])];
     actors.sort((a, b) => a.py - b.py);
     for (const a of actors) {
+      if (a.me && p.surf) { const sm = this.g.surfMon?.(); const bob = Math.round(Math.sin(G.t * 4)); if (sm) ctx.drawImage(monSprite(sm.sp, 'icon', sm.shiny, sm.mut), a.px - cx - 8, a.py - cy - 6 + bob); drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 7 + bob); continue; }
       if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
       else drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
       { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h') && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : 'green'), a.px - cx, a.py - cy + 8); }

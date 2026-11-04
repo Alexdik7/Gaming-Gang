@@ -1,5 +1,6 @@
 // Erweiterte Kreaturen (2D-Version): Entwicklungen der Wildarten + 26 neue Arten → insgesamt 45
 import './creatures3.js';
+import './creatures4.js';
 import { SPECIES, RARITY } from './creatures.js';
 
 RARITY.mutation = { name: 'Mutation', color: '#ff7ad9' };
