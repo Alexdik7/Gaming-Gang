@@ -267,9 +267,20 @@ export class Overworld {
       ctx.fillStyle = '#28202c'; ctx.fillRect(x - 1, y - 1, 10, 12); ctx.fillStyle = '#fff'; ctx.fillRect(x, y, 8, 10); text('!', x + 4, y + 0.5, '#e84a5f', 9, 'center', null, true);
     }
     // Tag/Nacht
-    if (this.M.outdoor || this.M.cave) {
+    if (this.M.outdoor || this.M.cave || this.M.night) {
       const dark = (night ? 0.45 : this.g.dusk() * 0.25) + (this.M.dark || 0) + (this.M.cave ? 0.15 : 0);
+      if (this.M.night && !this.M.darkRadius) { ctx.fillStyle = 'rgba(10,8,34,.38)'; ctx.fillRect(0, 0, W, H); }
       if (dark > 0) { ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = `rgba(${night ? '40,50,120' : '120,80,90'},${Math.min(0.7, dark)})`; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over'; }
+    }
+    // Dunkelheit mit Lichtkreis um den Spieler (Ruinen, Schatten-Arena)
+    if (this.M.darkRadius) {
+      const L = (this.lightCv ||= Object.assign(document.createElement('canvas'), { width: W, height: H })), lx = L.getContext('2d');
+      lx.globalCompositeOperation = 'source-over'; lx.clearRect(0, 0, W, H); lx.fillStyle = 'rgba(6,4,16,.96)'; lx.fillRect(0, 0, W, H);
+      const px = p.px - cx + 8, py = p.py - cy + 6, r = this.M.darkRadius + Math.sin(G.t * 3) * 1.5;
+      const gr = lx.createRadialGradient(px, py, r * 0.45, px, py, r);
+      gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      lx.globalCompositeOperation = 'destination-out'; lx.fillStyle = gr; lx.beginPath(); lx.arc(px, py, r, 0, 7); lx.fill();
+      ctx.drawImage(L, 0, 0);
     }
     if (this.banner) {
       const k = Math.min(1, this.banner.t * 3, (2.2 - this.banner.t) * 4);

@@ -2,6 +2,7 @@
 import './creatures3.js';
 import './creatures4.js';
 import './creatures5.js';
+import './creatures6.js';
 import { SPECIES, RARITY } from './creatures.js';
 
 RARITY.mutation = { name: 'Mutation', color: '#ff7ad9' };

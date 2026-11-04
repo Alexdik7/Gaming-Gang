@@ -33,6 +33,14 @@ const GYMS = {
     outro: ['Gorm: Östlich von hier führt der Aschepfad nach Ignis, der Stadt am Vulkan.', 'Dort wartet Selma, die Arenaleiterin des Feuers. Mit meinem Orden lässt dich der Wächter durch!'],
     after: ['Der Felsorden steht dir gut.', 'Der Aschepfad im Osten führt nach Ignis. Selma wartet dort auf dich!'],
   },
+  morwen: {
+    badge: 4, badgeName: 'SCHATTENORDEN', team: [['spukling', 35], ['finstereule', 36], ['nachtmahr', 37], ['finsterfuchs', 38]], reward: 4800,
+    intro: ['Du hast den Weg durch die Finsternis gefunden. Wer im Dunkeln nicht verzagt, verdient mein Gehör.', 'Ich bin Morwen. Meine Kreaturen sind Schatten – sie kommen, wenn du sie am wenigsten erwartest.'],
+    lose: 'Ein Licht, das selbst meine Schatten nicht schlucken können… Bemerkenswert.',
+    gift: { text: ['Morwen: Nimm diese Beleber. In der Mondruine wirst du sie brauchen.'], items: { beleber: 3, supertrank: 3 } },
+    outro: ['Morwen: Die Mondruine liegt östlich der Stadt. Der Wächter wird dich nun einlassen.', 'Dort wacht Lunareth über den Mond-Herzstein. Sei respektvoll – es ist älter als jede Stadt.'],
+    after: ['Der Schattenorden steht dir. Die Mondruine erwartet dich im Osten.'],
+  },
   halvar: {
     badge: 3, badgeName: 'FROSTORDEN', team: [['frosteule', 30], ['eiszapfling', 31], ['kaiserpingu', 32], ['gletscherkoloss', 34]], reward: 4000, bg: 'schnee',
     intro: ['Du hast den Weg über das Eis gefunden. Das gelingt nicht vielen.', 'Ich bin Halvar. Das Eis lehrt Geduld – und Geduld macht stark.', 'Zeig mir, ob dein Feuer meinen Winter schmelzen kann!'],
@@ -77,7 +85,7 @@ class Game {
 
   // ---------------------------------------------------------- Zeit
   hour() { return ((this.state?.time ?? DAY / 3) / DAY * 24) % 24; }
-  isNight() { const h = this.hour(); return h >= 20 || h < 6; }
+  isNight() { if (this.ow?.M?.night && this.started) return true; const h = this.hour(); return h >= 20 || h < 6; }
   dusk() { const h = this.hour(); return h >= 17 && h < 20 ? (h - 17) / 3 : h >= 6 && h < 7.5 ? 1 - (h - 6) / 1.5 : 0; }
   worldFlags() { return this.state?.flags || {}; }
 
@@ -221,6 +229,19 @@ class Game {
     }
     s.bag[k]--; sfx('lvl'); await say(`${monName(m)} hat ${M.name} erlernt!`);
   }
+  // Mondruine: Hüter Lunareth bewacht den Mond-Herzstein
+  async moonAltar() {
+    const s = this.state;
+    if (s.bag.herzstein_mond) return say('Der Altar ist leer. Über der Ruine schimmert zum ersten Mal ein schwaches Morgenrot.');
+    await say(['Auf dem Altar liegt ein silbern glühender Stein – der Mond-Herzstein!', 'Als du die Hand ausstreckst, erhebt sich aus dem Schatten eine riesige Gestalt mit einem Geweih aus Sternenlicht…']);
+    const r = await this.wildBattle(null, 'ruine', createMon('lunareth', 40));
+    if (!r || r.result === 'lose' || r.result === 'fled') return;
+    if (r.result === 'caught') { s.flags.lunareth = true; await say('Lunareth hat dich als würdig anerkannt und schließt sich dir an!'); }
+    else await say('Lunareth weicht zurück und verneigt sich. Es gibt den Stein frei.');
+    s.bag.herzstein_mond = 1; sfx('caught');
+    await say([`${s.name} erhält den MOND-HERZSTEIN!`, 'Drei von sieben Herzsteinen sind jetzt in Sicherheit.', '(Ende von Phase 4.1. Als Nächstes: die Wüstenregion Solaria!)']);
+    this.save(true);
+  }
   // Nebenquest „Zeig mir …“: eine bestimmte Kreatur im Team vorzeigen
   async quest(n, q) {
     const s = this.state, N = { name: n.name }, f = 'quest_' + n.id;
@@ -254,6 +275,16 @@ class Game {
   // ---------------------------------------------------------- Bewegungs-Sperren & Ereignisse
   blockEdge(map, to) {
     const s = this.state;
+    if (map === 'aqualis' && to === 'route6' && !s.bag.herzstein_eis) {
+      this.ow.busy = true;
+      (async () => { await say(['Ein Seemann hält dich auf: Der Dämmerwald ist verflucht! Seit Jahren geht dort die Sonne nicht mehr auf.', 'Komm wieder, wenn du dich in Frostheim bewährt hast – man erzählt von einem Stein im Eis…']); this.ow.busy = false; })();
+      return true;
+    }
+    if (map === 'nocturna' && to === 'mondruine' && !s.badges[4]) {
+      this.ow.busy = true;
+      (async () => { await say(['Ruinenwächter: Halt! Die Mondruine darf nur betreten, wer Morwens Schattenorden trägt.', 'Dort drinnen sieht man kaum die Hand vor Augen.']); this.ow.busy = false; })();
+      return true;
+    }
     if (map === 'frostheim' && to === 'eisgrotte' && !s.badges[3]) {
       this.ow.busy = true;
       (async () => { await say(['Ein eisiger Sturm peitscht dir entgegen.', 'Die Leute in Frostheim sagen, nur wer Halvars Frostorden trägt, übersteht den Weg zur Eisgrotte.']); this.ow.busy = false; })();
@@ -465,6 +496,7 @@ class Game {
     if (n === 3) await say('Ein tiefes Summen geht durch den ganzen Wald… Der Altar in den Ruinen ruft dich – bei Nacht.');
   }
   async altar() {
+    if (this.ow.id === 'mondruine') return this.moonAltar();
     const s = this.state, n = ['rune_nord', 'rune_insel', 'rune_hain'].filter(r => s.flags[r]).length;
     if (n < 3) return say(['Ein uralter Altar mit einem matten Kristall.', '„Drei Steine, drei Lieder: Einer wacht im Norden über die Ruinen, einer ruht auf einer Insel im Wasser, einer schläft im westlichen Dickicht.“', `Leuchtende Runen: ${n}/3`]);
     if (s.flags.sylvaron) return say('Der Kristall pulsiert sanft. Der Wald ist ruhig.');
@@ -561,6 +593,13 @@ class Game {
       case 'ria': case 'rio': return this.coopNpc('zwillinge', n);
       case 'koloss': return this.coopNpc('koloss', n);
       case 'nyx3': case 'lyra3': return this.coopNpc('finale', n);
+      case 'morwen': return this.gym(n);
+      case 'nc_waechter': return say(s.badges[4] ? ['Die Ruine im Osten ist offen für dich. Pass auf – dort drinnen ist es stockfinster.', 'Ganz hinten soll der Hüter Lunareth wachen.'] : ['Ich bewache die Mondruine. Nur Trägern des Schattenordens lasse ich Einlass.', 'Morwen, unsere Arenaleiterin, entscheidet, wer würdig ist.'], N);
+      case 'nc_frau': return say(['Seit ich ein Kind war, ist es in Nocturna Nacht. Die Alten sagen, ein Hüter halte die Sonne fern.', 'Manche sagen, er beschütze damit etwas. Andere sagen, er sei einfach einsam.'], N);
+      case 'lyra4': {
+        await say(['Lyra: Du schon wieder. Ich war vor dir hier – aber ich habe den Stein nicht angerührt.', 'Lyra: Nyx gehorcht jemandem. Der wahre Anführer von Team Eklipse heißt Umbra.', 'Lyra: Er will alle sieben Herzsteine vereinen und die Zeit anhalten. Für immer.', 'Lyra: … Ich weiß nicht mehr, ob das richtig ist. Hol du den Stein. Ich halte Ausschau.'], N);
+        s.flags.lyra4 = true; this.ow.npcs = this.ow.npcs.filter(x => x.id !== 'lyra4'); return;
+      }
       default: return say('…', N);
     }
   }

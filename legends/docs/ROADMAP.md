@@ -11,7 +11,7 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 | **2a – Grafik & Koop** | eigene 2D-Pixel-Art statt 3D-Renderings, 3D-Teil entfernt, Online-Welt, Mitspieler auf der Karte, Freundschaftskampf (Server berechnet), Tausch, Chat | ✅ v0.3 |
 | **2b – Koop-Ausbau** | Doppelkämpfe 2 gegen 2, Koop gegen Trainer-Duo und Boss, Tausch-Entwicklungen, Server-Sicherung & Geräte-Übertragung, Zu Freund reisen | ✅ v0.4 |
 | **3 – Hauptspiel** | Regionen Ignis, Aqualis, Frostheim · Arenen 2–4 mit Rätseln · Team Eklipse · Rivalin Lyra · 75 Kreaturen · Items (Beeren, Attacken-Kristalle) · Nebenquests | ✅ v0.5–v0.8 |
-| **4 – Endgame** ⏳ als Nächstes | Regionen Nocturna, Solaria, Drakmor · Arenen 5–8 · Top 4 · Champion · legendäre Hüter · Geheimorte nur zu viert · Postgame · 150 Kreaturen | geplant |
+| **4 – Endgame** ⏳ läuft (4.1 ✅ v0.9) | Regionen Nocturna, Solaria, Drakmor · Arenen 5–8 · Top 4 · Champion · legendäre Hüter · Geheimorte nur zu viert · Postgame · 150 Kreaturen | geplant |
 | **5 – Qualität** | komponierte Musik, Animationen, Balancing, Performance, Windows-App (Tauri), Store-Apps (Capacitor) | geplant |
 
 ## Phase 2b – erledigt (v0.4)
@@ -39,13 +39,13 @@ So bleibt das Spiel nach jedem Schritt spielbar, und nichts wird doppelt gebaut.
 
 ## Ablaufplan Phase 4 (Entwurf)
 
-| AP | Inhalt |
-|---|---|
-| 4.1 | Region Nocturna (ewige Nacht, Geister/Schatten), Arena 5, Herzstein 3 |
-| 4.2 | Region Solaria (Wüste & Tempel, Licht/Magie), Arena 6, Herzstein 4 |
-| 4.3 | Region Drakmor (Drachengebirge), Arenen 7–8, Team-Eklipse-Hauptquartier |
-| 4.4 | Lyras Entscheidung, Nyx' Anführer, Siegesstraße, Top 4 und Champion |
-| 4.5 | Legendäre Hüter, Geheimorte nur zu viert (Koop-Raids), Postgame, Ziel 150 Kreaturen, Level bis 60+ |
+| AP | Inhalt | Status |
+|---|---|---|
+| 4.1 | Region Nocturna (ewige Nacht, Geister/Schatten), Arena 5, Herzstein 3 | ✅ v0.9 |
+| 4.2 | Region Solaria (Wüste & Tempel, Licht/Magie), Arena 6, Herzstein 4 | ⏳ als Nächstes |
+| 4.3 | Region Drakmor (Drachengebirge), Arenen 7–8, Team-Eklipse-Hauptquartier | geplant |
+| 4.4 | Lyras Entscheidung, Nyx' Anführer, Siegesstraße, Top 4 und Champion | geplant |
+| 4.5 | Legendäre Hüter, Geheimorte nur zu viert (Koop-Raids), Postgame, Ziel 150 Kreaturen, Level bis 60+ | geplant |
 
 ## Story-Leitfaden (Entwurf für alle Phasen)
 

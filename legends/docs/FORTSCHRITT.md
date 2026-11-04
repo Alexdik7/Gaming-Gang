@@ -1,6 +1,24 @@
 # Fortschritt
 
-## v0.8 – Phase 3 abgeschlossen (aktuell)
+## v0.9 – Phase 4.1: Nocturna (aktuell)
+
+### ✅ Neu und getestet
+- **Route 6 · Dämmerwald** südlich von Aqualis:
+  - erst nach dem Eis-Herzstein zugänglich
+  - Hier ist **immer Nacht**, mit dunklem Wald und 3 Trainern.
+- **Stadt Nocturna** in ewiger Nacht.
+- **Arena 5:**
+  - Labyrinth in völliger Dunkelheit, sichtbar ist nur ein Lichtkreis um dich herum.
+  - **Arenaleiterin Morwen** (Geist/Schatten) → **Schattenorden**
+- **Mondruine** (nur mit Schattenorden):
+  - dunkles Säulenlabyrinth
+  - Lyra verrät den wahren Anführer von Team Eklipse: **Umbra**.
+  - Am Altar wartet der legendäre Hüter **Lunareth** (Lv 40, fangbar) → **Mond-Herzstein**
+- **10 neue Kreaturen + 1 Legendäres**, jetzt 86 insgesamt: Mondfalter, Seelenlaterne, Schattenfuchs → Finsterfuchs, Gruftkäfer, Mondhase, Finstereule, Grabwurm, Albmolch, Spukling, **Lunareth**
+- **3 neue Attacken:** Mondstrahl, Schattenklaue, Seelenfeuer.
+- Alle 30 Karten sind fehlerfrei, der Levelverlauf steigt gleichmäßig bis 40.
+
+## v0.8 – Phase 3 abgeschlossen
 
 ### ✅ Neu und getestet
 - **Eisgrotte** nördlich von Frostheim, nur mit 4 Orden:

@@ -4,8 +4,8 @@
 import { MAPS, ENC } from '../js/gb/maps.js';
 import { COOP } from '../js/data/coop.js';
 
-const ORDER = ['route1', 'quellbach', 'route2', 'altwald', 'hoehle', 'felsenau', 'arena', 'route3', 'ignis', 'arena2', 'route4', 'aqualis', 'versteck', 'arena3', 'route5', 'frostheim', 'arena4', 'eisgrotte'];
-const LEADERS = { arena: [13, 14, 16], arena2: [19, 20, 22], arena3: [24, 25, 27], arena4: [30, 31, 32, 34] };
+const ORDER = ['route1', 'quellbach', 'route2', 'altwald', 'hoehle', 'felsenau', 'arena', 'route3', 'ignis', 'arena2', 'route4', 'aqualis', 'versteck', 'arena3', 'route5', 'frostheim', 'arena4', 'eisgrotte', 'route6', 'nocturna', 'arena5', 'mondruine'];
+const LEADERS = { arena: [13, 14, 16], arena2: [19, 20, 22], arena3: [24, 25, 27], arena4: [30, 31, 32, 34], arena5: [35, 36, 37, 38], mondruine: [40] };
 let prevTop = 5, warn = 0;
 console.log('Gebiet       Wild      Trainer (Ø/max)  Leiter/Boss');
 for (const id of ORDER) {
