@@ -98,13 +98,18 @@ export const choose = (items, o = {}) => new Promise(res => push(new Choice(item
 export async function ask(q, opts = {}) { await say(q, opts); return (await choose(['Ja', 'Nein'], { cancel: true })) === 0; }
 
 // ---------------------------------------------------------------- Name eingeben (natives Eingabefeld → Handy-Tastatur)
-export function inputName(title, def = '', max = 12) {
+export function inputName(title, def = '', max = 12, opt = {}) {
   return new Promise(res => {
     const o = document.getElementById('nameinput'); o.hidden = false;
-    o.innerHTML = `<div class="ni"><label>${title}</label><input maxlength="${max}" value="${def}" autocapitalize="off" autocomplete="off"><button>OK</button></div>`;
-    const inp = o.querySelector('input'); setTimeout(() => inp.focus(), 50);
+    o.innerHTML = `<div class="ni"><label>${title}</label><input maxlength="${max}" value="${def}" autocapitalize="off" autocomplete="off">${opt.share ? '<button class="sh">Teilen</button><button class="cp">Kopieren</button>' : ''}<button class="ok">OK</button></div>`;
+    const inp = o.querySelector('input'); if (!opt.share) setTimeout(() => inp.focus(), 50);
+    // Teilen/Kopieren direkt im Fingertipp (iOS erlaubt es nur dort)
+    if (opt.share) {
+      o.querySelector('.sh').onclick = () => { if (navigator.share) navigator.share({ text: def }).catch(() => {}); else o.querySelector('.cp').onclick(); };
+      o.querySelector('.cp').onclick = () => { const b = o.querySelector('.cp'); (navigator.clipboard?.writeText(def) || Promise.reject()).then(() => (b.textContent = 'Kopiert ✓'), () => { inp.focus(); inp.select(); inp.setSelectionRange(0, 99999); document.execCommand?.('copy'); b.textContent = 'Markiert'; }); };
+    }
     const done = () => { const v = inp.value.trim() || (max === 12 ? def || 'Alex' : ''); inp.blur(); o.hidden = true; res(v.slice(0, max)); };
-    o.querySelector('button').onclick = done; inp.onkeydown = e => { if (e.key === 'Enter') done(); };
+    o.querySelector('.ok').onclick = done; inp.onkeydown = e => { if (e.key === 'Enter') done(); };
   });
 }
 

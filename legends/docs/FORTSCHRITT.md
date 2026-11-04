@@ -529,3 +529,8 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
 - Box-Menü über die Kopfzeile: Hintergrund, Umbenennen, nach Nummer bzw. Level sortieren.
 - Schutz: Mindestens eine kampffähige Kreatur bleibt immer im Team.
 - Daten: Box-Kreaturen haben `m.slot` (Box × 30 + Platz), `s.boxMeta` enthält Name und Hintergrund. Alte Spielstände bekommen ihre Plätze beim ersten Öffnen (`ensureSlots`).
+
+## v2.1.1 – Basis-Code teilen auf dem iPhone
+- Das Code-Fenster hat die Knöpfe **Teilen** (iOS-Teilen-Menü, z. B. WhatsApp) und **Kopieren**.
+- Beide werden direkt im Fingertipp ausgelöst, denn iOS erlaubt Teilen und Kopieren nur dort.
+- Klappt das Kopieren nicht, wird der Code markiert. `inputName(…, { share: true })`.

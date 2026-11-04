@@ -806,10 +806,9 @@ class Game {
           s.money -= DECOR[k].price; s.decor[k] = (s.decor[k] || 0) + 1; sfx('caught'); await say(`${DECOR[k].name} wurde ins Lager geliefert!`);
         }
       } else if (i === 3) {
-        const code = encodeBase(s); let ok = false;
-        try { await navigator.clipboard.writeText(code); ok = true; } catch {}
-        await say(ok ? 'Dein Basis-Code ist kopiert! Schick ihn deinen Freunden – sie können damit deine Basis besuchen und gegen dein Team kämpfen.' : 'Hier ist dein Basis-Code. Kopiere ihn und schick ihn deinen Freunden!');
-        await inputName('Dein Basis-Code', code, 6000);
+        const code = encodeBase(s);
+        await say('Schick deinen Basis-Code an Freunde – mit „Teilen“ direkt per WhatsApp & Co. Sie können damit deine Basis besuchen und gegen dein Team kämpfen.');
+        await inputName('Dein Basis-Code', code, 6000, { share: true });
       } else if (i === 4) {
         const code = await inputName('Basis-Code eingeben', '', 6000); if (!code) continue;
         const o = decodeBase(code);

@@ -16,6 +16,7 @@ Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legend
 
 ## Pflicht-Regeln (spart Tokens)
 - Vor Arbeit an Legends den Skill **legends-dev** laden: Landkarte, Rezepte, Stolperfallen. Für neue Spiele den Skill **game-dev-fast**.
+- Für Qualität den Skill **game-studio** laden, und zwar bei neuen Features, Grafik, Spielgefühl, Design-Entscheidungen, iPhone-Eigenheiten und Deploy-Problemen. Dort nur die passende Referenz lesen: `pixel-art`, `game-feel`, `game-design`, `ios-webapp`, `performance` oder `release-qa`.
 - **Nicht** ganze große Dateien lesen. Stattdessen `grep -n` und gezielte `sed -n a,bp`.
   - `maps.js` hat >1000 Zeilen, `game.js` ~1200.
 - Mehrere Änderungen in **einem** `python3`-Skript mit `assert s.count(a)==1` erledigen.
