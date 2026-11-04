@@ -53,10 +53,27 @@ jobs:
         working-directory: legends/app/android
         run: |
           # Fester Signaturschlüssel, damit Updates den Spielstand behalten
-          mkdir -p ~/.android && cp ../debug.keystore ~/.android/debug.keystore
+          cat >> app/build.gradle <<'GRADLE'
+
+          android {
+              signingConfigs {
+                  debug {
+                      storeFile file("${rootDir}/../debug.keystore")
+                      storePassword "android"
+                      keyAlias "androiddebugkey"
+                      keyPassword "android"
+                  }
+              }
+          }
+          GRADLE
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
           cp app/build/outputs/apk/debug/app-debug.apk ../LegendsUnited.apk
+          # Prüfen, dass wirklich mit dem festen Schlüssel signiert wurde
+          WANT=$(keytool -list -v -keystore ../debug.keystore -storepass android | grep -m1 'SHA256:' | awk '{print $2}')
+          GOT=$(keytool -printcert -jarfile ../LegendsUnited.apk | grep -m1 'SHA256:' | awk '{print $2}')
+          echo "Schlüssel erwartet $WANT, APK $GOT"
+          test "$WANT" = "$GOT"
 
       - name: Als Download veröffentlichen
         working-directory: legends/app
