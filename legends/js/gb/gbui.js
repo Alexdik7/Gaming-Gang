@@ -239,6 +239,7 @@ class Summary {
     ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(44, 88, 30, 7, 0, 0, 7); ctx.fill();
     ctx.drawImage(monSprite(m.sp, 'front', m.shiny, m.mut), 12, 24 + Math.round(Math.sin(G.t * 3)));
     if (m.shiny) text('✦', 78, 22, '#f8c830', 9, 'right', null, true);
+    if (m.alpha) { ctx.fillStyle = '#c02828'; ctx.fillRect(6, 18, 30, 9); text('ALPHA', 21, 18.5, '#ffffff', 6.5, 'center', null, true); }
     box(3, 106, 82, 50);
     text(monName(m), 9, 111, COL.ink, 8, 'left', COL.shadow, true);
     if (!m.egg) genderMark(ctx, genderOf(m), Math.round(9 + measure(monName(m), 8) + 3), 112);

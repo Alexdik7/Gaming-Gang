@@ -7,6 +7,14 @@ const GRASSY = new Set('.,:TPrUF'.split(''));
 const LANDISH = c => c !== null && c !== '~' && c !== 'B';
 // Licht + Vignette einmal vorzeichnen (in halber Auflösung, weich skaliert) statt jeden Frame Verläufe zu berechnen
 const LL = {};
+// rote Silhouette (Umriss der Alpha-Kreaturen), einmal pro Art erzeugt
+const RED = new Map();
+function redSil(sp, img) {
+  if (RED.has(sp)) return RED.get(sp);
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const x = c.getContext('2d');
+  x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = '#ff2a2a'; x.fillRect(0, 0, c.width, c.height);
+  RED.set(sp, c); return c;
+}
 function lightLayer(sun) {
   const key = sun + ':' + VH; if (LL[key]) return LL[key];
   const c = document.createElement('canvas'); c.width = W * 2; c.height = VH * 2; const x = c.getContext('2d'); x.scale(2, 2);
@@ -17,6 +25,7 @@ function lightLayer(sun) {
 import { sfx, setMusic } from '../core/audio.js';
 import { say, choose } from './gbui.js';
 import { monSprite } from './sprites.js';
+import { SPECIES } from '../data/creatures.js';
 import { baseSpots, drawSpot, drawDecor, decorAt, DECOR } from './base.js';
 
 const DX = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
@@ -43,6 +52,18 @@ export class Overworld {
     this.cleared = new Map(); this.revealed = false; this.flashLit = 0; this.springUsed = false; this.fTalked = false;
     this.f = { x, y, px: x * 16, py: y * 16, fx: x, fy: y, tx: x, ty: y, dir: this.p.dir, vis: false };
     this.hidden = this.genHidden(id, M).filter(h => !s.flags[h.id]);
+    // Alpha-Kreatur des Tages auf dieser Route (im hohen Gras oder auf freier Fläche)
+    const A = this.g.alphaFor?.(id);
+    if (A) {
+      let h = A.seed; const rnd = () => ((h = (h * 1103515245 + 12345) >>> 0) / 4294967296);
+      for (let t = 0; t < 400; t++) {
+        const ax = 2 + Math.floor(rnd() * (this.w - 4)), ay = 2 + Math.floor(rnd() * (this.h - 4));
+        if (!(t < 250 ? '.,' : ':.,').includes(M.rows[ay][ax]) || this.solid(ax, ay, true) || Math.abs(ax - x) + Math.abs(ay - y) < 5) continue;
+        this.npcs.push({ id: 'alpha', alpha: A, mon: A.sp, x: ax, y: ay, ox: ax, oy: ay, px: ax * 16, py: ay * 16, dir: 'down', moving: false, wander: 2, wt: 1 + rnd() * 2, step: 0 });
+        this.notify(`Ein ALPHA-${SPECIES[A.sp].name} streift hier umher!`);
+        break;
+      }
+    }
     this.banner = (M.outdoor || M.cave || M.banner) ? { t: 2.2, name: M.name } : null;
     this.music();
     this.g.onMapLoad?.(id);
@@ -95,6 +116,8 @@ export class Overworld {
   update(dt) {
     const p = this.p, s = this.g.state;
     if (this.banner) { this.banner.t -= dt; if (this.banner.t <= 0) this.banner = null; }
+    // Zwischensequenz: Kinobalken + Kameraschwenk; endet von selbst, sobald die Steuerung frei ist
+    if (this.cine) { const C = this.cine; if (!this.busy) C.on = false; const mv = (v, to, sp) => (v < to ? Math.min(to, v + sp * dt) : Math.max(to, v - sp * dt)); C.b = mv(C.b, C.on ? 1 : 0, 2.6); C.k = mv(C.k, C.on && C.focus ? 1 : 0, 1.5); if (!C.on && C.b === 0 && C.k === 0) this.cine = null; }
     if (this.notice) { this.notice.t -= dt; if (this.notice.t <= 0) this.notice = null; }
     if (this.fEmote) this.fEmote.t -= dt;
     if (this.emote) { this.emote.t -= dt; if (this.emote.t <= 0) this.emote = null; }
@@ -399,6 +422,12 @@ export class Overworld {
     let cx = p.px + 8 - W / 2, cy = p.py + 8 - VH / 2;
     cx = mw <= W ? (mw - W) / 2 : Math.max(0, Math.min(mw - W, cx));
     cy = mh <= VH ? (mh - VH) / 2 : Math.max(0, Math.min(mh - VH, cy));
+    if (this.cine?.focus && this.cine.k > 0) { // Kamera gleitet weich zum Ziel der Szene
+      const F = this.cine.focus, e = this.cine.k * this.cine.k * (3 - 2 * this.cine.k);
+      let fx = F.px + 8 - W / 2, fy = F.py + 8 - VH / 2;
+      fx = mw <= W ? (mw - W) / 2 : Math.max(0, Math.min(mw - W, fx)); fy = mh <= VH ? (mh - VH) / 2 : Math.max(0, Math.min(mh - VH, fy));
+      cx += (fx - cx) * e; cy += (fy - cy) * e;
+    }
     cx = snap(cx); cy = snap(cy); this.view = { cx, cy };
     this.cam = { x: cx, y: cy };
     const f2 = Math.floor(G.t * 2) % 2, f3 = Math.floor(G.t * 2.5) % 3;
@@ -456,7 +485,7 @@ export class Overworld {
       if (T.kind === 'glitzer') { const on = Math.sin(G.t * 7) > 0, sx = bx + 8 + Math.round(Math.sin(G.t * 1.7) * 3), sy = by + 1; ctx.fillStyle = on ? '#ffffff' : '#ffe36b'; ctx.fillRect(sx - 1, sy - (on ? 4 : 2), 2, on ? 8 : 4); ctx.fillRect(sx - (on ? 4 : 2), sy - 1, on ? 8 : 4, 2); }
     }
     // Figuren nach y sortiert
-    const actors = [...this.npcs.map(n => ({ mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
+    const actors = [...this.npcs.map(n => ({ alpha: n.alpha, mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
       { look: this.g.state.look, dir: p.dir, frame: p.frame, hop: p.hop || 0, px: p.px, py: p.py - (p.hop || 0) - (p.bob || 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
       ...(this.g.remoteActors?.(this.id) || [])];
     const lead = this.f?.vis && !p.surf && this.g.state.team.find(m => !m.egg && m.hp > 0);
@@ -469,6 +498,15 @@ export class Overworld {
         ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(a.px - cx + 8, a.py - cy + 14, 6, 2, 0, 0, 7); ctx.fill();
         ctx.save(); ctx.translate(Math.round(a.px - cx + 8), Math.round(a.py - cy - 15 + hopY)); if (a.dir === 'right') ctx.scale(-1, 1); ctx.drawImage(img, -16, 0); ctx.restore();
         if (this.fEmote?.t > 0) { const ex = a.px - cx + 4, ey = a.py - cy - 22; ctx.fillStyle = '#28202c'; ctx.fillRect(ex - 1, ey - 1, 10, 9); ctx.fillStyle = '#fff'; ctx.fillRect(ex, ey, 8, 7); ctx.fillStyle = '#e84a6a'; [[1, 1, 2, 2], [5, 1, 2, 2], [1, 2, 6, 2], [2, 4, 4, 1], [3, 5, 2, 1]].forEach(([q, w2, e, r]) => ctx.fillRect(ex + q, ey + w2, e, r)); }
+      } else if (a.alpha) { // Alpha: groß, rote Aura, Schatten, leichtes Atmen
+        const img = monSprite(a.mon, 'icon'), b = Math.sin(G.t * 2.4), sz = Math.round(44 + b), ax = Math.round(a.px - cx + 8), ay = Math.round(a.py - cy + 14);
+        ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(ax, ay, 11, 3, 0, 0, 7); ctx.fill();
+        ctx.globalAlpha = 0.55 + b * 0.2; ctx.drawImage(glow(26, '255,40,40'), ax - 26, ay - 44); ctx.globalAlpha = 1;
+        const red = redSil(a.mon, img);
+        ctx.imageSmoothingEnabled = false; ctx.save(); ctx.translate(ax, ay - sz + 6); if (a.dir === 'right') ctx.scale(-1, 1);
+        ctx.globalAlpha = 0.8 + b * 0.2; for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(red, -sz / 2 + ox, oy, sz, sz); ctx.globalAlpha = 1;
+        ctx.drawImage(img, -sz / 2, 0, sz, sz); ctx.restore();
+        if (Math.floor(G.t * 1.5) % 4 === 0) { ctx.fillStyle = '#ff3030'; ctx.fillRect(ax - 3, ay - sz - 2, 2, 2); ctx.fillRect(ax + 1, ay - sz - 2, 2, 2); }
       } else if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
       else {
         if (this.ch(a.x, a.y + 1) === '~') { // Spiegelung im Wasser
@@ -549,6 +587,11 @@ export class Overworld {
       gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
       lx.globalCompositeOperation = 'destination-out'; lx.fillStyle = gr; lx.beginPath(); lx.arc(px, py, r, 0, 7); lx.fill();
       ctx.drawImage(L, 0, 0);
+    }
+    if (this.cine) { // Kinobalken und leichte Abdunklung
+      const e = this.cine.b * this.cine.b * (3 - 2 * this.cine.b), bh = Math.round(22 * e);
+      ctx.fillStyle = `rgba(10,8,20,${0.18 * e})`; ctx.fillRect(0, 0, W, VH);
+      ctx.fillStyle = '#05040a'; ctx.fillRect(0, 0, W, bh); ctx.fillRect(0, VH - bh, W, bh);
     }
     if (this.banner) {
       const k = Math.min(1, this.banner.t * 3, (2.2 - this.banner.t) * 4);

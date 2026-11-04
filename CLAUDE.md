@@ -38,7 +38,7 @@ Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legend
 - Ist ein Push fehlgeschlagen, einfach erneut pushen (passiert gelegentlich).
 
 ## Stand (aktualisieren!)
-- **Legends United v2.7** (Vorbild ab jetzt: **Pokémon Smaragd** – Grafik, Bewegung, Menüs):
+- **Legends United v2.8** (Vorbild ab jetzt: **Pokémon Smaragd** – Grafik, Bewegung, Menüs):
   - Inhalt: 150 Kreaturen, 8 Arenen, Liga, Postgame (Hüter), Raids 4v1 mit KI-Helfern und Online-Koop, Nihilux
   - Technik: komponierte Musik, Android-App, flüssige Subpixel-Bewegung, neue Weltgrafik
   - Kampf: Kampf-Intro mit Kristallwürfen, Smaragd-Hintergründe (`battlebg.js`), Smaragd-Statusboxen, Level-Up-Fenster
@@ -54,7 +54,8 @@ Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legend
   - PC: Box-Bildschirm `boxui.js` (8×30, `m.slot`, `s.boxMeta`, Greifen/Tauschen)
   - v2.3–2.5: eigene Bälle (`ballIcon`, 52-Ball = Meisterball, 11 versteckt), Attacken-Effekte (`fx.js`), Schrift Atkinson Hyperlegible, neue Gebäude + Marktstände (`props`), 139 neue Kreaturen-Namen (IDs unverändert), Item-Bilder im Beutel (`itemIcon`)
   - v2.6–2.7: Kampfablauf wie im Original (Anzeige-Zustand `dF/dP/dLvl`), Wechsel-Frage, neue Kampf- und Arenamusik; Geschlecht ♂/♀ überall (`genderOf` in mon.js, `genderMark`), Brutstätte langsamer (256er-Takt, `eggSteps`), 52-Bälle unsichtbar mit `need` (`ow.secret`)
-  - **Als Nächstes gewünscht (Nutzer, gewählt):** Alpha-Kreaturen in der Oberwelt (3), Tauschen und Kämpfen mit Freunden (4), Zwischensequenzen (9)
+  - v2.8: Alpha-Kreaturen (`alphaFor`/`alphaBattle`, `m.alpha`), Tausch/Kampf per Code ohne Server (`codes.js`, ONLINE → PER CODE), Zwischensequenzen (`game.cutIn`, `ow.cine`)
+  - Idee für später (Nutzer fragte): gemeinsame Koop-Welt mit eigener Story, evtl. WebRTC im selben WLAN
   - Sammeln: Chronik-Seite beim Erstfang, Belohnungen von Prof. Linde, Massenausbruch pro Tag, Glanzamulett
 - Details in `legends/docs/FORTSCHRITT.md` und `ROADMAP.md`.
 - **Wolkenpfad v2.0:** WebGL/three.js, Dschungel-Tempelpfad, 3D-Läuferin, Neigen-Steuerung, Kreuzungen, 6 Hindernisarten, 4 Kräfte, 5 Läufer, Missionen, Tageszeiten, Offline-PWA. `sw.js`-CACHE bei Änderungen erhöhen.

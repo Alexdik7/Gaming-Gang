@@ -85,11 +85,11 @@ class BattleScene {
       await wait(250);
     } else {
       // wilde Kreatur: erst dunkle Silhouette, dann sichtbar
-      if (o.intro === 'legend') { G.shake = 1.4; sfx('encounter'); }
+      if (o.intro === 'legend' || o.intro === 'alpha') { G.shake = 1.4; sfx('encounter'); }
       await wait(150);
       await this.tween(o.intro === 'legend' ? 0.7 : 0.35, k => (this.foeDark = 1 - k));
       cry(SPECIES[b.f.sp].cry); this.foeOff.flash = 0.6; this.tween(0.4, k => (this.foeOff.flash = 0.6 * (1 - k)));
-      await this.say(o.intro === 'legend' ? `Das legendäre ${SPECIES[b.f.sp].name} erscheint!` : `Ein wildes ${SPECIES[b.f.sp].name} erscheint!`);
+      await this.say(o.intro === 'legend' ? `Das legendäre ${SPECIES[b.f.sp].name} erscheint!` : o.intro === 'alpha' ? `Das ALPHA-${SPECIES[b.f.sp].name} greift an! Seine Augen glühen rot …` : `Ein wildes ${SPECIES[b.f.sp].name} erscheint!`);
     }
     this.showFoeBox = true; await this.tween(0.25, k => (this.foeBoxK = easeOut(k)));
     // eigener Trainer wirft den Ball und läuft aus dem Bild
@@ -355,8 +355,8 @@ class BattleScene {
     }
   }
   resoReady() { const b = this.b; return !this.o.remote && !b.pvp && !b.resoUsed?.p && b.p && (b.p.friendship || 0) >= RESO_MIN; }
-  aura(ctx, img, sp, x, y, s, clip) {
-    const col = resoColor(sp), k = 1.12 + Math.sin(G.t * 5) * 0.04;
+  aura(ctx, img, sp, x, y, s, clip, col = resoColor(sp)) {
+    const k = 1.12 + Math.sin(G.t * 5) * 0.04;
     ctx.globalAlpha = 0.35 + Math.sin(G.t * 5) * 0.12; this.drawSprite(ctx, tinted(img, col), x, y + 2, s * k, clip); ctx.globalAlpha = 1;
     if (Math.random() < 0.3) { const c = { x: x + 32 + (Math.random() - 0.5) * 44 * s, y: y + 60 - Math.random() * 10 }; this.emit(c.x, c.y, 0, -30 - Math.random() * 30, Math.random() < 0.5 ? col : '#ffffff', 0.7, 1.5); }
   }
@@ -472,11 +472,11 @@ class BattleScene {
     // Gegner
     const fo = this.foeOff;
     const vF = this.dF, vP = this.dP;
-    if (fo.vis && vF) { const im = monSprite(vF.sp, 'front', vF.shiny, vF.mut); if (vF.reso) this.aura(ctx, im, vF.sp, FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72); this.drawSprite(ctx, vF.reso ? resoSprite(im, resoColor(vF.sp)) : im, FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72, fo.flash, this.foeDark); }
+    if (fo.vis && vF) { const im = monSprite(vF.sp, 'front', vF.shiny, vF.mut); if (vF.reso || vF.alpha) this.aura(ctx, im, vF.sp, FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72, vF.reso ? undefined : '#ff3838'); this.drawSprite(ctx, vF.reso ? resoSprite(im, resoColor(vF.sp)) : im, FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72, fo.flash, this.foeDark); }
     if (this.trainerFoe.vis && this.o.trainer) ctx.drawImage(trainerSprite(this.o.trainer.look), FOE.x + this.trainerFoe.x + sF, FOE.y + 2);
     // eigene Seite
     const oo = this.ownOff;
-    if (oo.vis) { const im = monSprite(vP.sp, 'back', vP.shiny, vP.mut); if (vP.reso) this.aura(ctx, im, vP.sp, OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114); this.drawSprite(ctx, vP.reso ? resoSprite(im, resoColor(vP.sp)) : im, OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114, oo.flash); }
+    if (oo.vis) { const im = monSprite(vP.sp, 'back', vP.shiny, vP.mut); if (vP.reso || vP.alpha) this.aura(ctx, im, vP.sp, OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114, vP.reso ? undefined : '#ff3838'); this.drawSprite(ctx, vP.reso ? resoSprite(im, resoColor(vP.sp)) : im, OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114, oo.flash); }
     if (this.trainerOwn.vis) ctx.drawImage(trainerSprite(this.s.look, true), OWN.x + this.trainerOwn.x + sO, OWN.y + 4);
     // Lichtringe beim Öffnen des Kristalls
     for (const r of this.rings) if (r.t > 0) { ctx.globalAlpha = Math.max(0, 1 - r.t / 0.45); ctx.strokeStyle = r.c; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(r.x, r.y, 4 + r.t * 90, 2 + r.t * 40, 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
@@ -538,7 +538,7 @@ class BattleScene {
     const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, '#fcfcec'); g.addColorStop(1, '#e4e4c4'); ctx.fillStyle = g; shape(1.5); ctx.fill();
     ctx.fillStyle = 'rgba(160,168,120,.35)'; ctx.fillRect(x + (own ? 8 : 4), y + h - 5, w - 14, 2);
     const nx = x + (own ? 12 : 7), name = monName(m);
-    text(name, nx, y + 4, COL.ink, 8, 'left', COL.shadow, true);
+    text(name, nx, y + 4, m.alpha ? '#c02828' : COL.ink, 8, 'left', COL.shadow, true);
     const gd = genderOf(m);
     if (gd) genderMark(ctx, gd, Math.round(nx + measure(name, 8) + 3), y + 5);
     const lv = this.dLvl[m.uid] ?? m.lvl, mx = maxHp({ ...m, lvl: lv });

@@ -634,3 +634,16 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
   - Sie liegen unsichtbar (`ow.secret`) und sind nicht mehr als Ball zu sehen. Auch Erd-Schnüffeln zeigt sie nicht.
   - Freischaltung per `need` in `maps.js`: 2–8 Orden bzw. `'champion'` (3 Stück erst im Postgame).
   - Nur direkt daneben funkelt es alle 2,6 s kurz auf. Dieses Funkeln wird über den Baumkronen gezeichnet.
+
+## v2.8 – Alpha-Kreaturen, Tauschen/Kämpfen per Code, Zwischensequenzen
+- **Alpha-Kreaturen** (`game.alphaFor`, `alphaBattle`; Oberwelt in `ow.load`, gezeichnet mit `redSil` und `glow`):
+  - Jeden Tag streift auf knapp jeder zweiten Route ein Alpha sichtbar umher. Es ist groß, hat einen roten Umriss und eine rote Aura und läuft im Radius 2.
+  - Werte: höchstes Level der Route + 7, alle IVs 31. Gekämpft wird mit Boss-Musik, im Kampf mit roter Aura und rotem Namen.
+  - Fangen ist schwerer (×0,45 in `tryCatch`, Flag `m.alpha`). Gefangene Alphas tragen im Bericht ein „ALPHA“-Schild.
+  - Nach Sieg oder Fang gibt es Beute (Bälle, Tränke, Attacken-Kristall) und Geld. Danach ist das Alpha bis zum nächsten Tag weg (`alpha:<tag>:<karte>`).
+- **Per Code ohne Server** (`js/gb/codes.js`, ONLINE → PER CODE):
+  - **Tausch** in zwei Schritten: Angebot `LUT1-…`, die Kreatur wartet in `s.tradeOut`. Antwort-Code zurück. Doppeltes Einlösen wird über `s.tradeIn` verhindert. Das Angebot kann zurückgezogen werden.
+  - **Kampf** über einen Team-Code `LUK1-…`. Man kämpft gegen eine Kopie des Freund-Teams (`trainerFight` mit `t.mons`, ohne Verlust). Die Bilanz steht in `s.codeFights`.
+- **Zwischensequenzen** (`game.cutIn(ziel)`, `ow.cine`):
+  - Kinobalken, leichte Abdunklung und ein weicher Kameraschwenk zur Figur. Das Ende kommt automatisch, sobald die Steuerung frei ist.
+  - Eingebaut bei: Kian (Route 2, Liga), Nyx (Ignis, Versteck, Tempel), Lyra, Umbra (Hauptquartier, Finale) und Nihilux.

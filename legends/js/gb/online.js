@@ -12,6 +12,7 @@ import { MOVES } from '../data/moves.js';
 import { SPECIES } from '../data/creatures.js';
 import { TYPES } from '../data/types.js';
 import { ensureSpecies } from '../data/breeding.js';
+import { tradeMenu, fightMenu } from './codes.js';
 import { monName, newUid, tradeEvo, evolve, giveXp } from '../data/mon.js';
 import { sfx, cry } from '../core/audio.js';
 
@@ -80,9 +81,14 @@ export class Online {
   async menu() {
     const s = this.g.state;
     if (!this.on) {
-      const items = ['WELT ERSTELLEN', 'WELT BEITRETEN', ...(this.cfg.world ? ['LETZTE WELT'] : []), 'SPIELSTAND HOLEN', 'SERVER ÄNDERN', 'ZURÜCK'];
+      const items = ['PER CODE', 'WELT ERSTELLEN', 'WELT BEITRETEN', ...(this.cfg.world ? ['LETZTE WELT'] : []), 'SPIELSTAND HOLEN', 'SERVER ÄNDERN', 'ZURÜCK'];
       const i = await choose(items, { title: 'ONLINE' }); const k = items[i];
       if (i === null || k === 'ZURÜCK') return;
+      if (k === 'PER CODE') { // ohne Server: Tausch und Kampf über Codes
+        const c = await choose([{ label: 'Tauschen', desc: 'Kreaturen per Code tauschen – auch ohne Internet.' }, { label: 'Kämpfen', desc: 'Gegen das Team eines Freundes kämpfen – per Code.' }, 'Zurück'], { title: 'PER CODE' });
+        if (c === 0) await tradeMenu(this.g); else if (c === 1) await fightMenu(this.g);
+        return;
+      }
       if (k === 'SERVER ÄNDERN') { this.cfg.server = ''; await this.connect('change'); this.net.disconnect(); return this.menu(); }
       let close = waitMsg('Verbinde mit dem Weltserver');
       const ok = await this.connect(); close();

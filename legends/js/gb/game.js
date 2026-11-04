@@ -612,7 +612,7 @@ class Game {
       this.ow.busy = true;
       await wait(500);
       const n = { id: 'kian_r2', name: 'Kian', look: LOOK.kian, x: 4, y: 4, dir: 'down', px: 64, py: 64 };
-      this.ow.npcs.push(n); this.ow.emote = { n, t: 0.8 }; sfx('encounter'); await wait(700);
+      this.ow.npcs.push(n); this.ow.emote = { n, t: 0.8 }; sfx('encounter'); await this.cutIn(n);
       await this.ow.npcWalkTo(n, this.ow.p.x, this.ow.p.y - 1 >= 0 && !this.ow.solid(this.ow.p.x, this.ow.p.y - 1) ? this.ow.p.y - 1 : this.ow.p.y + 1);
       await say(['Kian: Da bist du ja! Ich habe extra in der Kieselhöhle trainiert.', 'Kian: Mal sehen, ob du mit mir mithalten kannst!']);
       const won = await this.trainerFight({ name: 'Rivale Kian', look: LOOK.kian, team: [[this.counterOf(), 13], ['flatterlo', 11]], reward: 800, lose: 'Was?! Schon wieder… Ich muss härter trainieren!' });
@@ -656,6 +656,45 @@ class Game {
     const encs = [...new Set(maps.map(m => m.enc))], enc = encs[(day * 7) % encs.length];
     const e = ENC[enc].list.filter(x => !SPECIES[x[0]]?.legendary).reduce((a, b) => (b[1] < a[1] ? b : a));
     return (this._sw = { day, enc, sp: e[0], lv: [e[2], e[3]], name: maps.find(m => m.enc === enc).name });
+  }
+  // Alpha-Kreaturen: an manchen Tagen streift auf einer Route ein riesiges, starkes Exemplar sichtbar umher
+  alphaFor(id) {
+    const M = MAPS[id], E = M?.enc && ENC[M.enc]; if (!M?.outdoor || !E || M.night) return null;
+    const day = Math.floor(Date.now() / 864e5), key = `alpha:${day}:${id}`;
+    if (this.state.flags[key]) return null;
+    let h = day * 2654435761 >>> 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const r = () => ((h = (h * 1103515245 + 12345) >>> 0) / 4294967296);
+    if (r() > 0.45) return null; // knapp jede zweite Route
+    const list = E.list.filter(e => !SPECIES[e[0]]?.legendary);
+    if (!list.length) return null;
+    const pool = [...list].sort((a, b) => a[1] - b[1]).slice(0, Math.max(2, Math.ceil(list.length / 2)));
+    const e = pool[Math.floor(r() * pool.length)], top = Math.max(...list.map(x => x[3]));
+    return { key, sp: e[0], lv: Math.min(100, top + 7), seed: h };
+  }
+  async alphaBattle(n) {
+    const s = this.state, A = n.alpha, ow = this.ow;
+    cry(SPECIES[A.sp].cry); G.shake = 1;
+    await say([`Ein riesiges ${SPECIES[A.sp].name} mit rot glühenden Augen!`, 'Das ist eine ALPHA-Kreatur – viel stärker als normal!']);
+    if (!await ask('Willst du gegen das Alpha kämpfen?')) return;
+    const m = createMon(A.sp, A.lv);
+    for (const k of Object.keys(m.iv)) m.iv[k] = 31;
+    m.alpha = true; m.hp = maxHp(m); this.shinyRoll(m);
+    const r = await this.wildBattle(ow.M.enc, ow.M.bg || 'gras', m);
+    if (!r || (r.result !== 'win' && r.result !== 'caught')) return;
+    s.flags[A.key] = true; ow.npcs = ow.npcs.filter(x => x !== n);
+    const LOOT = ['sternkristall', 'sternkristall', 'beleber', 'hypertrank', 'supertrank', 'ak_magmaflut', 'ak_wellenschlag', 'ak_blizzard', 'ak_orkan', 'ak_felsgranate', 'ak_schattenball', 'ak_sonnenstrahl', 'ak_blitzschlag'];
+    const it = LOOT[Math.floor(Math.random() * LOOT.length)], k = it.startsWith('ak_') ? 1 : it === 'sternkristall' ? 3 : 2;
+    s.bag[it] = (s.bag[it] || 0) + k; s.money += A.lv * 60; sfx('caught');
+    await say([r.result === 'caught' ? 'Das Alpha gehört jetzt zu dir!' : 'Das Alpha zieht sich zurück …', `Es hat etwas fallen lassen: ${k > 1 ? k + '× ' : ''}${ITEMS[it].name}!`, `Dazu findest du ${A.lv * 60} ◈.`]);
+    this.save(true);
+  }
+  // Zwischensequenz starten: Balken fahren ein, Kamera schwenkt zu einer Figur (id, Objekt oder null = Spieler)
+  async cutIn(target, music) {
+    const ow = this.ow; ow.busy = true;
+    const f = typeof target === 'string' ? ow.npcs.find(n => n.id === target) : target;
+    ow.cine = { b: ow.cine?.b || 0, k: ow.cine?.k || 0, on: true, focus: f || null };
+    if (music) setMusic(music);
+    await wait(f ? 900 : 450);
   }
   shinyRoll(m) { if (!m.shiny && this.state.bag.glanzamulett && Math.random() < 2 / 512) m.shiny = true; return m; }
   pickWild(encId) {
@@ -703,7 +742,7 @@ class Game {
     const foe = mon || this.pickWild(encId);
     this.markDex(foe.sp);
     sfx('encounter'); await this.flashIn();
-    const r = await battle(this, { foeTeam: [foe], bg, intro: SPECIES[foe.sp].legendary ? 'legend' : 'wild' });
+    const r = await battle(this, { foeTeam: [foe], bg, intro: SPECIES[foe.sp].legendary ? 'legend' : foe.alpha ? 'alpha' : 'wild', music: foe.alpha ? 'boss' : undefined });
     await this.afterBattle(r);
     return r;
   }
@@ -715,7 +754,7 @@ class Game {
     if (!s.team.some(m => !m.egg && m.hp > 0)) { await say('Deine Kreaturen sind erschöpft!'); return false; }
     t.music ||= /Champion/.test(t.name) ? 'finale' : /^Umbra/.test(t.name) ? (this.ow.id === 'ligachamp' ? 'finale' : 'boss') : /Arenaleiter|Top-4|Kommandantin|Rivale|Lyra/.test(t.name) ? 'boss' : undefined;
     const rnd = mulberry(t.name.length * 911);
-    const foe = t.team.map(([sp, l]) => createMon(sp, l, rnd));
+    const foe = t.mons ? t.mons.map(m => { const c = JSON.parse(JSON.stringify(m)); healMon(c); return c; }) : t.team.map(([sp, l]) => createMon(sp, l, rnd));
     foe.forEach(m => this.markDex(m.sp));
     sfx('encounter'); await this.trainerIn();
     t.reso ??= /Champion|Top-4|^Umbra|Hüter/.test(t.name);
@@ -982,6 +1021,7 @@ class Game {
   // ---------------------------------------------------------- Gespräche
   async talk(n) {
     const s = this.state, N = { name: n.name };
+    if (n.alpha) return this.alphaBattle(n);
     if (n.trainer) { if (s.flags[n.id]) return say(n.trainer.after || n.trainer.lose || 'Guter Kampf!', N); return this.trainerBattle(n); }
     if (QUESTS[n.id]) return this.quest(n, QUESTS[n.id]);
     switch (n.id) {
@@ -1069,7 +1109,7 @@ class Game {
     const s = this.state, ow = this.ow;
     if (ow.id === 'ligachamp' && s.flags.umbra2 && !s.flags.umbra_end) return this.umbraEnd();
     if (ow.id === 'hq' && s.flags.umbra && !s.flags.umbra1) {
-      ow.busy = true;
+      ow.busy = true; await this.cutIn('umbra');
       await say(['Umbra: Du kämpfst, als hättest du nichts zu verlieren. Oder als hättest du schon alles verloren.', 'Umbra: Behalte den Drachen-Herzstein. Die zwei ältesten Steine hütet der Champion der Liga – die hole ich mir zuerst. Den Rest danach von dir.', 'Umbra: Wir sehen uns dort, wo die Stärksten kämpfen.'], { name: 'Umbra' });
       await fade(1, 300); s.flags.umbra1 = true; ow.npcs = ow.npcs.filter(n => n.id !== 'umbra'); await fade(0, 300);
       s.bag.herzstein_drache = 1; sfx('caught');
@@ -1077,14 +1117,14 @@ class Game {
       ow.busy = false; this.save(true); return;
     }
     if (ow.id === 'tempel' && s.flags.nyx4 && !s.flags.nyx4_gone) {
-      ow.busy = true;
+      ow.busy = true; await this.cutIn('nyx4');
       await say(['Nyx: … Er wird mich nicht mehr brauchen, wenn ich noch einmal versage.', 'Nyx: Umbra wartet im Drachengebirge Drakmor. Dort laufen alle Fäden zusammen.', 'Nyx: Wenn du klug bist, kommst du nie dorthin.'], { name: 'Kommandantin Nyx' });
       await fade(1, 300); s.flags.nyx4_gone = true; ow.npcs = ow.npcs.filter(n => n.id !== 'nyx4'); await fade(0, 300);
       await say('Der Weg zum Altar ist frei.');
       ow.busy = false; this.save(true); return;
     }
     if (ow.id === 'route5' && s.flags.lyra1 && !s.flags.lyra_met) {
-      ow.busy = true;
+      ow.busy = true; await this.cutIn('lyra1');
       const N = { name: 'Lyra' };
       await say(['Team Eklipse will die Herzsteine vereinen, um die Zeit anzuhalten.', 'Du hältst sie für Bösewichte. Ich halte sie für die Einzigen, die verstanden haben, dass unsere Welt zerfällt.', 'Wir sehen uns in Frostheim – oder in der Eisgrotte. Bis dahin: Werde stärker.'], N);
       await fade(1, 300);
@@ -1094,7 +1134,7 @@ class Game {
       return;
     }
     if (ow.id === 'versteck' && s.flags.nyx2 && !s.flags.eklipse2) {
-      ow.busy = true;
+      ow.busy = true; await this.cutIn('nyx2');
       const N = { name: 'Kommandantin Nyx' };
       await say(['Zweimal… Zweimal von einem Kind besiegt.', 'Behalte den Meeres-Herzstein meinetwegen. Es gibt sieben davon – und der nächste schläft im ewigen Eis von Frostheim.', 'Wenn du dort auftauchst, werde ich nicht mehr spielen.'], N);
       await fade(1, 300);
@@ -1109,7 +1149,7 @@ class Game {
       ow.busy = true;
       const p = ow.p, nyx = { id: 'nyx', name: 'Kommandantin Nyx', look: LOOK.nyx, x: p.x, y: Math.min(15, p.y + 1), dir: 'up', px: p.x * 16, py: Math.min(15, p.y + 1) * 16 };
       if (ow.solid(nyx.x, nyx.y)) { nyx.y = p.y - 1; nyx.py = nyx.y * 16; nyx.dir = 'down'; }
-      await wait(300); ow.npcs.push(nyx); ow.emote = { n: nyx, t: 1 }; sfx('encounter');
+      await wait(300); ow.npcs.push(nyx); ow.emote = { n: nyx, t: 1 }; sfx('encounter'); await this.cutIn(nyx);
       p.dir = nyx.y > p.y ? 'down' : 'up';
       const N = { name: 'Kommandantin Nyx' };
       await say(['So, so. Du bist also das Kind, das meine Rüpel blamiert hat.', 'Ich bin Nyx, Kommandantin von Team Eklipse.', 'Die Glut dieses Vulkans hätte uns einen Herzstein gezeigt. Aber gut – es gibt noch andere.', 'Die Welt zerfällt, und nur wir werden sie anhalten. Merk dir mein Gesicht, Kleines.'], N);
@@ -1209,7 +1249,7 @@ class Game {
     if (!s.flags.kian2 || !s.team.some(m => !m.egg && m.hp > 0)) return;
     await wait(450); ow.busy = true;
     const n = this.spawn('kian3', 'Kian', LOOK.kian, 11, 7, 'down');
-    ow.emote = { n, t: 0.8 }; sfx('encounter'); await wait(600);
+    ow.emote = { n, t: 0.8 }; sfx('encounter'); await this.cutIn(n);
     await ow.npcWalkTo(n, p.x, p.y - 1); n.dir = 'down'; p.dir = 'up';
     const K = { name: 'Kian' };
     await say(['Kian: Da bist du ja endlich! Ich habe auch alle acht Orden.', 'Kian: Seit dem Labor laufe ich dir hinterher. Bevor du in die Liga gehst, will ich es wissen.', 'Kian: Ein letztes Mal – du gegen mich!'], K);
@@ -1246,7 +1286,7 @@ class Game {
   }
   async umbraEnd() {
     const s = this.state, ow = this.ow, U = { name: 'Umbra' };
-    ow.busy = true;
+    ow.busy = true; await this.cutIn('umbra2');
     await say(['Umbra: Ich habe die Zeit in meinen Händen gehalten…', 'Umbra: Und trotzdem rinnt sie mir durch die Finger.'], U);
     for (let i = 0; i < 3; i++) { await fade(0.9, 120); await fade(0, 120); }
     sfx('evo'); G.shake = 1;
@@ -1351,6 +1391,7 @@ class Game {
   }
   async nihiluxEnd() {
     const s = this.state, N = { name: 'Nihilux' };
+    await this.cutIn('r_nihilux');
     await say(['Nihilux: Ich habe Welten enden sehen. Jedes Mal gingen alle fort, und ich blieb allein zurück.', 'Nihilux: Ihr seid geblieben. Alle vier.', 'Nihilux: … Vielleicht muss nicht alles enden. Vielleicht verändert es sich nur.'], N);
     await say('Lyra: Das hat Umbra nie verstanden. Und ich lange auch nicht.', { name: 'Lyra' });
     await say(`Kian: Hey, Nihilux! Wenn du nicht mehr allein sein willst – geh doch mit ${s.name}!`, { name: 'Kian' });

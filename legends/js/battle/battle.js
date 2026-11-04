@@ -290,7 +290,7 @@ export class Battle {
     if (!this.canCatch) { ev.push({ t: 'msg', text: 'Diese Kreatur lässt sich nicht binden!' }); return false; }
     const max = maxHp(f);
     const statusB = f.status ? 1.5 : 1;
-    const a = ((3 * max - 2 * f.hp) * SPECIES[f.sp].catchRate * bonus * statusB) / (3 * max);
+    const a = ((3 * max - 2 * f.hp) * SPECIES[f.sp].catchRate * bonus * statusB * (f.alpha ? 0.45 : 1)) / (3 * max); // Alphas wehren sich stärker
     const p = Math.min(1, a / 255);
     const shakeP = Math.pow(p, 0.25);
     let shakes = 0, ok;
