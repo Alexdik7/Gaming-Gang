@@ -1,6 +1,23 @@
 # Fortschritt
 
-## v1.0 – Phase 5: Qualität & Android-App (aktuell)
+## v1.1 – Grafik & flüssige Bewegung (aktuell)
+
+### ✅ Neu und getestet
+- **Flüssiges Laufen:**
+  - Die Figur läuft ohne Stopp von Feld zu Feld; die Restzeit eines Schritts wird mitgenommen.
+  - Kamera und Figuren bewegen sich auf Bruchteile eines Spielpixels genau statt in 1-Pixel-Sprüngen.
+  - Gemessen: konstant 1,2 Pixel pro Bild bei 60 Bildern pro Sekunde, ohne einen einzigen Stillstand.
+- **Volle Bildschirmauflösung:** Das Spiel zeichnet in der echten Auflösung des Handys, zum Beispiel 5 Pixel pro Spielpixel auf dem iPhone. Dadurch ist alles schärfer.
+- **Neue Welt-Grafik:**
+  - Gras, Wege, Sand und Wasser mit feiner Struktur und mehreren Farbtönen
+  - Gras wächst über Wegränder, Ufer mit Schaum
+  - Hohe Laub- und Nadelbäume (1,5 Felder) mit Licht und Schatten; die Krone wird über Figuren gezeichnet, man verschwindet also halb hinter Bäumen
+  - Häuser mit Dachziegeln, Holzwänden, Steinsockel, Fensterrahmen und Tür mit Stufe
+  - Schatten von Bäumen, Felsen und Häusern, ziehende Wolkenschatten, Sonnenlicht und Vignette
+  - Nachts leuchtende Fenster mit Lichtschein auf dem Boden und Glühwürmchen
+  - Staub, Grashalme oder Schnee beim Laufen
+
+## v1.0 – Phase 5: Qualität & Android-App
 
 ### ✅ Neu und getestet
 - **Android-App:**

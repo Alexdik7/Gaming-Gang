@@ -1,5 +1,9 @@
 // Mini-Engine im Handheld-Stil: 240×160 logische Pixel, Szenen-Stapel, Steuerkreuz/A/B/START/SELECT
-export const W = 240, H = 160, SCALE = 3;
+export const W = 240, H = 160;
+// Auflösung des Canvas: so viele echte Bildschirmpixel pro Spielpixel wie das Gerät hat (scharf und flüssig)
+export let SCALE = 3;
+// Position auf die feinste darstellbare Stufe runden (1/SCALE Spielpixel) → ruckelfreies Scrollen
+export const snap = v => Math.round(v * SCALE) / SCALE;
 export const FONT = '"Pixelify Sans", "Trebuchet MS", sans-serif';
 export const COL = {
   ink: '#28283a', inkSoft: '#6a6a80', paper: '#f8f8f0', frame: '#3a6ea8', frame2: '#8fc8f8', shadow: '#c8c8d8',
@@ -11,8 +15,16 @@ export const G = {
 };
 
 export function initEngine(canvas) {
-  canvas.width = W * SCALE; canvas.height = H * SCALE;
   G.canvas = canvas; G.ctx = canvas.getContext('2d');
+  fitCanvas();
+  addEventListener('resize', fitCanvas);
+  addEventListener('orientationchange', () => setTimeout(fitCanvas, 300));
+}
+export function fitCanvas() {
+  const c = G.canvas; if (!c) return;
+  const css = c.getBoundingClientRect().width || W * 3, dpr = window.devicePixelRatio || 1;
+  const s = Math.max(2, Math.min(8, Math.ceil((css * dpr) / W)));
+  if (s !== SCALE || c.width !== W * s) { SCALE = s; c.width = W * s; c.height = H * s; }
   G.ctx.imageSmoothingEnabled = false;
 }
 

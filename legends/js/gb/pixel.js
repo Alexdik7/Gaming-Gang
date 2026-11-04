@@ -1,5 +1,6 @@
 // Prozedurale Pixel-Art: Kacheln (16×16), Gebäude, Spielfiguren (16×18, 4 Richtungen × 3 Frames), Objekte
 import { mulberry } from '../core/noise.js';
+import { snap } from './engine.js';
 
 export const T = 16;
 const cv = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return [c, x]; };
@@ -9,11 +10,93 @@ export { shade };
 // ---------------------------------------------------------------- Kacheln
 const PAL = { g1: '#70c858', g2: '#58b048', g3: '#98e070', gD: '#3e8a3a', path: '#e0c890', path2: '#c8a870', sand: '#f0e0a8', w1: '#4890e0', w2: '#78b8f8', w3: '#2868b8' };
 
-function grass(x, seed, dark = false) {
-  const r = mulberry(seed);
-  x.fillStyle = dark ? '#4a9a48' : PAL.g1; x.fillRect(0, 0, 16, 16);
-  for (let i = 0; i < 7; i++) { const a = Math.floor(r() * 15), b = Math.floor(r() * 14); x.fillStyle = dark ? '#3a7a3a' : PAL.g2; x.fillRect(a, b, 1, 2); x.fillStyle = dark ? '#5aaa58' : PAL.g3; x.fillRect(a + 1, b, 1, 1); }
+// Pixelgenaue Struktur: jedes Pixel bekommt einen von mehreren Tönen (Rauschen, wolkig statt gleichmäßig)
+const hash = (a, b, c = 0) => { let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+function noiseFill(x, tones, seed, w = 16, h = 16, ox = 0, oy = 0) {
+  for (let py = 0; py < h; py++) for (let px = 0; px < w; px++) {
+    // grobes + feines Rauschen → weiche Flecken mit Körnung
+    const v = hash(Math.floor((px + seed * 5) / 3), Math.floor((py + seed * 3) / 3), seed) * 0.6 + hash(px, py, seed + 7) * 0.4;
+    x.fillStyle = tones[Math.min(tones.length - 1, Math.floor(v * tones.length))]; x.fillRect(ox + px, oy + py, 1, 1);
+  }
 }
+const baseNoise = (x, hex, s) => noiseFill(x, [shade(hex, -0.1), shade(hex, -0.04), hex, shade(hex, 0.05)], s + 20);
+const GRASS = ['#5aae48', '#62b84e', '#6cc456', '#72ca5a', '#7ad262'], GRASS_D = ['#3c8a40', '#43944a', '#4a9c4c', '#52a654', '#5aae58'];
+function grass(x, seed, dark = false) {
+  const r = mulberry(seed * 31 + 5);
+  noiseFill(x, dark ? GRASS_D : GRASS, seed);
+  // kleine Halmbüschel mit Licht oben und Schatten unten
+  for (let i = 0; i < 6; i++) {
+    const a = 1 + Math.floor(r() * 13), b = 2 + Math.floor(r() * 12);
+    x.fillStyle = dark ? '#2e6e34' : '#3f8e3a'; x.fillRect(a, b, 1, 2); x.fillRect(a + 2, b, 1, 2);
+    x.fillStyle = dark ? '#6aba6a' : '#9ade74'; x.fillRect(a + 1, b - 1, 1, 2);
+  }
+  // seltene Details: Kieselstein oder Kleeblatt
+  if (seed % 5 === 3) { x.fillStyle = '#9a9a88'; x.fillRect(11, 12, 2, 1); x.fillStyle = '#d8d8c8'; x.fillRect(11, 11, 1, 1); }
+  if (seed % 5 === 1 && !dark) { x.fillStyle = '#4e9e40'; x.fillRect(4, 12, 3, 1); x.fillRect(5, 11, 1, 3); }
+}
+// Schattierte Kugel/Krone aus Einzelpixeln: Licht von oben links, Büschel-Struktur, dunkle Kontur
+function shadedBlob(x, cx, cy, rx, ry, tones, seed, outline) {
+  const pts = [];
+  for (let py = Math.floor(cy - ry - 1); py <= Math.ceil(cy + ry + 1); py++) for (let px = Math.floor(cx - rx - 1); px <= Math.ceil(cx + rx + 1); px++) {
+    const dx = (px + 0.5 - cx) / rx, dy = (py + 0.5 - cy) / ry, d = dx * dx + dy * dy;
+    // Rand leicht ausgefranst wie Laub
+    const edge = 1 - hash(px, py, seed) * 0.18;
+    if (d > edge) continue;
+    pts.push([px, py, dx, dy, d]);
+  }
+  const inside = new Set(pts.map(([a, b]) => a + ',' + b));
+  for (const [px, py, dx, dy] of pts) {
+    const border = !inside.has(px + 1 + ',' + py) || !inside.has(px - 1 + ',' + py) || !inside.has(px + ',' + (py + 1)) || !inside.has(px + ',' + (py - 1));
+    if (border && outline) { x.fillStyle = outline; x.fillRect(px, py, 1, 1); continue; }
+    const clump = hash(Math.floor((px + seed) / 3), Math.floor((py + seed * 2) / 3), seed + 3);
+    let l = 0.55 - dx * 0.35 - dy * 0.45 + (clump - 0.5) * 0.55 + (hash(px, py, seed + 9) - 0.5) * 0.15;
+    x.fillStyle = tones[Math.max(0, Math.min(tones.length - 1, Math.floor(l * tones.length)))]; x.fillRect(px, py, 1, 1);
+  }
+}
+// Hohe Bäume (16×24): unten 16 Pixel als Kachel, oben 8 Pixel als Krone über den Figuren
+const TREES = {
+  oak: { tones: ['#1e5a2c', '#2a7034', '#358640', '#46a04c', '#62bc5a', '#8ad670'], outline: '#143a20', trunk: ['#4a2e1a', '#6a4428', '#8a5a34'] },
+  dark: { tones: ['#123a34', '#1a4c42', '#235e50', '#2f7260', '#428a74', '#5ea48a'], outline: '#0a221e', trunk: ['#30201a', '#4a3020', '#5e3e28'] },
+};
+const treeCache = new Map();
+function tallTree(kind, seed = 0) {
+  const k = kind + seed; if (treeCache.has(k)) return treeCache.get(k);
+  const [c, x] = cv(16, 24);
+  if (kind === 'pine' || kind === 'snowpine') {
+    const snow = kind === 'snowpine', tones = snow ? ['#1a4a44', '#245a52', '#2e6a5a', '#3a7c68', '#4a8e76'] : ['#163e26', '#1e5030', '#28623a', '#337646', '#438a52'];
+    x.fillStyle = '#3a2416'; x.fillRect(7, 19, 2, 5); x.fillStyle = '#6a4428'; x.fillRect(7, 19, 1, 5);
+    const layers = [[1, 3], [4, 6], [8, 9], [12, 12], [16, 15]];
+    for (const [ty, hw] of layers) {
+      for (let row = 0; row < 5; row++) {
+        const y = ty + row, w = Math.round(hw * (0.45 + row * 0.14));
+        for (let px = 8 - w; px < 8 + w; px++) {
+          const side = (px - 8 + 0.5) / w, l = 0.6 - side * 0.5 - row * 0.06 + (hash(px, y, seed) - 0.5) * 0.3;
+          const edge = px === 8 - w || px === 8 + w - 1 || row === 4;
+          x.fillStyle = edge ? (snow ? '#12302c' : '#0e2a18') : tones[Math.max(0, Math.min(4, Math.floor(l * 5)))]; x.fillRect(px, y, 1, 1);
+          if (snow && row === 0 && !edge && hash(px, y, 4) > 0.35) { x.fillStyle = '#f4f8ff'; x.fillRect(px, y, 1, 1); }
+          if (snow && row === 1 && !edge && side < 0 && hash(px, y, 5) > 0.5) { x.fillStyle = '#dce8f4'; x.fillRect(px, y, 1, 1); }
+        }
+      }
+    }
+  } else {
+    const T = TREES[kind];
+    // Stamm mit Wurzeln
+    x.fillStyle = T.trunk[0]; x.fillRect(5, 15, 6, 9); x.fillRect(4, 22, 8, 2);
+    x.fillStyle = T.trunk[1]; x.fillRect(6, 15, 4, 8); x.fillRect(5, 22, 2, 1); x.fillRect(9, 22, 2, 1);
+    x.fillStyle = T.trunk[2]; x.fillRect(6, 15, 1, 8);
+    x.fillStyle = T.trunk[0]; x.fillRect(8, 18, 1, 2);
+    shadedBlob(x, 8, 9, 7.9, 8.6, T.tones, seed, T.outline);
+    // ein paar Blätter hängen über den Rand
+    x.fillStyle = T.tones[2]; x.fillRect(3, 17, 2, 1); x.fillRect(11, 16, 2, 1);
+  }
+  treeCache.set(k, c); return c;
+}
+export function treeCrown(kind, seed = 0) {
+  const k = 'crown' + kind + seed; if (treeCache.has(k)) return treeCache.get(k);
+  const [c, x] = cv(16, 8); x.drawImage(tallTree(kind, seed), 0, 0, 16, 8, 0, 0, 16, 8); treeCache.set(k, c); return c;
+}
+export const TREE_KIND = { T: 'oak', D: 'dark', P: 'pine', G: 'snowpine' };
+function treeTile(x, kind, seed) { x.drawImage(tallTree(kind, seed % 3), 0, 8, 16, 16, 0, 0, 16, 16); }
 const DRAW = {
   grass: (x, f, s) => grass(x, s),
   flowers: (x, f, s) => {
@@ -24,31 +107,34 @@ const DRAW = {
       x.fillStyle = c1; x.fillRect(a - 1, b + o, 3, 1); x.fillRect(a, b - 1 + o, 1, 3); x.fillStyle = c2; x.fillRect(a, b + o, 1, 1);
     }
   },
-  tall: (x, f, s) => {
-    x.fillStyle = '#58b048'; x.fillRect(0, 0, 16, 16);
-    tallBlades(x, f, 0);
-  },
+  tall: (x, f, s) => { baseNoise(x, '#4fa444', s); tallBlades(x, f, 0); },
   path: (x, f, s) => {
-    const r = mulberry(s + 9); x.fillStyle = PAL.path; x.fillRect(0, 0, 16, 16);
-    for (let i = 0; i < 5; i++) { x.fillStyle = PAL.path2; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), 2, 1); }
-    x.fillStyle = '#f0e0b0'; x.fillRect(Math.floor(r() * 14), Math.floor(r() * 14), 1, 1);
+    noiseFill(x, ['#cdb27c', '#d6bc86', '#dcc490', '#e2cc9a', '#e8d4a4'], s + 40);
+    const r = mulberry(s + 9);
+    // Kiesel mit Licht und Schatten
+    for (let i = 0; i < 3; i++) { const a = 1 + Math.floor(r() * 13), b = 1 + Math.floor(r() * 13); x.fillStyle = '#a08a68'; x.fillRect(a, b + 1, 2, 1); x.fillStyle = '#f4e8c8'; x.fillRect(a, b, 1, 1); x.fillStyle = '#c0a878'; x.fillRect(a + 1, b, 1, 1); }
+    x.fillStyle = 'rgba(120,90,50,.18)'; x.fillRect(Math.floor(r() * 10), 4 + Math.floor(r() * 8), 5, 1);
   },
-  sand: (x, f, s) => { const r = mulberry(s + 3); x.fillStyle = PAL.sand; x.fillRect(0, 0, 16, 16); for (let i = 0; i < 4; i++) { x.fillStyle = '#d8c888'; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), 1, 1); } },
+  sand: (x, f, s) => {
+    noiseFill(x, ['#e4d098', '#eadaa4', '#f0e0ae', '#f4e6b8', '#f8ecc4'], s + 60);
+    const r = mulberry(s + 3); for (let i = 0; i < 3; i++) { x.fillStyle = '#c8b480'; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), 1, 1); }
+    if (s % 4 === 1) { x.fillStyle = '#f8f0e0'; x.fillRect(4, 9, 2, 1); x.fillStyle = '#e8b0a0'; x.fillRect(5, 9, 1, 1); }
+  },
   water: (x, f, s) => {
-    x.fillStyle = PAL.w1; x.fillRect(0, 0, 16, 16);
-    x.fillStyle = '#3c80d0'; x.fillRect(0, 0, 16, 2); x.fillRect(0, 8, 16, 1);
-    if ((s + f) % 4 === 0) { x.fillStyle = '#e8f8ff'; x.fillRect(6, 5, 1, 1); }
-    x.fillStyle = PAL.w2; for (const [a, b] of [[2, 3], [9, 7], [4, 12], [12, 13]]) x.fillRect((a + f * 2) % 16, b, 4, 1);
-    x.fillStyle = PAL.w3; for (const [a, b] of [[7, 1], [1, 8], [11, 4]]) x.fillRect((a + 16 - f) % 16, b, 3, 1);
+    // Tiefe: leicht wolkiges Blau, darüber wandernde Wellenkämme mit Lichtkante
+    noiseFill(x, ['#2f70c4', '#3478ca', '#3a80d0', '#4088d6', '#4890dc'], s + 80);
+    const waves = [[1, 3, 5], [9, 7, 4], [3, 11, 5], [11, 14, 3], [6, 1, 3]];
+    for (const [a, b, w] of waves) {
+      const xx = (a + f * 2 + 16) % 16;
+      x.fillStyle = '#2a64b4'; for (let i = 0; i < w; i++) x.fillRect((xx + i) % 16, b + 1, 1, 1);
+      x.fillStyle = '#78b8f4'; for (let i = 0; i < w; i++) x.fillRect((xx + i) % 16, b, 1, 1);
+      x.fillStyle = '#c8e8ff'; x.fillRect((xx + 1) % 16, b, 1, 1);
+    }
+    if ((s + f) % 3 === 0) { x.fillStyle = '#ffffff'; x.fillRect((5 + s * 3) % 14, (9 + s) % 14, 1, 1); }
   },
-  tree: (x, f, s) => { grass(x, s); treeTop(x, '#2e8a3e', '#48a850', '#78d068', '#1a4a28'); },
-  dtree: (x, f, s) => { grass(x, s, true); treeTop(x, '#24584a', '#2f7058', '#4a9a78', '#0e2a26'); },
-  pine: (x, f, s) => {
-    grass(x, s); const o = '#163a24';
-    x.fillStyle = '#6a4a30'; x.fillRect(7, 12, 2, 4);
-    for (const [y, w] of [[1, 2], [3, 6], [6, 10], [9, 14]]) { x.fillStyle = o; x.fillRect(8 - w / 2 - 1, y, w + 2, 4); }
-    for (const [y, w] of [[1, 2], [3, 6], [6, 10], [9, 14]]) { x.fillStyle = '#2a7a44'; x.fillRect(8 - w / 2, y + 1, w, 3); x.fillStyle = '#48a860'; x.fillRect(8 - w / 2, y + 1, Math.max(1, w / 3), 1); }
-  },
+  tree: (x, f, s) => { grass(x, s); treeTile(x, 'oak', s); },
+  dtree: (x, f, s) => { grass(x, s, true); treeTile(x, 'dark', s); },
+  pine: (x, f, s) => { grass(x, s); treeTile(x, 'pine', s); },
   crock: (x, f, s) => { DRAW.cave(x, f, s); DRAW.rockTop(x); },
   rockTop: x => {
     x.fillStyle = '#404048'; x.beginPath(); x.ellipse(8, 9, 7, 6, 0, 0, 7); x.fill();
@@ -136,7 +222,7 @@ const DRAW = {
     for (let i = 0; i < 7; i++) { x.fillStyle = r() < 0.5 ? '#8a7a60' : '#c0b090'; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), r() < 0.4 ? 2 : 1, 1); }
     if (s % 5 === 2) { x.fillStyle = '#6a8a48'; x.fillRect(3, 12, 2, 2); x.fillRect(5, 13, 1, 1); }
   },
-  mgrass: (x, f, s) => { x.fillStyle = '#7a8a5a'; x.fillRect(0, 0, 16, 16); tallBlades(x, f, 0, 'mount'); },
+  mgrass: (x, f, s) => { baseNoise(x, '#6e8052', s); tallBlades(x, f, 0, 'mount'); },
   cliff: (x, f, s) => {
     x.fillStyle = '#4a4038'; x.fillRect(0, 0, 16, 16);
     x.fillStyle = '#6a5c4c'; x.fillRect(1, 1, 7, 6); x.fillRect(9, 3, 6, 5); x.fillRect(2, 9, 6, 5); x.fillRect(10, 10, 5, 5);
@@ -189,19 +275,13 @@ const DRAW = {
     for (let i = 0; i < 6; i++) { x.fillStyle = r() < 0.6 ? '#d4e0ee' : '#ffffff'; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), r() < 0.5 ? 2 : 1, 1); }
     if (s % 4 === 1) { x.fillStyle = '#b8c8dc'; x.fillRect(4, 11, 3, 1); }
   },
-  snowtall: (x, f, s) => { x.fillStyle = '#d8e4f0'; x.fillRect(0, 0, 16, 16); tallBlades(x, f, 0, 'snow'); },
+  snowtall: (x, f, s) => { baseNoise(x, '#d4e0ee', s); tallBlades(x, f, 0, 'snow'); },
   ice: (x, f, s) => {
     x.fillStyle = '#a8d4f0'; x.fillRect(0, 0, 16, 16); x.fillStyle = '#c4e4f8'; x.fillRect(0, 0, 16, 2); x.fillRect(0, 8, 16, 1);
     x.fillStyle = '#ffffff'; x.fillRect(3 + (s % 3), 3, 4, 1); x.fillRect(4 + (s % 3), 4, 2, 1); x.fillRect(10, 11, 3, 1);
     x.fillStyle = '#88b8dc'; x.fillRect(12, 2, 1, 4); x.fillRect(1, 12, 4, 1);
   },
-  snowpine: (x, f, s) => {
-    DRAW.snow(x, f, s); const o = '#1e3a3a';
-    x.fillStyle = 'rgba(40,60,90,.2)'; x.fillRect(3, 14, 10, 2);
-    x.fillStyle = '#5a3a24'; x.fillRect(7, 12, 2, 4);
-    for (const [y, w] of [[1, 2], [3, 6], [6, 10], [9, 14]]) { x.fillStyle = o; x.fillRect(8 - w / 2 - 1, y, w + 2, 4); }
-    for (const [y, w] of [[1, 2], [3, 6], [6, 10], [9, 14]]) { x.fillStyle = '#2e6a5a'; x.fillRect(8 - w / 2, y + 1, w, 3); x.fillStyle = '#f4f8ff'; x.fillRect(8 - w / 2, y + 1, Math.max(1, w * 0.6), 1); }
-  },
+  snowpine: (x, f, s) => { DRAW.snow(x, f, s); treeTile(x, 'snowpine', s); },
   snowrock: (x, f, s) => {
     DRAW.snow(x, f, s); x.fillStyle = '#3a4658'; x.beginPath(); x.ellipse(8, 9, 7, 6, 0, 0, 7); x.fill();
     x.fillStyle = '#8a98aa'; x.beginPath(); x.ellipse(8, 9, 6, 5, 0, 0, 7); x.fill();
@@ -223,7 +303,7 @@ const DRAW = {
     for (let i = 0; i < 7; i++) { x.fillStyle = r() < 0.5 ? '#867664' : '#b0a090'; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), r() < 0.5 ? 2 : 1, 1); }
     if (s % 4 === 0) { x.fillStyle = '#5a4a40'; x.fillRect(10, 11, 2, 1); x.fillStyle = '#c8b8a8'; x.fillRect(10, 10, 2, 1); }
   },
-  ashtall: (x, f, s) => { x.fillStyle = '#8a7a68'; x.fillRect(0, 0, 16, 16); tallBlades(x, f, 0, 'ash'); },
+  ashtall: (x, f, s) => { baseNoise(x, '#847462', s); tallBlades(x, f, 0, 'ash'); },
   lava: (x, f, s) => {
     x.fillStyle = '#e8481a'; x.fillRect(0, 0, 16, 16);
     x.fillStyle = '#f88a2a'; for (const [a, b] of [[2, 2], [9, 6], [4, 11], [12, 12]]) x.fillRect((a + f * 2) % 16, b, 4, 2);
@@ -263,7 +343,7 @@ function treeTop(x, c1, c2, c3, o) {
 const BLADE = { green: ['#2e7a30', '#48a040', '#90d868'], ash: ['#4a4038', '#7a6a58', '#b8a488'], snow: ['#7a98b8', '#c8dcf0', '#ffffff'], dry: ['#8a6a30', '#b8944a', '#e8d08a'], mount: ['#3a5a30', '#6a8a48', '#a8c870'] };
 export function tallBlades(x, f, oy, pal = 'green') {
   const o = f ? 1 : 0, [c1, c2, c3] = BLADE[pal];
-  for (const [a, b] of [[1, 2], [6, 0], [11, 2], [3, 8], [9, 7], [13, 9]]) {
+  for (const [a, b] of [[1, 2], [6, 0], [11, 2], [3, 8], [9, 7], [13, 9], [0, 10], [7, 9]]) {
     x.fillStyle = c1; x.fillRect(a + o, b + 3 - oy, 1, 5); x.fillRect(a + 2, b + 2 - oy, 1, 6);
     x.fillStyle = c2; x.fillRect(a + 1, b - oy, 1, 7);
     x.fillStyle = c3; x.fillRect(a + 1 + o, b - oy, 1, 2);
@@ -290,42 +370,130 @@ export function building(b) {
   if (bCache.has(k)) return bCache.get(k);
   const w = b.w * 16, h = b.h * 16, [c, x] = cv(w, h);
   const roofH = (b.h - 2) * 16 + 6, wallY = roofH - 2;
-  const roof = b.roof || '#c84848', wall = b.wall || '#f0e8d8';
-  // Wand
-  x.fillStyle = '#3a3040'; x.fillRect(1, wallY, w - 2, h - wallY);
-  x.fillStyle = wall; x.fillRect(2, wallY, w - 4, h - wallY - 1);
-  x.fillStyle = shade(wall, -0.12); x.fillRect(2, h - 5, w - 4, 4);
-  // Fenster
+  const roof = b.roof || '#c84848', wall = b.wall || '#f0e8d8', ink = '#2e2636';
+  // ---- Wand: Holzbretter mit Körnung, Eckpfosten, Steinsockel
+  x.fillStyle = ink; x.fillRect(1, wallY, w - 2, h - wallY);
+  for (let yy = wallY; yy < h - 1; yy++) for (let xx = 2; xx < w - 2; xx++) {
+    const plank = (yy - wallY) % 4 === 3, n = hash(Math.floor(xx / 5), yy, 11) - 0.5;
+    x.fillStyle = shade(wall, plank ? -0.1 : n * 0.06); x.fillRect(xx, yy, 1, 1);
+  }
+  x.fillStyle = shade(wall, -0.18); x.fillRect(2, wallY, 2, h - wallY - 1); x.fillRect(w - 4, wallY, 2, h - wallY - 1);
+  x.fillStyle = shade(wall, 0.15); x.fillRect(2, wallY, 1, h - wallY - 1);
+  // Steinsockel
+  for (let xx = 2; xx < w - 2; xx++) for (let yy = h - 5; yy < h - 1; yy++) {
+    const brick = ((xx + (yy % 2 ? 3 : 0)) % 6 === 0) || yy === h - 5;
+    x.fillStyle = brick ? '#5a5866' : ['#8a8896', '#9694a2', '#a2a0ae'][Math.floor(hash(xx, yy, 5) * 3)]; x.fillRect(xx, yy, 1, 1);
+  }
+  // Dachüberstand wirft Schatten auf die Wand
+  x.fillStyle = 'rgba(30,20,40,.35)'; x.fillRect(2, wallY, w - 4, 3);
+  // ---- Fenster
   for (let i = 0; i < b.w; i++) {
     if (i === b.door) continue;
-    const wx = i * 16 + 4;
+    const wx = i * 16 + 3, wy = wallY + 5;
     if (i === 0 || i === b.w - 1 || (b.w > 4 && i % 2 === 0)) {
-      x.fillStyle = '#3a3040'; x.fillRect(wx, wallY + 6, 9, 9);
-      x.fillStyle = b.night ? '#ffe088' : '#a8d8f8'; x.fillRect(wx + 1, wallY + 7, 7, 7);
-      x.fillStyle = '#ffffff'; x.fillRect(wx + 2, wallY + 8, 2, 2);
+      x.fillStyle = ink; x.fillRect(wx, wy, 10, 10);
+      x.fillStyle = '#e8e0d0'; x.fillRect(wx + 1, wy + 1, 8, 8);
+      for (let yy = 0; yy < 6; yy++) { x.fillStyle = b.night ? ['#fff0a8', '#ffe088', '#ffd070', '#f8c060', '#f0b050', '#e8a048'][yy] : ['#d8f0ff', '#b8e0fc', '#98d0f4', '#80c0ec', '#70b0e0', '#68a4d4'][yy]; x.fillRect(wx + 2, wy + 2 + yy, 6, 1); }
+      x.fillStyle = b.night ? '#c87830' : '#5888b8'; x.fillRect(wx + 4, wy + 2, 1, 6); x.fillRect(wx + 2, wy + 5, 6, 1);
+      if (!b.night) { x.fillStyle = '#ffffff'; x.fillRect(wx + 2, wy + 2, 2, 1); x.fillRect(wx + 2, wy + 3, 1, 1); }
+      x.fillStyle = shade(wall, 0.25); x.fillRect(wx - 1, wy + 10, 12, 1); x.fillStyle = shade(wall, -0.3); x.fillRect(wx - 1, wy + 11, 12, 1);
     }
   }
-  // Tür
-  const dx = b.door * 16;
-  x.fillStyle = '#3a3040'; x.fillRect(dx + 2, h - 17, 12, 17);
-  x.fillStyle = b.doorCol || '#8a5a30'; x.fillRect(dx + 3, h - 16, 10, 16);
-  x.fillStyle = shade(b.doorCol || '#8a5a30', 0.3); x.fillRect(dx + 4, h - 15, 8, 1);
-  x.fillStyle = '#f8d870'; x.fillRect(dx + 10, h - 8, 2, 2);
-  // Dach
-  x.fillStyle = '#3a3040'; x.fillRect(0, 2, w, roofH);
-  x.fillStyle = roof; x.fillRect(1, 3, w - 2, roofH - 2);
-  x.fillStyle = shade(roof, -0.2); for (let y = 8; y < roofH; y += 5) x.fillRect(1, y, w - 2, 1);
-  x.fillStyle = shade(roof, 0.25); x.fillRect(1, 3, w - 2, 2);
-  x.fillStyle = shade(roof, -0.35); x.fillRect(1, roofH - 1, w - 2, 1);
-  // Schild
+  // ---- Tür mit Rahmen, Füllungen, Klinke und Stufe
+  const dx = b.door * 16, dc = b.doorCol || '#8a5a30';
+  x.fillStyle = ink; x.fillRect(dx + 2, h - 18, 12, 18);
+  x.fillStyle = shade(dc, 0.15); x.fillRect(dx + 3, h - 17, 10, 1);
+  x.fillStyle = dc; x.fillRect(dx + 3, h - 16, 10, 15);
+  x.fillStyle = shade(dc, -0.25); x.fillRect(dx + 4, h - 14, 3, 5); x.fillRect(dx + 9, h - 14, 3, 5); x.fillRect(dx + 4, h - 7, 3, 4); x.fillRect(dx + 9, h - 7, 3, 4);
+  x.fillStyle = shade(dc, 0.3); x.fillRect(dx + 4, h - 14, 3, 1); x.fillRect(dx + 9, h - 14, 3, 1);
+  x.fillStyle = '#f8d870'; x.fillRect(dx + 10, h - 9, 2, 2); x.fillStyle = '#a07820'; x.fillRect(dx + 11, h - 8, 1, 1);
+  x.fillStyle = '#b8b4c0'; x.fillRect(dx + 1, h - 1, 14, 1);
+  // ---- Dach: Ziegelreihen, versetzt, Verlauf von hell (oben) nach dunkel
+  x.fillStyle = ink; x.fillRect(0, 2, w, roofH);
+  for (let yy = 3; yy < roofH + 1; yy++) {
+    const row = Math.floor((yy - 3) / 4), inRow = (yy - 3) % 4, grad = 0.18 - (yy / roofH) * 0.36;
+    for (let xx = 1; xx < w - 1; xx++) {
+      const off = row % 2 ? 3 : 0, seam = (xx + off) % 6 === 0;
+      let k2 = grad + (inRow === 0 ? 0.14 : inRow === 3 ? -0.2 : 0) + (seam ? -0.16 : 0) + (hash(Math.floor((xx + off) / 6), row, 21) - 0.5) * 0.1;
+      x.fillStyle = shade(roof, k2); x.fillRect(xx, yy, 1, 1);
+    }
+  }
+  x.fillStyle = shade(roof, 0.35); x.fillRect(1, 3, w - 2, 1);
+  x.fillStyle = shade(roof, -0.45); x.fillRect(1, roofH, w - 2, 1);
+  x.fillStyle = shade(roof, 0.12); x.fillRect(1, 3, 1, roofH - 2);
+  // ---- Schild
   if (b.sign) {
     const sx = Math.round(w / 2 - 14), sy = Math.max(6, roofH - 18);
-    x.fillStyle = '#3a3040'; x.fillRect(sx - 1, sy - 1, 30, 12); x.fillStyle = b.signCol || '#f8f8f8'; x.fillRect(sx, sy, 28, 10);
+    x.fillStyle = 'rgba(0,0,0,.3)'; x.fillRect(sx, sy + 1, 30, 12);
+    x.fillStyle = ink; x.fillRect(sx - 1, sy - 1, 30, 12); x.fillStyle = b.signCol || '#f8f8f8'; x.fillRect(sx, sy, 28, 10);
+    x.fillStyle = 'rgba(255,255,255,.6)'; x.fillRect(sx, sy, 28, 1);
     x.fillStyle = b.signInk || '#3a3040'; x.font = 'bold 8px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(b.sign, sx + 14, sy + 5.5);
   }
-  if (b.chimney) { x.fillStyle = '#3a3040'; x.fillRect(w - 14, 0, 8, 10); x.fillStyle = '#a06048'; x.fillRect(w - 13, 1, 6, 8); }
+  if (b.chimney) { x.fillStyle = ink; x.fillRect(w - 14, 0, 8, 10); for (let yy = 1; yy < 9; yy++) for (let xx = w - 13; xx < w - 7; xx++) { x.fillStyle = ((xx + (yy % 2) * 2) % 4 === 0 || yy % 3 === 0) ? '#6a3828' : '#a86048'; x.fillRect(xx, yy, 1, 1); } }
   bCache.set(k, c);
   return c;
+}
+
+// ---------------------------------------------------------------- Atmosphäre: Kanten, Schatten, Wolken, Licht
+const fxCache = new Map();
+const memo = (k, fn) => { if (!fxCache.has(k)) fxCache.set(k, fn()); return fxCache.get(k); };
+// Gras wächst über den Rand eines Weges/Sandes (side: n, s, w, e)
+export function grassFringe(side, pal = 'green', v = 0) {
+  return memo('fr' + side + pal + v, () => {
+    const [c, x] = cv(16, 16), tones = pal === 'dark' ? GRASS_D : GRASS;
+    for (let i = 0; i < 16; i++) {
+      const depth = 1 + Math.floor(hash(i, v, side.charCodeAt(0)) * 3) + (hash(Math.floor(i / 3), v, 9) > 0.6 ? 1 : 0);
+      for (let d = 0; d < depth; d++) {
+        const [px, py] = side === 'n' ? [i, d] : side === 's' ? [i, 15 - d] : side === 'w' ? [d, i] : [15 - d, i];
+        x.fillStyle = d === depth - 1 ? (pal === 'dark' ? '#2e6e34' : '#3f8e3a') : tones[1 + Math.floor(hash(px, py, 3) * 3)]; x.fillRect(px, py, 1, 1);
+      }
+      // dunkler Saum auf dem Weg = Schatten der Grasnarbe
+      const [sx, sy] = side === 'n' ? [i, depth] : side === 's' ? [i, 15 - depth] : side === 'w' ? [depth, i] : [15 - depth, i];
+      x.fillStyle = 'rgba(90,70,30,.25)'; x.fillRect(sx, sy, 1, 1);
+    }
+    return c;
+  });
+}
+// Ufer: Schaum und flacheres Wasser am Rand
+export function shore(side, f = 0) {
+  return memo('sh' + side + f, () => {
+    const [c, x] = cv(16, 16);
+    for (let i = 0; i < 16; i++) {
+      const foam = 1 + ((i + f * 3) % 7 < 3 ? 1 : 0);
+      for (let d = 0; d < 4; d++) {
+        const [px, py] = side === 'n' ? [i, d] : side === 's' ? [i, 15 - d] : side === 'w' ? [d, i] : [15 - d, i];
+        x.fillStyle = d < foam ? (d === 0 ? '#e8f6ff' : '#b8e0fa') : d < foam + 1 ? 'rgba(120,200,240,.6)' : 'rgba(110,190,235,.3)'; x.fillRect(px, py, 1, 1);
+      }
+    }
+    return c;
+  });
+}
+// weicher Schattenfleck (für Bäume, Steine)
+export function softShadow(w, h, a = 0.24) {
+  return memo('ss' + w + h + a, () => {
+    const [c, x] = cv(w, h), g = x.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+    g.addColorStop(0, `rgba(10,20,30,${a})`); g.addColorStop(0.7, `rgba(10,20,30,${a * 0.6})`); g.addColorStop(1, 'rgba(10,20,30,0)');
+    x.setTransform(1, 0, 0, h / w, 0, 0); x.fillStyle = g; x.fillRect(0, 0, w, w); return c;
+  });
+}
+// große, weiche Wolke für ziehende Wolkenschatten
+export function cloudShadow() {
+  return memo('cloud', () => {
+    const [c, x] = cv(160, 80);
+    for (const [cx, cy, r] of [[50, 42, 34], [86, 34, 40], [118, 46, 30], [76, 52, 30]]) {
+      const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, 'rgba(20,40,70,.14)'); g.addColorStop(1, 'rgba(20,40,70,0)');
+      x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill();
+    }
+    return c;
+  });
+}
+// warmes Lichtfeld (Fenster bei Nacht, Laternen)
+export function glow(r = 18, col = '255,200,110') {
+  return memo('gl' + r + col, () => {
+    const [c, x] = cv(r * 2, r * 2), g = x.createRadialGradient(r, r, 0, r, r, r);
+    g.addColorStop(0, `rgba(${col},.55)`); g.addColorStop(0.5, `rgba(${col},.2)`); g.addColorStop(1, `rgba(${col},0)`);
+    x.fillStyle = g; x.fillRect(0, 0, r * 2, r * 2); return c;
+  });
 }
 
 // ---------------------------------------------------------------- Figuren
@@ -378,7 +546,7 @@ export const DIRS = ['down', 'up', 'left', 'right'];
 export function drawChar(ctx, look, dir, frame, x, y) {
   const sh = charSheet(look);
   ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(x + 8, y + 15, 5.5, 2, 0, 0, 7); ctx.fill();
-  ctx.drawImage(sh, frame * 16, DIRS.indexOf(dir) * 18, 16, 18, Math.round(x), Math.round(y - 3), 16, 18);
+  ctx.drawImage(sh, frame * 16, DIRS.indexOf(dir) * 18, 16, 18, snap(x), snap(y - 3), 16, 18);
 }
 
 // ---------------------------------------------------------------- Objekte

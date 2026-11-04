@@ -1,7 +1,19 @@
 // Oberwelt: Kachelbewegung, Kamera, NPCs, Trainer-Sichtlinien, Türen, Begegnungen, Tag/Nacht
-import { G, W, H, COL, push, input, text, box, wait, fade } from './engine.js';
+import { G, W, H, COL, push, input, text, box, wait, fade, snap } from './engine.js';
 import { MAPS, TILE, SOLID, ENC } from './maps.js';
-import { tile, building, drawChar, tallOverlay, itemBall } from './pixel.js';
+import { tile, building, drawChar, tallOverlay, itemBall, treeCrown, TREE_KIND, grassFringe, shore, softShadow, cloudShadow, glow } from './pixel.js';
+// Untergründe, an deren Rand Gras über Wege/Sand wächst
+const GRASSY = new Set('.,:TPrUF'.split(''));
+const LANDISH = c => c !== null && c !== '~' && c !== 'B';
+// Licht + Vignette einmal vorzeichnen (in halber Auflösung, weich skaliert) statt jeden Frame Verläufe zu berechnen
+const LL = {};
+function lightLayer(sun) {
+  if (LL[sun]) return LL[sun];
+  const c = document.createElement('canvas'); c.width = W * 2; c.height = H * 2; const x = c.getContext('2d'); x.scale(2, 2);
+  if (sun) { const sg = x.createLinearGradient(0, 0, W, H); sg.addColorStop(0, 'rgba(255,240,200,.12)'); sg.addColorStop(0.5, 'rgba(255,240,200,0)'); sg.addColorStop(1, 'rgba(40,30,60,.08)'); x.fillStyle = sg; x.fillRect(0, 0, W, H); }
+  const g = x.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, W * 0.62); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,10,.22)'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  return (LL[sun] = c);
+}
 import { sfx, setMusic } from '../core/audio.js';
 import { say, choose } from './gbui.js';
 import { monSprite } from './sprites.js';
@@ -10,7 +22,7 @@ const DX = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 const OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
 export class Overworld {
-  constructor(game) { this.g = game; this.busy = false; this.banner = null; this.notice = null; this.emote = null; this.ball = itemBall(); }
+  constructor(game) { this.g = game; this.busy = false; this.banner = null; this.notice = null; this.emote = null; this.ball = itemBall(); this.parts = []; }
 
   load(id, x, y, dir) {
     const M = MAPS[id]; this.id = id; this.M = M;
@@ -62,17 +74,11 @@ export class Overworld {
     if (this.notice) { this.notice.t -= dt; if (this.notice.t <= 0) this.notice = null; }
     if (this.emote) { this.emote.t -= dt; if (this.emote.t <= 0) this.emote = null; }
     this.updateNpcs(dt);
-    if (p.moving) {
-      const dur = p.jump ? 0.42 : p.slide ? 0.1 : (input.held('b') && !this.M.indoor ? 0.13 : 0.22);
-      p.t += dt / dur;
-      const k = Math.min(1, p.t);
-      p.px = (p.fx + (p.tx - p.fx) * k) * 16; p.py = (p.fy + (p.ty - p.fy) * k) * 16;
-      p.hop = p.jump ? Math.sin(k * Math.PI) * 10 : 0;
-      p.frame = p.slide ? 0 : k > 0.25 && k < 0.75 ? (p.step % 2 ? 1 : 2) : 0;
-      if (k >= 1) { p.moving = false; p.x = p.tx; p.y = p.ty; p.jump = 0; p.hop = 0; p.step++; this.arrive(); }
-      return;
-    }
-    p.frame = 0;
+    for (const q of this.parts) { q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 30 * dt; q.l -= dt; } this.parts = this.parts.filter(q => q.l > 0);
+    if (p.moving) { this.stepMove(dt); return; }
+    if (!this.dirty) p.frame = 0;
+    this.dirty = false;
+    p.px = p.x * 16; p.py = p.y * 16;
     if (this.busy) return;
     if (this.g.online?.idle()) return;
     if (input.pressed('start')) { sfx('open'); this.g.startMenu(); return; }
@@ -83,7 +89,34 @@ export class Overworld {
     if (p.dir !== d) { p.dir = d; p.turnT = 0.08; return; }
     if (p.turnT > 0) { p.turnT -= dt; return; }
     this.tryMove(d);
-    if (p.moving) this.g.online?.pos();
+    if (p.moving) {
+      this.g.online?.pos();
+      // Restzeit des letzten Schritts übernehmen und sofort weiterlaufen → kein Halt zwischen den Feldern
+      const carry = this.carry || 0; this.carry = 0;
+      if (G.t - (this.arrivedAt || 0) < 0.05) this.stepMove(carry + dt);
+    }
+  }
+  moveDur() { const p = this.p; return p.jump ? 0.42 : p.slide ? 0.1 : (input.held('b') && !this.M.indoor ? 0.13 : 0.22); }
+  stepMove(dt) {
+    const p = this.p;
+    p.t += dt / this.moveDur();
+    const k = Math.min(1, p.t);
+    p.px = (p.fx + (p.tx - p.fx) * k) * 16; p.py = (p.fy + (p.ty - p.fy) * k) * 16;
+    p.hop = p.jump ? Math.sin(k * Math.PI) * 10 : 0;
+    // Gang: 4 Phasen pro Feld (Fuß links, Mitte, Fuß rechts, Mitte) und leichtes Wippen
+    p.frame = p.slide ? 0 : k > 0.15 && k < 0.65 ? (p.step % 2 ? 1 : 2) : 0;
+    p.bob = p.slide || p.jump ? 0 : Math.abs(Math.sin(k * Math.PI)) * 0.67;
+    if (k >= 1) {
+      this.carry = (p.t - 1) * this.moveDur(); this.arrivedAt = G.t;
+      p.moving = false; p.x = p.tx; p.y = p.ty; p.jump = 0; p.hop = 0; p.bob = 0; p.step++; this.arrive();
+      // gleich im selben Frame weiter, wenn die Richtung gehalten wird und nichts passiert
+      if (!p.moving && !this.busy && input.dir() === p.dir) {
+        this.dirty = true;
+        // Überschuss schon jetzt anzeigen, damit der Übergang zum nächsten Feld nicht stockt
+        const [dx, dy] = DX[p.dir];
+        if (!this.solid(p.x + dx, p.y + dy) && this.ch(p.x + dx, p.y + dy) !== null) { const e = (this.carry / this.moveDur()) * 16; p.px += dx * e; p.py += dy * e; }
+      }
+    }
   }
 
   tryMove(d) {
@@ -114,7 +147,15 @@ export class Overworld {
     if (this.g.blockMove?.(this.id, nx, ny, d)) return;
     this.startMove(nx, ny, false);
   }
-  startMove(tx, ty, jump) { const p = this.p; p.moving = true; p.fx = p.x; p.fy = p.y; p.tx = tx; p.ty = ty; p.t = 0; p.jump = jump; if (jump) sfx('whoosh'); }
+  startMove(tx, ty, jump) {
+    this.dust(); const p = this.p; p.moving = true; p.fx = p.x; p.fy = p.y; p.tx = tx; p.ty = ty; p.t = 0; p.jump = jump; if (jump) sfx('whoosh'); }
+  // Laufpartikel: Staub auf Wegen/Sand, Halme im hohen Gras, Schnee, Asche
+  dust() {
+    const p = this.p, c = this.ch(p.x, p.y); if (p.surf || p.slide) return;
+    const col = c === '=' || c === 's' || c === '_' || c === 'd' ? ['#d8c090', '#c8ac78'] : c === ':' || c === '%' ? ['#58b048', '#90d868'] : c === 'n' || c === 'y' ? ['#ffffff', '#d8e8f8'] : c === 'a' || c === 'h' ? ['#8a7a68', '#b8a488'] : null;
+    if (!col || this.parts.length > 40) return;
+    for (let i = 0; i < 3; i++) this.parts.push({ x: p.x * 16 + 5 + Math.random() * 6, y: p.y * 16 + 14, vx: (Math.random() - 0.5) * 14, vy: -10 - Math.random() * 10, c: col[i % 2], l: 0.35, ml: 0.35, sz: 1 });
+  }
   bump() { if (G.t - (this.lastBump || 0) > 0.35) { this.lastBump = G.t; sfx('step'); } }
 
   async arrive() {
@@ -257,12 +298,12 @@ export class Overworld {
     let cx = p.px + 8 - W / 2, cy = p.py + 8 - H / 2;
     cx = mw <= W ? (mw - W) / 2 : Math.max(0, Math.min(mw - W, cx));
     cy = mh <= H ? (mh - H) / 2 : Math.max(0, Math.min(mh - H, cy));
-    cx = Math.round(cx); cy = Math.round(cy);
+    cx = snap(cx); cy = snap(cy);
     this.cam = { x: cx, y: cy };
     const f2 = Math.floor(G.t * 2) % 2, f3 = Math.floor(G.t * 2.5) % 3;
     const flags = this.g.worldFlags();
     const runesOn = Object.values(this.M.runes || {}).filter(r => flags[r]).length;
-    const x0 = Math.floor(cx / 16), y0 = Math.floor(cy / 16);
+    const x0 = Math.floor(cx / 16), y0 = Math.floor(cy / 16), crowns = [], rocks = [];
     for (let y = y0; y <= y0 + 11; y++) for (let x = x0; x <= x0 + 15; x++) {
       const c = this.ch(x, y); if (c === null) continue;
       let name = TILE[c] || 'void', fr = 0;
@@ -273,15 +314,28 @@ export class Overworld {
       if (c === 'E' && flags[this.M.gates?.[x + ',' + y]]) name = 'gateOpen';
       if (c === 'N' && flags[this.M.plates?.[x + ',' + y]]) name = 'plateOn';
       if (c === '@' && flags[`hole:${this.id}:${x},${y}`]) name = 'holeFilled';
-      ctx.drawImage(tile(name, fr, (x * 7 + y * 13) % 5), x * 16 - cx, y * 16 - cy);
+      const v = (x * 7 + y * 13) % 5;
+      ctx.drawImage(tile(name, fr, v), x * 16 - cx, y * 16 - cy);
+      // Übergänge: Gras über Weg-/Sandränder, Schaum am Ufer
+      if (c === '=' || c === 's') {
+        for (const [sd, nx, ny] of [['n', x, y - 1], ['s', x, y + 1], ['w', x - 1, y], ['e', x + 1, y]]) if (GRASSY.has(this.ch(nx, ny))) ctx.drawImage(grassFringe(sd, 'green', (x + y) % 3), x * 16 - cx, y * 16 - cy);
+      } else if (c === '~') {
+        for (const [sd, nx, ny] of [['n', x, y - 1], ['s', x, y + 1], ['w', x - 1, y], ['e', x + 1, y]]) if (LANDISH(this.ch(nx, ny))) ctx.drawImage(shore(sd, f2), x * 16 - cx, y * 16 - cy);
+      }
+      if (TREE_KIND[c]) crowns.push([TREE_KIND[c], x, y, v % 3]);
+      else if ((c === 'R' || c === 'q') && !this.M.indoor) rocks.push([x, y]);
     }
+    // Schatten: Bäume und Felsen werfen weiche Schatten nach rechts unten
+    for (const [, x, y] of crowns) ctx.drawImage(softShadow(20, 8), x * 16 - cx + 4, y * 16 - cy + 11);
+    for (const [x, y] of rocks) ctx.drawImage(softShadow(16, 6), x * 16 - cx + 3, y * 16 - cy + 12);
     const night = this.g.isNight();
+    for (const b of this.blds) { const bx = b.x * 16 - cx, by = b.y * 16 - cy; ctx.fillStyle = 'rgba(10,20,40,.2)'; ctx.fillRect(bx + b.w * 16, by + 8, 4, b.h * 16 - 6); ctx.fillRect(bx + 4, by + b.h * 16, b.w * 16, 3); }
     for (const b of this.blds) ctx.drawImage(building({ ...b, night }), b.x * 16 - cx, b.y * 16 - cy);
     for (const b of this.boulders || []) ctx.drawImage(tile('rockTop'), b.x * 16 - cx, b.y * 16 - cy);
     for (const i of this.items) ctx.drawImage(this.ball, i.x * 16 - cx, i.y * 16 - cy - Math.round(Math.sin(G.t * 3 + i.x) * 1));
     // Figuren nach y sortiert
     const actors = [...this.npcs.map(n => ({ mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
-      { look: this.g.state.look, dir: p.dir, frame: p.frame, px: p.px, py: p.py - (p.hop || 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
+      { look: this.g.state.look, dir: p.dir, frame: p.frame, px: p.px, py: p.py - (p.hop || 0) - (p.bob || 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
       ...(this.g.remoteActors?.(this.id) || [])];
     actors.sort((a, b) => a.py - b.py);
     for (const a of actors) {
@@ -290,6 +344,16 @@ export class Overworld {
       else drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
       { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h' || tc === 'y' || tc === 'f' || tc === '%') && !(a.me && p.jump)) ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : tc === 'y' ? 'snow' : tc === 'f' ? 'dry' : tc === '%' ? 'mount' : 'green'), a.px - cx, a.py - cy + 8); }
       if (a.name) { const w = a.name.length * 4.2 + 6; ctx.fillStyle = 'rgba(20,40,80,.8)'; ctx.fillRect(a.px - cx + 8 - w / 2, a.py - cy - 12, w, 8); text(a.name, a.px - cx + 8, a.py - cy - 11.5, '#ffd36b', 6, 'center', null); }
+    }
+    // Baumkronen über den Figuren: wer hinter einem Baum steht, verschwindet halb im Laub
+    for (const [k, x, y, v] of crowns) ctx.drawImage(treeCrown(k, v), x * 16 - cx, y * 16 - cy - 8);
+    // Staub- und Grasteilchen
+    for (const q of this.parts) { ctx.globalAlpha = Math.max(0, q.l / q.ml); ctx.fillStyle = q.c; ctx.fillRect(q.x - cx, q.y - cy, q.sz, q.sz); }
+    ctx.globalAlpha = 1;
+    // Ziehende Wolkenschatten (draußen, tagsüber)
+    if (this.M.outdoor && !night && !this.M.night && !this.M.sandstorm) {
+      const cl = cloudShadow(), span = mw + 320;
+      for (let i = 0; i < 3; i++) { const wx = ((i * 260 + G.t * (5 + i * 2)) % span) - 160, wy = ((i * 173) % Math.max(1, mh)) - 30; ctx.drawImage(cl, wx - cx, wy - cy); }
     }
     if (this.emote) {
       const n = this.emote.n, x = n.px - cx + 4, y = n.py - cy - 16;
@@ -301,6 +365,25 @@ export class Overworld {
       if (this.M.night && !this.M.darkRadius) { ctx.fillStyle = 'rgba(10,8,34,.38)'; ctx.fillRect(0, 0, W, H); }
       if (dark > 0) { ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = `rgba(${night ? '40,50,120' : '120,80,90'},${Math.min(0.7, dark)})`; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over'; }
     }
+    // Nachts leuchten Fenster und werfen Licht auf den Boden; Glühwürmchen über Wiesen
+    if ((night || this.M.night) && this.M.outdoor) {
+      ctx.globalCompositeOperation = 'lighter';
+      for (const b of this.blds) {
+        const wallY = (b.h - 2) * 16 + 4;
+        for (let i = 0; i < b.w; i++) {
+          if (i === b.door || !(i === 0 || i === b.w - 1 || (b.w > 4 && i % 2 === 0))) continue;
+          const gx = b.x * 16 + i * 16 + 8 - cx, gy = b.y * 16 + wallY + 10 - cy;
+          ctx.drawImage(glow(14), gx - 14, gy - 14); ctx.drawImage(glow(10), gx - 10, b.y * 16 + b.h * 16 + 2 - cy - 10);
+        }
+      }
+      if (!this.M.cave) for (let i = 0; i < 14; i++) {
+        const fx = ((i * 97 + Math.sin(G.t * 0.5 + i) * 30) % (W + 20)) - 10, fy = ((i * 61 + Math.cos(G.t * 0.4 + i * 2) * 20) % (H + 10)) - 5, on = (Math.sin(G.t * 2 + i * 1.7) + 1) / 2;
+        ctx.globalAlpha = on; ctx.drawImage(glow(4, '200,255,120'), fx - 4, fy - 4); ctx.fillStyle = '#f8ffb0'; ctx.fillRect(fx, fy, 1, 1);
+      }
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+    // Sonnenlicht von oben links und sanfte Vignette → mehr Tiefe
+    ctx.drawImage(lightLayer(this.M.outdoor && !night && !this.M.night), 0, 0, W, H);
     // Sandsturm: wehende Sandschleier
     if (this.M.sandstorm) {
       const gust = 0.24 + Math.sin(G.t * 0.7) * 0.08;
