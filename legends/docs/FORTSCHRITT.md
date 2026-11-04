@@ -505,3 +505,14 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
   - **Basis-PC:** Möbel aufstellen (Platzier-Modus mit Vorschau, grün/rot), wegräumen, Katalog mit 15 Möbeln und Kreaturen-Box.
   - Die 15 Möbel umfassen u. a. Plüschfigur und Poster mit einer gefangenen Art, ein Aquarium mit Fischen, einen flackernden Fernseher, Kristallstatue, Pokal, Teppiche, Bett und Sprungmatte. Im Bett heilt das Team, auf der Sprungmatte hüpft man.
   - **Basis-Code teilen:** Der Code (`LU-…`) wird kopiert und angezeigt. Freunde geben ihn bei „Freund besuchen“ ein, sehen die Basis samt Besitzer und kämpfen gegen dessen Team. Einmal am Tag pro Freund gibt es 1000 ◈ und ein zufälliges Möbelstück. Ganz ohne Server.
+
+## v2.0 – Grafik-Feinschliff
+- **Gras:** ruhige Grundfläche mit weichen Flecken und gezeichneten Büscheln statt Pixelrauschen.
+- **Hohes Gras:** aufrechte Blattbüschel in zwei versetzten Reihen mit hellem Rand, dunkler Seite und Kontur (`tallBlades`). Der wehende Frame bleibt erhalten.
+- **Wege und Wasser:** klare Flächen. Wasser mit gezeichneten Wellenbögen (dunkle Unterkante, helle Krone, Glanzpunkt), pro Variante versetzt.
+- **Kanten (Ledges):** Grasnarbe mit Lichtkante, Erdwand mit hellen und dunklen Streifen, dunkle Fußlinie.
+- **Zäune:** Pfosten mit Kappe, Licht- und Schattenseite, Querlatten, Bodenschatten.
+- **Kreaturen und Trainer:** Feinschliff `polish()` in sprites.js für alle 150 Arten und alle Trainer.
+  - Umrisse auf der Lichtseite nehmen die Farbe der Fläche an (Sel-Out), auf der Schattenseite werden sie kühl abgedunkelt.
+  - Randlicht oben links, Umgebungsschatten unten rechts.
+- **Kampf-Textbox:** goldener Innenrahmen, Blauverlauf, Glanzkante. Weiße Menüboxen mit zartem Innenschatten.

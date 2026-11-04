@@ -184,6 +184,12 @@ export function box(x, y, w, h, style = 'default') {
   c.fillStyle = th[0]; rr(x, y, w, h, 3); c.fill();
   c.fillStyle = th[1]; rr(x + 1, y + 1, w - 2, h - 2, 2.5); c.fill();
   c.fillStyle = th[2]; rr(x + 2.5, y + 2.5, w - 5, h - 5, 2); c.fill();
+  if (style === 'dark') { // Kampf-Textbox: goldener Innenrahmen, Verlauf, Glanzkante
+    c.fillStyle = '#c89a48'; rr(x + 2.5, y + 2.5, w - 5, h - 5, 2); c.fill();
+    const g = c.createLinearGradient(0, y + 4, 0, y + h - 4); g.addColorStop(0, '#34466c'); g.addColorStop(1, '#202a44');
+    c.fillStyle = g; rr(x + 3.5, y + 3.5, w - 7, h - 7, 1.5); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.08)'; c.fillRect(x + 4, y + 4, w - 8, 1);
+  } else if (style === 'default') { c.fillStyle = 'rgba(80,100,140,.10)'; c.fillRect(x + 3, y + h - 5, w - 6, 2); }
 }
 export function rr(x, y, w, h, r) { const c = G.ctx; c.beginPath(); c.roundRect(x, y, w, h, r); }
 export function cursor(x, y) {
