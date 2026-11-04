@@ -70,3 +70,6 @@ export function evolve(m, to) {
   m.sp = to;
   m.hp += maxHp(m) - before;
 }
+
+// Geschlecht: fest aus der Kennung abgeleitet (Legendäre ohne). 0 = keins, 1 = männlich, 2 = weiblich
+export function genderOf(m) { if (!m || m.egg || SPECIES[m.sp]?.legendary) return 0; let h = 0; for (const ch of String(m.uid || m.sp)) h = (h * 31 + ch.charCodeAt(0)) | 0; return (Math.abs(h) % 2) + 1; }

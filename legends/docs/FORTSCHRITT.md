@@ -621,3 +621,16 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
     | `ldr5` | Sahra | orientalische Tonleiter |
     | `ldr6` | Brann | episch |
     | `ldr7` | Vala | Doppelbass-Finale |
+
+## v2.7 – Geschlechter, langsamere Brutstätte, versteckte 52-Bälle
+- **Geschlecht überall:**
+  - ♂/♀ als Pixel-Zeichen (`genderMark` in gbui, `genderOf` jetzt in `data/mon.js`) in Team-Liste, Bericht, PC-Box, Kampfbox und Brutstätte.
+  - Beim Fang gibt es den Hinweis „ist ein Männchen/Weibchen“.
+- **Brutstätte:**
+  - Ein Ei gibt es nur noch von Männchen + Weibchen, die Mutter ist immer das Weibchen (`parentsOf`).
+  - Chance nur alle 256 Schritte statt 80, mit 20/35/50 % statt 40/60/75 %. Das ergibt im Schnitt ca. 520 Schritte bei gleicher Art (vorher ca. 107) und ca. 1300 bei Mutationen.
+  - Brutzeit über `eggSteps`: 1000 Schritte (Mutation 1400), seltene und epische Arten ×1,25 bzw. ×1,5. Vorher waren es 260 bzw. 360.
+- **52-Bälle:**
+  - Sie liegen unsichtbar (`ow.secret`) und sind nicht mehr als Ball zu sehen. Auch Erd-Schnüffeln zeigt sie nicht.
+  - Freischaltung per `need` in `maps.js`: 2–8 Orden bzw. `'champion'` (3 Stück erst im Postgame).
+  - Nur direkt daneben funkelt es alle 2,6 s kurz auf. Dieses Funkeln wird über den Baumkronen gezeichnet.

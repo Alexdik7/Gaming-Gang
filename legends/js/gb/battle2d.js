@@ -1,16 +1,16 @@
 // Kampfbildschirm im Handheld-Stil
-import { G, W, H, COL, push, pop, input, text, box, cursor, bar, inRect, wait, wrap, fade } from './engine.js';
+import { G, W, H, COL, push, pop, input, text, box, cursor, bar, inRect, wait, wrap, fade, measure } from './engine.js';
 import { Battle, RESO_MIN } from '../battle/battle.js';
 import { SPECIES } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
 import { TYPES } from '../data/types.js';
-import { maxHp, monName, xpForLevel, evolve, calcStats } from '../data/mon.js';
+import { maxHp, monName, xpForLevel, evolve, calcStats, genderOf } from '../data/mon.js';
 import { bgArt, platArt } from './battlebg.js';
 import { sfx, cry, setMusic } from '../core/audio.js';
 import { monSprite, trainerSprite } from './sprites.js';
 import { crystalIcon as rawCrystal } from './pixel.js';
 const _ci = {}; const crystalIcon = c => (_ci[c] ||= rawCrystal(c));
-import { choose, party, evoScene, typeTag, say, ask, waitMsg } from './gbui.js';
+import { choose, party, evoScene, typeTag, say, ask, waitMsg, genderMark } from './gbui.js';
 import { ITEMS } from './maps.js';
 import { moveFx, impactFx, updateParts, drawParts, drawBeam } from './fx.js';
 
@@ -19,8 +19,7 @@ const BG = {
   arena: ['#d8c8a8', '#f0e8d0', '#c8a878', '#a88858'], wasser: ['#88c8f8', '#d0f0ff', '#58a8e8', '#3888d0'], ruine: ['#1a1440', '#4a3a7a', '#5a6a5a', '#3a4a3a'], liga: ['#3a2a6a', '#c8b8f0', '#b8a8e0', '#8a78c0'],
 };
 const FOE = { x: 146, y: 8 }, OWN = { x: 26, y: 50 };
-// Geschlecht: fest aus der Kennung abgeleitet (Legendäre ohne)
-export function genderOf(m) { if (!m || SPECIES[m.sp]?.legendary) return 0; let h = 0; for (const ch of String(m.uid || m.sp)) h = (h * 31 + ch.charCodeAt(0)) | 0; return (Math.abs(h) % 2) + 1; }
+export { genderOf };
 export const itemFilter = it => m => !m.egg && (it.revive ? m.hp <= 0 : it.cure ? m.hp > 0 && !!m.status : m.hp > 0 && m.hp < maxHp(m));
 const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const easeOut = t => 1 - Math.pow(1 - t, 3);
@@ -541,11 +540,7 @@ class BattleScene {
     const nx = x + (own ? 12 : 7), name = monName(m);
     text(name, nx, y + 4, COL.ink, 8, 'left', COL.shadow, true);
     const gd = genderOf(m);
-    if (gd) { // Symbol als Pixel-Grafik
-      const gx = Math.round(nx + name.length * 5.3 + 3), gy = y + 5; ctx.fillStyle = gd === 1 ? '#3878f0' : '#f05068';
-      const px = gd === 1 ? ['..###', '...##', '.##.#', '#..#.', '#..#.', '.##..'] : ['.##.', '#..#', '#..#', '.##.', '.#..', '###.', '.#..'];
-      px.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '#') ctx.fillRect(gx + i, gy + j, 1, 1); }));
-    }
+    if (gd) genderMark(ctx, gd, Math.round(nx + measure(name, 8) + 3), y + 5);
     const lv = this.dLvl[m.uid] ?? m.lvl, mx = maxHp({ ...m, lvl: lv });
     text('Lv' + lv, x + w - (own ? 8 : 14), y + 4, COL.ink, 7.5, 'right', COL.shadow, true);
     if (!own && this.mode !== undefined && !this.o.trainer && this.g.state.dex.caught[m.sp]) ctx.drawImage(crystalIcon('#7fe3ff'), x + w - 46, y + 3, 9, 9);

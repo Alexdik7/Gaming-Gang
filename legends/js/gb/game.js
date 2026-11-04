@@ -12,6 +12,7 @@ import { createMon, healMon, maxHp, monName } from '../data/mon.js';
 import { MOVES } from '../data/moves.js';
 import { itemFilter } from './battle2d.js';
 import { ensureSpecies, stepBreeding, hatch, canBreed, compatibility } from '../data/breeding.js';
+import { genderOf } from '../data/mon.js';
 import { initAudio, sfx, cry, setMusic, setAudio, audioState } from '../core/audio.js';
 import { mulberry } from '../core/noise.js';
 import { Online } from './online.js';
@@ -740,6 +741,7 @@ class Game {
         await say(`Die Daten von ${SPECIES[m.sp].name} werden in der Chronik eingetragen.`);
         await dexEntry(m.sp, Object.keys(s.dex.caught).filter(id => !SPECIES[id]?.fusion).length);
       }
+      if (genderOf(m)) await say(`${SPECIES[m.sp].name} ist ein${genderOf(m) === 1 ? ' Männchen ♂' : ' Weibchen ♀'}.`);
       if (await ask(`Möchtest du ${SPECIES[m.sp].name} einen Spitznamen geben?`)) m.nick = await inputName('Spitzname', SPECIES[m.sp].name);
       if (s.team.length < 6) s.team.push(m); else { s.box.push(m); await say(`${monName(m)} wurde in die Box im Heilzentrum geschickt.`); }
       if (isNew) await this.dexRewards();
@@ -762,7 +764,7 @@ class Game {
   async pickup(it) {
     const s = this.state; s.flags[it.id] = true; s.bag[it.item] = (s.bag[it.item] || 0) + it.n; sfx('caught');
     await say(`${s.name} findet ${it.n > 1 ? it.n + '× ' : ''}${ITEMS[it.item].name}!`);
-    if (it.item === 'ball52') { sfx('shiny'); const n = Object.keys(s.flags).filter(k => k.startsWith('it_b52_')).length; await say([`Ein echter 52-Ball! Er fängt jede Kreatur – garantiert.`, `Das ist Nummer ${n} von 11. Irgendwo in der Welt sind noch ${11 - n} versteckt …`]); }
+    if (it.item === 'ball52') { sfx('shiny'); const n = Object.keys(s.flags).filter(k => k.startsWith('it_b52_')).length; await say([`Ein echter 52-Ball! Er fängt jede Kreatur – garantiert.`, `Das ist Nummer ${n} von 11. Die anderen liegen unsichtbar an abgelegenen Orten – manche zeigen sich erst mit mehr Orden.`, 'Steht man direkt daneben, funkelt es ganz kurz. Augen auf!']); }
   }
   async rest() { await say('Du legst dich kurz hin…'); await fade(1, 300); this.state.team.forEach(healMon); sfx('heal'); await fade(0, 300); await say('Du fühlst dich erholt! Dein Team ist geheilt.'); }
   async heal(who) {
@@ -1382,23 +1384,25 @@ class Game {
       if (s.team.length >= 6) return say('Aber dein Team ist voll. Mach erst Platz!', N);
       if (await ask('Möchtest du das Ei mitnehmen?')) {
         s.team.push(dc.egg); dc.egg = null; dc.steps = 0; sfx('caught');
-        await say([`${s.name} erhält das Ei!`, 'Lauf viel herum, dann schlüpft es bald. Feuer-Kreaturen im Team halten es schön warm.'], N);
+        await say([`${s.name} erhält das Ei!`, 'Bis es schlüpft, musst du ein ganzes Stück laufen. Feuer-Kreaturen im Team halten es warm – dann geht es doppelt so schnell.'], N);
       }
       return;
     }
-    await say(dc.mons.length ? `Deine ${dc.mons.map(monName).join(' und ')} ${dc.mons.length > 1 ? 'spielen fröhlich miteinander' : 'wartet auf Gesellschaft'}.` : 'Willkommen in der Brutstätte! Gib mir zwei Kreaturen – vielleicht finden sie ein Ei.', N);
+    await say(dc.mons.length ? `Deine ${dc.mons.map(monName).join(' und ')} ${dc.mons.length > 1 ? 'spielen fröhlich miteinander' : 'wartet auf Gesellschaft'}.` : 'Willkommen in der Brutstätte! Gib mir ein Männchen und ein Weibchen – mit etwas Geduld finden sie ein Ei.', N);
     for (;;) {
       const i = await choose(['Kreatur abgeben', 'Kreatur abholen', 'Was ist eine Mutation?', 'Tschüss']);
       if (i === null || i === 3) return;
-      if (i === 2) { await say(['Geben zwei verschiedene Kreaturen ein Ei, schlüpft daraus eine Mutation – eine ganz neue Art!', 'Körperbau von der ersten Kreatur, die du abgibst. Farben und ein Merkmal von der zweiten.', 'Die Typen mischen sich, die Attacken auch. Gleiche Arten ergeben ein ganz normales Junges.'], N); continue; }
+      if (i === 2) { await say(['Geben zwei verschiedene Kreaturen ein Ei, schlüpft daraus eine Mutation – eine ganz neue Art!', 'Körperbau vom Weibchen (Mutter). Farben und ein Merkmal vom Männchen (Vater).', 'Ein Ei gibt es nur von einem Männchen und einem Weibchen – und das dauert seine Zeit.', 'Die Typen mischen sich, die Attacken auch. Gleiche Arten ergeben ein ganz normales Junges.'], N); continue; }
       if (i === 0) {
         if (dc.mons.length >= 2) { await say('Ich passe schon auf zwei Kreaturen auf.', N); continue; }
         const k = await party(s, { select: true, prompt: 'Welche Kreatur abgeben?', filter: m => canBreed(m) && s.team.filter(x => !x.egg && x.hp > 0 && x !== m).length > 0 });
         if (k === null) continue;
         const m = s.team.splice(k, 1)[0]; dc.mons.push(m); dc.steps = 0;
-        await say(`${monName(m)} bleibt in der Brutstätte.${dc.mons.length === 1 ? ' Es ist die MUTTER – es vererbt den Körperbau.' : ' Es ist der VATER – es vererbt Farbe und Merkmal.'}`, N);
+        const gd = genderOf(m);
+        await say(`${monName(m)} bleibt in der Brutstätte. ${gd === 2 ? 'Ein Weibchen ♀ – als MUTTER vererbt es den Körperbau.' : 'Ein Männchen ♂ – als VATER vererbt es Farbe und Merkmal.'}`, N);
         if (dc.mons.length === 2) {
           const c = compatibility(dc.mons[0], dc.mons[1]);
+          if (genderOf(dc.mons[0]) === genderOf(dc.mons[1])) await say(`Zwei ${genderOf(m) === 1 ? 'Männchen' : 'Weibchen'} … die beiden spielen zwar, aber ein Ei wird es so nie geben.`, N); else
           await say(['Die beiden ignorieren einander…', 'Die beiden spielen miteinander.', 'Die beiden verstehen sich gut!', 'Die beiden verstehen sich prächtig!'][c], N);
           if (c) await say('Lauf ein bisschen herum – vielleicht finden wir bald ein Ei!', N);
         }
@@ -1406,7 +1410,7 @@ class Game {
       if (i === 1) {
         if (!dc.mons.length) { await say('Ich passe gerade auf keine Kreatur auf.', N); continue; }
         if (s.team.length >= 6) { await say('Dein Team ist voll.', N); continue; }
-        const k = dc.mons.length === 1 ? 0 : await choose(dc.mons.map(m => ({ label: monName(m), right: 'Lv' + m.lvl })));
+        const k = dc.mons.length === 1 ? 0 : await choose(dc.mons.map(m => ({ label: monName(m) + ' ' + ['', '♂', '♀'][genderOf(m)], right: 'Lv' + m.lvl })));
         if (k === null) continue;
         const m = dc.mons.splice(k, 1)[0]; healMon(m); s.team.push(m); sfx('click');
         await say(`Du hast ${monName(m)} zurückbekommen. Es ist jetzt Level ${m.lvl}!`, N);

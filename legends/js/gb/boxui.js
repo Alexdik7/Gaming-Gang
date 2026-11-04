@@ -3,9 +3,10 @@ import { G, W, H, COL, push, pop, input, text, box, rr } from './engine.js';
 import { sfx, cry } from '../core/audio.js';
 import { SPECIES } from '../data/creatures.js';
 import { TYPES } from '../data/types.js';
-import { healMon, monName, maxHp } from '../data/mon.js';
+import { healMon, monName, maxHp, genderOf } from '../data/mon.js';
+import { measure } from './engine.js';
 import { monSprite } from './sprites.js';
-import { choose, ask, say, summary, monIcon, typeTag, inputName } from './gbui.js';
+import { choose, ask, say, summary, monIcon, typeTag, inputName, genderMark } from './gbui.js';
 
 export const NB = 8, PER = 30, COLS = 6;
 const WALL = [['Wiese', '#88d070', '#68b858'], ['Strand', '#f0d890', '#88c8f0'], ['Wald', '#4a9a5a', '#2e7a44'], ['Vulkan', '#e8885a', '#a84a3a'], ['Eis', '#c8e8f8', '#98c8e8'], ['Nacht', '#5a5aa8', '#34346a'], ['Wüste', '#e8c888', '#c8a060'], ['Kristall', '#d8a8f0', '#a878d0']];
@@ -195,6 +196,7 @@ class BoxScene {
       const img = m.egg ? monIcon(m) : monSprite(m.sp, 'front', m.shiny, m.mut);
       ctx.drawImage(img, 21, 4, 42, 42);
       text(monName(m), 42, 50, COL.ink, 7, 'center', COL.shadow, true);
+      if (!m.egg) genderMark(ctx, genderOf(m), Math.round(42 + measure(monName(m), 7) / 2 + 2), 51);
       if (!m.egg) { text('Lv' + m.lvl, 8, 60, COL.inkSoft, 6.5, 'left', null, true); SPECIES[m.sp].types.slice(0, 1).forEach(t => typeTag(t, 42, 60)); }
     } else text(this.zone === 'head' ? 'A: Box-Menü' : '– leer –', 42, 34, COL.inkSoft, 7, 'center', null);
     // Cursor (Hand) und gehaltene Kreatur

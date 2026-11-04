@@ -1,10 +1,21 @@
 // Menüs & Dialoge im Handheld-Stil (Steuerkreuz + A/B, Antippen geht auch)
-import { G, W, H, COL, push, pop, input, text, wrap, box, cursor, bar, inRect, rr } from './engine.js';
+import { G, W, H, COL, push, pop, input, text, wrap, box, cursor, bar, inRect, rr, measure } from './engine.js';
 import { sfx } from '../core/audio.js';
 import { SPECIES, RARITY } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
 import { TYPES } from '../data/types.js';
-import { calcStats, maxHp, monName, xpForLevel } from '../data/mon.js';
+import { calcStats, maxHp, monName, xpForLevel, genderOf } from '../data/mon.js';
+
+// ♂/♀ als Pixel-Grafik (die Schrift hat keine sauberen Zeichen dafür). gd: 1 männlich, 2 weiblich
+const GPX = { 1: ['..###', '...##', '.##.#', '#..#.', '#..#.', '.##..'], 2: ['.##.', '#..#', '#..#', '.##.', '.#..', '###.', '.#..'] };
+export function genderMark(ctx, gd, x, y, outline = false) {
+  const px = GPX[gd]; if (!px) return;
+  if (outline) { ctx.fillStyle = 'rgba(16,32,48,.75)'; px.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '#') ctx.fillRect(x + i - 0.5, y + j - 0.5, 2, 2); })); }
+  ctx.fillStyle = gd === 1 ? '#3878f0' : '#f05068';
+  if (outline) ctx.fillStyle = gd === 1 ? '#78b0ff' : '#ff8ca0';
+  px.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '#') ctx.fillRect(x + i, y + j, 1, 1); }));
+}
+export const genderWord = m => ['', 'Männchen', 'Weibchen'][genderOf(m)];
 import { monSprite, trainerSprite } from './sprites.js';
 import { eggSprite, crystalIcon } from './pixel.js';
 import { ITEMS } from './maps.js';
@@ -174,6 +185,7 @@ class Party {
       if (big) ctx.drawImage(monIcon(m), x + 2, y + 2 + hop); else ctx.drawImage(monIcon(m), x - 2, y - 6 + hop);
       const nx = big ? x + 6 : x + 30, ny = big ? y + 32 : y + 3;
       text(m.egg ? 'Ei' : monName(m), nx, ny, '#ffffff', 7.5, 'left', '#1a3a5a', true);
+      if (!m.egg) genderMark(ctx, genderOf(m), Math.round(nx + measure(monName(m), 7.5) + 3), ny + 1, true);
       if (!m.egg) {
         text('Lv' + m.lvl, big ? x + 40 : x + 30, big ? y + 6 : y + 13, '#ffffff', 7, 'left', '#1a3a5a', true);
         const bx = big ? x + 18 : x + 80, by = big ? y + 44 : y + 6, bw = big ? 62 : 56;
@@ -229,6 +241,7 @@ class Summary {
     if (m.shiny) text('✦', 78, 22, '#f8c830', 9, 'right', null, true);
     box(3, 106, 82, 50);
     text(monName(m), 9, 111, COL.ink, 8, 'left', COL.shadow, true);
+    if (!m.egg) genderMark(ctx, genderOf(m), Math.round(9 + measure(monName(m), 8) + 3), 112);
     text('Lv' + m.lvl, 9, 124, COL.ink, 7.5, 'left', null, true);
     text('Nr.' + String(S.num).padStart(3, '0'), 79, 124, COL.inkSoft, 7, 'right');
     S.types.forEach((t, i) => typeTag(t, 8 + i * 37, 138));

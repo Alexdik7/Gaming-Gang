@@ -32,7 +32,10 @@ export class Overworld {
     this.p = { x, y, dir: dir || s.dir || 'down', px: x * 16, py: y * 16, moving: false, step: 0, turnT: 0, jump: 0 };
     s.surf = !!s.surf && M.rows[y]?.[x] === '~'; this.p.surf = s.surf;
     this.npcs = (M.npcs || []).filter(n => !(n.hideIf && s.flags[n.hideIf]) && !(n.showIf && !s.flags[n.showIf])).map(n => ({ ...n, ox: n.x, oy: n.y, px: n.x * 16, py: n.y * 16, moving: false, wt: 1 + Math.random() * 3, step: 0 }));
-    this.items = (M.items || []).filter(i => !s.flags[i.id]);
+    this.items = (M.items || []).filter(i => !s.flags[i.id] && i.item !== 'ball52');
+    // 52-Bälle liegen unsichtbar und erscheinen erst mit genug Orden bzw. als Champion
+    const nb = (s.badges || []).filter(Boolean).length;
+    this.secret = (M.items || []).filter(i => i.item === 'ball52' && !s.flags[i.id] && (i.need === 'champion' ? s.flags.champion : nb >= (i.need || 0)));
     s.bpos ||= {};
     this.boulders = (s.bpos[id] || (M.boulders || []).map(b => [...b])).filter(Boolean).map(([bx, by]) => ({ x: bx, y: by }));
     this.blds = M.buildings || [];
@@ -338,6 +341,8 @@ export class Overworld {
       const it = this.items.find(i => i.x === fx && i.y === fy);
       if (it) { await this.g.pickup(it); this.items = this.items.filter(i => i !== it); return; }
       if (this.f?.vis && this.f.x === fx && this.f.y === fy && !this.p.moving) { await this.g.talkFollower(); return; }
+      const sc = this.secret?.find(h => h.x === fx && h.y === fy);
+      if (sc) { await this.g.pickup(sc); this.secret = this.secret.filter(h => h !== sc); return; }
       const hd = this.hidden.find(h => h.x === fx && h.y === fy);
       if (hd) { await this.g.pickup(hd); this.hidden = this.hidden.filter(h => h !== hd); return; }
       { const sp = baseSpots()[this.id]; if (sp && sp.x === fx && sp.y === fy) { await this.g.baseSpot(sp); return; } }
@@ -479,6 +484,12 @@ export class Overworld {
     }
     // Baumkronen über den Figuren: wer hinter einem Baum steht, verschwindet halb im Laub
     for (const [k, x, y, v] of crowns) ctx.drawImage(treeCrown(k, v), x * 16 - cx, y * 16 - cy - 8);
+    // 52-Ball: nur ein kurzes Funkeln, wenn man direkt daneben steht
+    for (const h of this.secret || []) {
+      if (Math.abs(h.x - this.p.x) + Math.abs(h.y - this.p.y) > 1 || (G.t + h.x * 0.37) % 2.6 > 0.22) continue;
+      const k = ((G.t + h.x * 0.37) % 2.6) / 0.22, r = Math.round(1 + Math.sin(k * Math.PI) * 3), hx = h.x * 16 - cx + 8 + (h.y % 3) - 1, hy = h.y * 16 - cy + 6;
+      ctx.fillStyle = '#fff6c8'; ctx.fillRect(hx, hy - r, 1, r * 2 + 1); ctx.fillRect(hx - r, hy, r * 2 + 1, 1);
+    }
     { const sp = baseSpots()[this.id]; if (sp) { const b = this.g.state.base; drawSpot(ctx, sp, cx, cy, b && b.map === sp.map, true); } }
     // Staub- und Grasteilchen
     for (const q of this.parts) { ctx.globalAlpha = Math.max(0, q.l / q.ml); ctx.fillStyle = q.c; ctx.fillRect(q.x - cx, q.y - cy, q.sz, q.sz); }

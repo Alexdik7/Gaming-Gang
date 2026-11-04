@@ -1,7 +1,7 @@
 // Brutstätte: Aus zwei Kreaturen entsteht ein Ei. Verschiedene Arten → Mutation (Fusion beider Eltern).
 import { SPECIES } from './creatures.js';
 import { SIGNATURE } from './creatures2.js';
-import { createMon, giveXp, newUid } from './mon.js';
+import { createMon, giveXp, newUid, genderOf } from './mon.js';
 import { MOVES } from './moves.js';
 
 const VOW = 'aeiouäöüy';
@@ -83,6 +83,7 @@ export function canBreed(m) {
 
 export function compatibility(a, b) {
   if (!canBreed(a) || !canBreed(b)) return 0;
+  if (genderOf(a) === genderOf(b)) return 0; // braucht Männchen + Weibchen
   const A = SPECIES[a.sp], B = SPECIES[b.sp];
   if (a.sp === b.sp) return 3;
   return A.types.some(t => B.types.includes(t)) ? 2 : 1;
@@ -94,11 +95,17 @@ export function childSpecies(mother, father) {
   const id = fusionId(a, b); ensureSpecies(id); return id;
 }
 
+// Brutzeit in Schritten: deutlich länger als früher (260/360), seltene Arten noch länger
+const RAR_MUL = { gewoehnlich: 1, ungewoehnlich: 1.1, selten: 1.25, episch: 1.5 };
+export function eggSteps(sp) { const S = SPECIES[sp]; return Math.round((S.fusion ? 1400 : 1000) * (RAR_MUL[S.rarity] || 1.15)); }
+// Mutter = Weibchen (vererbt Körperbau), Vater = Männchen
+export function parentsOf(dc) { const [a, b] = dc.mons; return genderOf(a) === 2 ? [a, b] : [b, a]; }
+
 export function makeEgg(mother, father, rnd = Math.random) {
   const sp = childSpecies(mother, father);
   return {
     uid: newUid(), egg: true, sp, lvl: 1, hp: 0, xp: 0, moves: [], iv: {},
-    steps: SPECIES[sp].fusion ? 360 : 260, mut: SPECIES[sp].fusion && rnd() < 0.18,
+    steps: eggSteps(sp), mut: SPECIES[sp].fusion && rnd() < 0.18,
     parents: [mother.nick || SPECIES[mother.sp].name, father.nick || SPECIES[father.sp].name],
     inherit: [mother.moves[Math.floor(rnd() * mother.moves.length)]?.id, father.moves[Math.floor(rnd() * father.moves.length)]?.id].filter(Boolean),
     ivFrom: [mother.iv, father.iv],
@@ -129,9 +136,10 @@ export function stepBreeding(state, rnd = Math.random) {
   if (dc && dc.mons.length) {
     dc.steps = (dc.steps || 0) + 1;
     for (const m of dc.mons) { const before = m.lvl; giveXp(m, 1); if (m.lvl > before) m.hp = Math.max(m.hp, 1); }
-    if (dc.mons.length === 2 && !dc.egg && dc.steps % 80 === 0) {
+    // Paarung: nur alle 256 Schritte eine Chance, höchstens ein Ei wartet
+    if (dc.mons.length === 2 && !dc.egg && dc.steps % 256 === 0) {
       const c = compatibility(dc.mons[0], dc.mons[1]);
-      if (c && rnd() < [0, 0.4, 0.6, 0.75][c]) { dc.egg = makeEgg(dc.mons[0], dc.mons[1], rnd); ev.push({ t: 'eggReady' }); }
+      if (c && rnd() < [0, 0.2, 0.35, 0.5][c]) { const [mo, fa] = parentsOf(dc); dc.egg = makeEgg(mo, fa, rnd); ev.push({ t: 'eggReady' }); }
     }
   }
   const warm = state.team.some(m => !m.egg && m.hp > 0 && SPECIES[m.sp]?.types.includes('feuer'));
