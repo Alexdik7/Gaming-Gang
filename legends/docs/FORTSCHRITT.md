@@ -1,6 +1,23 @@
 # Fortschritt
 
-## v1.1 – Grafik & flüssige Bewegung (aktuell)
+## v1.2 – Kampf-Intro & flüssige Wechsel (aktuell)
+
+### ✅ Neu und getestet
+- **Übergang in den Kampf:** zwei Blitze, dann schieben sich schwarze Balken ins Bild.
+- **Auftritt:**
+  - Beide Plattformen gleiten mit den Trainern herein.
+  - Der gegnerische Trainer wirft seinen Bindkristall im Bogen. Der Kristall wackelt, öffnet sich mit Lichtring, und die Kreatur erscheint erst weiß leuchtend, dann in Farbe.
+  - Wilde Kreaturen stehen zuerst als dunkle Silhouette da; legendäre lassen dazu den Boden beben.
+  - Danach wirft dein eigener Trainer und läuft aus dem Bild.
+  - Die Lebensanzeigen schieben sich von der Seite herein.
+- **Wechsel:** Die Kreatur leuchtet auf, schrumpft und fliegt als Lichtstrahl zurück; die neue kommt per Kristallwurf. Begleittexte laufen mit.
+- **Kampfende:** weich abblenden und die Welt weich einblenden, statt hart zu schneiden. Gilt auch für Doppel- und Raid-Kämpfe, inklusive Kristallwurf.
+- **Behoben:**
+  - Nach dem Einwechseln infolge eines K.O. blieb die eigene Lebensanzeige verschwunden.
+  - Überlagerte Blenden ließen das Kampfende hängen.
+- **Wiederverwendbare Tests:** `node tools/e2e/run.cjs all` prüft Neues Spiel, Laufruhe, Trainerkampf und Offline-Start.
+
+## v1.1 – Grafik & flüssige Bewegung
 
 ### ✅ Neu und getestet
 - **Flüssiges Laufen:**

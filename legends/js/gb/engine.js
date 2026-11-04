@@ -99,6 +99,8 @@ export function pop(s) { const i = s ? G.scenes.lastIndexOf(s) : G.scenes.length
 export const top = () => G.scenes[G.scenes.length - 1];
 
 export function fade(to, ms = 250) {
+  // eine laufende Blende wird abgelöst: ihr Warten endet sofort, statt für immer zu hängen
+  if (G.fadeRes) { const r = G.fadeRes; G.fadeRes = null; r(); }
   return new Promise(res => { G.fadeTo = to; G.fadeSpeed = 1000 / ms; G.fadeRes = res; });
 }
 export const wait = ms => new Promise(r => setTimeout(r, ms));
