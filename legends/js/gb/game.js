@@ -19,6 +19,7 @@ import { doubleBattle, localDouble } from './double2d.js';
 import { COOP, foeSlots, helperSlots } from '../data/coop.js';
 import { DoubleBattle } from '../battle/double.js';
 import { HUETER } from '../data/creatures9.js';
+import { baseMap, DECOR, placeDecor, encodeBase, decodeBase, decorAt } from './base.js';
 
 const SAVE = 'lu2-save', OPT = 'lu2-opt', DAY = 24 * 60;
 const QUESTS = {
@@ -224,6 +225,8 @@ class Game {
   async enterWorld(fresh) {
     const s = this.state;
     s.flags ||= {}; s.daycare ||= { mons: [], steps: 0, egg: null }; s.badges ||= [];
+    if (s.base) MAPS.basis = baseMap(s.base.theme, `${s.name}s Geheimbasis`, s.base.items);
+    if (s.map === 'gast' || (s.map === 'basis' && !s.base)) { const r = s.ret || { map: 'moosgrund', x: 4, y: 9 }; s.map = r.map; s.x = r.x; s.y = r.y; }
     this.ow.load(s.map, s.x, s.y, s.dir);
     push(this.ow); this.started = true;
     await fade(0, 400);
@@ -587,6 +590,7 @@ class Game {
   onStep() {
     const s = this.state;
     this.online.pos();
+    if (s.steps % 150 === 0) { const L = s.team.find(m => !m.egg && m.hp > 0); if (L) { const before = L.friendship || 70; L.friendship = Math.min(255, before + 2); if (before < 200 && L.friendship >= 200) setTimeout(() => this.ow.notify(`${monName(L)} vertraut dir blind. Resonanz ist jetzt möglich!`), 50); } }
     const ev = stepBreeding(s);
     for (const e of ev) {
       if (e.t === 'eggReady') this.ow.notify('Die Brutstätte in Quellbach hat ein Ei für dich!');
@@ -677,6 +681,7 @@ class Game {
     const foe = t.team.map(([sp, l]) => createMon(sp, l, rnd));
     foe.forEach(m => this.markDex(m.sp));
     sfx('encounter'); await this.trainerIn();
+    t.reso ??= /Champion|Top-4|^Umbra|Hüter/.test(t.name);
     const r = await battle(this, { foeTeam: foe, trainer: t, canCatch: false, bg: t.bg || (this.ow.M.gym ? 'arena' : this.ow.M.cave ? 'hoehle' : 'gras') });
     await this.afterBattle(r, t.noBlackout);
     return r.result === 'win';
@@ -747,9 +752,108 @@ class Game {
       await say(`Hier sind ${q}× ${ITEMS[k].name}. Vielen Dank!`, { name: 'Verkäufer' });
     }
   }
-  async pc() {
+  // ---------------------------------------------------------- Geheimbasis
+  async baseSpot(sp) {
     const s = this.state;
-    await say(`${s.name} schaltet den PC ein. Kreaturen-Box geöffnet.`);
+    if (s.base && s.base.map === sp.map) return this.enterBase();
+    await say((sp.theme === 'fels' ? 'Ein schmaler Spalt im Fels.' : sp.theme === 'schnee' ? 'Eine Höhle unter dem verschneiten Baum.' : 'Ein hohler Baum, dicht mit Ranken bewachsen.') + ' Dahinter scheint viel Platz zu sein …');
+    if (!s.flags.basisset) {
+      await say(['Dein Funkgerät klingelt …', 'Dr. Vato: Ein geheimer Platz? Daraus kannst du dir eine Geheimbasis bauen!', 'Dr. Vato: Ich schicke dir mein altes Basis-Set – und ein paar Möbel zum Einzug!']);
+      s.flags.basisset = true; s.decor ||= {}; for (const k of ['stuhl', 'tisch', 'pflanze', 'teppich_rot', 'pluesch']) s.decor[k] = (s.decor[k] || 0) + 1;
+      sfx('caught'); await say(`${s.name} erhält das Basis-Set und 5 Möbel!`);
+    }
+    if (s.base) { if (!await ask(`Deine Basis ist auf ${MAPS[s.base.map].name}. Hierher umziehen? Die Möbel kommen mit.`)) return; }
+    else if (!await ask('Hier eine Geheimbasis einrichten?')) return;
+    s.base = { map: sp.map, x: sp.x, y: sp.y, theme: sp.theme, items: s.base?.items || [] };
+    sfx('lvl'); await say('Du hast deine Geheimbasis eingerichtet!'); this.save(true);
+    await this.enterBase();
+    if (!s.flags.basisTip) { s.flags.basisTip = true; await say('Am PC in der Ecke kannst du Möbel aufstellen, neue bestellen und deinen Basis-Code mit Freunden teilen.'); }
+  }
+  async enterBase() {
+    const s = this.state, b = s.base;
+    s.ret = { map: b.map, x: b.x, y: b.y + 1 };
+    MAPS.basis = baseMap(b.theme, `${s.name}s Geheimbasis`, b.items);
+    sfx('open'); await this.ow.warp('basis', 4, 6, 'up');
+  }
+  async baseMenu() {
+    const s = this.state; s.decor ||= {};
+    for (;;) {
+      const i = await choose([{ label: 'Möbel aufstellen', desc: 'Möbel aus deinem Lager im Raum platzieren.' }, { label: 'Möbel wegräumen', desc: 'Aufgestellte Möbel zurück ins Lager legen.' }, { label: 'Möbel-Katalog', desc: 'Neue Möbel bestellen. Sie kommen sofort ins Lager.' }, { label: 'Basis-Code teilen', desc: 'Freunde können damit deine Basis besuchen und gegen dein Team kämpfen.' }, { label: 'Freund besuchen', desc: 'Basis-Code eines Freundes eingeben.' }, { label: 'Kreaturen-Box', desc: 'Kreaturen ablegen oder ins Team holen.' }, 'Tschüss'], { title: 'BASIS-PC' });
+      if (i === null || i === 6) return;
+      if (i === 0) {
+        const ks = Object.keys(DECOR).filter(k => s.decor[k] > 0);
+        if (!ks.length) { await say('Dein Lager ist leer. Bestelle neue Möbel im Katalog!'); continue; }
+        const c = await choose(ks.map(k => ({ label: DECOR[k].name, right: '×' + s.decor[k] })), { title: 'LAGER', max: 7 }); if (c === null) continue;
+        const k = ks[c]; let sp;
+        if (DECOR[k].plush) {
+          const caught = Object.keys(s.dex.caught).filter(id => SPECIES[id] && !SPECIES[id].fusion);
+          const lead = s.team.find(m => !m.egg)?.sp; if (lead && !caught.includes(lead)) caught.unshift(lead);
+          const j = await choose(caught.map(id => SPECIES[id].name), { title: 'Welche Kreatur?', max: 7 }); if (j === null) continue; sp = caught[j];
+        }
+        const pos = await placeDecor(this.ow, k, sp);
+        if (pos) { s.base.items.push({ d: k, x: pos.x, y: pos.y, sp }); s.decor[k]--; this.save(true); }
+      } else if (i === 1) {
+        const L = s.base.items; if (!L.length) { await say('Es stehen noch keine Möbel in deiner Basis.'); continue; }
+        const c = await choose(L.map(it => ({ label: DECOR[it.d].name + (it.sp ? ` (${SPECIES[it.sp]?.name})` : '') })), { title: 'WEGRÄUMEN', max: 7 }); if (c === null) continue;
+        const it = L.splice(c, 1)[0]; s.decor[it.d] = (s.decor[it.d] || 0) + 1; sfx('click'); this.save(true);
+      } else if (i === 2) {
+        const ks = Object.keys(DECOR);
+        for (;;) {
+          const c = await choose([...ks.map(k => ({ label: DECOR[k].name, right: DECOR[k].price + '◈', disabled: s.money < DECOR[k].price })), 'Fertig'], { title: `Geld: ${s.money} ◈`, max: 7, w: 176 });
+          if (c === null || c === ks.length) break;
+          const k = ks[c]; if (s.money < DECOR[k].price) continue;
+          s.money -= DECOR[k].price; s.decor[k] = (s.decor[k] || 0) + 1; sfx('caught'); await say(`${DECOR[k].name} wurde ins Lager geliefert!`);
+        }
+      } else if (i === 3) {
+        const code = encodeBase(s); let ok = false;
+        try { await navigator.clipboard.writeText(code); ok = true; } catch {}
+        await say(ok ? 'Dein Basis-Code ist kopiert! Schick ihn deinen Freunden – sie können damit deine Basis besuchen und gegen dein Team kämpfen.' : 'Hier ist dein Basis-Code. Kopiere ihn und schick ihn deinen Freunden!');
+        await inputName('Dein Basis-Code', code, 6000);
+      } else if (i === 4) {
+        const code = await inputName('Basis-Code eingeben', '', 6000); if (!code) continue;
+        const o = decodeBase(code);
+        if (!o) { sfx('weak'); await say('Dieser Code funktioniert leider nicht.'); continue; }
+        o.t = o.t.filter(([sp]) => SPECIES[sp]); if (!o.t.length) o.t = [['glibbo', 5]];
+        const M = baseMap(o.th, `${o.n}s Geheimbasis`, o.d); MAPS.gast = M;
+        let nx = 4, ny = 3; for (const [x, y] of [[4, 3], [5, 3], [3, 3], [6, 3], [4, 2], [5, 4], [2, 4], [7, 4]]) if (!decorAt(o.d, x, y)) { nx = x; ny = y; break; }
+        M.npcs = [{ id: 'gast_owner', x: nx, y: ny, dir: 'down', look: o.l, name: o.n }];
+        this._gast = o; await this.ow.warp('gast', 4, 6, 'up'); return;
+      } else if (i === 5) { await this.pcBox(); }
+    }
+  }
+  async decorTalk(d) {
+    const s = this.state, N = DECOR[d.d].name, own = this.ow.id === 'basis';
+    switch (d.d) {
+      case 'bett': if (own) return this.rest(); return say('Ein gemütliches Bett. Es ist nicht deins …');
+      case 'fernseher': return say(['Im Fernsehen läuft eine Sendung über Kreaturen-Spuren im hohen Gras.', 'Nachrichten: „Glänzende Kreaturen sollen bei Massenausbrüchen häufiger sein!“', 'Eine Kochsendung: „Heute – Beeren-Kuchen für Kreaturen!“'][Math.floor(Math.random() * 3)]);
+      case 'aquarium': return say('Kleine bunte Fische ziehen ihre Kreise.');
+      case 'pluesch': case 'poster': return say(`Ein${d.d === 'poster' ? ' Poster' : 'e Plüschfigur'} von ${SPECIES[d.sp]?.name || 'einer Kreatur'}. ${d.d === 'pluesch' ? 'Total kuschelig!' : 'Sieht cool aus!'}`);
+      case 'pokal': return say(own ? `Ein glänzender Pokal. ${s.badges.filter(Boolean).length} Orden sind eingraviert.` : 'Ein glänzender Pokal voller Orden.');
+      case 'statue': return say('Die Kristallstatue funkelt in allen Farben.');
+      case 'regal': return say('„Geheimbasen für Anfänger – Band 1“');
+      default: return say(`${N}.`);
+    }
+  }
+  async visitFight(n) {
+    const s = this.state, o = this._gast, N = { name: n.name };
+    if (!o) return say('…', N);
+    await say(['Willkommen in meiner Geheimbasis!', 'Lust auf einen Kampf gegen mein Team?'], N);
+    if (!await ask('Kämpfen?')) return say('Komm jederzeit wieder vorbei!', N);
+    const won = await this.trainerFight({ name: n.name, look: o.l, team: o.t.map(([sp, l]) => [sp, l]), reward: 0, lose: 'Wow – du bist wirklich stark!', noBlackout: true, bg: 'arena' });
+    const key = 'gast_' + Math.floor(Date.now() / 864e5) + '_' + n.name;
+    if (won && !s.flags[key]) {
+      s.flags[key] = true; const ks = Object.keys(DECOR), k = ks[Math.floor(Math.random() * ks.length)];
+      s.money += 1000; s.decor ||= {}; s.decor[k] = (s.decor[k] || 0) + 1; sfx('caught');
+      await say([`${n.name}: Als Andenken schenke ich dir etwas für deine Basis!`, `${s.name} erhält 1000 ◈ und: ${DECOR[k].name}!`]);
+    } else if (won) await say('Heute hast du schon ein Geschenk bekommen. Komm morgen wieder!', N);
+  }
+  async pc() {
+    if (this.ow.id === 'basis') return this.baseMenu();
+    return this.pcBox(true);
+  }
+  async pcBox(intro) {
+    const s = this.state;
+    if (intro) await say(`${s.name} schaltet den PC ein. Kreaturen-Box geöffnet.`);
     for (;;) {
       const i = await choose(['Kreatur nehmen', 'Kreatur ablegen', 'Tschüss'], { title: `BOX (${s.box.length})` });
       if (i === null || i === 2) break;
@@ -857,6 +961,7 @@ class Game {
     if (n.trainer) { if (s.flags[n.id]) return say(n.trainer.after || n.trainer.lose || 'Guter Kampf!', N); return this.trainerBattle(n); }
     if (QUESTS[n.id]) return this.quest(n, QUESTS[n.id]);
     switch (n.id) {
+      case 'gast_owner': return this.visitFight(n);
       case 'mama':
         if (!s.flags.starter) return say(['Dr. Vato wartet im Labor auf dich, Schatz!', 'Das Labor ist das große Haus mit dem grauen Dach im Süden.'], N);
         if (s.flags.champion && !s.flags.linde_pg) await say(['Dr. Vato hat angerufen! Er möchte dich dringend im Labor sprechen.', 'Er klang… nervös. So kenne ich ihn gar nicht.'], N);

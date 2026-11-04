@@ -232,7 +232,7 @@ class Summary {
     const L = (a, b, y, col = COL.ink) => { text(a, 96, y, COL.inkSoft, 7.5); text(b, 230, y, col, 7.5, 'right', null, true); };
     if (this.page === 0) {
       L('Art', S.name, 27); L('Seltenheit', RARITY[S.rarity].name + (m.mut ? ' · Mutant' : ''), 39);
-      L('Trainer', m.ot || 'Du', 51); if (m.ball && ITEMS[m.ball]) { ctx.drawImage(crystalIcon(ITEMS[m.ball].col || '#7fe3ff'), 150, 49, 10, 10); } L('Freundschaft', '♥'.repeat(Math.max(1, Math.min(5, Math.round((m.friendship || 70) / 51)))), 63, '#e84a6a');
+      L('Trainer', m.ot || 'Du', 51); if (m.ball && ITEMS[m.ball]) { ctx.drawImage(crystalIcon(ITEMS[m.ball].col || '#7fe3ff'), 150, 49, 10, 10); } L('Freundschaft', '♥'.repeat(Math.max(1, Math.min(5, Math.round((m.friendship || 70) / 51)))), 63, (m.friendship || 70) >= 200 ? '#e89a10' : '#e84a6a');
       ctx.fillStyle = '#d8d0b8'; ctx.fillRect(96, 76, 134, 1);
       let lore = S.lore; if (m.hatchedFrom) lore += ` Geschlüpft aus dem Ei von ${m.hatchedFrom.join(' & ')}.`;
       wrap(lore, 132, 7).slice(0, 7).forEach((l, i) => text(l, 96, 82 + i * 10, COL.ink, 7, 'left', null));

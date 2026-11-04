@@ -28,6 +28,7 @@ export class Battle {
   eff(side, k) {
     const m = this.mon(side); let v = calcStats(m)[k] * STAGE(this.st[side][k]);
     if (k === 'spe' && m.status === 'starre') v *= 0.5;
+    if (m.reso && k !== 'hp') v *= 1.3;
     return v;
   }
 
@@ -37,6 +38,17 @@ export class Battle {
     if (this.pvp) return this.pvpTurn(action, foeAction || { t: 'move', i: 0 });
     const ev = [];
     let playerMoves = null;
+    this.resoUsed ||= {};
+    // Resonanz-Form: einmal pro Kampf, wenn die Bindung stark genug ist
+    if (action.t === 'move' && action.reso && !this.resoUsed.p && (this.p.friendship || 0) >= RESO_MIN) {
+      this.resoUsed.p = true; this.p.reso = true;
+      ev.push({ t: 'msg', text: `${monName(this.p)} spürt deine Gefühle …!` }, { t: 'reso', side: 'p' }, { t: 'msg', text: `${monName(this.p)} erreicht die Resonanz-Form!` });
+    }
+    // Bosse lassen ihre letzte Kreatur in Resonanz gehen
+    if (this.trainer?.reso && !this.resoUsed.f && this.foeTeam.filter(m => m.hp > 0).length === 1 && this.f.hp > 0) {
+      this.resoUsed.f = true; this.f.reso = true;
+      ev.push({ t: 'msg', text: `${this.trainer.name} und ${monName(this.f)} sind ein Herz und eine Seele …!` }, { t: 'reso', side: 'f' }, { t: 'msg', text: `${this.label('f')} erreicht die Resonanz-Form!` });
+    }
     if (action.t === 'run') {
       if (!this.wild) { ev.push({ t: 'msg', text: 'Aus einem Trainerkampf kannst du nicht fliehen!' }); return ev; }
       this.runTries++;
@@ -48,7 +60,7 @@ export class Battle {
       }
     } else if (action.t === 'switch') {
       ev.push({ t: 'recall', side: 'p', text: `${monName(this.p)}, zurück!` });
-      this.pi = action.i; this.st.p = freshStages(); this.participants.add(this.p.uid);
+      delete this.p.reso; this.pi = action.i; this.st.p = freshStages(); this.participants.add(this.p.uid);
       ev.push({ t: 'send', side: 'p', mon: this.p, text: `Los, ${monName(this.p)}!` });
     } else if (action.t === 'item') {
       const m = this.team[action.target];
@@ -122,7 +134,7 @@ export class Battle {
       const stab = SPECIES[user.sp].types.includes(M.type) ? 1.5 : 1;
       const crit = this.rnd() < 1 / 16;
       let dmg = Math.floor((((2 * user.lvl) / 5 + 2) * M.pow * (A / D)) / 50 + 2);
-      dmg = Math.max(e === 0 ? 0 : 1, Math.floor(dmg * stab * e * (crit ? 1.5 : 1) * (0.85 + this.rnd() * 0.15)));
+      dmg = Math.max(e === 0 ? 0 : 1, Math.floor(dmg * stab * e * (crit ? 1.5 : 1) * (user.reso && stab > 1 ? 1.2 : 1) * (0.85 + this.rnd() * 0.15)));
       target.hp = Math.max(0, target.hp - dmg);
       ev.push({ t: 'hp', side: foe, hp: target.hp, max: maxHp(target), eff: e, crit, type: M.type });
       if (crit && dmg > 0) ev.push({ t: 'msg', text: 'Ein Volltreffer!' });
@@ -198,7 +210,7 @@ export class Battle {
   }
   doSwitch(side, i, ev) {
     const m = this.mon(side);
-    ev.push({ t: 'recall', side, text: `${this.names[side]} ruft ${monName(m)} zurück!` });
+    ev.push({ t: 'recall', side, text: `${this.names[side]} ruft ${monName(m)} zurück!` }); delete m.reso;
     if (side === 'p') this.pi = i; else this.fi = i;
     this.st[side] = freshStages();
     ev.push({ t: 'send', side, mon: this.mon(side), text: `${this.names[side]} schickt ${monName(this.mon(side))} in den Kampf!` });
@@ -304,3 +316,4 @@ export class Battle {
 }
 
 export { TYPES };
+export const RESO_MIN = 200;

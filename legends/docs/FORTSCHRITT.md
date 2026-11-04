@@ -479,3 +479,29 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
 - **Querformat:** Das Spielbild nutzt die volle Höhe, die Tasten liegen halbtransparent links und rechts.
 - **Professor:** heißt jetzt **Dr. Vato** (männlich, alle Texte angepasst). Neues Aussehen: lange blonde Haare zum Zopf gebunden, kantiges Kinn, Augenbrauen. Neue `look`-Felder `pony` und `jaw`, gültig für Oberwelt-Figur und großes Bild.
 - **Lauftest:** erlaubt höchstens zwei einzelne ausgelassene Bilder (Testrechner ohne Grafikkarte). Stillstände zählen weiterhin als Fehler.
+
+## v1.8 – Fangen mit Gefühl
+- **Wurf-Timing:** Nach der Kristallwahl zieht sich ein Ring um die Kreatur zusammen. A drücken oder tippen, wenn er den weißen Zielring trifft.
+  - Wertung: Gut ×1,3, Super ×1,7, PERFEKT ×2,4. Bei Legendären läuft der Ring schneller.
+  - **Kritischer Fang:** Ein perfekter Wurf löst ihn zu 40 % aus, zu 60 % bei bereits gefangener Art; ein Super-Wurf zu 12 %. Es gibt dann nur eine Prüfung, der Kristall wackelt nur einmal.
+- **Neue Kristalle**, im Laden ab Orden freigeschaltet (`SHOP`-Eintrag `[id, preis, orden]`, `ITEMS.cond`):
+  - Tempo- und Freundkristall ab 1 Orden, Nacht ab 2, Flut ab 3, Echo ab 4.
+  - Gefangene Kreaturen merken sich ihren Kristall (`m.ball`). Der Bericht zeigt ihn in Kristallfarbe.
+- **Kreaturen-Spuren:**
+  - Im hohen Gras erscheint zufällig eine raschelnde Stelle, selten auch eine funkelnde.
+  - Kommt man zu nah, huscht sie bis zu zweimal weg und hinterlässt Pfotenabdrücke.
+  - Wer drauftritt, trifft eine seltene Art des Gebiets: 1–3 Level über dem Maximum und mit 3 perfekten Werten. Bei der funkelnden Stelle ist sie zu 50 % schimmernd. Code: `overworld.trail`, `game.trailBattle`.
+
+## v1.9 – Resonanz-Form und Geheimbasis
+- **Resonanz-Form** (`RESO_MIN` = 200 Freundschaft):
+  - Einmal pro Kampf im Kampfmenü über SELECT oder Antippen von „◆ RESONANZ“ scharfschalten. Die nächste Attacke startet die Verwandlung: Lichtsäule, Ringe, neue Seelenfarbe mit hellem Umriss (`resoSprite`) und pulsierende Aura.
+  - Werte: alle ×1,3, Attacken des eigenen Typs zusätzlich ×1,2. Endet beim Auswechseln.
+  - Champion, Top-4, Umbra und Hüter lassen ihre letzte Kreatur in Resonanz gehen (`trainer.reso`).
+  - Freundschaft steigt: +3 pro Level-Up, +1 pro gewonnenem Kampf, +2 alle 150 Schritte für die Spitze. Bei 200 sind die Herzen im Bericht golden.
+- **Geheimbasis** (`js/gb/base.js`):
+  - Auf 7 Routen gibt es einen Platz: hohler Baum mit Ranken, Felsspalt oder Eishöhle (`baseSpots()` sucht ihn automatisch).
+  - Beim ersten Mal schickt Dr. Vato das Basis-Set und 5 Möbel.
+  - Man hat eine Basis; Umziehen nimmt die Möbel mit. Auf der eigenen Basis weht ein Fähnchen.
+  - **Basis-PC:** Möbel aufstellen (Platzier-Modus mit Vorschau, grün/rot), wegräumen, Katalog mit 15 Möbeln und Kreaturen-Box.
+  - Die 15 Möbel umfassen u. a. Plüschfigur und Poster mit einer gefangenen Art, ein Aquarium mit Fischen, einen flackernden Fernseher, Kristallstatue, Pokal, Teppiche, Bett und Sprungmatte. Im Bett heilt das Team, auf der Sprungmatte hüpft man.
+  - **Basis-Code teilen:** Der Code (`LU-…`) wird kopiert und angezeigt. Freunde geben ihn bei „Freund besuchen“ ein, sehen die Basis samt Besitzer und kämpfen gegen dessen Team. Einmal am Tag pro Freund gibt es 1000 ◈ und ein zufälliges Möbelstück. Ganz ohne Server.

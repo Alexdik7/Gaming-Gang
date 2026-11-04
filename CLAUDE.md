@@ -37,7 +37,7 @@ Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legend
 - Ist ein Push fehlgeschlagen, einfach erneut pushen (passiert gelegentlich).
 
 ## Stand (aktualisieren!)
-- **Legends United v1.7** (Vorbild ab jetzt: **Pokémon Smaragd** – Grafik, Bewegung, Menüs):
+- **Legends United v1.9** (Vorbild ab jetzt: **Pokémon Smaragd** – Grafik, Bewegung, Menüs):
   - Inhalt: 150 Kreaturen, 8 Arenen, Liga, Postgame (Hüter), Raids 4v1 mit KI-Helfern und Online-Koop, Nihilux
   - Technik: komponierte Musik, Android-App, flüssige Subpixel-Bewegung, neue Weltgrafik
   - Kampf: Kampf-Intro mit Kristallwürfen, Smaragd-Hintergründe (`battlebg.js`), Smaragd-Statusboxen, Level-Up-Fenster
@@ -45,6 +45,8 @@ Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legend
   - Menüs: Team-Layout wie im Original, Bericht mit 3 Seiten (`moveDesc`), Wetter (`overworld.weather()`), Türen öffnen sich
   - Feld: Mitläufer (`ow.f`), 5 VMs (`vk_*`, Hindernisse `$` Busch / `&` Riss, `fieldObstacle`), Typ-Fähigkeiten (`fieldOptions`/`ability`), versteckte Funde (`genHidden`), Fliegen (`fly_<map>`-Flags)
   - iPhone: Hochformat mit hoher Oberwelt (`VH` in engine.js, Szene mit `tall = true`), Professor heißt **Dr. Vato** (blonder Zopf, `look.pony/jaw`)
+  - Fangen: Wurf-Timing mit kritischem Fang (`aim` in battle2d), 7 Kristallarten (`ITEMS.cond`), Kreaturen-Spuren (`ow.trail`)
+  - Resonanz-Form (`RESO_MIN`, `resoSprite`), Geheimbasis (`base.js`: Plätze, Möbel, Basis-Code `LU-…`, Karten `basis`/`gast` zur Laufzeit)
   - Sammeln: Chronik-Seite beim Erstfang, Belohnungen von Prof. Linde, Massenausbruch pro Tag, Glanzamulett
 - Details in `legends/docs/FORTSCHRITT.md` und `ROADMAP.md`.
 - **Wolkenpfad v2.0:** WebGL/three.js, Dschungel-Tempelpfad, 3D-Läuferin, Neigen-Steuerung, Kreuzungen, 6 Hindernisarten, 4 Kräfte, 5 Läufer, Missionen, Tageszeiten, Offline-PWA. `sw.js`-CACHE bei Änderungen erhöhen.

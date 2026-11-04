@@ -1,6 +1,6 @@
 // Kampfbildschirm im Handheld-Stil
 import { G, W, H, COL, push, pop, input, text, box, cursor, bar, inRect, wait, wrap, fade } from './engine.js';
-import { Battle } from '../battle/battle.js';
+import { Battle, RESO_MIN } from '../battle/battle.js';
 import { SPECIES } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
 import { TYPES } from '../data/types.js';
@@ -30,6 +30,26 @@ export function tinted(img, col) {
   let m = tintCache.get(img); if (!m) tintCache.set(img, (m = {}));
   if (!m[col]) { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const x = c.getContext('2d'); x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, c.width, c.height); m[col] = c; }
   return m[col];
+}
+
+// Resonanz-Form: Farben leuchten in der Seelenfarbe, heller Umriss
+const resoCache = new WeakMap();
+export function resoColor(sp) { const M = SPECIES[sp]; return M?.model?.glow || TYPES[M?.types?.[0]]?.color || '#ffd23a'; }
+export function resoSprite(img, col) {
+  let m = resoCache.get(img); if (!m) resoCache.set(img, (m = {}));
+  if (m[col]) return m[col];
+  const w = img.width, h = img.height, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+  const d = x.getImageData(0, 0, w, h), p = d.data, a = new Uint8Array(w * h);
+  const cr = parseInt(col.slice(1, 3), 16), cg = parseInt(col.slice(3, 5), 16), cb = parseInt(col.slice(5, 7), 16);
+  for (let i = 0; i < w * h; i++) a[i] = p[i * 4 + 3] > 40 ? 1 : 0;
+  for (let i = 0; i < w * h; i++) {
+    const o = i * 4;
+    if (a[i]) { const L = (p[o] * 0.3 + p[o + 1] * 0.59 + p[o + 2] * 0.11) / 255, t = 0.42; p[o] = p[o] * (1 - t) + Math.min(255, cr * (0.55 + L * 0.8)) * t; p[o + 1] = p[o + 1] * (1 - t) + Math.min(255, cg * (0.55 + L * 0.8)) * t; p[o + 2] = p[o + 2] * (1 - t) + Math.min(255, cb * (0.55 + L * 0.8)) * t; }
+    else { const X = i % w, Y = (i / w) | 0; if ((X > 0 && a[i - 1]) || (X < w - 1 && a[i + 1]) || (Y > 0 && a[i - w]) || (Y < h - 1 && a[i + w])) { p[o] = Math.min(255, cr + 90); p[o + 1] = Math.min(255, cg + 90); p[o + 2] = Math.min(255, cb + 90); p[o + 3] = 255; } }
+  }
+  x.putImageData(d, 0, 0);
+  return (m[col] = c);
 }
 
 class BattleScene {
@@ -90,6 +110,7 @@ class BattleScene {
       if (o.trainer.reward) { this.s.money += o.trainer.reward; await this.say(`Du erhältst ${o.trainer.reward} ◈ Preisgeld!`); }
     }
     if (b.result === 'lose' && !o.remote) await this.say(`${this.s.name} hat keine kampffähigen Kreaturen mehr… Alles wird schwarz.`);
+    for (const m of this.s.team) { if (m.reso) delete m.reso; if ((b.result === 'win' || b.result === 'caught') && b.participants?.has?.(m.uid)) m.friendship = Math.min(255, (m.friendship || 70) + 1); }
     // Entwicklungen
     for (const pe of b.pendingEvos) {
       const m = this.s.team.find(x => x.uid === pe.uid);
@@ -194,9 +215,10 @@ class BattleScene {
         case 'faint': await this.faint(e.side); break;
         case 'send': this.note(e.text); if (e.side === 'p') { this.xpD = this.b.p.xp; this.hpD.p = this.b.p.hp; } else this.hpD.f = this.b.f.hp; await this.throwCrystal(e.side); if (e.side === 'f') this.g.markDex(this.b.f.sp); await this.showBox(e.side); await wait(250); break;
         case 'recall': await this.recall(e.side, e.text); break;
+        case 'reso': await this.resoAnim(e.side); break;
         case 'catch': await this.catchAnim(e.shakes, e.ok, e.crit, e.col); break;
         case 'xp': { const m = this.b.team.find(x => x.uid === e.uid); if (m === this.b.p) await this.fillXp(); break; }
-        case 'lvl': { sfx('lvl'); this.sparkle('p', '#ffe27a', true); this.hpD.p = this.b.p.hp; await this.say(e.text); const lm = this.b.team.find(x => x.uid === e.uid); if (lm && e.lvl && !this.o.remote) await this.statWin(lm, e.lvl); break; }
+        case 'lvl': { { const fm = this.b.team.find(x => x.uid === e.uid); if (fm) fm.friendship = Math.min(255, (fm.friendship || 70) + 3); } sfx('lvl'); this.sparkle('p', '#ffe27a', true); this.hpD.p = this.b.p.hp; await this.say(e.text); const lm = this.b.team.find(x => x.uid === e.uid); if (lm && e.lvl && !this.o.remote) await this.statWin(lm, e.lvl); break; }
         case 'learn': await this.learn(this.b.team.find(m => m.uid === e.uid), e.id); break;
       }
     }
@@ -313,6 +335,24 @@ class BattleScene {
         await this.tween(0.3, k => (o.s = 1 + Math.sin(k * Math.PI) * 0.08)); o.s = 1;
     }
   }
+  resoReady() { const b = this.b; return !this.o.remote && !b.pvp && !b.resoUsed?.p && b.p && (b.p.friendship || 0) >= RESO_MIN; }
+  aura(ctx, img, sp, x, y, s, clip) {
+    const col = resoColor(sp), k = 1.12 + Math.sin(G.t * 5) * 0.04;
+    ctx.globalAlpha = 0.35 + Math.sin(G.t * 5) * 0.12; this.drawSprite(ctx, tinted(img, col), x, y + 2, s * k, clip); ctx.globalAlpha = 1;
+    if (Math.random() < 0.3) { const c = { x: x + 32 + (Math.random() - 0.5) * 44 * s, y: y + 60 - Math.random() * 10 }; this.emit(c.x, c.y, 0, -30 - Math.random() * 30, Math.random() < 0.5 ? col : '#ffffff', 0.7, 1.5); }
+  }
+  // Verwandlung in die Resonanz-Form: Lichtsäule, Ringe, Farbwechsel
+  async resoAnim(side) {
+    const t = this.center(side), m = this.b.mon(side), col = resoColor(m.sp), o = side === 'p' ? this.ownOff : this.foeOff;
+    sfx('evo'); G.shake = 0.5;
+    for (let i = 0; i < 40; i++) { const a = i / 40 * 6.28; this.emit(t.x + Math.cos(a) * 46, t.y + Math.sin(a) * 22, -Math.cos(a) * 80, -Math.sin(a) * 40 - 10, i % 3 ? col : '#ffffff', 0.6, 2); }
+    await this.tween(0.6, k => (o.flash = k));
+    m.reso = true; this.flash = 0.45; cry(SPECIES[m.sp].cry);
+    for (let i = 0; i < 3; i++) this.rings.push({ x: t.x, y: t.y + 20, t: -i * 0.1, c: i === 1 ? '#ffffff' : col });
+    for (let i = 0; i < 30; i++) this.emit(t.x + (Math.random() - 0.5) * 40, t.y + 26, 0, -60 - Math.random() * 80, i % 2 ? col : '#fff', 0.9, 2);
+    await this.tween(0.5, k => { o.flash = 1 - k; o.s = 1 + Math.sin(k * Math.PI) * 0.18; }); o.s = 1;
+    sfx('shiny'); await wait(300);
+  }
   // Sonderwirkung der Kristallarten
   ballCond(it) {
     const b = this.b, S = SPECIES[b.f.sp], g = this.g;
@@ -382,6 +422,7 @@ class BattleScene {
       if (this.chars >= n && this.msgRes) { this.msgDone += dt; if (this.msgDone * 1000 > this.msgHold || input.pressed('a') || input.pressed('b') || input.tap) { const r = this.msgRes; this.msgRes = null; r(); } }
       else if ((input.pressed('a') || input.tap) && this.chars < n) this.chars = n;
     } else if (this.mode === 'menu') {
+      if (this.resoReady() && (input.pressed('select') || (input.tap && inRect(input.tap, 4, 138, 104, 18)))) { this.resoArm = !this.resoArm; sfx(this.resoArm ? 'shiny' : 'click'); if (input.tap) return; }
       if (input.pressed('right') || input.pressed('left')) { this.cur ^= 1; sfx('click'); }
       if (input.pressed('down') || input.pressed('up')) { this.cur ^= 2; sfx('click'); }
       const tp = input.tap;
@@ -400,7 +441,7 @@ class BattleScene {
   }
   pickMove() {
     const mv = this.b.p.moves[this.mcur]; if (!mv || mv.pp <= 0) { sfx('weak'); return; }
-    sfx('click'); this.mode = 'busy'; const r = this.actRes; this.actRes = null; r({ t: 'move', i: this.mcur });
+    sfx('click'); this.mode = 'busy'; const r = this.actRes; this.actRes = null; const reso = this.resoArm; this.resoArm = false; r({ t: 'move', i: this.mcur, reso });
   }
 
   draw(ctx) {
@@ -411,11 +452,11 @@ class BattleScene {
     for (const [cx, cy, rx, ry] of [[178 + sF, 70, 46, 10], [60 + sO, 112, 56, 12]]) { const pa = platArt(this.bgKey, this.bg, rx, ry); ctx.drawImage(pa, Math.round(cx - pa.width / 2), Math.round(cy - ry - 2)); }
     // Gegner
     const fo = this.foeOff;
-    if (fo.vis && b.f) this.drawSprite(ctx, monSprite(b.f.sp, 'front', b.f.shiny, b.f.mut), FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72, fo.flash, this.foeDark);
+    if (fo.vis && b.f) { const im = monSprite(b.f.sp, 'front', b.f.shiny, b.f.mut); if (b.f.reso) this.aura(ctx, im, b.f.sp, FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72); this.drawSprite(ctx, b.f.reso ? resoSprite(im, resoColor(b.f.sp)) : im, FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72, fo.flash, this.foeDark); }
     if (this.trainerFoe.vis && this.o.trainer) ctx.drawImage(trainerSprite(this.o.trainer.look), FOE.x + this.trainerFoe.x + sF, FOE.y + 2);
     // eigene Seite
     const oo = this.ownOff;
-    if (oo.vis) this.drawSprite(ctx, monSprite(b.p.sp, 'back', b.p.shiny, b.p.mut), OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114, oo.flash);
+    if (oo.vis) { const im = monSprite(b.p.sp, 'back', b.p.shiny, b.p.mut); if (b.p.reso) this.aura(ctx, im, b.p.sp, OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114); this.drawSprite(ctx, b.p.reso ? resoSprite(im, resoColor(b.p.sp)) : im, OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114, oo.flash); }
     if (this.trainerOwn.vis) ctx.drawImage(trainerSprite(this.s.look, true), OWN.x + this.trainerOwn.x + sO, OWN.y + 4);
     // Lichtringe beim Öffnen des Kristalls
     for (const r of this.rings) if (r.t > 0) { ctx.globalAlpha = Math.max(0, 1 - r.t / 0.45); ctx.strokeStyle = r.c; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(r.x, r.y, 4 + r.t * 90, 2 + r.t * 40, 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
@@ -450,6 +491,7 @@ class BattleScene {
     for (const l of lines.slice(0, 2)) { text(l.slice(0, Math.max(0, n)), 9, y, '#fff', 8.5, 'left', '#50586a'); n -= l.length + 1; y += 15; }
     if (this.mode === 'menu') {
       box(120, 114, 117, 43);
+      if (this.resoReady()) { const on = this.resoArm, pu = 0.5 + Math.sin(G.t * 6) * 0.5, col = resoColor(b.p.sp); ctx.fillStyle = on ? col : 'rgba(255,255,255,.12)'; ctx.globalAlpha = on ? 0.6 + pu * 0.4 : 1; ctx.fillRect(6, 140, 100, 14); ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.strokeRect(6.5, 140.5, 99, 13); text(on ? '◆ RESONANZ BEREIT!' : '◆ RESONANZ (SELECT)', 56, 143, on ? '#202030' : col, 7, 'center', on ? null : '#202030', true); }
       ['KAMPF', 'BEUTEL', 'TEAM', 'FLUCHT'].forEach((s, i) => { const x = 134 + (i % 2) * 52, yy = 121 + Math.floor(i / 2) * 16; if (this.cur === i) cursor(x - 9, yy + 1); text(s, x, yy, COL.ink, 8.5, 'left', COL.shadow, true); });
     }
     if (this.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${this.flash * 2})`; ctx.fillRect(0, 0, W, H); }

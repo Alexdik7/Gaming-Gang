@@ -17,6 +17,7 @@ function lightLayer(sun) {
 import { sfx, setMusic } from '../core/audio.js';
 import { say, choose } from './gbui.js';
 import { monSprite } from './sprites.js';
+import { baseSpots, drawSpot, drawDecor, decorAt, DECOR } from './base.js';
 
 const DX = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 const OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
@@ -74,6 +75,7 @@ export class Overworld {
     if (SOLID.has(c)) return true;
     if (c === '@' && this.holeOpen(x, y)) return true;
     if (this.boulderAt(x, y)) return true;
+    if (this.M.decor) { const d = decorAt(this.M.decor, x, y); if (d && DECOR[d.d].solid) return true; }
     if (c === 'E' && !this.g.state.flags[this.M.gates?.[x + ',' + y]]) return true;
     if (c === 'L') return true;
     const b = this.bldAt(x, y); if (b && !(x === b.x + b.door && y === b.y + b.h - 1)) return true;
@@ -200,6 +202,7 @@ export class Overworld {
       for (let i = 0; i < 5; i++) this.parts.push({ x: p.x * 16 + 3 + Math.random() * 10, y: p.y * 16 + 8 + Math.random() * 4, vx: (Math.random() - 0.5) * 40, vy: -22 - Math.random() * 18, c: col[i % 2], l: 0.4, ml: 0.4, sz: i % 2 ? 2 : 1 });
     }
     this.g.onStep?.();
+    if (this.M.decor) { const d = decorAt(this.M.decor, p.x, p.y); if (d?.d === 'sprungmatte') { this.busy = true; for (let k = 0; k < 2; k++) { sfx('click'); const t0 = G.t; while (G.t - t0 < 0.3) { p.bob = Math.sin((G.t - t0) / 0.3 * Math.PI) * 9; await wait(16); } } p.bob = 0; this.busy = false; } }
     if (this.M.indoor && c === 'm') return this.exitInterior();
     const wp = (this.M.warps || []).find(w => w.x === p.x && w.y === p.y);
     if (wp) return this.warp(wp.to, wp.tx, wp.ty, wp.dir);
@@ -336,6 +339,8 @@ export class Overworld {
       if (this.f?.vis && this.f.x === fx && this.f.y === fy && !this.p.moving) { await this.g.talkFollower(); return; }
       const hd = this.hidden.find(h => h.x === fx && h.y === fy);
       if (hd) { await this.g.pickup(hd); this.hidden = this.hidden.filter(h => h !== hd); return; }
+      { const sp = baseSpots()[this.id]; if (sp && sp.x === fx && sp.y === fy) { await this.g.baseSpot(sp); return; } }
+      if (this.M.decor) { const d = decorAt(this.M.decor, fx, fy); if (d) { await this.g.decorTalk(d); return; } }
       if (this.ch(fx, fy) === '$') { await this.g.fieldObstacle('zerschneider', fx, fy); return; }
       if (this.ch(fx, fy) === '&') { await this.g.fieldObstacle('zertruemmerer', fx, fy); return; }
       const c = this.ch(fx, fy);
@@ -387,7 +392,7 @@ export class Overworld {
     let cx = p.px + 8 - W / 2, cy = p.py + 8 - VH / 2;
     cx = mw <= W ? (mw - W) / 2 : Math.max(0, Math.min(mw - W, cx));
     cy = mh <= VH ? (mh - VH) / 2 : Math.max(0, Math.min(mh - VH, cy));
-    cx = snap(cx); cy = snap(cy);
+    cx = snap(cx); cy = snap(cy); this.view = { cx, cy };
     this.cam = { x: cx, y: cy };
     const f2 = Math.floor(G.t * 2) % 2, f3 = Math.floor(G.t * 2.5) % 3;
     const flags = this.g.worldFlags();
@@ -430,6 +435,9 @@ export class Overworld {
       ctx.fillStyle = `rgba(100,70,35,${Math.min(1, f.t / 1.5) * 0.55})`; const bx = f.x * 16 - cx, by = f.y * 16 - cy;
       if (f.dir === 'up' || f.dir === 'down') { ctx.fillRect(bx + 5, by + 5, 2, 3); ctx.fillRect(bx + 9, by + 9, 2, 3); } else { ctx.fillRect(bx + 4, by + 6, 3, 2); ctx.fillRect(bx + 9, by + 9, 3, 2); }
     }
+    // Geheimbasis: Platz in der Welt und Möbel im Raum
+    { const sp = baseSpots()[this.id]; if (sp) { const b = this.g.state.base; drawSpot(ctx, sp, cx, cy, b && b.map === sp.map); } }
+    if (this.M.decor) drawDecor(ctx, this.M.decor, cx, cy);
     // Kreaturen-Spur: wackelnde Halme, Pfotenabdrücke, Funkeln
     if (this.trail) {
       const T = this.trail, bx = T.x * 16 - cx, by = T.y * 16 - cy, w = Math.sin(G.t * 22) * (Math.sin(G.t * 3) > 0.2 ? 1.6 : 0.3);
@@ -468,6 +476,7 @@ export class Overworld {
     }
     // Baumkronen über den Figuren: wer hinter einem Baum steht, verschwindet halb im Laub
     for (const [k, x, y, v] of crowns) ctx.drawImage(treeCrown(k, v), x * 16 - cx, y * 16 - cy - 8);
+    { const sp = baseSpots()[this.id]; if (sp) { const b = this.g.state.base; drawSpot(ctx, sp, cx, cy, b && b.map === sp.map, true); } }
     // Staub- und Grasteilchen
     for (const q of this.parts) { ctx.globalAlpha = Math.max(0, q.l / q.ml); ctx.fillStyle = q.c; ctx.fillRect(q.x - cx, q.y - cy, q.sz, q.sz); }
     ctx.globalAlpha = 1;

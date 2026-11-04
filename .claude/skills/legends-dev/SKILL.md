@@ -20,6 +20,7 @@ Vanilla-JS-ES-Module, Canvas 2D, 240×160 logische Pixel. Es gibt keinen Build-S
 | `js/gb/battlebg.js` | Kampfhintergründe `bgArt(key, cols)` und Plattformen `platArt` (gecacht, für beide Kampfszenen). |
 | `js/gb/double2d.js` | Doppel- und Raid-Szene (`p0..p3` gegen `f0/f1`, Boss). |
 | `js/battle/battle.js`, `double.js` | Reine Kampflogik (läuft auch auf dem Server). |
+| `js/gb/base.js` | Geheimbasis: `baseSpots()`, `baseMap`, `DECOR` + `decorArt`, `placeDecor` (Overlay-Szene), `encodeBase/decodeBase`. Spiel-Seite in game.js: `baseSpot`, `enterBase`, `baseMenu`, `decorTalk`, `visitFight`. |
 | `js/gb/gbui.js` | `say(text\|[...], {name})`, `choose(opts,{title})`, `ask(q)`, `party(state,{select,filter})`, `inputName`, `dexEntry(sp,n)`, `healAnim(n)`. |
 | `js/data/creatures*.js` | Arten per `C(id, num, name, types, rarity, stats[6], catchRate, xp, 'lvl:move …', evo\|null, lore, model, cry, {legendary})`. Neue Datei in `creatures2.js` importieren und in `sw.js` eintragen. |
 | `js/data/coop.js` | `COOP` (Duo-, Boss- und Raid-Gegner), `HELPERS` (Kian/Lyra/Nyx), `foeSlots`, `helperSlots`. |
@@ -90,3 +91,5 @@ Vanilla-JS-ES-Module, Canvas 2D, 240×160 logische Pixel. Es gibt keinen Build-S
 - Figuren sind 16×24 und werden bei `y - 9` gezeichnet. Namensschilder und „!“ liegen deshalb höher.
 - Sichthöhe: Szenen mit `tall = true` (nur Oberwelt) zeichnen mit `VH`. Alles andere zeichnet weiter mit `H` = 160 und wird von der Engine versetzt (Overlays unten, Vollbild mittig). In der Oberwelt nie `H` verwenden.
 - Spielstand-Tests: `LU2.newState(name, look)` braucht ein vollständiges `look`, sonst Fehler in `shade()`.
+- Kamera der Oberwelt: `ow.cam = {x,y}` (bereits vorhanden), `ow.view = {cx,cy}` für Overlays. Keine neuen Felder mit diesen Namen anlegen.
+- Laufzeit-Karten (`basis`, `gast`) existieren nur im Browser. Beim Laden in `enterWorld` neu erzeugen; `checkmaps` sieht sie nicht.
