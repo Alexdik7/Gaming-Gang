@@ -19,6 +19,7 @@ import { doubleBattle, localDouble } from './double2d.js';
 import { COOP, foeSlots, helperSlots } from '../data/coop.js';
 import { DoubleBattle } from '../battle/double.js';
 import { HUETER } from '../data/creatures9.js';
+import { boxScreen } from './boxui.js';
 import { baseMap, DECOR, placeDecor, encodeBase, decodeBase, decorAt } from './base.js';
 
 const SAVE = 'lu2-save', OPT = 'lu2-opt', DAY = 24 * 60;
@@ -852,24 +853,10 @@ class Game {
     return this.pcBox(true);
   }
   async pcBox(intro) {
-    const s = this.state;
-    if (intro) await say(`${s.name} schaltet den PC ein. Kreaturen-Box geöffnet.`);
-    for (;;) {
-      const i = await choose(['Kreatur nehmen', 'Kreatur ablegen', 'Tschüss'], { title: `BOX (${s.box.length})` });
-      if (i === null || i === 2) break;
-      if (i === 0) {
-        if (!s.box.length) { await say('Die Box ist leer.'); continue; }
-        if (s.team.length >= 6) { await say('Dein Team ist voll.'); continue; }
-        const k = await choose(s.box.map(m => ({ label: monName(m), right: 'Lv' + m.lvl })), { title: 'Welche?', max: 7 });
-        if (k === null) continue;
-        const m = s.box.splice(k, 1)[0]; healMon(m); s.team.push(m); sfx('click');
-      } else {
-        const k = await party(s, { select: true, prompt: 'Welche ablegen?', filter: m => s.team.filter(x => !x.egg && x.hp > 0 && x !== m).length > 0 });
-        if (k === null) continue;
-        s.box.push(s.team.splice(k, 1)[0]); sfx('click');
-      }
-    }
+    if (intro) await say(`${this.state.name} schaltet den PC ein. Kreaturen-Box geöffnet.`);
+    await boxScreen(this);
   }
+
   async fish() {
     const s = this.state;
     if (!s.bag.angel) return say('Das Wasser ist glasklar. Mit einer Angel könnte man hier etwas fangen.');

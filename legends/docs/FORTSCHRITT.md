@@ -516,3 +516,16 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
   - Umrisse auf der Lichtseite nehmen die Farbe der Fläche an (Sel-Out), auf der Schattenseite werden sie kühl abgedunkelt.
   - Randlicht oben links, Umgebungsschatten unten rechts.
 - **Kampf-Textbox:** goldener Innenrahmen, Blauverlauf, Glanzkante. Weiße Menüboxen mit zartem Innenschatten.
+
+## v2.1 – Kreaturen-Box wie im Original (`js/gb/boxui.js`)
+- 8 Boxen mit je 30 Plätzen. Jede Box hat einen Namen (umbenennbar) und einen von 8 Hintergründen.
+- Links stehen ein Infofeld (großes Bild, Name, Level, Typ) und die Team-Spalte mit Lebensbalken.
+- Bedienung:
+  - **SELECT** oder „Verschieben“ greift eine Kreatur, **A** legt sie ab oder tauscht sie mit der Kreatur am Ziel.
+  - Kreaturen lassen sich zwischen Team und Box und zwischen Boxen verschieben; am rechten Rand blättert die Box weiter.
+  - **B** legt eine gegriffene Kreatur zurück an ihren Platz.
+  - Antippen geht auch: einmal wählen, zweimal ausführen.
+- Menü einer Kreatur: Verschieben, Bericht, Ins Team/Ablegen (schnell), Spitzname, Freilassen (doppelte Nachfrage).
+- Box-Menü über die Kopfzeile: Hintergrund, Umbenennen, nach Nummer bzw. Level sortieren.
+- Schutz: Mindestens eine kampffähige Kreatur bleibt immer im Team.
+- Daten: Box-Kreaturen haben `m.slot` (Box × 30 + Platz), `s.boxMeta` enthält Name und Hintergrund. Alte Spielstände bekommen ihre Plätze beim ersten Öffnen (`ensureSlots`).
