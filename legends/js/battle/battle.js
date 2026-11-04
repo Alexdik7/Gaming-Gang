@@ -60,7 +60,7 @@ export class Battle {
         if (action.target === this.pi) ev.push({ t: 'hp', side: 'p', hp: m.hp, max: maxHp(m), heal: true });
       }
     } else if (action.t === 'catch') {
-      const r = this.tryCatch(ev, action.bonus || 1);
+      const r = this.tryCatch(ev, action.bonus || 1, action);
       if (r) return ev;
     } else if (action.t === 'move') {
       playerMoves = action.i;
@@ -272,19 +272,20 @@ export class Battle {
     this.participants = new Set([this.p.uid]);
   }
 
-  tryCatch(ev, bonus) {
+  tryCatch(ev, bonus, act = {}) {
     const f = this.f;
-    ev.push({ t: 'msg', text: 'Du wirfst einen Bindkristall!' });
+    ev.push({ t: 'msg', text: `Du wirfst einen ${act.name || 'Bindkristall'}!` });
     if (!this.canCatch) { ev.push({ t: 'msg', text: 'Diese Kreatur lässt sich nicht binden!' }); return false; }
     const max = maxHp(f);
     const statusB = f.status ? 1.5 : 1;
     const a = ((3 * max - 2 * f.hp) * SPECIES[f.sp].catchRate * bonus * statusB) / (3 * max);
     const p = Math.min(1, a / 255);
     const shakeP = Math.pow(p, 0.25);
-    let shakes = 0;
-    while (shakes < 4 && this.rnd() < shakeP) shakes++;
-    const ok = shakes >= 4;
-    ev.push({ t: 'catch', shakes: Math.min(3, shakes), ok });
+    let shakes = 0, ok;
+    // Kritischer Fang (perfekter Wurf): nur eine einzige Prüfung, der Kristall wackelt nur einmal
+    if (act.crit) { ok = this.rnd() < Math.min(1, shakeP * 1.15); shakes = ok ? 1 : 0; }
+    else { while (shakes < 4 && this.rnd() < shakeP) shakes++; ok = shakes >= 4; }
+    ev.push({ t: 'catch', shakes: Math.min(3, shakes), ok, crit: !!act.crit, col: act.col });
     if (ok) {
       ev.push({ t: 'msg', text: `Super! ${SPECIES[f.sp].name} wurde gebunden!` });
       this.caught = f;

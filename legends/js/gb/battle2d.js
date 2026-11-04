@@ -8,7 +8,8 @@ import { maxHp, monName, xpForLevel, evolve, calcStats } from '../data/mon.js';
 import { bgArt, platArt } from './battlebg.js';
 import { sfx, cry, setMusic } from '../core/audio.js';
 import { monSprite, trainerSprite } from './sprites.js';
-import { crystalIcon } from './pixel.js';
+import { crystalIcon as rawCrystal } from './pixel.js';
+const _ci = {}; const crystalIcon = c => (_ci[c] ||= rawCrystal(c));
 import { choose, party, evoScene, typeTag, say, ask, waitMsg } from './gbui.js';
 import { ITEMS } from './maps.js';
 
@@ -104,6 +105,7 @@ class BattleScene {
     await fade(1, 450);
     pop(this);
     if (b.result !== 'lose' || o.remote) setTimeout(() => fade(0, 450), 30);
+    if (b.caught && this.lastBall) { b.caught.ball = this.lastBall; if (ITEMS[this.lastBall]?.cond === 'freund') b.caught.friendship = 200; }
     this.res({ result: b.result, caught: b.caught });
   }
   // Text anzeigen, ohne auf eine Taste zu warten (läuft neben Animationen)
@@ -143,7 +145,7 @@ class BattleScene {
     return new Promise(res => (this.actRes = res));
   }
   async onMenu(i) {
-    const b = this.b, done = a => { this.mode = 'busy'; const r = this.actRes; this.actRes = null; r(a); };
+    const b = this.b, done = a => { this.turnN = (this.turnN || 0) + 1; this.mode = 'busy'; const r = this.actRes; this.actRes = null; r(a); };
     if (i === 0) { if (b.p.moves.every(m => m.pp <= 0)) b.p.moves[0].pp = 1; this.mode = 'moves'; return; }
     if (i === 1 && this.o.remote) { this.mode = 'busy'; await say('Im Freundschaftskampf sind keine Items erlaubt.'); this.mode = 'menu'; return; }
     if (i === 3 && this.o.remote) { this.mode = 'busy'; if (await ask('Möchtest du aufgeben?')) return done({ t: 'forfeit' }); this.mode = 'menu'; return; }
@@ -155,7 +157,13 @@ class BattleScene {
       const c = await choose(opts, { title: 'BEUTEL' });
       if (c === null) { this.mode = 'menu'; return; }
       const it = ITEMS[opts[c].k];
-      if (it.ball) { bag[opts[c].k]--; return done({ t: 'catch', bonus: it.ball * (SPECIES[b.f.sp].legendary ? 1.2 : 1), item: opts[c].k }); }
+      if (it.ball) {
+        bag[opts[c].k]--; this.lastBall = opts[c].k;
+        const q = await this.aim(it.col || '#7fe3ff');
+        const caughtBefore = !!this.s.dex.caught[b.f.sp];
+        const crit = q.grade === 3 ? Math.random() < (caughtBefore ? 0.6 : 0.4) : q.grade === 2 && Math.random() < 0.12;
+        return done({ t: 'catch', bonus: it.ball * this.ballCond(it) * q.mult * (SPECIES[b.f.sp].legendary ? 1.2 : 1), item: opts[c].k, name: it.name, col: it.col, crit });
+      }
       const ti = await party(this.s, { select: true, prompt: it.revive ? 'Wen beleben?' : it.cure ? 'Wen kurieren?' : 'Wen heilen?', filter: itemFilter(it) });
       if (ti === null) { this.mode = 'menu'; return; }
       bag[opts[c].k]--; return done({ t: 'item', target: ti, amount: it.heal, cure: it.cure, revive: it.revive });
@@ -186,7 +194,7 @@ class BattleScene {
         case 'faint': await this.faint(e.side); break;
         case 'send': this.note(e.text); if (e.side === 'p') { this.xpD = this.b.p.xp; this.hpD.p = this.b.p.hp; } else this.hpD.f = this.b.f.hp; await this.throwCrystal(e.side); if (e.side === 'f') this.g.markDex(this.b.f.sp); await this.showBox(e.side); await wait(250); break;
         case 'recall': await this.recall(e.side, e.text); break;
-        case 'catch': await this.catchAnim(e.shakes, e.ok); break;
+        case 'catch': await this.catchAnim(e.shakes, e.ok, e.crit, e.col); break;
         case 'xp': { const m = this.b.team.find(x => x.uid === e.uid); if (m === this.b.p) await this.fillXp(); break; }
         case 'lvl': { sfx('lvl'); this.sparkle('p', '#ffe27a', true); this.hpD.p = this.b.p.hp; await this.say(e.text); const lm = this.b.team.find(x => x.uid === e.uid); if (lm && e.lvl && !this.o.remote) await this.statWin(lm, e.lvl); break; }
         case 'learn': await this.learn(this.b.team.find(m => m.uid === e.uid), e.id); break;
@@ -305,9 +313,40 @@ class BattleScene {
         await this.tween(0.3, k => (o.s = 1 + Math.sin(k * Math.PI) * 0.08)); o.s = 1;
     }
   }
-  async catchAnim(shakes, ok) {
+  // Sonderwirkung der Kristallarten
+  ballCond(it) {
+    const b = this.b, S = SPECIES[b.f.sp], g = this.g;
+    switch (it.cond) {
+      case 'nacht': return g.isNight() || g.ow?.M?.cave ? 3.5 : 1;
+      case 'flut': return S.types.includes('wasser') || this.bgKey === 'wasser' || g.ow?.weather?.() === 'rain' ? 3.5 : 1;
+      case 'tempo': return (this.turnN || 0) === 0 ? 4 : 0.6;
+      case 'echo': { const n = [...this.s.team, ...this.s.box].filter(m => m.sp === b.f.sp).length; return Math.min(4, 1 + n * 0.75); }
+      default: return 1;
+    }
+  }
+  // Wurf-Timing: ein Ring zieht sich um die Kreatur zusammen – im richtigen Moment A drücken oder tippen
+  aim(col) {
+    const legend = SPECIES[this.b.f.sp].legendary;
+    this.mode = 'aim'; this.msg = 'Im richtigen Moment A drücken oder tippen!'; this.chars = 999;
+    this.aimS = { t: 0, col, spd: legend ? 1.5 : 1.05, res: null, target: 12 };
+    return new Promise(res => (this.aimS.res = res));
+  }
+  aimR() { const a = this.aimS, k = (a.t * a.spd) % 1; return 44 - k * 38; }
+  aimHit() {
+    const a = this.aimS, d = Math.abs(this.aimR() - a.target);
+    const grade = d < 2.2 ? 3 : d < 5 ? 2 : d < 9 ? 1 : 0;
+    const G2 = [['Daneben…', 1, '#a0a0a0'], ['Gut!', 1.3, '#7ad05a'], ['Super!', 1.7, '#3aa8ff'], ['PERFEKT!', 2.4, '#ffd23a']][grade];
+    this.aimS = null; this.mode = 'busy';
     const t = this.center('f');
-    this.crystal = { x: 40, y: 110, r: 0, img: crystalIcon(this.o.crystalCol || '#7fe3ff') };
+    this.popup = { text: G2[0], c: G2[2], x: t.x, y: t.y - 16, t: 0 };
+    sfx(grade === 3 ? 'shiny' : grade ? 'buff' : 'weak');
+    if (grade === 3) { this.flash = 0.25; for (let i = 0; i < 22; i++) { const an = i / 22 * 6.28; this.emit(t.x, t.y + 6, Math.cos(an) * 70, Math.sin(an) * 50, i % 2 ? '#ffd23a' : '#fff', 0.5, 2); } }
+    return { grade, mult: G2[1] };
+  }
+  async catchAnim(shakes, ok, crit, col) {
+    const t = this.center('f');
+    if (crit) { this.flash = 0.3; sfx('shiny'); await this.say('Kritischer Fang!', 500); }
+    this.crystal = { x: 40, y: 110, r: 0, img: crystalIcon(col || this.o.crystalCol || '#7fe3ff') };
     sfx('throw');
     await this.tween(0.55, k => { this.crystal.x = 40 + (t.x - 40) * k; this.crystal.y = 110 + (t.y - 10 - 110) * k - Math.sin(k * Math.PI) * 50; this.crystal.r = k * 10; });
     for (let i = 0; i < 24; i++) this.emit(t.x, t.y - 10, (Math.random() - .5) * 120, (Math.random() - .5) * 120, '#bff8ff', 0.4);
@@ -334,6 +373,8 @@ class BattleScene {
     for (const b of this.bolts) b.l -= dt; this.bolts = this.bolts.filter(b => b.l > 0);
     for (const r of this.rings) r.t += dt; this.rings = this.rings.filter(r => r.t < 0.45);
     if (this.flash > 0) this.flash -= dt;
+    if (this.popup) { this.popup.t += dt; if (this.popup.t > 1.1) this.popup = null; }
+    if (this.mode === 'aim' && this.aimS) { this.aimS.t += dt; if (this.aimS.t > 0.15 && (input.pressed('a') || input.tap)) { const r = this.aimS.res; r(this.aimHit()); } else if (this.aimS.t * this.aimS.spd > 3) { const r = this.aimS.res; this.aimS.t = 0; this.aimS.target = 99; r(this.aimHit()); } }
     if (this.mode === 'busy') this.chars += dt * 70;
     if (this.mode === 'msg') {
       this.chars += dt * 70;
@@ -388,6 +429,15 @@ class BattleScene {
     }
     for (const p of this.parts) { ctx.globalAlpha = Math.min(1, p.l / p.ml * 1.5); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.sz / 2, p.y - p.sz / 2, p.sz, p.sz); }
     ctx.globalAlpha = 1;
+    // Wurf-Timing
+    if (this.aimS) {
+      const t = this.center('f'), a = this.aimS, r = this.aimR(), d = Math.abs(r - a.target);
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(t.x, t.y + 6, a.target, 0, 7); ctx.stroke();
+      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,210,58,.5)'; ctx.beginPath(); ctx.arc(t.x, t.y + 6, a.target + 2.2, 0, 7); ctx.arc(t.x, t.y + 6, Math.max(1, a.target - 2.2), 0, 7); ctx.stroke();
+      ctx.lineWidth = 3; ctx.strokeStyle = d < 2.2 ? '#ffd23a' : d < 5 ? '#3aa8ff' : d < 9 ? '#7ad05a' : a.col; ctx.beginPath(); ctx.arc(t.x, t.y + 6, r, 0, 7); ctx.stroke();
+      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.arc(t.x, t.y + 6, r + 2, 0, 7); ctx.stroke();
+    }
+    if (this.popup) { const p = this.popup, k = Math.min(1, p.t * 6); ctx.globalAlpha = Math.min(1, (1.1 - p.t) * 4); text(p.text, p.x, p.y - p.t * 10, p.c, 6 + k * 4, 'center', '#202030', true); ctx.globalAlpha = 1; }
     // Infoboxen
     if (this.showFoeBox && b.f) this.infoBox(ctx, b.f, 6 - 130 * (1 - this.foeBoxK), 8, false);
     if (this.showOwnBox) this.infoBox(ctx, b.p, 128 + 130 * (1 - this.ownBoxK), 72, true);

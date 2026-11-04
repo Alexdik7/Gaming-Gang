@@ -1246,10 +1246,15 @@ export const ENC = {
   wasser: { rate: 1, list: [['flossling', 60, 5, 12], ['glibbo', 30, 5, 10], ['kieselkrebs', 8, 8, 12], ['tiefenkiemer', 2, 18, 22], ['goldbarbe', 3, 10, 20]] },
 };
 
-export const SHOP = [['kristall', 200], ['trank', 300], ['heilbeere', 350], ['klarbeere', 300], ['sternkristall', 700], ['supertrank', 700], ['beleber', 1500], ['hypertrank', 1200]];
+export const SHOP = [['kristall', 200], ['trank', 300], ['heilbeere', 350], ['klarbeere', 300], ['sternkristall', 700], ['tempokristall', 900, 1], ['freundkristall', 600, 1], ['nachtkristall', 1000, 2], ['flutkristall', 1000, 3], ['echokristall', 1200, 4], ['supertrank', 700], ['beleber', 1500], ['hypertrank', 1200]];
 export const ITEMS = {
-  kristall: { name: 'Bindkristall', desc: 'Bindet geschwächte wilde Kreaturen.', ball: 1 },
-  sternkristall: { name: 'Sternkristall', desc: 'Bindet mit doppelter Chance.', ball: 2 },
+  kristall: { name: 'Bindkristall', desc: 'Bindet geschwächte wilde Kreaturen.', ball: 1, col: '#7fe3ff' },
+  sternkristall: { name: 'Sternkristall', desc: 'Bindet mit doppelter Chance.', ball: 2, col: '#ffd84a' },
+  nachtkristall: { name: 'Nachtkristall', desc: 'Nachts und in Höhlen 3,5-fache Chance.', ball: 1, col: '#5a4ad8', cond: 'nacht' },
+  flutkristall: { name: 'Flutkristall', desc: 'Bei Wasser-Kreaturen, auf dem Wasser oder bei Regen 3,5-fache Chance.', ball: 1, col: '#3aa8ff', cond: 'flut' },
+  tempokristall: { name: 'Tempokristall', desc: 'In der ersten Runde 4-fache Chance. Danach schwach.', ball: 1, col: '#ff8a3a', cond: 'tempo' },
+  echokristall: { name: 'Echokristall', desc: 'Je mehr Kreaturen dieser Art du besitzt, desto stärker (bis 4-fach).', ball: 1, col: '#c86aff', cond: 'echo' },
+  freundkristall: { name: 'Freundkristall', desc: 'Die gebundene Kreatur vertraut dir sofort (hohe Freundschaft).', ball: 1, col: '#ff7ab0', cond: 'freund' },
   trank: { name: 'Heiltrank', desc: 'Heilt 30 KP.', heal: 30 },
   supertrank: { name: 'Supertrank', desc: 'Heilt 70 KP.', heal: 70 },
   heilbeere: { name: 'Heilbeere', desc: 'Eine saftige Beere. Heilt 40 KP.', heal: 40 },

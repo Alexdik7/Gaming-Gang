@@ -35,6 +35,7 @@ export class Overworld {
     s.bpos ||= {};
     this.boulders = (s.bpos[id] || (M.boulders || []).map(b => [...b])).filter(Boolean).map(([bx, by]) => ({ x: bx, y: by }));
     this.blds = M.buildings || [];
+    this.trail = null;
     this.cleared = new Map(); this.revealed = false; this.flashLit = 0; this.springUsed = false; this.fTalked = false;
     this.f = { x, y, px: x * 16, py: y * 16, fx: x, fy: y, tx: x, ty: y, dir: this.p.dir, vis: false };
     this.hidden = this.genHidden(id, M).filter(h => !s.flags[h.id]);
@@ -94,6 +95,7 @@ export class Overworld {
     this.updateNpcs(dt);
     for (const f of this.prints) f.t -= dt; if (this.prints.length && this.prints[0].t <= 0) this.prints = this.prints.filter(f => f.t > 0);
     if (this.rustle) { this.rustle.t -= dt; if (this.rustle.t <= 0) this.rustle = null; }
+    if (this.trail) { const T = this.trail; T.pt -= dt; if (T.pt <= 0) { T.pt = 0.5 + Math.random() * 0.6; const col = T.kind === 'glitzer' ? ['#fff6a8', '#ffffff'] : ['#3c9a3c', '#8ad86a']; for (let i = 0; i < 3; i++) this.parts.push({ x: T.x * 16 + 3 + Math.random() * 10, y: T.y * 16 + 6, vx: (Math.random() - 0.5) * 30, vy: -18 - Math.random() * 14, c: col[i % 2], l: 0.45, ml: 0.45, sz: 1 }); if (T.kind !== 'glitzer' && Math.random() < 0.4) sfx('grass'); } }
     for (const q of this.parts) { q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 30 * dt; q.l -= dt; } this.parts = this.parts.filter(q => q.l > 0);
     if (p.moving) { this.stepMove(dt); return; }
     if (!this.dirty) p.frame = 0;
@@ -214,9 +216,29 @@ export class Overworld {
     if (await this.checkTrainers()) return;
     if (p.surf && this.M.surfEnc) { if (Math.random() < ENC[this.M.surfEnc].rate) await this.g.wildBattle(this.M.surfEnc, 'wasser'); return; }
     const encId = this.M.enc;
+    // Kreaturen-Spuren: raschelnde oder funkelnde Stelle im hohen Gras
+    const T = this.trail;
+    if (T && T.x === p.x && T.y === p.y) { this.trail = null; await this.g.trailBattle(T, this.M.cave ? 'hoehle' : this.id === 'altwald' ? 'wald' : this.M.bg || 'gras'); return; }
+    if (T) {
+      if (--T.life <= 0) this.trail = null;
+      else if (T.hops < 2 && Math.abs(T.x - p.x) + Math.abs(T.y - p.y) <= 1 && Math.random() < 0.3) {
+        const opts = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => [T.x + a, T.y + b]).filter(([a, b]) => this.isGrass(a, b) && Math.abs(a - p.x) + Math.abs(b - p.y) > 1 && !this.npcAt(a, b));
+        if (opts.length) { const [a, b] = opts[Math.floor(Math.random() * opts.length)]; T.px = T.x; T.py = T.y; T.x = a; T.y = b; T.hops++; T.pt = 0; sfx('grass'); this.notify('Es ist weggehuscht! Schleich dich näher heran …'); }
+      }
+    } else if (encId && this.M.outdoor && !p.surf && Math.random() < 0.045) this.spawnTrail();
     if (encId && !(s.repel > 0) && ((c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%') || (this.M.cave && c === 'c'))) {
       if (Math.random() < ENC[encId].rate) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.id === 'altwald' ? 'wald' : this.M.bg || 'gras');
     }
+  }
+
+  isGrass(x, y) { const c = this.ch(x, y); return x >= 0 && y >= 0 && x < this.w && y < this.h && (c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%'); }
+  spawnTrail() {
+    const p = this.p, C = [];
+    for (let y = p.y - 6; y <= p.y + 6; y++) for (let x = p.x - 7; x <= p.x + 7; x++) { const d = Math.abs(x - p.x) + Math.abs(y - p.y); if (d >= 3 && d <= 8 && this.isGrass(x, y) && !this.npcAt(x, y)) C.push([x, y]); }
+    if (!C.length) return;
+    const [x, y] = C[Math.floor(Math.random() * C.length)];
+    this.trail = { x, y, kind: Math.random() < 0.13 ? 'glitzer' : 'rare', life: 32, hops: 0, pt: 0 };
+    this.notify(this.trail.kind === 'glitzer' ? 'Irgendwo im Gras funkelt etwas …' : 'Irgendwo im Gras raschelt es …');
   }
 
   async edge(e, d, nx, ny) {
@@ -407,6 +429,15 @@ export class Overworld {
     for (const f of this.prints) {
       ctx.fillStyle = `rgba(100,70,35,${Math.min(1, f.t / 1.5) * 0.55})`; const bx = f.x * 16 - cx, by = f.y * 16 - cy;
       if (f.dir === 'up' || f.dir === 'down') { ctx.fillRect(bx + 5, by + 5, 2, 3); ctx.fillRect(bx + 9, by + 9, 2, 3); } else { ctx.fillRect(bx + 4, by + 6, 3, 2); ctx.fillRect(bx + 9, by + 9, 3, 2); }
+    }
+    // Kreaturen-Spur: wackelnde Halme, Pfotenabdrücke, Funkeln
+    if (this.trail) {
+      const T = this.trail, bx = T.x * 16 - cx, by = T.y * 16 - cy, w = Math.sin(G.t * 22) * (Math.sin(G.t * 3) > 0.2 ? 1.6 : 0.3);
+      if (T.px != null) { ctx.fillStyle = 'rgba(70,45,25,.45)'; const ax = T.px * 16 - cx, ay = T.py * 16 - cy; [[4, 4], [9, 9]].forEach(([q, r]) => { ctx.fillRect(ax + q, ay + r, 3, 2); ctx.fillRect(ax + q - 1, ay + r - 2, 1, 1); ctx.fillRect(ax + q + 1, ay + r - 2, 1, 1); ctx.fillRect(ax + q + 3, ay + r - 2, 1, 1); }); }
+      ctx.fillStyle = T.kind === 'glitzer' ? '#a8e070' : '#3a8a34';
+      for (let i = 0; i < 4; i++) { const hx = bx + 3 + i * 3.4 + w * (i % 2 ? 1 : -1); ctx.fillRect(Math.round(hx), by + 2 - (i % 2), 2, 9); }
+      ctx.fillStyle = '#78c850'; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(bx + 3 + i * 3.4 + w * (i % 2 ? 1 : -1)), by + 2 - (i % 2), 1, 3);
+      if (T.kind === 'glitzer') { const on = Math.sin(G.t * 7) > 0, sx = bx + 8 + Math.round(Math.sin(G.t * 1.7) * 3), sy = by + 1; ctx.fillStyle = on ? '#ffffff' : '#ffe36b'; ctx.fillRect(sx - 1, sy - (on ? 4 : 2), 2, on ? 8 : 4); ctx.fillRect(sx - (on ? 4 : 2), sy - 1, on ? 8 : 4, 2); }
     }
     // Figuren nach y sortiert
     const actors = [...this.npcs.map(n => ({ mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),

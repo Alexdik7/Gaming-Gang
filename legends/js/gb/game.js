@@ -641,6 +641,21 @@ class Game {
       const next = R.find(([kk]) => kk > k); if (next) await say(`Dr. Vato: Melde dich wieder, wenn du ${next[0]} Arten gebunden hast!`);
     }
   }
+  // Kreaturen-Spur: seltene, kräftige Kreatur – bei Funkeln oft schimmernd
+  async trailBattle(T, bg) {
+    const encId = this.ow.M.enc; if (!encId) return;
+    const night = this.isNight(), list = ENC[encId].list.filter(e => (!e[4] || (e[4] === 'night') === night) && !SPECIES[e[0]]?.legendary);
+    const rare = [...list].sort((a, b) => a[1] - b[1]).slice(0, Math.max(1, Math.ceil(list.length / 3)));
+    const e = rare[Math.floor(Math.random() * rare.length)];
+    const m = createMon(e[0], Math.min(100, e[3] + 1 + Math.floor(Math.random() * 3)));
+    for (const k of Object.keys(m.iv).sort(() => Math.random() - 0.5).slice(0, 3)) m.iv[k] = 31;
+    m.hp = maxHp(m);
+    if (T.kind === 'glitzer' && Math.random() < 0.5) m.shiny = true; else this.shinyRoll(m);
+    this.ow.busy = true; this.ow.emote = { n: this.ow.p, t: 0.8 }; sfx('encounter');
+    await say(T.kind === 'glitzer' ? 'Da funkelt etwas im Gras …!' : 'Das Gras raschelt heftig …!');
+    this.ow.busy = false;
+    return this.wildBattle(encId, bg, m);
+  }
   async wildBattle(encId, bg, mon) {
     const s = this.state; if (!s.team.some(m => !m.egg && m.hp > 0)) return;
     this.ow.busy = true;
@@ -722,9 +737,10 @@ class Game {
     const s = this.state;
     await say('Willkommen! Was darf es sein?', { name: 'Verkäufer' });
     for (;;) {
-      const i = await choose([...SHOP.map(([k, p]) => ({ label: ITEMS[k].name, right: p + '◈', disabled: s.money < p })), 'Fertig'], { title: `Geld: ${s.money} ◈`, above: false, x: 60, w: 176 });
-      if (i === null || i === SHOP.length) break;
-      const [k, p] = SHOP[i];
+      const SH = SHOP.filter(e => !(e[2] > s.badges.filter(Boolean).length));
+      const i = await choose([...SH.map(([k, p]) => ({ label: ITEMS[k].name, right: p + '◈', disabled: s.money < p, desc: ITEMS[k].desc })), 'Fertig'], { title: `Geld: ${s.money} ◈`, above: false, x: 60, w: 176 });
+      if (i === null || i === SH.length) break;
+      const [k, p] = SH[i];
       const n = await choose(['1 Stück', '5 Stück', '10 Stück'].map((l, j) => ({ label: l, right: [1, 5, 10][j] * p + '◈', disabled: s.money < [1, 5, 10][j] * p })), { title: ITEMS[k].name });
       if (n === null) continue;
       const q = [1, 5, 10][n]; s.money -= q * p; s.bag[k] = (s.bag[k] || 0) + q; sfx('caught');
