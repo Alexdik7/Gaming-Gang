@@ -517,28 +517,68 @@ function frameRows(dir, step) {
   if (dir === 'up') return [...HEAD_UP, ...BODY_UP.slice(0, 4), ...pants, ...legs];
   return SIDE[step];
 }
+// Figuren im Format der GBA-Ära: 16×24, großer Kopf, dunkler Umriss, 3 Laufphasen je Richtung
+function figure(look, dir, step) {
+  const [c, x] = cv(16, 24);
+  const P = (a, b, w, h, col) => { x.fillStyle = col; x.fillRect(a, b, w, h); };
+  const hair = look.hair, skin = look.skin, out = look.outfit, pants = look.pants || '#384868', cap = look.cap, acc = look.accent || '#f2d16b';
+  const hairD = shade(hair, -0.3), skinD = shade(skin, -0.18), outD = shade(out, -0.28), pantsD = shade(pants, -0.25), shoe = '#3a2a24';
+  const bob = step ? 1 : 0, side = dir === 'left' || dir === 'right';
+  const head = (rows) => rows.forEach(([y, a, b]) => P(a, y + bob, b - a + 1, 1, skin));
+  if (!side) {
+    // Beine
+    const ly = 18 + bob, lL = step === 1 ? 3 : 4, lR = step === 2 ? 3 : 4;
+    P(5, ly, 2, lL, pants); P(9, ly, 2, lR, pants); P(6, ly, 1, lL, pantsD); P(10, ly, 1, lR, pantsD);
+    P(4, ly + lL, 3, 1, shoe); P(9, ly + lR, 3, 1, shoe);
+    // Körper
+    P(4, 12 + bob, 8, 6, out); P(10, 12 + bob, 2, 6, outD); P(4, 17 + bob, 8, 1, outD);
+    if (dir === 'down') { P(6, 12 + bob, 4, 1, acc); P(7, 13 + bob, 2, 3, acc); }
+    else { P(5, 13 + bob, 6, 4, shade(acc, -0.1)); P(5, 13 + bob, 6, 1, shade(acc, -0.35)); }
+    // Arme (schwingen beim Gehen)
+    const aL = step === 1 ? 1 : step === 2 ? -1 : 0;
+    P(3, 12 + bob, 1, 4 + aL, out); P(12, 12 + bob, 1, 4 - aL, outD);
+    P(3, 16 + bob + aL, 1, 1, skin); P(12, 16 + bob - aL, 1, 1, skinD);
+    // Kopf
+    head([[1, 4, 11], [2, 3, 12], [3, 2, 13], [4, 2, 13], [5, 2, 13], [6, 2, 13], [7, 2, 13], [8, 2, 13], [9, 2, 13], [10, 3, 12], [11, 4, 11]]);
+    P(12, 4 + bob, 2, 6, skinD);
+    if (dir === 'down') {
+      P(3, 1 + bob, 10, 4, hair); P(2, 3 + bob, 1, 6, hair); P(13, 3 + bob, 1, 6, hairD); P(4, 1 + bob, 8, 1, shade(hair, 0.2));
+      P(4, 5 + bob, 1, 1, hair); P(7, 5 + bob, 2, 1, hair); P(11, 5 + bob, 1, 1, hair); P(12, 4 + bob, 1, 3, hairD);
+      P(5, 7 + bob, 1, 2, '#202030'); P(10, 7 + bob, 1, 2, '#202030'); P(5, 7 + bob, 1, 1, '#4a4a68'); P(10, 7 + bob, 1, 1, '#4a4a68');
+      P(7, 10 + bob, 2, 1, skinD); P(4, 9 + bob, 1, 1, shade(skin, 0.1)); 
+    } else {
+      P(2, 1 + bob, 12, 10, hair); P(4, 1 + bob, 8, 1, shade(hair, 0.2)); P(11, 2 + bob, 2, 8, hairD); P(5, 11 + bob, 6, 1, skinD);
+    }
+    if (cap) { P(3, 0 + bob, 10, 4, cap); P(4, 0 + bob, 8, 1, shade(cap, 0.25)); P(11, 1 + bob, 2, 3, shade(cap, -0.3)); if (dir === 'down') { P(2, 4 + bob, 12, 1, shade(cap, -0.35)); P(7, 1 + bob, 2, 2, acc); } else P(5, 4 + bob, 6, 1, shade(cap, -0.35)); }
+  } else {
+    // Seitenansicht nach links (rechts wird gespiegelt)
+    const ly = 18 + bob;
+    if (step === 0) { P(6, ly, 3, 4, pants); P(8, ly, 1, 4, pantsD); P(5, ly + 4, 4, 1, shoe); }
+    else { const f = step === 1; P(4, ly, 2, 3, pants); P(9, ly, 2, 3, pantsD); P(3, ly + 3, 3, 1, shoe); P(9, ly + 3, 3, 1, shoe); P(6, ly, 3, 2, pants); if (!f) { P(4, ly, 2, 3, pantsD); P(9, ly, 2, 3, pants); } }
+    P(5, 12 + bob, 6, 6, out); P(9, 12 + bob, 2, 6, outD); P(5, 17 + bob, 6, 1, outD); P(10, 13 + bob, 2, 4, shade(acc, -0.1));
+    const sw = step === 1 ? -2 : step === 2 ? 2 : 0;
+    P(7 + sw / 2, 12 + bob, 2, 4, outD); P(7 + sw, 16 + bob, 2, 1, skin);
+    head([[1, 4, 11], [2, 3, 12], [3, 2, 12], [4, 2, 12], [5, 2, 12], [6, 2, 12], [7, 2, 12], [8, 2, 12], [9, 3, 12], [10, 3, 11], [11, 5, 10]]);
+    P(1, 7 + bob, 1, 2, skin);
+    P(3, 1 + bob, 10, 4, hair); P(7, 4 + bob, 6, 6, hair); P(10, 3 + bob, 3, 7, hairD); P(4, 1 + bob, 7, 1, shade(hair, 0.2)); P(3, 5 + bob, 1, 1, hair);
+    P(4, 7 + bob, 1, 2, '#202030'); P(4, 7 + bob, 1, 1, '#4a4a68'); P(3, 10 + bob, 2, 1, skinD); P(7, 7 + bob, 1, 2, skinD);
+    if (cap) { P(3, 0 + bob, 10, 4, cap); P(4, 0 + bob, 7, 1, shade(cap, 0.25)); P(10, 1 + bob, 2, 3, shade(cap, -0.3)); P(0, 4 + bob, 7, 1, shade(cap, -0.35)); }
+  }
+  // dunkler Umriss um alles Gemalte
+  const id = x.getImageData(0, 0, 16, 24), d = id.data, o = new Uint8ClampedArray(d);
+  const at = (i, j) => i >= 0 && j >= 0 && i < 16 && j < 24 && d[(j * 16 + i) * 4 + 3] > 0;
+  for (let j = 0; j < 24; j++) for (let i = 0; i < 16; i++) if (!at(i, j) && (at(i - 1, j) || at(i + 1, j) || at(i, j - 1) || at(i, j + 1))) { const k = (j * 16 + i) * 4; o[k] = 0x28; o[k + 1] = 0x20; o[k + 2] = 0x2c; o[k + 3] = 255; }
+  x.putImageData(new ImageData(o, 16, 24), 0, 0);
+  if (dir === 'right') { const [m, mx] = cv(16, 24); mx.translate(16, 0); mx.scale(-1, 1); mx.drawImage(c, 0, 0); return m; }
+  return c;
+}
 const sprCache = new Map();
 export function charSheet(look) {
   const k = JSON.stringify(look);
   if (sprCache.has(k)) return sprCache.get(k);
-  const pal = {
-    o: '#28202c', h: look.hair, H: shade(look.hair, -0.3), c: look.cap || look.hair, C: shade(look.cap || look.hair, -0.35),
-    s: look.skin, S: shade(look.skin, -0.2), e: '#202030', b: look.outfit, B: shade(look.outfit, -0.25), p: look.pants || '#384868', k: '#3a2a22',
-    a: look.accent || '#f2d16b', w: '#ffffff',
-  };
-  // Blatt: 3 Frames × 4 Richtungen (down, up, left, right), je 16×18
-  const [c, x] = cv(48, 72);
-  const dirs = ['down', 'up', 'left', 'right'], steps = ['stand', 'w1', 'w2'];
-  dirs.forEach((d, di) => steps.forEach((st, si) => {
-    const rows = frameRows(d === 'right' ? 'left' : d, st);
-    const bob = st === 'stand' ? 0 : 1;
-    rows.forEach((row, y) => {
-      for (let i = 0; i < 16; i++) {
-        const ch = row[d === 'right' ? 15 - i : i]; if (!ch || ch === '.') continue;
-        x.fillStyle = pal[ch] || '#ff00ff'; x.fillRect(si * 16 + i, di * 18 + y + bob, 1, 1);
-      }
-    });
-  }));
+  // Blatt: 3 Frames × 4 Richtungen (down, up, left, right), je 16×24
+  const [c, x] = cv(48, 96);
+  ['down', 'up', 'left', 'right'].forEach((d, di) => [0, 1, 2].forEach(si => x.drawImage(figure(look, d, si), si * 16, di * 24)));
   sprCache.set(k, c);
   return c;
 }
@@ -546,7 +586,7 @@ export const DIRS = ['down', 'up', 'left', 'right'];
 export function drawChar(ctx, look, dir, frame, x, y) {
   const sh = charSheet(look);
   ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(x + 8, y + 15, 5.5, 2, 0, 0, 7); ctx.fill();
-  ctx.drawImage(sh, frame * 16, DIRS.indexOf(dir) * 18, 16, 18, snap(x), snap(y - 3), 16, 18);
+  ctx.drawImage(sh, frame * 16, DIRS.indexOf(dir) * 24, 16, 24, snap(x), snap(y - 9), 16, 24);
 }
 
 // ---------------------------------------------------------------- Objekte

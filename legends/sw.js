@@ -1,5 +1,5 @@
 // Offline-Cache: Spieldateien werden beim ersten Start gespeichert, Updates im Hintergrund geholt
-const CACHE = 'legends-v1.3.0';
+const CACHE = 'legends-v1.4.0';
 const FILES = ['./', './index.html', './gb.css', './manifest.webmanifest', './icon-192.png', './apple-touch-icon.png', './fonts/fonts.css', './fonts/pixelify-latin.woff2', './fonts/pixelify-latin-ext.woff2',
   './js/core/noise.js', './js/core/audio.js', './js/core/music.js', './js/net/net.js', './js/battle/battle.js', './js/battle/double.js', './js/data/coop.js',
   './js/data/types.js', './js/data/moves.js', './js/data/creatures.js', './js/data/creatures2.js', './js/data/creatures3.js', './js/data/creatures4.js', './js/data/creatures5.js', './js/data/creatures6.js', './js/data/creatures7.js', './js/data/creatures8.js', './js/data/creatures9.js', './js/data/creatures10.js', './js/data/creatures11.js', './js/data/mon.js', './js/data/breeding.js',

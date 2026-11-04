@@ -64,12 +64,16 @@ class Choice {
       if (inRect(t, this.x, oy, this.w, this.max * 13)) { const k = this.scroll + Math.floor((t.y - oy) / 13); if (k < n) { this.i = k; return this.pick(); } }
       else if (this.o.cancel !== false) return this.close(null);
     }
+    if (this.o.tabs && (input.repeat('left') || input.repeat('right'))) { sfx('open'); return this.close(input.repeat('left') ? 'L' : 'R'); }
     if (input.pressed('a')) this.pick();
     if (input.pressed('b') && this.o.cancel !== false) this.close(null);
   }
   pick() { const it = this.items[this.i]; if (it.disabled) { sfx('weak'); return; } sfx('click'); this.close(this.i); }
   close(v) { pop(this); this.res(v); }
-  draw() {
+  draw(ctx) {
+    this.o.side?.(ctx);
+    const dsc = this.items[this.i]?.desc;
+    if (dsc !== undefined) { box(0, 113, W, 47, 'dark'); wrap(dsc, 224, 8).slice(0, 2).forEach((l, i) => text(l, 9, 121 + i * 14, '#fff', 8, 'left', '#50586a')); }
     box(this.x, this.y, this.w, this.h);
     let y = this.y + 5;
     if (this.o.title) { text(this.o.title, this.x + 8, y, COL.frame, 7.5, 'left', null, true); y += 13; }

@@ -1,7 +1,7 @@
 // Oberwelt: Kachelbewegung, Kamera, NPCs, Trainer-Sichtlinien, Türen, Begegnungen, Tag/Nacht
 import { G, W, H, COL, push, input, text, box, wait, fade, snap } from './engine.js';
 import { MAPS, TILE, SOLID, ENC } from './maps.js';
-import { tile, building, drawChar, tallOverlay, itemBall, treeCrown, TREE_KIND, grassFringe, shore, softShadow, cloudShadow, glow } from './pixel.js';
+import { charSheet, DIRS, tile, building, drawChar, tallOverlay, itemBall, treeCrown, TREE_KIND, grassFringe, shore, softShadow, cloudShadow, glow } from './pixel.js';
 // Untergründe, an deren Rand Gras über Wege/Sand wächst
 const GRASSY = new Set('.,:TPrUF'.split(''));
 const LANDISH = c => c !== null && c !== '~' && c !== 'B';
@@ -22,7 +22,7 @@ const DX = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 const OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
 export class Overworld {
-  constructor(game) { this.g = game; this.busy = false; this.banner = null; this.notice = null; this.emote = null; this.ball = itemBall(); this.parts = []; }
+  constructor(game) { this.g = game; this.busy = false; this.banner = null; this.notice = null; this.emote = null; this.ball = itemBall(); this.parts = []; this.prints = []; }
 
   load(id, x, y, dir) {
     const M = MAPS[id]; this.id = id; this.M = M;
@@ -74,6 +74,7 @@ export class Overworld {
     if (this.notice) { this.notice.t -= dt; if (this.notice.t <= 0) this.notice = null; }
     if (this.emote) { this.emote.t -= dt; if (this.emote.t <= 0) this.emote = null; }
     this.updateNpcs(dt);
+    for (const f of this.prints) f.t -= dt; if (this.prints.length && this.prints[0].t <= 0) this.prints = this.prints.filter(f => f.t > 0);
     if (this.rustle) { this.rustle.t -= dt; if (this.rustle.t <= 0) this.rustle = null; }
     for (const q of this.parts) { q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 30 * dt; q.l -= dt; } this.parts = this.parts.filter(q => q.l > 0);
     if (p.moving) { this.stepMove(dt); return; }
@@ -162,6 +163,7 @@ export class Overworld {
   async arrive() {
     const p = this.p, s = this.g.state, c = this.ch(p.x, p.y);
     s.steps = (s.steps || 0) + 1;
+    if ((c === 's' || c === 'd') && !p.surf) { this.prints.push({ x: p.x, y: p.y, dir: p.dir, t: 4 }); if (this.prints.length > 40) this.prints.shift(); }
     if ((c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%') && !p.surf) {
       this.rustle = { x: p.x, y: p.y, t: 0.32 }; sfx('grass');
       const col = c === 'y' ? ['#ffffff', '#cfe0f0'] : c === 'h' ? ['#8a7a68', '#b0a088'] : c === 'f' ? ['#c8a860', '#a88a48'] : ['#3c9a3c', '#7ad05a'];
@@ -339,6 +341,11 @@ export class Overworld {
     for (const b of this.blds) ctx.drawImage(building({ ...b, night }), b.x * 16 - cx, b.y * 16 - cy);
     for (const b of this.boulders || []) ctx.drawImage(tile('rockTop'), b.x * 16 - cx, b.y * 16 - cy);
     for (const i of this.items) ctx.drawImage(this.ball, i.x * 16 - cx, i.y * 16 - cy - Math.round(Math.sin(G.t * 3 + i.x) * 1));
+    // Fußspuren im Sand
+    for (const f of this.prints) {
+      ctx.fillStyle = `rgba(100,70,35,${Math.min(1, f.t / 1.5) * 0.55})`; const bx = f.x * 16 - cx, by = f.y * 16 - cy;
+      if (f.dir === 'up' || f.dir === 'down') { ctx.fillRect(bx + 5, by + 5, 2, 3); ctx.fillRect(bx + 9, by + 9, 2, 3); } else { ctx.fillRect(bx + 4, by + 6, 3, 2); ctx.fillRect(bx + 9, by + 9, 3, 2); }
+    }
     // Figuren nach y sortiert
     const actors = [...this.npcs.map(n => ({ mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
       { look: this.g.state.look, dir: p.dir, frame: p.frame, px: p.px, py: p.py - (p.hop || 0) - (p.bob || 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
@@ -347,9 +354,17 @@ export class Overworld {
     for (const a of actors) {
       if (a.me && p.surf) { const sm = this.g.surfMon?.(); const bob = Math.round(Math.sin(G.t * 4)); if (sm) ctx.drawImage(monSprite(sm.sp, 'icon', sm.shiny, sm.mut), a.px - cx - 8, a.py - cy - 6 + bob); drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 7 + bob); continue; }
       if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
-      else drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
+      else {
+        if (this.ch(a.x, a.y + 1) === '~') { // Spiegelung im Wasser
+          const wx = a.x * 16 - cx, wy = (a.y + 1) * 16 - cy;
+          ctx.save(); ctx.beginPath(); ctx.rect(wx - 2, wy, 20, 16); ctx.clip(); ctx.globalAlpha = 0.35 + Math.sin(G.t * 3) * 0.04;
+          ctx.translate(Math.round(a.px - cx) + Math.round(Math.sin(G.t * 2.5 + a.x)), wy * 2 - 2); ctx.scale(1, -1);
+          ctx.drawImage(charSheet(a.look), (a.frame || 0) * 16, DIRS.indexOf(a.dir) * 24, 16, 24, 0, Math.round(a.py - cy) - 9, 16, 24); ctx.restore();
+        }
+        drawChar(ctx, a.look, a.dir, a.frame, a.px - cx, a.py - cy);
+      }
       { const tc = this.ch(a.x, a.y); if ((tc === ':' || tc === 'h' || tc === 'y' || tc === 'f' || tc === '%') && !(a.me && p.jump)) { const rs = a.me && this.rustle ? Math.round(Math.sin(this.rustle.t * 45) * 1.4) : 0; ctx.drawImage(tallOverlay(f2, tc === 'h' ? 'ash' : tc === 'y' ? 'snow' : tc === 'f' ? 'dry' : tc === '%' ? 'mount' : 'green'), a.px - cx + rs, a.py - cy + 8 - Math.abs(rs)); } }
-      if (a.name) { const w = a.name.length * 4.2 + 6; ctx.fillStyle = 'rgba(20,40,80,.8)'; ctx.fillRect(a.px - cx + 8 - w / 2, a.py - cy - 12, w, 8); text(a.name, a.px - cx + 8, a.py - cy - 11.5, '#ffd36b', 6, 'center', null); }
+      if (a.name) { const w = a.name.length * 4.2 + 6; ctx.fillStyle = 'rgba(20,40,80,.8)'; ctx.fillRect(a.px - cx + 8 - w / 2, a.py - cy - 19, w, 8); text(a.name, a.px - cx + 8, a.py - cy - 18.5, '#ffd36b', 6, 'center', null); }
     }
     // Baumkronen über den Figuren: wer hinter einem Baum steht, verschwindet halb im Laub
     for (const [k, x, y, v] of crowns) ctx.drawImage(treeCrown(k, v), x * 16 - cx, y * 16 - cy - 8);
@@ -362,7 +377,7 @@ export class Overworld {
       for (let i = 0; i < 3; i++) { const wx = ((i * 260 + G.t * (5 + i * 2)) % span) - 160, wy = ((i * 173) % Math.max(1, mh)) - 30; ctx.drawImage(cl, wx - cx, wy - cy); }
     }
     if (this.emote) {
-      const n = this.emote.n, x = n.px - cx + 4, y = n.py - cy - 16;
+      const n = this.emote.n, x = n.px - cx + 4, y = n.py - cy - 22;
       ctx.fillStyle = '#28202c'; ctx.fillRect(x - 1, y - 1, 10, 12); ctx.fillStyle = '#fff'; ctx.fillRect(x, y, 8, 10); text('!', x + 4, y + 0.5, '#e84a5f', 9, 'center', null, true);
     }
     // Tag/Nacht

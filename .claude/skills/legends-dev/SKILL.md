@@ -82,4 +82,6 @@ Vanilla-JS-ES-Module, Canvas 2D, 240×160 logische Pixel. Es gibt keinen Build-S
 - Online-Koop: Server-Ereignisse müssen 1:1 zu Client-Aktionen passen. Zusatzmeldungen in `co.pend` legen, nie separat senden.
 - `onMapLoad`-Ereignisse erst nach `await wait(450)` auf `busy` setzen (Warp setzt busy am Ende zurück).
 - Android: Signatur explizit in Gradle setzen (der Workflow prüft SHA256), sonst verlieren Updates den Spielstand.
+- `page.evaluate` nie auf Menü- oder Kampf-Promises warten lassen (z. B. `LU2.startMenu()` in `{ }` ohne return), sonst hängt der Test.
+- Figuren sind 16×24 und werden bei `y - 9` gezeichnet. Namensschilder und „!“ liegen deshalb höher.
 - Spielstand-Tests: `LU2.newState(name, look)` braucht ein vollständiges `look`, sonst Fehler in `shade()`.

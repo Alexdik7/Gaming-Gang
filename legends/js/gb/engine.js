@@ -105,6 +105,7 @@ export function fade(to, ms = 250) {
 }
 export const wait = ms => new Promise(r => setTimeout(r, ms));
 // Kampf-Übergang: schwarze Balken schieben sich abwechselnd von links und rechts ins Bild
+export function iris(ms = 650) { return new Promise(res => { G.iris = { t: 0, dur: ms / 1000, res }; }); }
 export function wipe(ms = 550) { return new Promise(res => { G.wipe = { t: 0, dur: ms / 1000, res }; }); }
 
 export function frame(dt) {
@@ -127,6 +128,13 @@ export function frame(dt) {
     if (G.fadeA === G.fadeTo && G.fadeRes) { const r = G.fadeRes; G.fadeRes = null; r(); }
   }
   if (G.fadeA > 0) { ctx.fillStyle = `rgba(0,0,0,${G.fadeA})`; ctx.fillRect(0, 0, W, H); }
+  if (G.iris) { // Trainerkampf: Kreis schließt sich, Kristall dreht sich in der Mitte
+    const ir = G.iris; ir.t += dt; const k = Math.min(1, ir.t / ir.dur), r = Math.hypot(W, H) / 2 * Math.pow(1 - k, 1.6);
+    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.arc(W / 2, H / 2, Math.max(0, r), 0, Math.PI * 2, true); ctx.fill('evenodd');
+    ctx.save(); ctx.translate(W / 2, H / 2); ctx.rotate(ir.t * 9); const s = 6 + k * 10;
+    ctx.fillStyle = '#7fe3ff'; ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(s * 0.6, 0); ctx.lineTo(0, s); ctx.lineTo(-s * 0.6, 0); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.fillRect(-1, -s * 0.5, 2, s * 0.4); ctx.restore();
+    if (k >= 1) { G.iris = null; G.fadeA = G.fadeTo = 1; ir.res(); }
+  }
   if (G.wipe) {
     const wp = G.wipe; wp.t += dt; const k = Math.min(1, wp.t / wp.dur), n = 10, bh = H / n;
     ctx.fillStyle = '#000';

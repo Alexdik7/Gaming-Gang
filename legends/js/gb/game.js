@@ -1,5 +1,5 @@
 // LEGENDS UNITED – Handheld-Edition: Spielablauf, Story, Brutstätte, Speichern
-import { G, W, H, COL, push, pop, input, text, box, cursor, wait, fade, wipe, initEngine, bindPad, frame, wrap } from './engine.js';
+import { G, W, H, COL, push, pop, input, text, box, cursor, wait, fade, wipe, iris, initEngine, bindPad, frame, wrap } from './engine.js';
 import { MAPS, LOOK, ENC, SHOP, ITEMS } from './maps.js';
 import { Overworld } from './overworld.js';
 import { battle } from './battle2d.js';
@@ -235,8 +235,10 @@ class Game {
   async startMenu() {
     const s = this.state, ow = this.ow; ow.busy = true;
     const items = [...(s.flags.dex ? ['CHRONIK'] : []), ...(s.team.length ? ['TEAM'] : []), 'BEUTEL', s.name.toUpperCase(), 'ONLINE', 'SPEICHERN', 'OPTIONEN', 'ZURÜCK'];
+    const D = { CHRONIK: 'Ein Verzeichnis aller Kreaturen, die du gesehen oder gebunden hast.', TEAM: 'Zeigt dein Team, Werte und Attacken. Hier kannst du auch die Reihenfolge ändern.', BEUTEL: 'Gegenstände, Kristalle und Basis-Items, die du gesammelt hast.', ONLINE: 'Mit Freunden kämpfen, tauschen, gemeinsam spielen und Raids bestreiten.', SPEICHERN: 'Deinen Fortschritt speichern.', OPTIONEN: 'Textgeschwindigkeit, Musik und Ton einstellen.', 'ZURÜCK': 'Das Menü schließen und weiterspielen.' };
+    const opts = items.map(k => ({ label: k, desc: D[k] || 'Dein Trainerpass mit Orden, Geld und Spielzeit.' }));
     for (;;) {
-      const i = await choose(items, { above: false, x: W - 86, w: 83 });
+      const i = await choose(opts, { above: false, x: W - 86, w: 83 });
       const k = items[i];
       if (i === null || k === 'ZURÜCK') break;
       if (k === 'CHRONIK') await dex(s);
@@ -251,14 +253,30 @@ class Game {
   }
   async quickTeam() { if (!this.state.team.length) return; this.ow.busy = true; await party(this.state); this.ow.busy = false; }
   async bagMenu() {
+    const shadeHex = c => c + '55';
     const s = this.state;
     for (;;) {
-      const keys = Object.keys(ITEMS).filter(k => s.bag[k]);
-      if (!keys.length) return say('Der Beutel ist leer.');
-      const i = await choose([...keys.map(k => ({ label: ITEMS[k].name, right: ITEMS[k].key ? '' : '×' + s.bag[k] })), 'Zurück'], { title: 'BEUTEL', above: false, x: 4, w: 150 });
-      if (i === null || i === keys.length) return;
+      const all = Object.keys(ITEMS).filter(k => s.bag[k]);
+      if (!all.length) return say('Der Beutel ist leer.');
+      // Taschen wie im Original: mit ← → wechseln
+      const POCK = [['ITEMS', k => !ITEMS[k].ball && !ITEMS[k].tm && !ITEMS[k].key && !/beere/.test(k), '#e8a040'], ['KRISTALLE', k => ITEMS[k].ball, '#5ab0e8'], ['A-KRISTALLE', k => ITEMS[k].tm, '#b070e0'], ['BEEREN', k => /beere/.test(k) && !ITEMS[k].key, '#e85a6a'], ['BASIS-ITEMS', k => ITEMS[k].key, '#58b868']];
+      this.pocket = this.pocket || 0;
+      const [pn, pf, pc] = POCK[this.pocket], keys = all.filter(pf);
+      const side = ctx => { // Beutel-Grafik links
+        ctx.fillStyle = '#f0e8d0'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#e2d8bc'; for (let y = 0; y < H; y += 6) ctx.fillRect(0, y, W, 2); ctx.fillStyle = shadeHex(pc); ctx.fillRect(0, 0, 76, 113);
+        const bx = 14, by = 26; ctx.fillStyle = '#28202c'; ctx.fillRect(bx - 1, by - 1, 50, 50); ctx.fillStyle = pc; ctx.fillRect(bx, by, 48, 48);
+        ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(bx + 2, by + 2, 44, 6); ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(bx, by + 30, 48, 18);
+        ctx.fillStyle = '#28202c'; ctx.fillRect(bx + 16, by - 9, 16, 3); ctx.fillRect(bx + 14, by - 7, 3, 7); ctx.fillRect(bx + 31, by - 7, 3, 7); ctx.fillStyle = '#f8d870'; ctx.fillRect(bx + 20, by + 18, 8, 6);
+        text(pn, 38, 82, COL.ink, 7, 'center', COL.shadow, true);
+        POCK.forEach((_, q) => { ctx.fillStyle = q === this.pocket ? '#e84a5f' : '#a8a090'; ctx.fillRect(18 + q * 9, 96, 6, 4); });
+        text('◀  ▶', 38, 102, COL.inkSoft, 6.5, 'center');
+      };
+      const opts = keys.length ? keys.map(k => ({ label: ITEMS[k].name, right: ITEMS[k].key ? '' : '×' + s.bag[k], desc: ITEMS[k].desc })) : [{ label: '(leer)', desc: 'In dieser Tasche ist noch nichts.', disabled: true }];
+      const i = await choose([...opts, { label: 'Zurück', desc: 'Den Beutel schließen.' }], { title: '◀ ' + pn + ' ▶', above: false, x: 78, w: 159, tabs: true, side, max: 7 });
+      if (i === 'L' || i === 'R') { this.pocket = (this.pocket + (i === 'L' ? POCK.length - 1 : 1)) % POCK.length; continue; }
+      if (i === null || i === opts.length || !keys.length) return;
       const k = keys[i], it = ITEMS[k];
-      await say(it.desc);
+      if (!(it.heal || it.cure || it.revive || it.tm)) { await say(it.desc); continue; }
       if (it.heal || it.cure || it.revive) {
         const t = await party(s, { select: true, prompt: it.revive ? 'Wen beleben?' : it.cure ? 'Wen kurieren?' : 'Wen heilen?', filter: itemFilter(it) });
         if (t === null) continue;
@@ -512,6 +530,7 @@ class Game {
     return r;
   }
   // Übergang in den Kampf: zwei Blitze, dann schließen Balken das Bild; der Kampf blendet danach selbst auf
+  async trainerIn() { for (let i = 0; i < 3; i++) { await fade(0.85, 60); await fade(0, 80); } await iris(620); setTimeout(() => fade(0, 260), 30); }
   async flashIn() { for (let i = 0; i < 2; i++) { await fade(0.85, 70); await fade(0, 90); } await wipe(520); setTimeout(() => fade(0, 260), 30); }
   async trainerFight(t) {
     const s = this.state;
@@ -520,7 +539,7 @@ class Game {
     const rnd = mulberry(t.name.length * 911);
     const foe = t.team.map(([sp, l]) => createMon(sp, l, rnd));
     foe.forEach(m => this.markDex(m.sp));
-    sfx('encounter'); await this.flashIn();
+    sfx('encounter'); await this.trainerIn();
     const r = await battle(this, { foeTeam: foe, trainer: t, canCatch: false, bg: t.bg || (this.ow.M.gym ? 'arena' : this.ow.M.cave ? 'hoehle' : 'gras') });
     await this.afterBattle(r, t.noBlackout);
     return r.result === 'win';

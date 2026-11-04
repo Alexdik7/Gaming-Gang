@@ -414,3 +414,13 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
 - **Schimmernde Kreaturen** funkeln beim Erscheinen.
 - **Heilzentrum:** Heilmaschine, auf der die Kristalle nacheinander aufleuchten, mit eigener Heilmelodie.
 - **Hohes Gras:** raschelt mit Halmen und Geräusch, wenn man hindurchläuft.
+
+## v1.4 – Smaragd-Oberwelt
+- **Neue Figuren im GBA-Format:** 16×24 Pixel, großer Kopf, dunkler Umriss, Kappe und Haarschnitt aus den Farbangaben. Laufphasen mit schwingenden Armen in alle vier Richtungen. Gilt für alle Personen.
+- **Spiegelung:** Wer direkt am Wasser steht, spiegelt sich leicht wellend darin.
+- **Fußspuren:** Im Sand bleiben Fußspuren, die nach einigen Sekunden verblassen.
+- **Trainerkampf-Übergang:** dreimal Aufblitzen, dann schließt sich ein Kreis mit drehendem Kristall. Wilde Kämpfe behalten die Streifen-Blende.
+- **Startmenü:** mit Beschreibungszeile unten wie im Original.
+- **Beutel:**
+  - bildschirmfüllend mit fünf Taschen (Items, Kristalle, A-Kristalle, Beeren, Basis-Items), wechselbar mit ← →
+  - Beutelgrafik in Taschenfarbe und Beschreibung des gewählten Gegenstands
