@@ -440,3 +440,32 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
   - Regen wechselt täglich auf sechs Gebieten
 - **Türen** öffnen sich sichtbar, bevor man ein Haus betritt.
 - **Felsvorsprünge:** Beim Hüpfen bleibt der Schatten am Boden und wird kleiner.
+
+## v1.6 – Mitläufer, VMs und Typ-Fähigkeiten
+- **Mitläufer:** Die erste kampffähige Kreatur läuft hinter dir her, auch über Felsvorsprünge. Beim Surfen versteckt sie sich.
+  - Ansprechen (A) zeigt Reaktionen auf Wetter, Gelände, Tageszeit, Gesundheit und Freundschaft, oft mit Herz.
+  - Manchmal hat sie etwas gefunden, etwa Beeren, Tränke oder Kristalle.
+  - Jedes erste Gespräch pro Gebiet steigert die Freundschaft.
+- **Fünf VMs** (werden nicht verbraucht, lernbar je nach Typ):
+
+  | VM | Lernbar für | Wirkung außerhalb von Kämpfen | Bekommst du von |
+  |---|---|---|---|
+  | VM01 Zerschneider | alle | Büsche entfernen | Gärtner in Moosgrund, nach der Starterwahl |
+  | VM02 Zertrümmerer | alle außer Luft und Geist | rissige Felsen zerschlagen | Alter Bergmann in Ignis, nach der Befreiung der Arena |
+  | VM03 Surfer | Wasser, Eis, Drache | surfen (der alte Weg mit Wasser-Typ und Wellenreiter bleibt erhalten) | Malu, zusammen mit dem Wellenreiter |
+  | VM04 Blitz | Elektro, Licht, Feuer, Magie | erhellt die Mondruine | Frau in Nocturna |
+  | VM05 Fliegen | Luft, Drache | zu besuchten Städten mit Heilzentrum fliegen | Bergältester in Drakmor, ab 6 Orden |
+
+  Wie gewohnt einsetzbar: vor das Hindernis stellen und A drücken, oder im Team-Menü auswählen.
+  Neue Verstecke hinter Büschen gibt es auf Route 1 und 2, hinter einem rissigen Felsen auf Route 3.
+- **Typ-Fähigkeiten** im Team-Menü (★):
+  - Pflanze **Lockduft**: wilde Begegnung im hohen Gras
+  - Erde **Spürnase** und Metall **Metallsinn**: zeigen zwei versteckte Fundstücke je Route
+  - Elektro **Magnetsinn**: Arten, die hier noch fehlen, dazu Massenausbruch
+  - Magie **Teleport**: zum Heilzentrum
+  - Geist, Schatten, Drache und Gift: **Schleier**, 150 Schritte keine Begegnungen
+  - Luft **Rückenwind**: 200 Schritte schneller
+  - Feuer **Glut** und Licht **Leuchten**: mehr Licht im Dunkeln
+  - Wasser **Quellwasser**: 20 KP für alle, einmal pro Gebiet
+  - Eis **Frostatem**: heilt Verbrennungen in Hitzegebieten
+- **Test:** Der Lauftest wertet nur noch die Laufphase. Stillstand nach dem Loslassen zählt nicht als Ruckler.

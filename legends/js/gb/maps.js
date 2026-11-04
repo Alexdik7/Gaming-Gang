@@ -5,11 +5,11 @@
 // Innen: o=Holzboden x=Fliesen #=Wand w=Fenster K=Regal C=Theke t=Tisch Y=Bett V=TV M=Maschine Q=PC k=Pflanze u=Teppich m=Ausgang Z=Kristalltisch
 export const TILE = {
   '.': 'grass', ',': 'flowers', ':': 'tall', T: 'tree', P: 'pine', D: 'dtree', '~': 'water', '=': 'path', s: 'sand', R: 'rock', F: 'fence', L: 'ledge', S: 'sign', B: 'bridge',
-  c: 'cave', W: 'cwall', O: 'hole', p: 'stone', I: 'pillar', A: 'altar', r: 'rune', g: 'gym', b: 'boulder',
+  '$': 'cutbush', '&': 'crack', c: 'cave', W: 'cwall', O: 'hole', p: 'stone', I: 'pillar', A: 'altar', r: 'rune', g: 'gym', b: 'boulder',
   a: 'ash', h: 'ashtall', v: 'lava', X: 'basalt', e: 'ember', j: 'metal', J: 'mwall', n: 'snow', y: 'snowtall', i: 'ice', G: 'snowpine', q: 'snowrock', U: 'berry', d: 'dune', f: 'brush', z: 'cactus', H: 'sandwall', l: 'tfloor', E: 'gate', N: 'plate', _: 'mground', '^': 'cliff', '%': 'mgrass', '@': 'hole',
   o: 'floor', x: 'tilefl', '#': 'wall', w: 'window', K: 'shelf', C: 'counter', t: 'table', Y: 'bed', V: 'tv', M: 'machine', Q: 'pc', k: 'plant', u: 'rug', m: 'mat', Z: 'orbs',
 };
-export const SOLID = new Set('TPD~RFSWIArb#wKCtYVMQkZvXJGqUzH^'.split(''));
+export const SOLID = new Set('TPD~RFSWIArb#wKCtYVMQkZvXJGqUzH^$&'.split(''));
 
 const LOOK = {
   linde: { skin: '#f0c8a8', hair: '#e8e2d6', outfit: '#f4f4f4', pants: '#5a6b7a', accent: '#6fa8dc' },
@@ -123,8 +123,8 @@ export const MAPS = {
       'T.....:::==:::.....T',
       'T........==........T',
       'TPP......==......PPT',
-      'T..,.....==.....,..T',
-      'T..::::..==..::::..T',
+      'T.$,.....==.....,..T',
+      'TT.::::..==..::::..T',
       'T..::::..==..::::..T',
       'TTTTTTTTT==TTTTTTTTT',
     ],
@@ -133,7 +133,7 @@ export const MAPS = {
       { id: 'tr_timo', x: 7, y: 17, dir: 'right', look: LOOK.bug, name: 'Käfersammler Timo', trainer: { team: [['kaeferix', 4], ['zirpfink', 4]], reward: 160, sight: 4, lines: ['Halt! Meine Käfer wollen kämpfen!'], lose: 'Meine armen Käfer…' } },
       { id: 'tr_lea', x: 12, y: 8, dir: 'left', look: LOOK.lass, name: 'Wanderin Lea', trainer: { team: [['hoppel', 5], ['glibbo', 5]], reward: 200, sight: 4, lines: ['Du siehst stark aus. Lass uns kämpfen!'], lose: 'Wow, du bist wirklich gut!' } },
     ],
-    items: [{ id: 'it_r1a', x: 17, y: 5, item: 'kristall', n: 2 }, { id: 'it_r1b', x: 1, y: 20, item: 'trank', n: 1 }],
+    items: [{ id: 'it_r1_vm', x: 1, y: 26, item: 'sternkristall', n: 2 }, { id: 'it_r1a', x: 17, y: 5, item: 'kristall', n: 2 }, { id: 'it_r1b', x: 1, y: 20, item: 'trank', n: 1 }],
     edges: { s: { to: 'moosgrund', dx: 0 }, n: { to: 'quellbach', dx: 3 } },
   },
   quellbach: {
@@ -219,8 +219,8 @@ export const MAPS = {
       '...........:::::..........::::WWWW',
       'T..........:::::..........::::WWWW',
       'T.LLLLLLL..:::::..LLLLLLL.....WWWW',
-      'T..,.......................,..WWWW',
-      'T.....:::::.......:::::....U..WWWW',
+      'TT.,.......................,..WWWW',
+      'T.$...:::::.......:::::....U..WWWW',
       'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTWWWW',
     ],
     warps: [{ x: 29, y: 5, to: 'hoehle', tx: 1, ty: 6, dir: 'right' }],
@@ -228,7 +228,7 @@ export const MAPS = {
       { id: 'tr_rolf', x: 16, y: 9, dir: 'up', look: LOOK.hiker, name: 'Bergsteiger Rolf', trainer: { team: [['brockel', 9], ['kieselkrebs', 10]], reward: 400, sight: 4, lines: ['Hier geht es zu den Bergen. Erst gegen mich!'], lose: 'Du bist so standfest wie ein Felsen!' } },
       { id: 'tr_mia', x: 24, y: 4, dir: 'down', look: LOOK.jogger, name: 'Joggerin Mia', trainer: { team: [['funkenhase', 10], ['zirpfink', 9]], reward: 400, sight: 3, lines: ['Ich laufe hier jeden Tag. Kämpf mit mir!'], lose: 'Puh, außer Atem…' } },
     ],
-    items: [{ id: 'it_r2a', x: 2, y: 9, item: 'trank', n: 2 }, { id: 'it_r2b', x: 28, y: 1, item: 'kristall', n: 3 }],
+    items: [{ id: 'it_r2_vm', x: 1, y: 10, item: 'supertrank', n: 2 }, { id: 'it_r2a', x: 2, y: 9, item: 'trank', n: 2 }, { id: 'it_r2b', x: 28, y: 1, item: 'kristall', n: 3 }],
     edges: { w: { to: 'quellbach', dy: 2 } },
   },
   hoehle: {
@@ -298,8 +298,8 @@ export const MAPS = {
       'XaaaaaaaahhhhaaaaaaaaahhhhaaaaaX',
       'XaaXXaaaahhhhaaaaXXaaahhhhaaaaaX',
       'XaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX',
-      'XaavvvaaaaahhhhhaaaaaaavvvvaaaaX',
-      'XaavvvaaaaahhhhhaaaaaaavvvvaaaaX',
+      'XaavvvaaaaahhhhhaaaaaaavvvvaaaXX',
+      'Xaavvvaaaaahhhhhaaaaaaavvvvaa&aX',
       'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
     ],
     npcs: [
@@ -307,7 +307,7 @@ export const MAPS = {
       { id: 'tr_lava', x: 20, y: 10, dir: 'up', look: LOOK.forscherin, name: 'Vulkanforscherin Lea', trainer: { team: [['aschwurm', 16], ['kohlenkrebs', 16]], reward: 680, sight: 4, lines: ['Psst, hier blubbert es überall! Ein Kampf zur Messung?'], lose: 'Die Messwerte sind eindeutig: Du bist stark!' } },
       { id: 'tr_ida2', x: 27, y: 2, dir: 'left', look: LOOK.jogger, name: 'Läufer Tom', trainer: { team: [['rauchfalter', 17]], reward: 600, sight: 3, lines: ['Durch die Asche laufen hält fit!'], lose: 'Hust… hust…' } },
     ],
-    items: [{ id: 'it_r3a', x: 1, y: 12, item: 'ak_felsgranate', n: 1 }, { id: 'it_r3b', x: 30, y: 1, item: 'sternkristall', n: 1 }],
+    items: [{ id: 'it_r3_vm', x: 30, y: 12, item: 'hypertrank', n: 2 }, { id: 'it_r3a', x: 1, y: 12, item: 'ak_felsgranate', n: 1 }, { id: 'it_r3b', x: 30, y: 1, item: 'sternkristall', n: 1 }],
     signs: { },
     edges: { w: { to: 'felsenau', dy: 0 }, e: { to: 'ignis', dy: 0 } },
   },
@@ -1265,6 +1265,11 @@ export const ITEMS = {
   ak_blitzschlag: { name: 'AK Blitzschlag', desc: 'Attacken-Kristall: lehrt Blitzschlag (Elektro). Einmal nutzbar.', tm: 'blitzschlag' },
   urkristall: { name: 'Urkristall', desc: 'Ein uralter Kristall von Prof. Linde. Bindet mit zehnfacher Chance.', ball: 10 },
   hypertrank: { name: 'Hypertrank', desc: 'Heilt 200 KP.', heal: 200 },
+  vk_zerschneider: { name: 'VM01 Zerschneider', desc: 'Versteckte Maschine: lehrt Zerschneider. Unbegrenzt nutzbar. Außerhalb von Kämpfen zerschneidet sie kleine Büsche.', tm: 'zerschneider', hm: true, key: true },
+  vk_zertruemmerer: { name: 'VM02 Zertrümmerer', desc: 'Versteckte Maschine: lehrt Zertrümmerer. Außerhalb von Kämpfen zertrümmert sie rissige Felsen.', tm: 'zertruemmerer', hm: true, key: true },
+  vk_surfer: { name: 'VM03 Surfer', desc: 'Versteckte Maschine: lehrt Surfer. Mit dem Wellenreiter kannst du damit übers Wasser reiten.', tm: 'surfer', hm: true, key: true },
+  vk_blitz: { name: 'VM04 Blitz', desc: 'Versteckte Maschine: lehrt Blitz. Außerhalb von Kämpfen erhellt sie dunkle Orte.', tm: 'blitz', hm: true, key: true },
+  vk_fliegen: { name: 'VM05 Fliegen', desc: 'Versteckte Maschine: lehrt Fliegen. Außerhalb von Kämpfen fliegst du zu besuchten Städten.', tm: 'fliegen', hm: true, key: true },
   glanzamulett: { name: 'Glanzamulett', desc: 'Von Prof. Linde. Schimmernde Kreaturen begegnen dir dreimal so oft.', key: true },
   herzstein_zeit: { name: 'Zeit-Herzstein', desc: 'Ein silberweißer Stein. Wer ihn hält, hört ein leises Ticken.', key: true },
   herzstein_ursprung: { name: 'Ursprungs-Herzstein', desc: 'Der älteste aller Herzsteine. Er schimmert in allen Farben.', key: true },

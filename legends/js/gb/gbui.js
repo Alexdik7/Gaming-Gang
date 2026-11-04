@@ -139,9 +139,12 @@ class Party {
     if (this.swap != null) { const a = this.swap, b = this.i; [this.team[a], this.team[b]] = [this.team[b], this.team[a]]; this.swap = null; return; }
     const m = this.team[this.i];
     if (this.o.select) { if (this.o.filter && !this.o.filter(m)) { sfx('weak'); return; } return this.close(this.i); }
-    const k = await choose(m.egg ? ['Ansehen', 'Verschieben', 'Zurück'] : ['Bericht', 'Verschieben', 'Zurück']);
-    if (k === 0) await (m.egg ? say(eggText(m)) : summary(m));
-    if (k === 1) this.swap = this.i;
+    const fo = !m.egg && this.o.field ? this.o.field(m) : [];
+    const k = await choose(m.egg ? ['Ansehen', 'Verschieben', 'Zurück'] : ['Bericht', ...fo.map(f => f.label), 'Verschieben', 'Zurück']);
+    if (k === null) return;
+    if (k === 0) return void await (m.egg ? say(eggText(m)) : summary(m));
+    if (!m.egg && k <= fo.length) { this.o.picked = fo[k - 1]; return this.close(null); }
+    if (k === (m.egg ? 1 : fo.length + 1)) this.swap = this.i;
   }
   close(v) { pop(this); this.res(v); }
   draw(ctx) {

@@ -242,7 +242,7 @@ class Game {
       const k = items[i];
       if (i === null || k === 'ZURÜCK') break;
       if (k === 'CHRONIK') await dex(s);
-      if (k === 'TEAM') await party(s);
+      if (k === 'TEAM') { const po = { field: m => this.fieldOptions(m) }; await party(s, po); if (po.picked) { this.fieldExit = false; await po.picked.run(); if (this.fieldExit) { this.fieldExit = false; break; } } }
       if (k === 'BEUTEL') await this.bagMenu();
       if (k === s.name.toUpperCase()) await card(s);
       if (k === 'SPEICHERN') { if (await ask('Möchtest du das Spiel speichern?')) { this.save(); await say(`${s.name} hat das Spiel gespeichert.`); } }
@@ -251,7 +251,7 @@ class Game {
     }
     ow.busy = false;
   }
-  async quickTeam() { if (!this.state.team.length) return; this.ow.busy = true; await party(this.state); this.ow.busy = false; }
+  async quickTeam() { if (!this.state.team.length) return; this.ow.busy = true; const po = { field: m => this.fieldOptions(m) }; await party(this.state, po); if (po.picked) { this.fieldExit = false; await po.picked.run(); this.fieldExit = false; } this.ow.busy = false; }
   async bagMenu() {
     const shadeHex = c => c + '55';
     const s = this.state;
@@ -259,7 +259,7 @@ class Game {
       const all = Object.keys(ITEMS).filter(k => s.bag[k]);
       if (!all.length) return say('Der Beutel ist leer.');
       // Taschen wie im Original: mit ← → wechseln
-      const POCK = [['ITEMS', k => !ITEMS[k].ball && !ITEMS[k].tm && !ITEMS[k].key && !/beere/.test(k), '#e8a040'], ['KRISTALLE', k => ITEMS[k].ball, '#5ab0e8'], ['A-KRISTALLE', k => ITEMS[k].tm, '#b070e0'], ['BEEREN', k => /beere/.test(k) && !ITEMS[k].key, '#e85a6a'], ['BASIS-ITEMS', k => ITEMS[k].key, '#58b868']];
+      const POCK = [['ITEMS', k => !ITEMS[k].ball && !ITEMS[k].tm && !ITEMS[k].key && !/beere/.test(k), '#e8a040'], ['KRISTALLE', k => ITEMS[k].ball, '#5ab0e8'], ['A-KRISTALLE', k => ITEMS[k].tm, '#b070e0'], ['BEEREN', k => /beere/.test(k) && !ITEMS[k].key, '#e85a6a'], ['BASIS-ITEMS', k => ITEMS[k].key && !ITEMS[k].tm, '#58b868']];
       this.pocket = this.pocket || 0;
       const [pn, pf, pc] = POCK[this.pocket], keys = all.filter(pf);
       const side = ctx => { // Beutel-Grafik links
@@ -289,7 +289,127 @@ class Game {
     }
   }
   // Attacken-Kristall: passende Kreatur (gleicher Typ oder Attacke im Lernset) lernt die Attacke
-  canTm(m, id) { const S = SPECIES[m.sp], M = MOVES[id]; return !m.egg && !m.moves.some(x => x.id === id) && (S.types.includes(M.type) || M.type === 'normal' || S.learn.some(([, l]) => l === id)); }
+  canTm(m, id) {
+    const S = SPECIES[m.sp], M = MOVES[id], T = S.types;
+    if (m.egg || m.moves.some(x => x.id === id)) return false;
+    const HMC = { zerschneider: () => true, zertruemmerer: t => !t.includes('luft') && !t.includes('geist'), surfer: t => t.some(x => ['wasser', 'eis', 'drache'].includes(x)), blitz: t => t.some(x => ['elektro', 'licht', 'feuer', 'magie'].includes(x)), fliegen: t => t.some(x => ['luft', 'drache'].includes(x)) };
+    if (HMC[id]) return HMC[id](T);
+    return T.includes(M.type) || M.type === 'normal' || S.learn.some(([, l]) => l === id);
+  }
+  knows(id) { return this.state.team.find(m => !m.egg && m.hp > 0 && m.moves.some(x => x.id === id)); }
+  // ---------------------------------------------------------- Feld: VMs & Typ-Fähigkeiten
+  async fieldObstacle(mv, x, y) {
+    const s = this.state, vk = mv === 'zerschneider' ? 'vk_zerschneider' : 'vk_zertruemmerer', m = this.knows(mv);
+    const what = mv === 'zerschneider' ? 'Ein kleiner Busch. Er sieht so aus, als könnte man ihn zerschneiden.' : 'Ein rissiger Felsen. Er sieht so aus, als könnte man ihn zertrümmern.';
+    if (!s.bag[vk] || !m) return say(what);
+    if (!(await ask(`${what} Soll ${monName(m)} ${MOVES[mv].name} einsetzen?`))) return;
+    await this.useObstacle(mv, x, y, m);
+  }
+  async useObstacle(mv, x, y, m) {
+    const ow = this.ow;
+    await say(`${monName(m)} setzt ${MOVES[mv].name} ein!`); cry(SPECIES[m.sp].cry);
+    const cut = mv === 'zerschneider', col = cut ? ['#2e7a34', '#7ad068', '#48a048'] : ['#8a7c78', '#b0a49c', '#3a3034'];
+    for (let i = 0; i < 16; i++) ow.parts.push({ x: x * 16 + 8, y: y * 16 + 8, vx: (Math.random() - 0.5) * 90, vy: -30 - Math.random() * 50, c: col[i % 3], l: 0.6, ml: 0.6, sz: 2 });
+    sfx(cut ? 'whoosh' : 'hit'); G.shake = cut ? 0.1 : 0.5;
+    ow.cleared.set(x + ',' + y, cut ? '.' : (ow.M.rows[y][x - 1] && 'a'));
+  }
+  fieldOptions(m) {
+    const s = this.state, out = [], ow = this.ow, S = SPECIES[m.sp];
+    const HM = [['zerschneider', 'vk_zerschneider'], ['zertruemmerer', 'vk_zertruemmerer'], ['surfer', 'vk_surfer'], ['blitz', 'vk_blitz'], ['fliegen', 'vk_fliegen']];
+    for (const [mv, vk] of HM) if (s.bag[vk] && m.moves.some(x => x.id === mv) && m.hp > 0) out.push({ label: MOVES[mv].name.toUpperCase(), run: () => this.useHm(mv, m) });
+    const AB = {
+      pflanze: ['Lockduft', 'lure'], erde: ['Spürnase', 'sniff'], metall: ['Metallsinn', 'sniff'], elektro: ['Magnetsinn', 'radar'], magie: ['Teleport', 'tele'],
+      geist: ['Schattenschleier', 'veil'], schatten: ['Schattenschleier', 'veil'], drache: ['Drachenblick', 'veil'], luft: ['Rückenwind', 'wind'], feuer: ['Glut', 'light'], licht: ['Leuchten', 'light'], wasser: ['Quellwasser', 'spring'], eis: ['Frostatem', 'frost'], gift: ['Giftnebel', 'veil'],
+    };
+    const seen = new Set();
+    if (m.hp > 0) for (const t of S.types) { const a = AB[t]; if (a && !seen.has(a[0])) { seen.add(a[0]); out.push({ label: '★ ' + a[0], run: () => this.ability(a[1], m, t, a[0]) }); } }
+    return out;
+  }
+  async useHm(mv, m) {
+    const ow = this.ow, p = ow.p, [dx, dy] = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[p.dir], fx = p.x + dx, fy = p.y + dy;
+    if (mv === 'zerschneider' || mv === 'zertruemmerer') { const c = ow.ch(fx, fy); if (c !== (mv === 'zerschneider' ? '$' : '&')) return say('Hier gibt es nichts, wofür man das einsetzen könnte.'); return this.useObstacle(mv, fx, fy, m); }
+    if (mv === 'surfer') { if (ow.ch(fx, fy) !== '~' || p.surf) return say('Stell dich ans Wasser und schau darauf, um zu surfen.'); return this.water(fx, fy); }
+    if (mv === 'blitz') { if (!ow.M.darkRadius) return say('Hier ist es doch schon hell genug.'); ow.flashLit = 90; sfx('rune'); return say(`${monName(m)} setzt Blitz ein! Die Umgebung wird hell erleuchtet.`); }
+    if (mv === 'fliegen') return this.fly(m);
+  }
+  async fly(m) {
+    const s = this.state;
+    if (!this.ow.M.outdoor) return say('Fliegen geht nur unter freiem Himmel.');
+    const towns = Object.entries(MAPS).filter(([id, M]) => s.flags['fly_' + id] && (M.buildings || []).some(b => b.heal));
+    if (!towns.length) return say('Du hast noch keine Stadt mit Heilzentrum besucht.');
+    const i = await choose([...towns.map(([, M]) => M.name), 'Abbrechen'], { title: 'WOHIN FLIEGEN?' });
+    if (i === null || i === towns.length) return;
+    const [id, M] = towns[i], b = M.buildings.find(b => b.heal);
+    await say(`${monName(m)} breitet die Flügel aus!`); cry(SPECIES[m.sp].cry); sfx('whoosh');
+    this.fieldExit = true;
+    await this.ow.warp(id, b.x + b.door, b.y + b.h, 'down');
+  }
+  async ability(kind, m, type, name) {
+    const s = this.state, ow = this.ow, N = monName(m), c = ow.ch(ow.p.x, ow.p.y);
+    cry(SPECIES[m.sp].cry);
+    switch (kind) {
+      case 'lure': {
+        if (!ow.M.enc || !(c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%')) return say(`${N} verströmt einen süßen Duft … aber hier ist kein hohes Gras.`);
+        await say(`${N} verströmt einen süßen Duft …`); this.fieldExit = true;
+        return this.wildBattle(ow.M.enc, ow.id === 'altwald' ? 'wald' : ow.M.bg || 'gras');
+      }
+      case 'sniff': {
+        ow.revealed = true; const n = ow.hidden.length; sfx('dex');
+        return say(n ? `${N} schnuppert am Boden … Hier ${n === 1 ? 'ist noch etwas' : 'sind noch ' + n + ' Dinge'} versteckt! Funkelnde Stellen genau ansehen und A drücken.` : `${N} schnuppert am Boden … hier ist nichts mehr versteckt.`);
+      }
+      case 'radar': {
+        const E = ENC[ow.M.enc]; if (!E) return say(`${N} spürt hier keine wilden Kreaturen.`);
+        const miss = [...new Set(E.list.map(e => e[0]))].filter(sp => !s.dex.caught[sp]);
+        const sw = this.swarm(); const extra = sw.enc === ow.M.enc ? ` Heute: Massenausbruch von ${SPECIES[sw.sp].name}!` : '';
+        return say(miss.length ? `${N} spürt Kreaturen, die du hier noch nicht gebunden hast: ${miss.map(sp => s.dex.seen[sp] ? SPECIES[sp].name : '???').join(', ')}.${extra}` : `${N} spürt nichts Neues – hier hast du schon alle Arten gebunden!${extra}`);
+      }
+      case 'tele': {
+        if (ow.M.indoor) return say('Teleport funktioniert hier drinnen nicht.');
+        const hp = s.healPoint || { map: 'quellbach', x: 6, y: 7 };
+        await say(`${N} setzt Teleport ein!`); this.fieldExit = true;
+        return ow.warp(hp.map, hp.x, hp.y, 'down');
+      }
+      case 'veil': s.repel = 150; sfx('debuff'); return say(type === 'drache' ? `${N} blickt furchteinflößend umher. Wilde Kreaturen halten sich fern (150 Schritte).` : type === 'gift' ? `${N} hüllt euch in einen Giftnebel. Wilde Kreaturen meiden euch (150 Schritte).` : `${N} hüllt euch in Schatten. Wilde Kreaturen bemerken dich nicht (150 Schritte).`);
+      case 'wind': s.wind = 200; sfx('whoosh'); return say(`${N} lässt Rückenwind aufkommen! Du bist 200 Schritte lang schneller.`);
+      case 'light': if (!ow.M.darkRadius) return say(`${N} glüht warm auf. Hier ist es aber schon hell genug.`); ow.flashLit = Math.max(ow.flashLit || 0, type === 'licht' ? 50 : 30); sfx('buff'); return say(`${N} leuchtet die Dunkelheit ein Stück aus.`);
+      case 'spring': {
+        if (ow.springUsed) return say(`${N} ist hier schon erschöpft. Versuch es in einem anderen Gebiet.`);
+        ow.springUsed = true; s.team.forEach(t => { if (!t.egg && t.hp > 0) t.hp = Math.min(maxHp(t), t.hp + 20); }); sfx('heal');
+        return say(`${N} lässt eine klare Quelle sprudeln. Alle Kreaturen erholen sich um 20 KP.`);
+      }
+      case 'frost': {
+        const hot = ow.weather?.() === 'ash' || ['ignis', 'route3', 'kraterherz'].includes(ow.id);
+        if (!hot) return say(`${N} haucht eiskalte Luft. Brrr!`);
+        s.team.forEach(t => { if (t.status === 'brand') t.status = null; }); sfx('heal');
+        return say(`${N} kühlt dein Team in der Hitze ab. Verbrennungen sind geheilt!`);
+      }
+    }
+  }
+  // Mitläufer ansprechen
+  async talkFollower() {
+    const s = this.state, ow = this.ow, m = s.team.find(t => !t.egg && t.hp > 0); if (!m) return;
+    const N = monName(m), c = ow.ch(ow.p.x, ow.p.y), r = m.hp / maxHp(m), w = ow.weather?.();
+    cry(SPECIES[m.sp].cry);
+    if (!ow.fTalked) { ow.fTalked = true; m.friendship = Math.min(255, (m.friendship || 70) + 2); }
+    if (s.steps - (s.fFind || 0) > 350 && Math.random() < 0.4) {
+      s.fFind = s.steps; const pool = ['heilbeere', 'trank', 'kristall', 'klarbeere', 'heilbeere', 'supertrank', 'sternkristall'], it = pool[Math.floor(Math.random() * pool.length)];
+      s.bag[it] = (s.bag[it] || 0) + 1; sfx('caught'); ow.fEmote = { t: 1.4 };
+      return say([`${N} hat etwas im Maul …`, `${N} hat ${ITEMS[it].name} gefunden! Du steckst es ein.`]);
+    }
+    const S = SPECIES[m.sp], f = m.friendship || 70, L = [];
+    if (r < 0.3) L.push(`${N} sieht erschöpft aus … Ein Besuch im Heilzentrum wäre gut.`);
+    if (m.status) L.push(`${N} fühlt sich nicht gut. ${m.status === 'gift' ? 'Das Gift setzt ihm zu.' : m.status === 'brand' ? 'Die Verbrennung brennt.' : 'Es kann sich kaum rühren.'}`);
+    if (w === 'rain') L.push(S.types.includes('wasser') ? `${N} tanzt fröhlich im Regen!` : `${N} schüttelt sich die Regentropfen ab.`);
+    if (w === 'snow') L.push(S.types.includes('eis') ? `${N} wirft sich begeistert in den Schnee!` : `${N} zittert ein bisschen in der Kälte.`);
+    if (w === 'ash') L.push(S.types.includes('feuer') ? `${N} genießt die Hitze des Vulkans.` : `${N} niest. Die Asche kitzelt in der Nase.`);
+    if (c === ':' ) L.push(`${N} schnuppert neugierig im hohen Gras.`);
+    if (this.isNight()) L.push(S.types.includes('schatten') || S.types.includes('geist') ? `${N} ist nachts hellwach und voller Energie!` : `${N} gähnt ausgiebig.`);
+    if (ow.M.indoor) L.push(`${N} schaut sich neugierig im Raum um.`);
+    if (f >= 200) L.push(`${N} schmiegt sich an dich. Ihr seid ein unzertrennliches Team!`); else if (f >= 130) L.push(`${N} schaut dich fröhlich an!`);
+    L.push(`${N} hüpft vergnügt um dich herum!`, `${N} schaut sich aufmerksam um.`, `${N} folgt dir auf Schritt und Tritt.`);
+    if (f >= 130 || Math.random() < 0.3) ow.fEmote = { t: 1.2 };
+    return say(L[Math.floor(Math.random() * Math.min(L.length, L.length > 3 ? L.length - 1 : L.length))]);
+  }
   async useTm(k, it) {
     const s = this.state, M = MOVES[it.tm];
     const t = await party(s, { select: true, prompt: `Wer soll ${M.name} lernen?`, filter: m => this.canTm(m, it.tm) });
@@ -301,7 +421,7 @@ class Game {
       if (i === null || i === 4) return;
       m.moves[i] = { id: it.tm, pp: M.pp };
     }
-    s.bag[k]--; sfx('lvl'); await say(`${monName(m)} hat ${M.name} erlernt!`);
+    if (!it.hm) s.bag[k]--; sfx('lvl'); await say(`${monName(m)} hat ${M.name} erlernt!`);
   }
   // Mondruine: Hüter Lunareth bewacht den Mond-Herzstein
   async moonAltar() {
@@ -440,6 +560,8 @@ class Game {
   remoteActors(id) { return this.online.actors(id); }
   async onMapLoad(id) {
     const s = this.state;
+    if ((MAPS[id]?.buildings || []).some(b => b.heal)) s.flags['fly_' + id] = true;
+    if (s.bag.wellenreiter && !s.bag.vk_surfer) s.bag.vk_surfer = 1;
     this.online.pos(true);
     // Wer das Plateau betritt, beginnt die Liga von vorn (wie es sich gehört)
     if (id === 'liga') for (const k of ['e4_1', 'e4_2', 'e4_3', 'e4_4', 'aurin']) delete s.flags[k];
@@ -639,14 +761,14 @@ class Game {
     await this.wildBattle(this.ow.M.fishEnc || 'wasser', 'wasser');
   }
   // Surfen: erste kampffähige Wasser-Kreatur im Team zieht dich übers Wasser
-  surfMon() { return this.state.team.find(m => !m.egg && m.hp > 0 && SPECIES[m.sp].types.includes('wasser')); }
+  surfMon() { const s = this.state; return (s.bag.vk_surfer && this.knows('surfer')) || s.team.find(m => !m.egg && m.hp > 0 && SPECIES[m.sp].types.includes('wasser')); }
   async water(x, y) {
     const s = this.state;
     if (this.ow.M.indoor) return say('Im Becken der Arena ist Surfen verboten – nimm die Stege!');
     if (!s.bag.wellenreiter) return this.fish();
     const sm = this.surfMon();
     const opts = [...(sm ? ['Surfen'] : []), ...(s.bag.angel ? ['Angeln'] : []), 'Nichts'];
-    if (!sm) await say('Mit dem Wellenreiter könntest du surfen – aber dazu brauchst du eine Wasser-Kreatur im Team.');
+    if (!sm) await say('Mit dem Wellenreiter könntest du surfen – dazu brauchst du eine Kreatur mit SURFER (VM03) oder eine Wasser-Kreatur im Team.');
     const c = await choose(opts, { title: 'Wasser' });
     if (c === null || opts[c] === 'Nichts') return;
     if (opts[c] === 'Angeln') return this.fish();
@@ -725,7 +847,9 @@ class Game {
         await say('Du siehst erschöpft aus. Ruh dich kurz aus!', N); s.team.forEach(healMon); sfx('heal'); return say('Dein Team ist wieder fit. Pass auf dich auf!', N);
       case 'nachbarin': return say(['Hast du schon gehört? In Quellbach gibt es eine Brutstätte.', 'Wenn man zwei Kreaturen dort lässt, finden die manchmal ein Ei. Und was da rauskommt… unglaublich!'], N);
       case 'kid1': return say(s.flags.starter ? 'Mit dem SELECT-Knopf siehst du sofort dein Team!' : 'Im hohen Gras leben wilde Kreaturen! Ohne eigene darfst du da nicht rein.', N);
-      case 'bauer': return say(['Am Teich kann man angeln – wenn man eine Angel hat.', 'Angler Jo in Quellbach verschenkt manchmal welche.'], N);
+      case 'bauer':
+        if (s.flags.starter && !s.bag.vk_zerschneider) { await say(['Na, du hast ja jetzt eine eigene Kreatur!', 'Dann kannst du mir einen Gefallen tun: Überall wuchern kleine Büsche. Mit dieser Technik bekommst du sie weg.'], N); s.bag.vk_zerschneider = 1; sfx('caught'); await say(`${s.name} erhält VM01 ZERSCHNEIDER!`); return say(['Bring sie einer Kreatur bei – im Beutel unter A-KRISTALLE. VMs kann man immer wieder benutzen.', 'Stell dich dann vor einen Busch und drück A. Auf Route 1 und 2 gibt es welche, hinter denen etwas liegt!'], N); }
+        return say(['Am Teich kann man angeln – wenn man eine Angel hat.', 'Angler Jo in Quellbach verschenkt manchmal welche.'], N);
       case 'linde':
         if (!s.flags.lindeTalked) { s.flags.lindeTalked = true; return say([`Da bist du ja, ${s.name}!`, 'Jeder Trainer braucht einen Partner. Auf dem Tisch dort liegen drei Kristalle mit Kreaturen.', 'Feuer, Wasser oder Pflanze – wähle weise! Sieh sie dir am Tisch an.'], N); }
         if (!s.flags.starter) return say('Die Kristalle liegen auf dem Tisch. Sieh sie dir an!', N);
@@ -758,13 +882,14 @@ class Game {
         if (s.bag.wellenreiter) return say(['Das Meer ist heute spiegelglatt – perfekt zum Surfen!', 'Auf der Insel vor Aqualis haben sich Leute in dunklen Uniformen verschanzt…'], N);
         if (!s.badges[1]) return say(['Ich bin Malu! Ich verleihe Wellenreiter – aber nur an Trainer mit dem Glutorden aus Ignis.', 'Das Meer ist nichts für Anfänger!'], N);
         await say(['Der Glutorden! Respekt. Dann bist du bereit fürs Meer.', 'Hier, nimm diesen Wellenreiter! Stell dich ans Wasser, drück A – und eine Wasser-Kreatur zieht dich.'], N);
-        s.bag.wellenreiter = 1; sfx('caught'); return say(`${s.name} erhält den WELLENREITER!`);
+        s.bag.wellenreiter = 1; s.bag.vk_surfer = 1; sfx('caught'); await say(`${s.name} erhält den WELLENREITER und VM03 SURFER!`); return say('Bring einer Wasser-, Eis- oder Drachen-Kreatur SURFER bei – oder nimm einfach eine Wasser-Kreatur mit.', N);
       case 'guide3': return say(['Meri lässt dich über ihre Wasserbecken laufen – nur über die Stege!', 'Pflanzen- und Elektro-Attacken sind gegen ihre Kreaturen spitze.'], N);
       case 'aq_fischer': return say(s.flags.eklipse2 ? ['Seit die Uniformierten weg sind, beißen die Fische wieder!'] : ['Auf der Insel im Osten ist eine Höhle. Seit Tagen gehen dort Leute in dunklen Uniformen ein und aus.', 'Ohne Boot kommt man nicht hin… oder man surft!'], N);
       case 'aq_girl': return say(['Nachts leuchten die Quallos in der Bucht. Wunderschön!', 'Aber nicht anfassen – die nesseln!'], N);
       case 'aq_mann': return say(['Arenaleiterin Meri ist zur Insel rausgeschwommen. Sie wollte nachsehen, was Team Eklipse dort treibt.', 'Seitdem ist die Arena zu.'], N);
       case 'guide2': return say(['Selma ist die Herrin des Feuers.', 'Wasser- und Erd-Attacken löschen ihre Flammen am schnellsten!'], N);
-      case 'ig_opa': return say(s.flags.eklipse1 ? ['Danke, dass du die Gauner vertrieben hast!', 'Seit Wochen schleichen Leute in dunklen Uniformen um den Krater. Sie suchen etwas, das sie „Herzstein“ nennen…'] : ['Diese Leute in den dunklen Uniformen… Team Eklipse nennen sie sich.', 'Sie haben die Arena besetzt! Kann sie denn niemand vertreiben?'], N);
+      case 'ig_opa': if (s.flags.eklipse1 && !s.bag.vk_zertruemmerer) { await say(['Du hast die Gauner vertrieben! Dafür bekommst du etwas aus meiner alten Bergmannskiste.'], N); s.bag.vk_zertruemmerer = 1; sfx('caught'); await say(`${s.name} erhält VM02 ZERTRÜMMERER!`); return say(['Damit zerschlägt eine Kreatur rissige Felsen. Auf dem Aschepfad liegt hinter so einem Brocken noch was Schönes.'], N); }
+        return say(s.flags.eklipse1 ? ['Danke, dass du die Gauner vertrieben hast!', 'Seit Wochen schleichen Leute in dunklen Uniformen um den Krater. Sie suchen etwas, das sie „Herzstein“ nennen…'] : ['Diese Leute in den dunklen Uniformen… Team Eklipse nennen sie sich.', 'Sie haben die Arena besetzt! Kann sie denn niemand vertreiben?'], N);
       case 'ig_kid': return say(['Ignis liegt direkt am Vulkan. Nachts sieht man die Lava glühen!', 'Flammeulen kommen nur in der Dämmerung raus. Ich hab noch nie eine gefangen.'], N);
       case 'ria': case 'rio': return this.coopNpc('zwillinge', n);
       case 'koloss': return this.coopNpc('koloss', n);
@@ -777,13 +902,15 @@ class Game {
       case 'h_ignarok': case 'h_maristra': case 'h_boreon': case 'h_ferrodrakon': return this.hueter(n);
       case 'e4_1': case 'e4_2': case 'e4_3': case 'e4_4': case 'aurin': return this.liga(n);
       case 'liga_waechter': return say(s.flags.champion ? ['Champion! Die Top 4 nehmen jede Herausforderung an – so oft du willst.'] : ['Dies ist die Liga. Vier Meister und ein Champion warten dort drinnen.', 'Zwischen den Kämpfen gibt es keine Heilung. Wer verliert, fängt von vorn an.'], N);
-      case 'dk_alt': return say(s.flags.umbra1 ? ['Ihr habt Umbra vertrieben! Seit hundert Jahren hat niemand gewagt, sich ihm entgegenzustellen.', 'Der Drachenhort im Westen ist jetzt offen. Vala, die Drachenmeisterin, wartet.'] : ['Im Osten hat Team Eklipse den Berg ausgehöhlt. Dort steht ihr Hauptquartier.', 'Mit Branns Erzorden bekommst du das Stahltor auf. Schiebe die Felsbrocken, wo der Weg versperrt ist!'], N);
+      case 'dk_alt': if (s.badges[5] && !s.bag.vk_fliegen) { await say(['Du trägst sechs Orden … Dann bist du bereit für die Lüfte.'], N); s.bag.vk_fliegen = 1; sfx('caught'); await say(`${s.name} erhält VM05 FLIEGEN!`); return say('Eine Luft- oder Drachen-Kreatur trägt dich damit zu jeder Stadt, in der du schon ein Heilzentrum besucht hast.', N); }
+        return say(s.flags.umbra1 ? ['Ihr habt Umbra vertrieben! Seit hundert Jahren hat niemand gewagt, sich ihm entgegenzustellen.', 'Der Drachenhort im Westen ist jetzt offen. Vala, die Drachenmeisterin, wartet.'] : ['Im Osten hat Team Eklipse den Berg ausgehöhlt. Dort steht ihr Hauptquartier.', 'Mit Branns Erzorden bekommst du das Stahltor auf. Schiebe die Felsbrocken, wo der Weg versperrt ist!'], N);
       case 'dk_kind': return say(['Wenn du einen Felsbrocken in ein Loch schiebst, kann man darüber laufen!', 'Aber man kann Brocken nur schieben, nicht ziehen. Überleg vorher!'], N);
       case 'hort_waechter': return say(['Willkommen im Drachenhort. Hier kämpft Vala, die Meisterin aller Drachen.', 'Wer ihren Orden trägt, hat alle acht Arenen bezwungen.'], N);
       case 'so_waechter': return say(s.badges[5] ? ['Der Tempel liegt östlich der Stadt. Tritt auf die goldenen Platten, um die Tore zu öffnen.', 'Vorhin ist eine Frau in dunklem Mantel hineingegangen…'] : ['Ich bewache den Sonnentempel im Osten.', 'Erst wenn Sahra dir ihren Orden gibt, lasse ich dich ein.'], N);
       case 'so_haendler': return say(['Wasser, frisches Wasser! … Ach, du hast ja schon Beeren.', 'Im Sandmeer gibt es Kaktlinge. Wer ihnen den Hut zurückgibt, hat einen Freund fürs Leben.'], N);
       case 'nc_waechter': return say(s.badges[4] ? ['Die Ruine im Osten ist offen für dich. Pass auf – dort drinnen ist es stockfinster.', 'Ganz hinten soll der Hüter Lunareth wachen.'] : ['Ich bewache die Mondruine. Nur Trägern des Schattenordens lasse ich Einlass.', 'Morwen, unsere Arenaleiterin, entscheidet, wer würdig ist.'], N);
-      case 'nc_frau': return say(['Seit ich ein Kind war, ist es in Nocturna Nacht. Die Alten sagen, ein Hüter halte die Sonne fern.', 'Manche sagen, er beschütze damit etwas. Andere sagen, er sei einfach einsam.'], N);
+      case 'nc_frau': if (!s.bag.vk_blitz) { await say(['In der ewigen Nacht verirrt man sich leicht. Hier, die hat mir mein Vater gegeben.'], N); s.bag.vk_blitz = 1; sfx('caught'); await say(`${s.name} erhält VM04 BLITZ!`); return say('In der Mondruine erhellt Blitz die Dunkelheit. Elektro-, Licht-, Feuer- und Magie-Kreaturen können ihn lernen.', N); }
+        return say(['Seit ich ein Kind war, ist es in Nocturna Nacht. Die Alten sagen, ein Hüter halte die Sonne fern.', 'Manche sagen, er beschütze damit etwas. Andere sagen, er sei einfach einsam.'], N);
       case 'lyra4': {
         await say(['Lyra: Du schon wieder. Ich war vor dir hier – aber ich habe den Stein nicht angerührt.', 'Lyra: Nyx gehorcht jemandem. Der wahre Anführer von Team Eklipse heißt Umbra.', 'Lyra: Er will alle sieben Herzsteine vereinen und die Zeit anhalten. Für immer.', 'Lyra: … Ich weiß nicht mehr, ob das richtig ist. Hol du den Stein. Ich halte Ausschau.'], N);
         s.flags.lyra4 = true; this.ow.npcs = this.ow.npcs.filter(x => x.id !== 'lyra4'); return;

@@ -1,6 +1,11 @@
 // Attacken. cat: phys | spez | status. fx: visueller Stil im Kampf
 export const MOVES = {
   rempler:     { name: 'Rempler',      type: 'normal',   cat: 'phys', pow: 40, acc: 100, pp: 35, fx: 'dash' },
+  zerschneider: { name: 'Zerschneider', type: 'normal',  cat: 'phys', pow: 50, acc: 95, pp: 30, fx: 'slash' },
+  zertruemmerer: { name: 'Zertrümmerer', type: 'erde',   cat: 'phys', pow: 40, acc: 100, pp: 15, fx: 'quake', effect: { stat: 'def', stages: -1, target: 'foe' } },
+  surfer:      { name: 'Surfer',       type: 'wasser',   cat: 'spez', pow: 90, acc: 100, pp: 15, fx: 'storm' },
+  blitz:       { name: 'Blitz',        type: 'licht',    cat: 'status', pow: 0, acc: 100, pp: 20, fx: 'beam', effect: { stat: 'acc', stages: -1, target: 'foe' } },
+  fliegen:     { name: 'Fliegen',      type: 'luft',     cat: 'phys', pow: 90, acc: 95, pp: 15, fx: 'dash' },
   kratzer:     { name: 'Kratzer',      type: 'normal',   cat: 'phys', pow: 40, acc: 100, pp: 35, fx: 'slash' },
   knurren:     { name: 'Knurren',      type: 'normal',   cat: 'status', pow: 0, acc: 100, pp: 40, fx: 'roar', effect: { stat: 'atk', stages: -1, target: 'foe' } },
   panzern:     { name: 'Panzern',      type: 'normal',   cat: 'status', pow: 0, acc: 100, pp: 30, fx: 'buff', effect: { stat: 'def', stages: 1, target: 'self' } },

@@ -35,6 +35,9 @@ export class Overworld {
     s.bpos ||= {};
     this.boulders = (s.bpos[id] || (M.boulders || []).map(b => [...b])).filter(Boolean).map(([bx, by]) => ({ x: bx, y: by }));
     this.blds = M.buildings || [];
+    this.cleared = new Map(); this.revealed = false; this.flashLit = 0; this.springUsed = false; this.fTalked = false;
+    this.f = { x, y, px: x * 16, py: y * 16, fx: x, fy: y, tx: x, ty: y, dir: this.p.dir, vis: false };
+    this.hidden = this.genHidden(id, M).filter(h => !s.flags[h.id]);
     this.banner = (M.outdoor || M.cave || M.banner) ? { t: 2.2, name: M.name } : null;
     this.music();
     this.g.onMapLoad?.(id);
@@ -46,7 +49,21 @@ export class Overworld {
     setMusic(M.music || (M.gym ? 'gym' : dungeon ? 'cave' : n && M.outdoor ? 'night' : town ? 'town' : 'route'));
   }
 
-  ch(x, y) { return x < 0 || y < 0 || x >= this.w || y >= this.h ? null : this.M.rows[y][x]; }
+  ch(x, y) { if (x < 0 || y < 0 || x >= this.w || y >= this.h) return null; const c = this.M.rows[y][x]; return (c === '$' || c === '&') && this.cleared?.has(x + ',' + y) ? this.cleared.get(x + ',' + y) : c; }
+  // versteckte Gegenstände: je Route zwei feste, unsichtbare Fundorte (Erd-/Metall-Fähigkeit zeigt sie an)
+  genHidden(id, M) {
+    if (!M.outdoor || !M.enc) return [];
+    let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const rnd = () => ((h = (h * 1103515245 + 12345) >>> 0) / 4294967296), out = [];
+    const POOL = ['heilbeere', 'trank', 'kristall', 'klarbeere', 'supertrank', 'sternkristall', 'trank', 'heilbeere'];
+    const busy = new Set([...(M.npcs || []), ...(M.items || [])].map(o => o.x + ',' + o.y));
+    for (let tries = 0; tries < 200 && out.length < 2; tries++) {
+      const x = 1 + Math.floor(rnd() * (this.w - 2)), y = 1 + Math.floor(rnd() * (this.h - 2)), c = M.rows[y][x];
+      if (!'.,=sna'.includes(c) || busy.has(x + ',' + y) || this.bldAt?.(x, y) || (M.buildings || []).some(b => x >= b.x && x < b.x + b.w && y >= b.y && y <= b.y + b.h)) continue;
+      busy.add(x + ',' + y); out.push({ id: `hid:${id}:${out.length}`, x, y, item: POOL[Math.floor(rnd() * POOL.length)], n: 1 });
+    }
+    return out;
+  }
   bldAt(x, y) { return this.blds.find(b => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h); }
   boulderAt(x, y) { return this.boulders?.find(b => b.x === x && b.y === y); }
   holeOpen(x, y) { return this.ch(x, y) === '@' && !this.g.state.flags[`hole:${this.id}:${x},${y}`]; }
@@ -72,6 +89,7 @@ export class Overworld {
     const p = this.p, s = this.g.state;
     if (this.banner) { this.banner.t -= dt; if (this.banner.t <= 0) this.banner = null; }
     if (this.notice) { this.notice.t -= dt; if (this.notice.t <= 0) this.notice = null; }
+    if (this.fEmote) this.fEmote.t -= dt;
     if (this.emote) { this.emote.t -= dt; if (this.emote.t <= 0) this.emote = null; }
     this.updateNpcs(dt);
     for (const f of this.prints) f.t -= dt; if (this.prints.length && this.prints[0].t <= 0) this.prints = this.prints.filter(f => f.t > 0);
@@ -98,12 +116,13 @@ export class Overworld {
       if (G.t - (this.arrivedAt || 0) < 0.05) this.stepMove(carry + dt);
     }
   }
-  moveDur() { const p = this.p; return p.jump ? 0.42 : p.slide ? 0.1 : (input.held('b') && !this.M.indoor ? 0.13 : 0.22); }
+  moveDur() { const p = this.p; return p.jump ? 0.42 : p.slide ? 0.1 : (input.held('b') && !this.M.indoor ? (this.g.state.wind > 0 ? 0.095 : 0.13) : this.g.state.wind > 0 ? 0.17 : 0.22); }
   stepMove(dt) {
     const p = this.p;
     p.t += dt / this.moveDur();
     const k = Math.min(1, p.t);
     p.px = (p.fx + (p.tx - p.fx) * k) * 16; p.py = (p.fy + (p.ty - p.fy) * k) * 16;
+    const F = this.f; if (F) { F.px = (F.fx + (F.tx - F.fx) * k) * 16; F.py = (F.fy + (F.ty - F.fy) * k) * 16; F.k = k; if (k >= 1) { F.x = F.tx; F.y = F.ty; } }
     p.hop = p.jump ? Math.sin(k * Math.PI) * 10 : 0;
     // Gang: 4 Phasen pro Feld (Fuß links, Mitte, Fuß rechts, Mitte) und leichtes Wippen
     p.frame = p.slide ? 0 : k > 0.15 && k < 0.65 ? (p.step % 2 ? 1 : 2) : 0;
@@ -150,7 +169,14 @@ export class Overworld {
     this.startMove(nx, ny, false);
   }
   startMove(tx, ty, jump) {
-    this.dust(); const p = this.p; p.moving = true; p.fx = p.x; p.fy = p.y; p.tx = tx; p.ty = ty; p.t = 0; p.jump = jump; if (jump) sfx('whoosh'); }
+    this.dust(); const p = this.p; p.moving = true; p.fx = p.x; p.fy = p.y; p.tx = tx; p.ty = ty; p.t = 0; p.jump = jump; if (jump) sfx('whoosh');
+    const F = this.f;
+    if (F) {
+      F.fx = F.x; F.fy = F.y; F.tx = p.x; F.ty = p.y;
+      if (p.surf) { F.fx = F.tx = tx; F.fy = F.ty = ty; F.vis = false; }
+      else { const ddx = F.tx - F.fx, ddy = F.ty - F.fy; if (ddx || ddy) F.dir = Math.abs(ddx) > Math.abs(ddy) ? (ddx > 0 ? 'right' : 'left') : (ddy > 0 ? 'down' : 'up'); F.vis = this.ch(F.tx, F.ty) !== '~' && (F.tx !== tx || F.ty !== ty); }
+    }
+  }
   // Laufpartikel: Staub auf Wegen/Sand, Halme im hohen Gras, Schnee, Asche
   dust() {
     const p = this.p, c = this.ch(p.x, p.y); if (p.surf || p.slide) return;
@@ -163,6 +189,8 @@ export class Overworld {
   async arrive() {
     const p = this.p, s = this.g.state, c = this.ch(p.x, p.y);
     s.steps = (s.steps || 0) + 1;
+    if (s.wind > 0 && !--s.wind) this.notify('Der Rückenwind hat sich gelegt.');
+    if (s.repel > 0 && !--s.repel) this.notify('Der Schleier löst sich auf.');
     if ((c === 's' || c === 'd') && !p.surf) { this.prints.push({ x: p.x, y: p.y, dir: p.dir, t: 4 }); if (this.prints.length > 40) this.prints.shift(); }
     if ((c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%') && !p.surf) {
       this.rustle = { x: p.x, y: p.y, t: 0.32 }; sfx('grass');
@@ -186,7 +214,7 @@ export class Overworld {
     if (await this.checkTrainers()) return;
     if (p.surf && this.M.surfEnc) { if (Math.random() < ENC[this.M.surfEnc].rate) await this.g.wildBattle(this.M.surfEnc, 'wasser'); return; }
     const encId = this.M.enc;
-    if (encId && ((c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%') || (this.M.cave && c === 'c'))) {
+    if (encId && !(s.repel > 0) && ((c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%') || (this.M.cave && c === 'c'))) {
       if (Math.random() < ENC[encId].rate) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.id === 'altwald' ? 'wald' : this.M.bg || 'gras');
     }
   }
@@ -283,6 +311,11 @@ export class Overworld {
       if (n) { if (!n.trainer || this.g.state.flags[n.id]) n.dir = OPP[p.dir]; await this.g.talk(n); return; }
       const it = this.items.find(i => i.x === fx && i.y === fy);
       if (it) { await this.g.pickup(it); this.items = this.items.filter(i => i !== it); return; }
+      if (this.f?.vis && this.f.x === fx && this.f.y === fy && !this.p.moving) { await this.g.talkFollower(); return; }
+      const hd = this.hidden.find(h => h.x === fx && h.y === fy);
+      if (hd) { await this.g.pickup(hd); this.hidden = this.hidden.filter(h => h !== hd); return; }
+      if (this.ch(fx, fy) === '$') { await this.g.fieldObstacle('zerschneider', fx, fy); return; }
+      if (this.ch(fx, fy) === '&') { await this.g.fieldObstacle('zertruemmerer', fx, fy); return; }
       const c = this.ch(fx, fy);
       const sign = this.M.signs?.[fx + ',' + fy];
       if (sign) { await say(sign.split('\n').join(' – ')); return; }
@@ -367,6 +400,7 @@ export class Overworld {
     for (const b of this.blds) ctx.drawImage(building({ ...b, night }), b.x * 16 - cx, b.y * 16 - cy);
     for (const b of this.boulders || []) ctx.drawImage(tile('rockTop'), b.x * 16 - cx, b.y * 16 - cy);
     for (const i of this.items) ctx.drawImage(this.ball, i.x * 16 - cx, i.y * 16 - cy - Math.round(Math.sin(G.t * 3 + i.x) * 1));
+    if (this.revealed) for (const h of this.hidden) { const on = Math.sin(G.t * 6 + h.x) > 0; ctx.fillStyle = on ? '#fff8c0' : '#ffd36b'; const hx = h.x * 16 - cx + 8, hy = h.y * 16 - cy + 8; ctx.fillRect(hx - 1, hy - (on ? 4 : 3), 2, on ? 8 : 6); ctx.fillRect(hx - (on ? 4 : 3), hy - 1, on ? 8 : 6, 2); }
     // geöffnete Tür
     if (this.door) { const dx = this.door.x * 16 - cx, dy = this.door.y * 16 - cy; ctx.fillStyle = '#28202c'; ctx.fillRect(dx + 3, dy + 3, 10, 13); ctx.fillStyle = '#100c14'; ctx.fillRect(dx + 4, dy + 4, 8, 12); ctx.fillStyle = 'rgba(255,220,150,.25)'; ctx.fillRect(dx + 4, dy + 13, 8, 3); }
     // Fußspuren im Sand
@@ -378,10 +412,17 @@ export class Overworld {
     const actors = [...this.npcs.map(n => ({ mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
       { look: this.g.state.look, dir: p.dir, frame: p.frame, hop: p.hop || 0, px: p.px, py: p.py - (p.hop || 0) - (p.bob || 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
       ...(this.g.remoteActors?.(this.id) || [])];
+    const lead = this.f?.vis && !p.surf && this.g.state.team.find(m => !m.egg && m.hp > 0);
+    if (lead) { const F = this.f; actors.push({ follow: lead, px: F.px, py: F.py, x: F.x, y: F.y, dir: F.dir }); }
     actors.sort((a, b) => a.py - b.py);
     for (const a of actors) {
       if (a.me && p.surf) { const sm = this.g.surfMon?.(); const bob = Math.round(Math.sin(G.t * 4)); if (sm) ctx.drawImage(monSprite(sm.sp, 'icon', sm.shiny, sm.mut), a.px - cx - 8, a.py - cy - 6 + bob); drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 7 + bob); continue; }
-      if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
+      if (a.follow) {
+        const m = a.follow, img = monSprite(m.sp, 'icon', m.shiny, m.mut), mv = p.moving, hopY = mv ? -Math.round(Math.abs(Math.sin((this.f.k || 0) * Math.PI)) * 2) : (Math.floor(G.t * 2) % 2 ? -1 : 0);
+        ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(a.px - cx + 8, a.py - cy + 14, 6, 2, 0, 0, 7); ctx.fill();
+        ctx.save(); ctx.translate(Math.round(a.px - cx + 8), Math.round(a.py - cy - 15 + hopY)); if (a.dir === 'right') ctx.scale(-1, 1); ctx.drawImage(img, -16, 0); ctx.restore();
+        if (this.fEmote?.t > 0) { const ex = a.px - cx + 4, ey = a.py - cy - 22; ctx.fillStyle = '#28202c'; ctx.fillRect(ex - 1, ey - 1, 10, 9); ctx.fillStyle = '#fff'; ctx.fillRect(ex, ey, 8, 7); ctx.fillStyle = '#e84a6a'; [[1, 1, 2, 2], [5, 1, 2, 2], [1, 2, 6, 2], [2, 4, 4, 1], [3, 5, 2, 1]].forEach(([q, w2, e, r]) => ctx.fillRect(ex + q, ey + w2, e, r)); }
+      } else if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
       else {
         if (this.ch(a.x, a.y + 1) === '~') { // Spiegelung im Wasser
           const wx = a.x * 16 - cx, wy = (a.y + 1) * 16 - cy;
@@ -448,7 +489,7 @@ export class Overworld {
     if (this.M.darkRadius) {
       const L = (this.lightCv ||= Object.assign(document.createElement('canvas'), { width: W, height: H })), lx = L.getContext('2d');
       lx.globalCompositeOperation = 'source-over'; lx.clearRect(0, 0, W, H); lx.fillStyle = 'rgba(6,4,16,.96)'; lx.fillRect(0, 0, W, H);
-      const px = p.px - cx + 8, py = p.py - cy + 6, r = this.M.darkRadius + Math.sin(G.t * 3) * 1.5;
+      const px = p.px - cx + 8, py = p.py - cy + 6, r = this.M.darkRadius + (this.flashLit || 0) + Math.sin(G.t * 3) * 1.5;
       const gr = lx.createRadialGradient(px, py, r * 0.45, px, py, r);
       gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
       lx.globalCompositeOperation = 'destination-out'; lx.fillStyle = gr; lx.beginPath(); lx.arc(px, py, r, 0, 7); lx.fill();

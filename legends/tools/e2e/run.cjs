@@ -20,7 +20,9 @@ const S = {
     await T.start({ map: 'route1', x: 2, y: 15, dir: 'right', noEnc: true });
     await T.p.evaluate(() => { window.SM = []; const l = () => { if (LU2.ow?.p) SM.push(LU2.ow.p.px); requestAnimationFrame(l); }; requestAnimationFrame(l); });
     await T.p.waitForTimeout(500); await T.p.evaluate(() => (SM.length = 0)); await T.hold('ArrowRight', 2000);
-    const S2 = await T.p.evaluate(() => SM), d = S2.slice(1).map((v, i) => +(v - S2[i]).toFixed(2)).slice(10, -12);
+    const S2 = await T.p.evaluate(() => SM); let d = S2.slice(1).map((v, i) => +(v - S2[i]).toFixed(2));
+    // nur die Laufphase werten (Stillstand vor dem Start und nach dem Loslassen abschneiden)
+    while (d.length && d[d.length - 1] === 0) d.pop(); d = d.slice(10, -4);
     await T.b.close();
     const zeros = d.filter(v => v === 0).length, mx = Math.max(...d), mn = Math.min(...d.filter(v => v > 0));
     return { ok: zeros === 0 && mx - mn < 0.5, frames: d.length, zeros, min: mn, max: mx, errs: T.errs };

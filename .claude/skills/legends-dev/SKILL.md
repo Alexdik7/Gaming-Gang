@@ -39,6 +39,10 @@ Vanilla-JS-ES-Module, Canvas 2D, 240×160 logische Pixel. Es gibt keinen Build-S
 - NPC `{ id, x, y, dir, look: LOOK.x, name, trainer: { team: [[sp, lv]], reward, sight, lines: [...], lose } }`. Optional `hideIf/showIf: 'flag'`.
 - Ein Sieg setzt `flags[id]` und ruft danach `story()` auf; dort Folgeereignisse per `ow.id`- und Flag-Prüfung.
 
+**VM-Hindernis:** In Kartenzeilen `$` (Busch, VM01) oder `&` (rissiger Fels, VM02) setzen. Beide sind fest (SOLID) und wachsen beim Neubetreten nach. Dahinter ein Fundstück legen; `checkmaps` meldet es nur als Hinweis.
+
+**Typ-Fähigkeit:** In `game.fieldOptions` die Tabelle `AB` (`typ: [Name, art]`) erweitern und in `game.ability` einen `case art` ergänzen.
+
 **Gespräch:** In `talk()` `case 'id': return say([...], N);`. Sonderfälle kommen als Methode in die Klasse.
 
 **Sperre:** `blockEdge(map, to)` für Kartenränder, `blockMove(map, x, y)` für einzelne Felder (z. B. Höhleneingang). `true` heißt blockiert; dabei `this.ow.busy` setzen bzw. zurücksetzen.

@@ -146,6 +146,23 @@ const DRAW = {
     x.fillStyle = '#98989c'; x.beginPath(); x.ellipse(8, 8.5, 6, 5, 0, 0, 7); x.fill();
     x.fillStyle = '#c8c8cc'; x.fillRect(5, 5, 4, 2); x.fillStyle = '#707078'; x.fillRect(9, 11, 4, 1);
   },
+  // kleiner Busch, den man mit Zerschneider entfernen kann
+  cutbush: (x, f, s) => {
+    grass(x, s); x.fillStyle = 'rgba(0,0,0,.2)'; x.beginPath(); x.ellipse(8, 13, 6, 2, 0, 0, 7); x.fill();
+    x.fillStyle = '#1c4a24'; x.beginPath(); x.arc(8, 8, 6.5, 0, 7); x.fill();
+    x.fillStyle = '#2e7a34'; x.beginPath(); x.arc(8, 7.5, 5.5, 0, 7); x.fill();
+    x.fillStyle = '#48a048'; x.beginPath(); x.arc(6, 6, 2.6, 0, 7); x.arc(10.5, 7, 2.2, 0, 7); x.fill();
+    x.fillStyle = '#7ad068'; x.fillRect(5, 4, 2, 1); x.fillRect(10, 6, 1, 1);
+    x.fillStyle = '#5a3a20'; x.fillRect(7, 12, 2, 2);
+  },
+  // rissiger Felsen für Zertrümmerer
+  crack: (x, f, s) => {
+    DRAW.ash(x, f, s); x.fillStyle = 'rgba(0,0,0,.25)'; x.beginPath(); x.ellipse(8, 13, 7, 2, 0, 0, 7); x.fill();
+    x.fillStyle = '#3a3034'; x.beginPath(); x.ellipse(8, 8.5, 7, 6.5, 0, 0, 7); x.fill();
+    x.fillStyle = '#8a7c78'; x.beginPath(); x.ellipse(8, 8, 6, 5.5, 0, 0, 7); x.fill();
+    x.fillStyle = '#b0a49c'; x.fillRect(4, 4, 4, 2);
+    x.fillStyle = '#2a2024'; x.fillRect(8, 3, 1, 3); x.fillRect(7, 6, 1, 2); x.fillRect(8, 8, 1, 2); x.fillRect(9, 10, 1, 2); x.fillRect(5, 8, 2, 1); x.fillRect(10, 6, 2, 1);
+  },
   fence: (x, f, s) => {
     grass(x, s); x.fillStyle = '#5a3a20'; x.fillRect(0, 6, 16, 4); x.fillRect(2, 3, 3, 11); x.fillRect(11, 3, 3, 11);
     x.fillStyle = '#c89058'; x.fillRect(0, 7, 16, 2); x.fillRect(3, 4, 1, 9); x.fillRect(12, 4, 1, 9);
