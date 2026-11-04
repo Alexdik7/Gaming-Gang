@@ -1,11 +1,12 @@
 # Wolkenpfad
 
-Endlos-Läufer über schwebende Tempelruinen über einem Wolkenmeer. Mira hat das Sonnenherz geholt, der Nebelschlund jagt sie.
+Endlos-Läufer in echtem 3D (three.js, lokal in `lib/`) über einen Tempelpfad hoch über dem Nebelwald – im Stil der klassischen Tempel-Läufer. Mira hat das Sonnenherz geholt, zwei Schattenwesen des Nebelschlunds jagen sie.
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/wolkenpfad/
 **Aufs iPhone:** in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft es offline.
 
 ## Steuerung
+- **Steuerung wählbar:** Wischen oder Neigen (Handy kippen zum Ausweichen; Wischen bleibt für Springen, Rutschen, Abbiegen).
 - **Wischen ← →:** Spur wechseln. Kurz vor einer Kreuzung wird damit abgebogen; goldene Pfeile zeigen die Richtung.
 - **Wischen ↑:** springen (über Säulen, Geröll und Lücken)
 - **Wischen ↓:** rutschen (unter Torbalken). In der Luft schnell landen.
@@ -21,18 +22,19 @@ Endlos-Läufer über schwebende Tempelruinen über einem Wolkenmeer. Mira hat da
 - **Kreuzungen:** links, rechts oder T-Kreuzung. Wer verpasst abzubiegen, prallt gegen die Wand.
 - **Stolpern:** Wer seitlich gegen ein Hindernis stößt, stolpert und der Nebelschlund holt auf. Ein zweites Stolpern innerhalb von 8 Sekunden beendet den Lauf.
 - **Kräfte** (im Shop in 5 Stufen verlängerbar):
-  - Splittermagnet
-  - Lichtschild
+  - Münzmagnet
+  - Schutzamulett
   - Sonnenflug (unverwundbar, biegt selbst ab)
-  - Doppelglanz
+  - Goldrausch
 - **Läufer:** Mira, Taro, Kitsu, Sola, Nox
 - **Missionen:** Je drei geschaffte Missionen erhöhen den Punkte-Multiplikator.
-- **Wiederbeleben:** kostet Splitter (250, dann jeweils das Doppelte).
+- **Wiederbeleben:** kostet Münzen (250, dann jeweils das Doppelte).
 - **Tageszeiten:** Alle 1000 m wechseln sie: Morgenrot → Mittag → Abendglut → Sternennacht.
 - **Technik:**
   - Eigene Musik und Effekte per WebAudio
-  - Grafik als Pseudo-3D in Canvas 2D, ohne Assets
-  - Alles in `index.html`
+  - WebGL mit three.js: Licht, Schatten, Nebel, prozedurale Texturen (Stein, Mauer, Rinde, Dschungel)
+  - 3D-Läuferin mit Laufanimation, Intro-Kamera am Tempel
+  - Code in `game.js`, Oberfläche in `index.html`
 
 ## Technik-Notizen
 - **Strecke:**

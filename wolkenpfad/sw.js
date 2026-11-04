@@ -1,6 +1,6 @@
 // Offline-Cache für Wolkenpfad. Bei jeder Änderung CACHE erhöhen!
-const CACHE = 'wolkenpfad-v1.0.0';
-const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+const CACHE = 'wolkenpfad-v2.0.0';
+const FILES = ['./', 'index.html', 'game.js', 'lib/three.module.min.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });
 self.addEventListener('fetch', e => {
