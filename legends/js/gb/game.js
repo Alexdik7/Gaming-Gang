@@ -199,7 +199,7 @@ class Game {
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
-    await document.fonts?.load('8px "Pixelify Sans"').catch(() => {});
+    await Promise.all(['8px "Pixelify Sans"', '400 8px "Atkinson Hyperlegible"', '700 8px "Atkinson Hyperlegible"'].map(f => document.fonts?.load(f).catch(() => {})));
     this.title();
   }
 

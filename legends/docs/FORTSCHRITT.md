@@ -561,3 +561,25 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
   - 11 Stück, so viele wie es legendäre Kreaturen gibt, liegen in Sackgassen: Route 1, Altwald, Kieselhöhle (2×), Route 5, Eisgrotte, Route 7, Tempel, Route 8, Gezeitengrotte und Drachengipfel (`it_b52_1…11`).
   - Beim Fund zählt das Spiel mit („Nummer n von 11“).
   - Der normale Bindball trägt jetzt ein Winkel-Emblem.
+
+## v2.4 – Attacken-Effekte und neue Schrift
+- **Effekte** (`js/gb/fx.js`): Jeder Typ hat eigene Partikel.
+
+  | Typ | Partikel |
+  |---|---|
+  | Feuer | Flammen mit Rauch |
+  | Wasser | Tropfen mit Schwerkraft und Spritzern |
+  | Pflanze | wirbelnde Blätter |
+  | Elektro | Funkenlinien |
+  | Eis | Splitter, die stehen bleiben |
+  | Erde | Felsbrocken und Staub |
+  | Gift | Blasen |
+  | Geist, Schatten | Schwaden |
+  | Licht, Magie | Sterne |
+  | Luft | Windsicheln |
+  | Drache | violette Flammen |
+  | Metall | Silbersplitter |
+
+  - Bewegungsarten: Geschoss mit Spur, Salven (Blätter, Splitter, Tropfen, Felsen), Strahl mit Leuchtkern, Wirbel, Bodenbeben mit Fontänen, Blitze von oben, Nahkampf mit Ausholen, Schnittspuren, Biss.
+  - Einschlag: typischer Ausbruch, Druckring, bei sehr effektiven Treffern zusätzlich ein Blitz.
+- **Schrift:** Atkinson Hyperlegible (lokal in `fonts/`). Buchstaben wie I/l/1, O/0 und G/6 sind eindeutig unterscheidbar; unter 8,5 px wird sie fett gesetzt.

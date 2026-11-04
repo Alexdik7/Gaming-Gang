@@ -30,10 +30,10 @@ html, body { margin: 0; height: 100%; background: #15122a; overflow: hidden; tou
 .ss button { border: 0; width: 64px; height: 18px; border-radius: 10px; background: var(--btn); color: #b8b0d8; font: 700 9px "Pixelify Sans", sans-serif; letter-spacing: .12em; box-shadow: 0 3px 0 #120e22; transform: rotate(-22deg); touch-action: none; }
 .ss button.on { transform: rotate(-22deg) translateY(2px); box-shadow: 0 1px 0 #120e22; }
 #nameinput { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: 20px; }
-.ni { background: #f8f8f0; border: 4px solid #3a6ea8; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; width: min(320px, 100%); font-family: "Pixelify Sans", sans-serif; }
+.ni { background: #f8f8f0; border: 4px solid #3a6ea8; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; width: min(320px, 100%); font-family: "Atkinson Hyperlegible", sans-serif; }
 .ni label { font-weight: 700; color: #28283a; font-size: 18px; }
-.ni input { font: 600 20px "Pixelify Sans", sans-serif; padding: 8px 10px; border: 2px solid #8fc8f8; border-radius: 8px; user-select: text; -webkit-user-select: text; }
-.ni button { font: 700 18px "Pixelify Sans", sans-serif; background: #3a6ea8; color: #fff; border: 0; border-radius: 8px; padding: 10px; }
+.ni input { font: 700 20px "Atkinson Hyperlegible", sans-serif; padding: 8px 10px; border: 2px solid #8fc8f8; border-radius: 8px; user-select: text; -webkit-user-select: text; }
+.ni button { font: 700 18px "Atkinson Hyperlegible", sans-serif; background: #3a6ea8; color: #fff; border: 0; border-radius: 8px; padding: 10px; }
 
 /* Querformat: Bildschirm in der Mitte, Tasten seitlich */
 @media (orientation: landscape) {

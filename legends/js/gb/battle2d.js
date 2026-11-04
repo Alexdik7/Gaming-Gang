@@ -12,6 +12,7 @@ import { crystalIcon as rawCrystal } from './pixel.js';
 const _ci = {}; const crystalIcon = c => (_ci[c] ||= rawCrystal(c));
 import { choose, party, evoScene, typeTag, say, ask, waitMsg } from './gbui.js';
 import { ITEMS } from './maps.js';
+import { moveFx, impactFx, updateParts, drawParts, drawBeam } from './fx.js';
 
 const BG = {
   gras: ['#a8e0f8', '#e0f8d0', '#78c858', '#58a848'], wald: ['#406858', '#88b098', '#3e7a48', '#2e6038'], hoehle: ['#3a2a20', '#6a5040', '#9a7a58', '#7a5a40'], vulkan: ['#3a1a1a', '#b8583a', '#8a7a68', '#6a5a4a'], schnee: ['#a8c8e8', '#eef6ff', '#e0ecf8', '#c0d4e8'], wueste: ['#f8c878', '#fff0c8', '#e8c888', '#d0a868'], berg: ['#7898c8', '#d8e4f0', '#a89878', '#8a7a60'],
@@ -249,8 +250,8 @@ class BattleScene {
   impact(side, e) {
     if (e.eff === 0) { sfx('weak'); return; }
     const big = e.eff > 1 || e.crit;
-    this.burst(side, TYPES[e.type].color, big ? 40 : 22, big ? 110 : 70);
-    this.burst(side, '#ffffff', 8, 40);
+    { const c = this.center(side); impactFx(this, e.type, c.x, c.y, big); if (big) this.flash = 0.12; }
+    this.burst(side, '#ffffff', 6, 40);
     this.blink(side);
     const o = side === 'f' ? this.foeOff : this.ownOff, dir = side === 'f' ? 1 : -1;
     this.tween(0.3, k => (o.x = Math.sin(k * Math.PI * 3) * 4 * dir * (1 - k)));
@@ -299,6 +300,7 @@ class BattleScene {
     const M = MOVES[id], col = TYPES[M.type].color, foe = side === 'p' ? 'f' : 'p';
     const o = side === 'f' ? this.foeOff : this.ownOff, dir = side === 'p' ? 1 : -1;
     const a = this.center(side), t = this.center(foe);
+    if (M.cat !== 'status' && await moveFx(this, M, side, a, t, o, dir, hit)) return;
     switch (M.fx) {
       case 'dash': case 'slash': case 'bite':
         sfx('whoosh');
@@ -409,7 +411,7 @@ class BattleScene {
   update(dt) {
     if (this.pressRes && (input.pressed('a') || input.pressed('b') || input.tap)) { const r = this.pressRes; this.pressRes = null; r(); }
     for (let i = this.tweens.length - 1; i >= 0; i--) { const tw = this.tweens[i]; tw.t += dt; const k = Math.min(1, tw.t / tw.dur); tw.fn(k); if (k >= 1) { this.tweens.splice(i, 1); tw.res(); } }
-    for (const p of this.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.l -= dt; } this.parts = this.parts.filter(p => p.l > 0);
+    updateParts(this.parts, dt); this.parts = this.parts.filter(p => p.l > 0); if (this.parts.length > 260) this.parts.splice(0, this.parts.length - 260);
     for (const b of this.bolts) b.l -= dt; this.bolts = this.bolts.filter(b => b.l > 0);
     for (const r of this.rings) r.t += dt; this.rings = this.rings.filter(r => r.t < 0.45);
     if (this.flash > 0) this.flash -= dt;
@@ -468,7 +470,7 @@ class BattleScene {
       for (let i = 1; i <= 6; i++) { const k = i / 6; ctx.lineTo(bo.a.x + (bo.t.x - bo.a.x) * k + (i < 6 ? (Math.random() - .5) * 14 : 0), bo.a.y + (bo.t.y - bo.a.y) * k + (i < 6 ? (Math.random() - .5) * 14 : 0)); }
       ctx.stroke();
     }
-    for (const p of this.parts) { ctx.globalAlpha = Math.min(1, p.l / p.ml * 1.5); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.sz / 2, p.y - p.sz / 2, p.sz, p.sz); }
+    drawBeam(ctx, this.beamFx); drawParts(ctx, this.parts);
     ctx.globalAlpha = 1;
     // Wurf-Timing
     if (this.aimS) {

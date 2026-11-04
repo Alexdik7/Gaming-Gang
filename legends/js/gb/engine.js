@@ -6,7 +6,7 @@ export let VH = 160;
 export let SCALE = 3;
 // Position auf die feinste darstellbare Stufe runden (1/SCALE Spielpixel) → ruckelfreies Scrollen
 export const snap = v => Math.round(v * SCALE) / SCALE;
-export const FONT = '"Pixelify Sans", "Trebuchet MS", sans-serif';
+export const FONT = '"Atkinson Hyperlegible", "Pixelify Sans", "Trebuchet MS", sans-serif';
 export const COL = {
   ink: '#28283a', inkSoft: '#6a6a80', paper: '#f8f8f0', frame: '#3a6ea8', frame2: '#8fc8f8', shadow: '#c8c8d8',
   hpG: '#48d058', hpY: '#f8c030', hpR: '#f05040', xp: '#40a8f8',
@@ -162,7 +162,7 @@ export function frame(dt) {
 }
 
 // ---------------------------------------------------------------- Zeichenhilfen
-export function font(size = 8, bold = false) { G.ctx.font = `${bold ? 700 : 500} ${size}px ${FONT}`; }
+export function font(size = 8, bold = false) { G.ctx.font = `${bold || size < 8.5 ? 700 : 400} ${size}px ${FONT}`; }
 export function text(str, x, y, color = COL.ink, size = 8, align = 'left', shadow = COL.shadow, bold = false) {
   const c = G.ctx; font(size, bold); c.textAlign = align; c.textBaseline = 'top';
   if (shadow) { c.fillStyle = shadow; c.fillText(str, x + 0.6, y + 0.6); }
