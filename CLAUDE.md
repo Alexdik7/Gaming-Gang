@@ -38,7 +38,7 @@ Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legend
 - Ist ein Push fehlgeschlagen, einfach erneut pushen (passiert gelegentlich).
 
 ## Stand (aktualisieren!)
-- **Legends United v2.2** (Vorbild ab jetzt: **Pokémon Smaragd** – Grafik, Bewegung, Menüs):
+- **Legends United v2.5** (Vorbild ab jetzt: **Pokémon Smaragd** – Grafik, Bewegung, Menüs):
   - Inhalt: 150 Kreaturen, 8 Arenen, Liga, Postgame (Hüter), Raids 4v1 mit KI-Helfern und Online-Koop, Nihilux
   - Technik: komponierte Musik, Android-App, flüssige Subpixel-Bewegung, neue Weltgrafik
   - Kampf: Kampf-Intro mit Kristallwürfen, Smaragd-Hintergründe (`battlebg.js`), Smaragd-Statusboxen, Level-Up-Fenster
@@ -52,6 +52,7 @@ Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legend
   - Server: dauerhaft in MongoDB Atlas (`server/store.js`, `MONGODB_URI`), Render-Blueprint `render.yaml`, Selbst-Ping gegen Einschlafen
   - Sicherungs-Code ohne Server (`exportSave`/`importSave`, Titel → CODE LADEN)
   - PC: Box-Bildschirm `boxui.js` (8×30, `m.slot`, `s.boxMeta`, Greifen/Tauschen)
+  - v2.3–2.5: eigene Bälle (`ballIcon`, 52-Ball = Meisterball, 11 versteckt), Attacken-Effekte (`fx.js`), Schrift Atkinson Hyperlegible, neue Gebäude + Marktstände (`props`), 139 neue Kreaturen-Namen (IDs unverändert), Item-Bilder im Beutel (`itemIcon`)
   - Sammeln: Chronik-Seite beim Erstfang, Belohnungen von Prof. Linde, Massenausbruch pro Tag, Glanzamulett
 - Details in `legends/docs/FORTSCHRITT.md` und `ROADMAP.md`.
 - **Wolkenpfad v2.0:** WebGL/three.js, Dschungel-Tempelpfad, 3D-Läuferin, Neigen-Steuerung, Kreuzungen, 6 Hindernisarten, 4 Kräfte, 5 Läufer, Missionen, Tageszeiten, Offline-PWA. `sw.js`-CACHE bei Änderungen erhöhen.
