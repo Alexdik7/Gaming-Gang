@@ -13,10 +13,13 @@ import { itemFilter } from './battle2d.js';
 
 const BG = {
   gras: ['#a8e0f8', '#e0f8d0', '#78c858', '#58a848'], hoehle: ['#3a2a20', '#6a5040', '#9a7a58', '#7a5a40'], vulkan: ['#3a1a1a', '#b8583a', '#8a7a68', '#6a5a4a'], schnee: ['#a8c8e8', '#eef6ff', '#e0ecf8', '#c0d4e8'], wueste: ['#f8c878', '#fff0c8', '#e8c888', '#d0a868'], berg: ['#7898c8', '#d8e4f0', '#a89878', '#8a7a60'], arena: ['#d8c8a8', '#f0e8d0', '#c8a878', '#a88858'],
+  wasser: ['#88c8f8', '#d0f0ff', '#58a8e8', '#3888d0'], ruine: ['#1a1440', '#4a3a7a', '#5a6a5a', '#3a4a3a'], liga: ['#3a2a6a', '#c8b8f0', '#b8a8e0', '#8a78c0'],
 };
 // Sprite-Positionen (linke obere Ecke, Größe 64 × Skalierung)
 const POS = { f0: { x: 116, y: 0, s: 0.85 }, f1: { x: 168, y: 12, s: 0.85 }, p0: { x: 0, y: 46, s: 1 }, p1: { x: 58, y: 54, s: 1 } };
 const BOSS = { x: 132, y: -6, s: 1.15 };
+// Raid: vier eigene Kreaturen in einer Reihe
+const RPOS = { p0: { x: 0, y: 66, s: 0.72 }, p1: { x: 44, y: 70, s: 0.72 }, p2: { x: 88, y: 66, s: 0.72 }, p3: { x: 132, y: 70, s: 0.72 } };
 const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
 class DoubleScene {
@@ -26,9 +29,10 @@ class DoubleScene {
     this.bg = BG[o.bg] || BG.gras; this.msg = ''; this.chars = 0; this.mode = 'msg'; this.cur = 0; this.mcur = 0; this.tcur = 0;
     this.off = {}; this.hpD = {};
     for (const id of this.b.ids()) { this.off[id] = { x: 0, y: 0, s: 0, vis: false }; const m = this.b.mon(id); this.hpD[id] = m ? m.hp : 0; }
+    this.raid = !!this.b.slots.p2;
     this.parts = []; this.tweens = []; this.bolts = []; this.showBoxes = false; this.trainersVis = true; this.ownTrainers = true;
   }
-  pos(id) { return this.o.boss && SIDE(id) === 'f' ? BOSS : POS[id]; }
+  pos(id) { return this.o.boss && SIDE(id) === 'f' ? BOSS : this.raid && SIDE(id) === 'p' ? RPOS[id] : POS[id]; }
   center(id) { const p = this.pos(id), o = this.off[id] || { x: 0 }; return { x: p.x + 32 * p.s + o.x, y: p.y + 38 * p.s }; }
 
   // ---------------------------------------------------------- Ablauf
@@ -39,9 +43,9 @@ class DoubleScene {
     this.trainersVis = false;
     for (const id of ['f0', 'f1']) if (b.mon(id)) { if (!o.boss) await this.say(`${b.slots[id].owner} schickt ${monName(b.mon(id))}!`, 500); await this.appear(id); this.g.markDex(b.mon(id).sp); }
     this.ownTrainers = false;
-    const own = ['p0', 'p1'].filter(id => b.mon(id));
-    await this.say(`Los, ${own.map(id => monName(b.mon(id))).join(' und ')}!`, 600);
-    for (const id of own) await this.appear(id);
+    const own = ['p0', 'p1', 'p2', 'p3'].filter(id => b.mon(id));
+    if (this.raid) for (const id of own) { await this.say(`${b.slots[id].owner} schickt ${monName(b.mon(id))}!`, 350); await this.appear(id); }
+    else { await this.say(`Los, ${own.map(id => monName(b.mon(id))).join(' und ')}!`, 600); for (const id of own) await this.appear(id); }
     this.showBoxes = true;
     while (!b.over) {
       const acts = {}, mine = o.mine.filter(id => b.alive(id));
@@ -74,7 +78,7 @@ class DoubleScene {
   async remote(fn) {
     if (!this.o.remote) return fn();
     this.mode = 'busy'; this.msg = '';
-    const close = waitMsg('Warte auf deinen Partner');
+    const close = waitMsg(this.raid ? 'Warte auf die Mitspieler' : 'Warte auf deinen Partner');
     try { return await fn(); } finally { close(); }
   }
   tween(dur, fn) { return new Promise(res => this.tweens.push({ t: 0, dur, fn, res })); }
@@ -106,7 +110,7 @@ class DoubleScene {
       return this.done({ t: 'switch', i: k });
     }
     if (i === 3) {
-      if (this.o.remote && await ask('Möchtest du aufgeben? Der Kampf endet dann für euch beide.')) return this.done({ t: 'forfeit' });
+      if (this.o.remote && await ask(this.raid ? 'Möchtest du aufgeben? Der Raid endet dann für alle.' : 'Möchtest du aufgeben? Der Kampf endet dann für euch beide.')) return this.done({ t: 'forfeit' });
       if (!this.o.remote) await say('Aus diesem Kampf gibt es kein Entkommen!');
       this.mode = 'menu';
     }
@@ -114,7 +118,7 @@ class DoubleScene {
   pickMove() {
     const m = this.b.mon(this.actor), mv = m.moves[this.mcur]; if (!mv || mv.pp <= 0) { sfx('weak'); return; }
     const M = MOVES[mv.id], self = M.cat === 'status' && (M.effect?.target === 'self' || M.effect?.heal);
-    const foes = FOES(this.actor).filter(f => this.b.alive(f));
+    const foes = FOES(this.actor).filter(f => this.b.slots[f] && this.b.alive(f));
     sfx('click');
     if (self || foes.length < 2) return this.done({ t: 'move', i: this.mcur, target: foes[0] });
     this.mode = 'target'; this.tcur = 0; this.tlist = foes;
@@ -219,12 +223,12 @@ class DoubleScene {
     const [sky, sky2, g1, g2] = this.bg, b = this.b;
     const gr = ctx.createLinearGradient(0, 0, 0, 114); gr.addColorStop(0, sky); gr.addColorStop(0.55, sky2); gr.addColorStop(0.56, g1); gr.addColorStop(1, g2);
     ctx.fillStyle = gr; ctx.fillRect(0, 0, W, 114);
-    for (const [cx, cy, rx, ry] of [[178, 64, 58, 11], [62, 112, 64, 12]]) {
+    for (const [cx, cy, rx, ry] of this.raid ? [[178, 64, 58, 11], [92, 112, 98, 9]] : [[178, 64, 58, 11], [62, 112, 64, 12]]) {
       ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(cx, cy + 2, rx, ry, 0, 0, 7); ctx.fill();
       ctx.fillStyle = g2; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 7); ctx.fill();
     }
     if (this.trainersVis && this.o.trainers) this.o.trainers.forEach((t, k) => ctx.drawImage(trainerSprite(t.look), 124 + k * 50 - (this.o.trainers.length === 1 ? -20 : 0), 2));
-    for (const id of ['f1', 'f0', 'p1', 'p0']) {
+    for (const id of ['f1', 'f0', 'p3', 'p2', 'p1', 'p0']) {
       const m = b.mon(id), o = this.off[id]; if (!m || !o?.vis) continue;
       const p = this.pos(id), img = monSprite(m.sp, SIDE(id) === 'f' ? 'front' : 'back', m.shiny, m.mut), w = 64 * p.s * o.s;
       ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, 114); ctx.clip();
@@ -236,7 +240,8 @@ class DoubleScene {
     ctx.globalAlpha = 1;
     if (this.showBoxes) {
       ['f0', 'f1'].forEach((id, k) => b.mon(id) && this.infoBox(id, 3, 3 + k * 23, false));
-      ['p0', 'p1'].forEach((id, k) => b.mon(id) && this.infoBox(id, 133, 67 + k * 23, true));
+      if (this.raid) ['p0', 'p1', 'p2', 'p3'].forEach((id, k) => b.mon(id) && this.miniBox(id, 3 + (k % 2) * 66, 26 + Math.floor(k / 2) * 19));
+      else ['p0', 'p1'].forEach((id, k) => b.mon(id) && this.infoBox(id, 133, 67 + k * 23, true));
     }
     box(0, 113, W, 47, 'dark');
     if (this.mode === 'moves' || this.mode === 'target') return this.drawMoves();
@@ -247,6 +252,13 @@ class DoubleScene {
       box(120, 114, 117, 43);
       ['KAMPF', 'BEUTEL', 'TEAM', this.o.remote ? 'AUFGEBEN' : 'FLUCHT'].forEach((s, i) => { const x = 134 + (i % 2) * 52, yy = 121 + Math.floor(i / 2) * 16; if (this.cur === i) cursor(x - 9, yy + 1); text(s, x, yy, COL.ink, s.length > 6 ? 7 : 8.5, 'left', COL.shadow, true); });
     }
+  }
+  miniBox(id, x, y) {
+    const m = this.b.mon(id); if (!m) return;
+    box(x, y, 64, 18, this.actor === id && (this.mode === 'menu' || this.mode === 'moves') ? 'gold' : this.o.mine.includes(id) ? 'default' : 'dark');
+    text(monName(m).slice(0, 8), x + 5, y + 2.5, this.o.mine.includes(id) ? COL.ink : '#fff', 6, 'left', null, true);
+    text(String(m.lvl), x + 60, y + 2.5, this.o.mine.includes(id) ? COL.ink : '#fff', 5.5, 'right');
+    bar(x + 5, y + 12, 54, 3, (this.hpD[id] ?? m.hp) / maxHp(m));
   }
   infoBox(id, x, y, own) {
     const m = this.b.mon(id); if (!m) return;

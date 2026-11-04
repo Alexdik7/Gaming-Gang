@@ -1,5 +1,5 @@
 // Doppelkampf-Logik (2 gegen 2, oder 2 gegen 1 Boss). Rein logisch, läuft im Browser und auf dem Server.
-// Plätze: p0, p1 (eigene Seite), f0, f1 (Gegner). Mehrere Plätze dürfen sich ein Team teilen (Einzelspieler-Doppelkampf).
+// Plätze: p0, p1 (eigene Seite, im Raid bis p3), f0, f1 (Gegner). Mehrere Plätze dürfen sich ein Team teilen (Einzelspieler-Doppelkampf).
 import { SPECIES } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
 import { effectiveness } from '../data/types.js';
@@ -7,7 +7,8 @@ import { calcStats, maxHp, monName, giveXp, xpBonus } from '../data/mon.js';
 import { STAGE, ACC_STAGE, STAT_NAME, STATUS_NAME, freshStages } from './battle.js';
 
 export const SIDE = id => id[0];
-export const FOES = id => (SIDE(id) === 'p' ? ['f0', 'f1'] : ['p0', 'p1']);
+export const SLOTS = ['p0', 'p1', 'p2', 'p3', 'f0', 'f1'];
+export const FOES = id => (SIDE(id) === 'p' ? ['f0', 'f1'] : ['p0', 'p1', 'p2', 'p3']);
 export const ALLY = id => id[0] + (id[1] === '0' ? '1' : '0');
 
 export class DoubleBattle {
@@ -16,7 +17,7 @@ export class DoubleBattle {
   constructor({ slots, rnd = Math.random, xpMode = 'apply', trainerName = 'Gegner' }) {
     this.rnd = rnd; this.xpMode = xpMode; this.trainerName = trainerName;
     this.slots = {}; this.over = false; this.result = null; this.pendingEvos = []; this.xpLog = {}; this.need = [];
-    for (const id of ['p0', 'p1', 'f0', 'f1']) {
+    for (const id of SLOTS) {
       const d = slots[id]; if (!d) continue;
       this.slots[id] = { ...d, i: -1, st: freshStages(), acts: d.acts || 1 };
       this.slots[id].i = this.nextFor(id);
@@ -205,7 +206,7 @@ export class DoubleBattle {
 
   awardXp(f, ev) {
     const base = Math.floor((SPECIES[f.sp].xp * f.lvl) / 5 * 1.5 * (f.boss ? 3 : 1));
-    for (const id of ['p0', 'p1']) {
+    for (const id of this.ids().filter(x => SIDE(x) === 'p')) {
       const m = this.alive(id) && this.mon(id); if (!m) continue;
       const amt = Math.max(1, Math.floor(base * 0.75 * xpBonus(m)));
       ev.push({ t: 'msg', text: `${monName(m)} erhält ${amt} EP!` });

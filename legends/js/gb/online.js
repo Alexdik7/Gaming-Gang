@@ -205,9 +205,17 @@ export class Online {
     (async () => {
       try {
         sfx('encounter');
-        const ok = await ask(r.kind === 'trade' ? `${r.name} möchte mit dir tauschen. Einverstanden?` : r.kind === 'coop' ? `${r.name} möchte mit dir zusammen gegen ${r.npcName} kämpfen! Mitmachen?` : `${r.name} fordert dich zu einem Freundschaftskampf heraus! Annehmen?`);
+        const ok = await ask(r.kind === 'trade' ? `${r.name} möchte mit dir tauschen. Einverstanden?` : r.kind === 'coop' ? `${r.name} möchte mit dir zusammen gegen ${r.npcName} kämpfen! Mitmachen?` : r.kind === 'raid' ? `${r.name} lädt dich zum Raid gegen ${r.npcName} ein! Mitmachen?` : `${r.name} fordert dich zu einem Freundschaftskampf heraus! Annehmen?`);
         const team = this.g.state.team.filter(m => !m.egg);
         if (ok && r.kind !== 'trade' && !team.length) { this.send({ t: 'reqAns', to: r.from, ok: false }); await say('Du hast noch keine Kreaturen!'); return; }
+        if (r.kind === 'raid') {
+          this.send({ t: 'raidJoin', ok: ok && !!team.length, team });
+          if (!ok) return;
+          const close = waitMsg('Warte auf den Raid-Start');
+          const m = await this.next(['coopStart', 'reqNo'], 40000); close();
+          if (m.t === 'coopStart') await this.runCoop(m); else if (m.t === 'reqNo') await say(m.why);
+          return;
+        }
         this.send({ t: 'reqAns', to: r.from, ok, team: r.kind !== 'trade' ? team : undefined });
         if (!ok) return;
         if (r.kind === 'trade') { const m = await this.next(['tradeStart', 'tradeCancel'], 8000); if (m.t === 'tradeStart') await this.trade(m.with); }
@@ -244,6 +252,16 @@ export class Online {
     if (m.t === 'reqNo') { await say(m.why); return null; }
     return this.runCoop(m);
   }
+  // Raid: Gastgeber lädt bis zu 3 Mitspieler ein; freie Plätze füllen KI-Helfer
+  async raid(npc, partners) {
+    const team = this.g.state.team.filter(m => !m.egg);
+    this.send({ t: 'raidOpen', npc, team, invite: partners.slice(0, 3).map(p => p.pid) });
+    const close = waitMsg('Warte auf die Mitspieler');
+    const m = await this.next(['reqNo', 'coopStart'], 40000); close();
+    if (m.t === 'timeout') { await say('Keine Antwort vom Server.'); return null; }
+    if (m.t === 'reqNo') { await say(m.why); return null; }
+    return this.runCoop(m);
+  }
   async runCoop(m) {
     const d = COOP[m.npc], s = this.g.state;
     const b = new RemoteDouble(this, m);
@@ -268,6 +286,7 @@ export class Online {
     }
     if (r.result === 'win') await this.g.coopReward(m.npc);
     else await say(r.result === 'lose' ? 'Ihr habt verloren… Gemeinsam schafft ihr es beim nächsten Mal!' : 'Der Kampf ist vorbei.');
+    this.g.state.team.forEach(x => delete x._fainted);
     this.g.save(true);
     return r.result;
   }

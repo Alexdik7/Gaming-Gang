@@ -16,7 +16,7 @@ import { initAudio, sfx, cry, setMusic, setAudio, audioState } from '../core/aud
 import { mulberry } from '../core/noise.js';
 import { Online } from './online.js';
 import { doubleBattle, localDouble } from './double2d.js';
-import { COOP, foeSlots } from '../data/coop.js';
+import { COOP, foeSlots, helperSlots } from '../data/coop.js';
 import { DoubleBattle } from '../battle/double.js';
 import { HUETER } from '../data/creatures9.js';
 
@@ -27,6 +27,7 @@ const QUESTS = {
   fh_oma: { want: 'schneeglock', ask: ['Früher blühten überall in Frostheim Schneeglocks. Heute sieht man sie kaum noch.', 'Wenn du eines findest – bei Tag am Frostpass –, würdest du es mir zeigen?'], thanks: ['Ach, wie schön! {mon} läutet ja richtig!', 'Das erinnert mich an meine Jugend. Hier, für deine Reise.'], reward: { ak_sonnenstrahl: 1, klarbeere: 5 }, after: 'Danke noch mal für das Schneeglock. Mein Herz ist ganz warm.' },
 };
 // Top 4 und Champion: Teams, Texte, Belohnung
+const RAID3 = ['r_chronoth', 'r_vortyx', 'r_prismora'];
 const LIGA = {
   e4_1: {
     team: [['sporanox', 52], ['tangechse', 53], ['schneeglock', 53], ['kaktoroc', 54], ['hainfeste', 55]], reward: 6600,
@@ -406,7 +407,7 @@ class Game {
     return false;
   }
   blockMove(map, x, y) {
-    const s = this.state, pg = { ignis: [12, 0], route4: [22, 14], frostheim: [20, 10], drakmor: [24, 1] }[map];
+    const s = this.state, pg = { ignis: [12, 0], route4: [22, 14], frostheim: [20, 10], drakmor: [24, 1], altwald: [10, 2] }[map];
     if (pg && pg[0] === x && pg[1] === y && !s.flags.linde_pg) {
       this.ow.busy = true;
       (async () => { await say(s.flags.champion ? ['Der Bann vor dem Eingang flackert, als würde er dich erkennen.', 'Prof. Linde in Moosgrund weiß bestimmt, was das bedeutet.'] : ['Ein uralter Bann aus Licht versiegelt den Eingang.', 'Nur jemand, der stärker ist als alle Trainer der Liga, könnte ihn brechen.']); this.ow.busy = false; })();
@@ -673,6 +674,7 @@ class Game {
         if (!s.flags.starter) return say('Die Kristalle liegen auf dem Tisch. Sieh sie dir an!', N);
         if (s.flags.champion && !s.flags.linde_pg) return this.lindeSecret(n);
         if (s.flags.linde_pg && !s.bag.urkristall && HUETER.some(k => !s.dex.caught[k])) { s.bag.urkristall = 3; sfx('caught'); await say(['Keine Urkristalle mehr? Ich habe noch ein paar gefunden.', `${s.name} erhält 3× URKRISTALL!`], N); }
+        if (s.flags.linde_pg && !s.flags.nihilux) await say('Der Riss am Altar im Altwald ist noch offen. Dort warten Kian, Lyra und Nyx – und Nihilux.', N);
         if (s.flags.linde_pg) { const h = HUETER.filter(k => s.dex.caught[k]).length; await say(`Hüter in deiner Chronik: ${h} von 7.${h < 7 ? ' Krater von Ignis, Grotte vor Route 4, Frostgipfel, Drachengipfel – und die Altäre von Mondruine und Sonnentempel.' : ' Alle sieben! Du bist der erste Mensch, dem das gelingt.'}`, N); }
         { const c = Object.keys(s.dex.caught).length, m = Object.keys(s.dex.caught).filter(k => SPECIES[k]?.fusion).length;
           return say([`Deine Chronik: ${Object.keys(s.dex.seen).length} gesehen, ${c} gebunden.`, m ? `Und ${m} Mutation${m > 1 ? 'en' : ''}! So etwas habe ich noch nie gesehen!` : 'Versuch doch mal die Brutstätte in Quellbach – Mutationen sind mein Forschungsgebiet!'], N); }
@@ -711,6 +713,10 @@ class Game {
       case 'koloss': return this.coopNpc('koloss', n);
       case 'nyx3': case 'lyra3': return this.coopNpc('finale', n);
       case 'morwen': case 'sahra': case 'brann': case 'vala': return this.gym(n);
+      case 'r_chronoth': case 'r_vortyx': case 'r_prismora': case 'r_nihilux': return this.raidNpc(n.id);
+      case 'riss_kian': return say(['Kian: Zu viert sind wir unschlagbar! Sprich einen der Wächter an – Lyra, Nyx und ich kämpfen mit.', 'Kian: Und wenn deine Freunde online sind, nehmen sie unsere Plätze ein.'], N);
+      case 'riss_lyra': return say(s.flags.nihilux ? ['Lyra: Der Riss wird kleiner. Die Welten sind wieder getrennt – aber nicht mehr allein.'] : ['Lyra: Drei Wächter halten den schwarzen Kern im Norden versiegelt.', 'Lyra: Besiegt Chronoth, Vortyx und Prismora. Dann erwacht Nihilux.'], N);
+      case 'riss_nyx': return say(['Nyx: Ich kämpfe nicht mehr für Umbra.', 'Nyx: Aber gegen das Ende der Welt? Da bin ich dabei.'], N);
       case 'h_ignarok': case 'h_maristra': case 'h_boreon': case 'h_ferrodrakon': return this.hueter(n);
       case 'e4_1': case 'e4_2': case 'e4_3': case 'e4_4': case 'aurin': return this.liga(n);
       case 'liga_waechter': return say(s.flags.champion ? ['Champion! Die Top 4 nehmen jede Herausforderung an – so oft du willst.'] : ['Dies ist die Liga. Vier Meister und ein Champion warten dort drinnen.', 'Zwischen den Kämpfen gibt es keine Heilung. Wer verliert, fängt von vorn an.'], N);
@@ -816,6 +822,7 @@ class Game {
   }
   async coopReward(id) {
     const d = COOP[id], s = this.state;
+    if (d.raid) return this.raidReward(id);
     if (s.flags['coop_' + id]) { await say('Super Kampf! (Die Belohnung gab es schon.)'); return; }
     s.flags['coop_' + id] = true;
     if (d.lose) await say(d.lose);
@@ -948,7 +955,7 @@ class Game {
     await say(['Und jetzt hast du alle sieben Herzsteine vereint. Damit sind die vier schlafenden Hüter erwacht.', 'Ignarok im Krater von Ignis, Maristra in einer Grotte vor Route 4, Boreon auf dem Frostgipfel und Ferrodrakon auf dem Drachengipfel.', 'Und wer Lunareth oder Solarion nicht gebunden hat, findet sie wieder an ihren Altären.'], N);
     s.bag.urkristall = (s.bag.urkristall || 0) + 8; s.flags.linde_pg = true; sfx('caught');
     await say(`${s.name} erhält 8× URKRISTALL!`);
-    await say(['Diese Urkristalle habe ich damals aus dem Hauptquartier mitgenommen. Sie binden zehnmal besser als normale Kristalle.', 'Noch etwas… In den Herzsteinen höre ich ein Echo. Etwas lebt zwischen den Welten und wartet.', 'Wenn es erwacht, schafft das niemand allein. Dann braucht ihr euch alle vier.'], N);
+    await say(['Diese Urkristalle habe ich damals aus dem Hauptquartier mitgenommen. Sie binden zehnmal besser als normale Kristalle.', 'Noch etwas… In den Herzsteinen höre ich ein Echo. Etwas lebt zwischen den Welten und wartet.', 'Wenn es erwacht, schafft das niemand allein. Dann braucht ihr euch alle vier.', 'Seit gestern klafft am alten Altar im Altwald ein Riss. Kian, Lyra und Nyx warten dort schon auf dich.'], N);
     this.save(true);
   }
   async hueter(n) {
@@ -973,6 +980,58 @@ class Game {
     const r = await this.wildBattle(null, bg, createMon(sp, 60));
     if (r?.result === 'caught') { s.flags[sp] = true; await say(`${SPECIES[sp].name} hat dich als würdig anerkannt!`); this.save(true); }
     else if (r?.result === 'win') await say(`${SPECIES[sp].name} verschwindet im Licht. Es kommt wieder.`);
+  }
+
+  // ---------------------------------------------------------- Phase 4.5b: Raids im Dimensionsriss
+  async raidNpc(id) {
+    const s = this.state, d = COOP[id], N = { name: d.name };
+    if (id === 'r_nihilux' && !RAID3.every(k => s.flags['raid_' + k])) return say(['Ein schwarzer Kern pulsiert über dem Abgrund…', 'Drei Wächter halten ihn versiegelt: Chronoth, Vortyx und Prismora. Besiegt sie zuerst!']);
+    await say(d.intro, N);
+    const partners = this.online.on ? this.online.partners().slice(0, 3) : [];
+    const opts = [...(partners.length ? [{ label: `Mit ${partners.length} Mitspieler${partners.length > 1 ? 'n' : ''}`, online: true }] : []), { label: 'Mit Kian, Lyra & Nyx' }, { label: 'Später' }];
+    const c = await choose(opts.map(o => o.label), { title: 'Raid · 4 gegen 1' });
+    if (c === null || opts[c].label === 'Später') return;
+    if (opts[c].online) { await this.online.raid(id, partners); return; }
+    if (!s.team.some(m => !m.egg && m.hp > 0)) return say('Deine Kreaturen sind erschöpft!');
+    sfx('encounter'); await this.flashIn();
+    const hs = helperSlots(1);
+    const b = new DoubleBattle({ slots: { p0: { pool: s.team, owner: s.name }, ...hs, ...foeSlots(id) } });
+    this.markDex(b.mon('f0').sp);
+    const r = await doubleBattle(this, { b, mine: ['p0'], bg: d.bg, title: d.name, boss: true, ownLooks: [s.look, ...Object.values(hs).map(h => h.look)] });
+    if (r.result === 'win') { this.ow.music(); await fade(0, 150); await this.raidReward(id); }
+    await this.afterBattle(r);
+  }
+  async raidReward(id) {
+    const d = COOP[id], s = this.state, sp = d.boss.sp, first = !s.flags['raid_' + id];
+    s.flags['raid_' + id] = true;
+    await say(d.lose);
+    const money = first ? d.reward : Math.floor(d.reward / 4); s.money += money;
+    await say(`Der Raid ist gewonnen! Du erhältst ${money} ◈.`);
+    if (first && d.item) { s.bag[d.item[0]] = (s.bag[d.item[0]] || 0) + d.item[1]; sfx('caught'); await say(`Du findest ${d.item[1]}× ${ITEMS[d.item[0]].name}!`); }
+    if (id === 'r_nihilux') return this.nihiluxEnd();
+    if (!s.flags[sp]) {
+      await say(['Lyra heilt eure Kreaturen.', `Der geschwächte ${SPECIES[sp].name} bleibt zurück. Versuch, ihn zu binden!`]);
+      s.team.forEach(healMon);
+      const m = createMon(sp, d.boss.lvl - 6); m.hp = 1; m.status = 'starre';
+      const r = await this.wildBattle(null, d.bg, m);
+      if (r?.result === 'caught') { s.flags[sp] = true; this.ow.npcs = this.ow.npcs.filter(n => n.id !== id); }
+      else await say(`${SPECIES[sp].name} zieht sich in den Riss zurück. Ein neuer Raid gibt dir eine neue Chance.`);
+    }
+    if (first && RAID3.every(k => s.flags['raid_' + k])) { G.shake = 1; sfx('evo'); await say(['Ein tiefes Grollen geht durch den Riss…', 'Das Siegel um den schwarzen Kern ist gebrochen. Nihilux ist erwacht!']); }
+    this.save(true);
+  }
+  async nihiluxEnd() {
+    const s = this.state, N = { name: 'Nihilux' };
+    await say(['Nihilux: Ich habe Welten enden sehen. Jedes Mal gingen alle fort, und ich blieb allein zurück.', 'Nihilux: Ihr seid geblieben. Alle vier.', 'Nihilux: … Vielleicht muss nicht alles enden. Vielleicht verändert es sich nur.'], N);
+    await say('Lyra: Das hat Umbra nie verstanden. Und ich lange auch nicht.', { name: 'Lyra' });
+    await say(`Kian: Hey, Nihilux! Wenn du nicht mehr allein sein willst – geh doch mit ${s.name}!`, { name: 'Kian' });
+    const m = createMon('nihilux', 70); healMon(m); this.markDex('nihilux', true); s.flags.nihilux = true;
+    cry(SPECIES.nihilux.cry); sfx('caught');
+    if (s.team.length < 6) s.team.push(m); else s.box.push(m);
+    await say([`Nihilux schließt sich ${s.name} an!`, ...(s.team.includes(m) ? [] : ['Nihilux wartet in der Box im Heilzentrum.'])]);
+    this.ow.npcs = this.ow.npcs.filter(n => n.id !== 'r_nihilux');
+    await say(['Der Riss beginnt sich zu schließen. Die Welten sind wieder getrennt – aber keine ist mehr allein.', '(Ende von Phase 4! Raids gegen die Wächter kannst du jederzeit wiederholen.)']);
+    this.save(true);
   }
 
   async gym(n) {

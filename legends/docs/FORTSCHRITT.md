@@ -1,6 +1,29 @@
 # Fortschritt
 
-## v0.13 – Phase 4.5a: Postgame & Hüter (aktuell)
+## v0.14 – Phase 4.5b: Raids & Nihilux (aktuell)
+
+### ✅ Neu und getestet
+- **Neuer Kampfmodus: Raid, 4 gegen 1.**
+  - Bis zu 4 Spieler kämpfen gemeinsam gegen einen Boss, der mehrmals pro Runde angreift.
+  - Freie Plätze übernehmen **Kian, Lyra und Nyx** als KI-Helfer. So sind Raids auch allein spielbar.
+  - **Online:** Der Gastgeber lädt alle Mitspieler auf derselben Karte ein. Der Raid startet, sobald alle geantwortet haben, spätestens nach 25 Sekunden.
+  - Der Server berechnet alles. Verliert jemand die Verbindung, kämpft die KI für ihn weiter.
+  - Der Server-Koop ist allgemein auf 2–4 Spieler umgebaut. Der 2er-Koop gegen den Felsenkoloss läuft weiter, ein Regressionstest war grün.
+- **Dimensionsriss** am alten Altar im Altwald, offen nach Prof. Lindes Geständnis.
+  - Er hat eigene wilde Kreaturen (Lv 58–65).
+  - Drei Raid-Wächter: **Chronoth** (Metall/Magie), **Vortyx** (Schatten/Luft), **Prismora** (Licht/Magie).
+  - Nach einem Sieg bleibt der Wächter geschwächt zurück und kann gebunden werden. Raids lassen sich wiederholen.
+- **Nihilux:**
+  - Erwacht, sobald alle drei Wächter besiegt sind (Raid-Boss Lv 72).
+  - Nach dem Sieg schließt sich Nihilux dir an. Damit endet Phase 4.
+- **12 neue Kreaturen**, jetzt 133: Splitterling → Splitterdrache, Leerfalter, Zeitkäfer, Nebelmolch, Sternqualle, Echopilz, Phasenhase, die 3 Wächter und Nihilux. Dazu 5 neue Attacken.
+- **Neue Raid-Ansicht:** 4 eigene Kreaturen in einer Reihe mit kompakten KP-Anzeigen.
+- **Balancing per Simulation**, allein mit 3 KI-Helfern auf Lv 64:
+  - Chronoth 83 %, Prismora 89 %, Vortyx 63 %, Nihilux 58 %
+  - Mit 4 Spielern liegt die Siegquote bei fast 100 %.
+- **Tests:** Online-Raid mit 3 Browsern bis zum Sieg, mit Verbindungsabbruch mittendrin. Raid allein bis zu Nihilux. Alle 52 Karten sind fehlerfrei.
+
+## v0.13 – Phase 4.5a: Postgame & Hüter
 
 ### ✅ Neu und getestet
 - **Lindes Geheimnis:**

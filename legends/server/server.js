@@ -157,7 +157,7 @@ function handle(s, m) {
     return;
   }
   if (m.t === 'look') { if (m.look && typeof m.look === 'object') me.look = lookClean(m.look); return; }
-  if (m.t === 'req' || m.t === 'reqAns' || m.t.startsWith('duel') || m.t.startsWith('trade') || m.t.startsWith('coop')) return social(s, m, w, me);
+  if (m.t === 'req' || m.t === 'reqAns' || m.t.startsWith('duel') || m.t.startsWith('trade') || m.t.startsWith('coop') || m.t.startsWith('raid')) return social(s, m, w, me);
   if (m.t === 'save') {
     if (!validSave(m.data)) return send(s.ws, { t: 'err', msg: 'Spielstand abgelehnt' });
     me.save = m.data; me.savedAt = Date.now(); markDirty();
@@ -200,7 +200,7 @@ setInterval(() => {
   for (const s of live.values()) if (s.world && s.pos) (byWorld[s.world] ||= []).push(s);
   for (const [c, list] of Object.entries(byWorld)) {
     const w = db.worlds[c];
-    const players = list.map(s => ({ pid: s.pid, name: w.members[s.pid].name, look: w.members[s.pid].look, busy: !!(s.duel || s.trade || s.coop), ...s.pos }));
+    const players = list.map(s => ({ pid: s.pid, name: w.members[s.pid].name, look: w.members[s.pid].look, busy: !!(s.duel || s.trade || s.coop || s.raidLobby || s.raidInv), ...s.pos }));
     for (const s of list) send(s.ws, { t: 'snap', players: players.filter(p => p.pid !== s.pid) });
   }
 }, 100);
@@ -221,7 +221,7 @@ function social(s, m, w) {
   if (m.t === 'req') {
     const o = byPid(s.world, m.to);
     if (!o || o === s) return send(s.ws, { t: 'reqNo', why: 'Spieler nicht erreichbar.' });
-    if (o.duel || o.trade || o.coop || o.req) return send(s.ws, { t: 'reqNo', why: `${nameOf(o)} ist gerade beschäftigt.` });
+    if (o.duel || o.trade || o.coop || o.req || o.raidLobby || o.raidInv) return send(s.ws, { t: 'reqNo', why: `${nameOf(o)} ist gerade beschäftigt.` });
     const kind = ['trade', 'coop'].includes(m.kind) ? m.kind : 'battle';
     if (kind === 'coop' && !(L.COOP && L.COOP[m.npc])) return send(s.ws, { t: 'reqNo', why: 'Unbekannter Koop-Gegner.' });
     if (kind === 'battle' && !L.Battle) return send(s.ws, { t: 'reqNo', why: 'Kampflogik auf dem Server nicht bereit.' });
@@ -254,6 +254,7 @@ function social(s, m, w) {
   }
   if (m.t.startsWith('duel')) return duelMsg(s, m);
   if (m.t.startsWith('coop')) return coopMsg(s, m);
+  if (m.t.startsWith('raid')) return raidMsg(s, m);
   if (m.t.startsWith('trade')) return tradeMsg(s, m);
 }
 
@@ -293,40 +294,101 @@ function duelMsg(s, m) {
   }
 }
 
-// Koop: zwei Spieler (p0, p1) gegen ein Trainer-Duo oder einen Boss. Server berechnet alles.
+// Koop: 2 Spieler gegen Duo/Boss, Raid: bis zu 4 Spieler (freie Plätze: KI-Helfer) gegen einen Boss. Server berechnet alles.
 const slotState = b => Object.fromEntries(b.ids().map(id => [id, { pool: b.slots[id].pool, i: b.slots[id].i, owner: b.slots[id].owner, ai: !!b.slots[id].ai, acts: b.slots[id].acts }]));
-function startCoop(a, b, req, teamB) {
-  const battle = new L.DoubleBattle({ xpMode: 'log', slots: { p0: { pool: req.team, owner: nameOf(a) }, p1: { pool: teamB, owner: nameOf(b) }, ...L.foeSlots(req.npc) } });
-  const co = { a, b, battle, npc: req.npc, acts: {}, pend: [] };
-  a.coop = b.coop = co;
-  const st = slotState(battle), looks = [a, b].map(x => db.worlds[x.world].members[x.pid].look);
-  send(a.ws, { t: 'coopStart', slot: 'p0', npc: req.npc, slots: st, looks, partner: nameOf(b) });
-  send(b.ws, { t: 'coopStart', slot: 'p1', npc: req.npc, slots: st, looks, partner: nameOf(a) });
+const lookOf = x => db.worlds[x.world].members[x.pid].look;
+function beginCoop(members, npc, extraSlots = {}) {
+  const slots = {};
+  members.forEach((x, k) => (slots['p' + k] = { pool: x.team, owner: nameOf(x.s) }));
+  const battle = new L.DoubleBattle({ xpMode: 'log', slots: { ...slots, ...extraSlots, ...L.foeSlots(npc) } });
+  const co = { members: members.map((x, k) => ({ s: x.s, slot: 'p' + k })), battle, npc, acts: {}, pend: [] };
+  co.members.forEach(x => (x.s.coop = co));
+  const st = slotState(battle);
+  const looks = ['p0', 'p1', 'p2', 'p3'].filter(id => battle.slots[id]).map((id, k) => (co.members[k] ? lookOf(co.members[k].s) : battle.slots[id].look));
+  for (const x of co.members) send(x.s.ws, { t: 'coopStart', slot: x.slot, npc, slots: st, looks, partner: co.members.filter(y => y !== x).map(y => nameOf(y.s)).join(', ') });
 }
+function startCoop(a, b, req, teamB) { beginCoop([{ s: a, team: req.team }, { s: b, team: teamB }], req.npc); }
 function coopSend(co, ev) {
   const B = co.battle, msg = { t: 'coopEv', ev, need: B.need, over: B.over, result: B.result, xpLog: B.over ? B.xpLog : null };
-  send(co.a.ws, msg); send(co.b.ws, msg);
-  if (B.over) co.a.coop = co.b.coop = null;
+  for (const x of co.members) send(x.s.ws, msg);
+  if (B.over) for (const x of co.members) x.s.coop = null;
+}
+// Runde ausführen, sobald alle menschlichen Spieler mit kampffähiger Kreatur gewählt haben
+function coopTry(co) {
+  const B = co.battle;
+  if (B.over || B.need.length) return;
+  if (co.members.some(x => B.alive(x.slot) && !co.acts[x.slot])) return;
+  const pre = co.pend.splice(0), ev = B.turn(co.acts); co.acts = {};
+  // KI-Plätze (verlassene Spieler) wechseln selbst
+  for (const id of [...B.need]) if (B.slots[id].ai) ev.push(...B.forcedSwitch(id, B.nextFor(id)));
+  coopSend(co, [...pre, ...ev]);
 }
 function coopMsg(s, m) {
   const co = s.coop; if (!co) return;
-  const B = co.battle, slot = co.a === s ? 'p0' : 'p1';
+  const B = co.battle, slot = co.members.find(x => x.s === s)?.slot; if (!slot) return;
   if (m.t === 'coopAct') {
     const a = m.a || {}, mon = B.mon(slot);
     if (!B.alive(slot) || co.acts[slot] || B.need.length) return;
     if (a.t === 'forfeit') co.acts[slot] = { t: 'forfeit' };
     else if (a.t === 'switch' && B.canSwitchTo(slot, a.i)) co.acts[slot] = { t: 'switch', i: a.i };
     else { const i = Number.isInteger(a.i) && mon.moves[a.i]?.pp > 0 ? a.i : Math.max(0, mon.moves.findIndex(x => x.pp > 0)); co.acts[slot] = { t: 'move', i, target: ['f0', 'f1'].includes(a.target) ? a.target : null }; }
-    if (['p0', 'p1'].some(id => B.alive(id) && !co.acts[id])) return;
-    const ev = B.turn(co.acts); co.acts = {};
-    return coopSend(co, ev);
+    return coopTry(co);
   }
   if (m.t === 'coopSwitch' && B.need.includes(slot)) {
     co.pend.push(...B.forcedSwitch(slot, m.i));
     if (B.need.length) return;
-    const ev = co.pend; co.pend = [];
-    return coopSend(co, ev);
+    return coopSend(co, co.pend.splice(0));
   }
+}
+// Spieler verlässt einen laufenden Koop-Kampf: die KI übernimmt seinen Platz
+function coopDrop(s) {
+  const co = s.coop; if (!co) return; s.coop = null;
+  const x = co.members.find(y => y.s === s); if (!x) return;
+  co.members = co.members.filter(y => y !== x);
+  const B = co.battle; B.slots[x.slot].ai = true; delete co.acts[x.slot];
+  if (!co.members.length || B.over) return;
+  // Hinweis wird mit der nächsten Runde verschickt, damit die Clients im Takt bleiben
+  co.pend.push({ t: 'msg', text: `${nameOf(s)} hat die Verbindung verloren. Die KI übernimmt.` });
+  if (B.need.includes(x.slot)) {
+    co.pend.push(...B.forcedSwitch(x.slot, B.nextFor(x.slot)));
+    if (!B.need.length) return coopSend(co, co.pend.splice(0));
+    return;
+  }
+  coopTry(co);
+}
+
+// Raid-Lobby: Gastgeber lädt Mitspieler ein, Start sobald alle geantwortet haben (spätestens nach 25 s)
+function raidMsg(s, m) {
+  if (m.t === 'raidOpen') {
+    if (s.coop || s.raidLobby || s.raidInv) return;
+    const d = L.COOP?.[m.npc]; if (!d?.raid) return send(s.ws, { t: 'reqNo', why: 'Unbekannter Raid.' });
+    const team = healCopy(m.team || []); if (!team.length) return send(s.ws, { t: 'reqNo', why: 'Du hast keine kampffähigen Kreaturen.' });
+    const lobby = { host: s, npc: m.npc, members: [{ s, team }], pending: new Set() };
+    for (const pid of (Array.isArray(m.invite) ? m.invite : []).slice(0, 3)) {
+      const o = byPid(s.world, pid);
+      if (!o || o === s || o.duel || o.trade || o.coop || o.req || o.raidInv || o.raidLobby) continue;
+      lobby.pending.add(o); o.raidInv = lobby;
+      send(o.ws, { t: 'req', from: s.pid, name: nameOf(s), kind: 'raid', npc: m.npc, npcName: d.name });
+    }
+    if (!lobby.pending.size) return send(s.ws, { t: 'reqNo', why: 'Keiner der Mitspieler ist gerade frei.' });
+    s.raidLobby = lobby; lobby.timer = setTimeout(() => startRaid(lobby), 25000);
+    return;
+  }
+  if (m.t === 'raidJoin') {
+    const lobby = s.raidInv; if (!lobby || lobby.started) return;
+    s.raidInv = null; lobby.pending.delete(s);
+    if (m.ok) { const team = healCopy(m.team || []); if (team.length) lobby.members.push({ s, team }); }
+    if (!lobby.pending.size) startRaid(lobby);
+  }
+}
+function startRaid(lobby) {
+  if (lobby.started) return; lobby.started = true; clearTimeout(lobby.timer);
+  for (const o of lobby.pending) { o.raidInv = null; send(o.ws, { t: 'reqNo', why: 'Der Raid hat ohne dich begonnen.' }); }
+  lobby.host.raidLobby = null;
+  const members = lobby.members.filter(x => live.has(x.s.ws) || [...live.values()].includes(x.s));
+  if (!members.includes(lobby.members[0])) { for (const x of members) send(x.s.ws, { t: 'reqNo', why: 'Der Gastgeber ist nicht mehr da.' }); return; }
+  if (members.length < 2) return send(lobby.host.ws, { t: 'reqNo', why: 'Niemand hat zugesagt. Versuch es allein mit Kian, Lyra und Nyx!' });
+  beginCoop(members, lobby.npc, L.helperSlots(members.length));
 }
 
 function tradeMsg(s, m) {
@@ -354,7 +416,9 @@ function tradeMsg(s, m) {
 }
 function endSocial(s, why) {
   if (s.duel) { const d = s.duel; const side = d.a === s ? 'p' : 'f'; d.need = new Set(); const ev = d.battle.pvpTurn(side === 'p' ? { t: 'forfeit' } : { t: 'move', i: 0 }, side === 'f' ? { t: 'forfeit' } : { t: 'move', i: 0 }); try { duelSend(d, ev); } catch {} d.a.duel = d.b.duel = null; }
-  if (s.coop) { const co = s.coop; co.a.coop = co.b.coop = null; const o = co.a === s ? co.b : co.a; send(o.ws, { t: 'coopEv', ev: [{ t: 'msg', text: `${nameOf(s)} hat die Verbindung verloren. Der Kampf endet.` }, { t: 'end', result: 'draw' }], need: [], over: true, result: 'draw', xpLog: null }); }
+  if (s.coop) coopDrop(s);
+  if (s.raidInv) { const lb = s.raidInv; s.raidInv = null; lb.pending.delete(s); if (!lb.pending.size) startRaid(lb); }
+  if (s.raidLobby) { const lb = s.raidLobby; s.raidLobby = null; lb.started = true; clearTimeout(lb.timer); for (const o of lb.pending) { o.raidInv = null; send(o.ws, { t: 'reqNo', why: 'Der Gastgeber hat die Welt verlassen.' }); } }
   if (s.trade) { const tr = s.trade; tr.a.trade = tr.b.trade = null; const o = tr.a === s ? tr.b : tr.a; send(o.ws, { t: 'tradeCancel', why: 'Verbindung zum Tauschpartner verloren.' }); }
   for (const o of live.values()) if (o.req?.to === s.pid) { o.req = null; send(o.ws, { t: 'reqNo', why: 'Spieler hat die Welt verlassen.' }); }
   s.req = null;

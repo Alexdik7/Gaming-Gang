@@ -47,6 +47,10 @@ Auch für eine Datenbank ist das der Plan in Phase 2.
      - **TAUSCHEN:** Beide wählen eine Kreatur und bestätigen. Das klappt auch mit Mutationen aus der Brutstätte.
    - **Zu zweit gegen Koop-Gegner:** Ria & Rio in Quellbach oder den Felsenkoloss in der Kieselhöhle ansprechen und „Mit …“ wählen.
      Der Mitspieler muss auf derselben Karte sein. Mit ONLINE → ZU FREUND REISEN geht das sofort.
+   - **Raids zu viert (nach dem Champion-Titel):** Im Dimensionsriss, am Altar im Altwald, einen Wächter ansprechen und „Mit … Mitspielern“ wählen.
+     - Alle Mitspieler auf derselben Karte bekommen eine Einladung. Der Raid startet, sobald alle geantwortet haben, spätestens nach 25 Sekunden.
+     - Freie Plätze übernehmen Kian, Lyra und Nyx.
+     - Verliert jemand die Verbindung, kämpft die KI für ihn weiter.
 5. **Spielstand sichern:**
    - Jedes Speichern legt automatisch eine Sicherung auf dem Server an.
    - ONLINE → GERÄT WECHSELN zeigt einen Code an, den ihr auf dem neuen Handy unter ONLINE → SPIELSTAND HOLEN eingebt.
