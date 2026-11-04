@@ -583,3 +583,10 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
   - Bewegungsarten: Geschoss mit Spur, Salven (Blätter, Splitter, Tropfen, Felsen), Strahl mit Leuchtkern, Wirbel, Bodenbeben mit Fontänen, Blitze von oben, Nahkampf mit Ausholen, Schnittspuren, Biss.
   - Einschlag: typischer Ausbruch, Druckring, bei sehr effektiven Treffern zusätzlich ein Blitz.
 - **Schrift:** Atkinson Hyperlegible (lokal in `fonts/`). Buchstaben wie I/l/1, O/0 und G/6 sind eindeutig unterscheidbar; unter 8,5 px wird sie fett gesetzt.
+- **Gebäude neu gezeichnet** (`building()` in pixel.js, Art aus `sign`/`heal`):
+  - **Wohnhaus:** Schindeldach mit First und Traufe, Schornstein, Fensterläden in Dachfarbe, Blumenkästen, Türlampe.
+  - **Heilzentrum:** korallrotes Dach mit weißem Kreuz-Emblem, Schild „HEILZENTRUM“, Glasschiebetür, gestreifte Markise, Farbband.
+  - **Markt:** blaues Dach, Schild „MARKT“, Schaufenster mit bunten Waren, Markise.
+  - **Arena:** Säulen am Eingang, goldgerahmtes Schild.
+  - **Labor:** Blechdach, Satellitenschüssel, Antenne.
+- **Marktstände** (Karten-Feld `props`, `standArt`): Obststand in Felsenau, Hafenstand in Aqualis, Nachtmarkt in Nocturna, jeder mit eigenem Sortiment (`game.shop(list, name, hello)`).

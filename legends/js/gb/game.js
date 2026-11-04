@@ -774,18 +774,18 @@ class Game {
     const sw = this.swarm();
     if (!s.dex.caught[sw.sp]) await say(`Übrigens: Heute wurden in ${sw.name} auffällig viele ${SPECIES[sw.sp].name} gesehen!`, { name: who });
   }
-  async shop() {
+  async shop(list = SHOP, who = 'Verkäufer', hello = 'Willkommen! Was darf es sein?') {
     const s = this.state;
-    await say('Willkommen! Was darf es sein?', { name: 'Verkäufer' });
+    await say(hello, { name: who });
     for (;;) {
-      const SH = SHOP.filter(e => !(e[2] > s.badges.filter(Boolean).length));
+      const SH = list.filter(e => !(e[2] > s.badges.filter(Boolean).length));
       const i = await choose([...SH.map(([k, p]) => ({ label: ITEMS[k].name, right: p + '◈', disabled: s.money < p, desc: ITEMS[k].desc })), 'Fertig'], { title: `Geld: ${s.money} ◈`, above: false, x: 60, w: 176 });
       if (i === null || i === SH.length) break;
       const [k, p] = SH[i];
       const n = await choose(['1 Stück', '5 Stück', '10 Stück'].map((l, j) => ({ label: l, right: [1, 5, 10][j] * p + '◈', disabled: s.money < [1, 5, 10][j] * p })), { title: ITEMS[k].name });
       if (n === null) continue;
       const q = [1, 5, 10][n]; s.money -= q * p; s.bag[k] = (s.bag[k] || 0) + q; sfx('caught');
-      await say(`Hier sind ${q}× ${ITEMS[k].name}. Vielen Dank!`, { name: 'Verkäufer' });
+      await say(`Hier sind ${q}× ${ITEMS[k].name}. Vielen Dank!`, { name: who });
     }
   }
   // ---------------------------------------------------------- Geheimbasis

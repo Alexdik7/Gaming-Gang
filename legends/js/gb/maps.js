@@ -254,6 +254,7 @@ export const MAPS = {
     items: [{ id: 'it_b52_11', x: 1, y: 10, item: 'ball52', n: 1 }, { id: 'it_b52_3', x: 22, y: 4, item: 'ball52', n: 1 }, { id: 'it_h1', x: 21, y: 9, item: 'sternkristall', n: 1 }, { id: 'it_h2', x: 5, y: 11, item: 'trank', n: 1 }],
   },
   felsenau: {
+    props: [{ k: 'stand', x: 14, y: 13, col: '#e8584a', name: 'Obststand', hello: 'Frische Beeren aus dem Altwald! Greif zu!', goods: [['heilbeere', 300], ['klarbeere', 250], ['trank', 280]] }],
     name: 'Felsenau', outdoor: true, enc: null,
     rows: [
       'WWWWWWWWWWnWWWWWWWWWWW',
@@ -400,6 +401,7 @@ export const MAPS = {
     warps: [{ x: 22, y: 14, to: 'gezeitengrotte', tx: 9, ty: 12, dir: 'up' }],
   },
   aqualis: {
+    props: [{ k: 'stand', x: 4, y: 17, col: '#3a9ad8', name: 'Hafenstand', hello: 'Ahoi! Alles fürs Wasser – und für Wasser-Kreaturen!', goods: [['flutball', 900], ['supertrank', 650], ['klarbeere', 250]] }],
     name: 'Aqualis', outdoor: true, enc: null, fishEnc: 'meer', surfEnc: 'meer',
     rows: [
       'TTTTTTTTTTTT=TTTTTss~~~~~~~~',
@@ -622,6 +624,7 @@ export const MAPS = {
     edges: { n: { to: 'aqualis', dx: 0 }, s: { to: 'nocturna', dx: 0 } },
   },
   nocturna: {
+    props: [{ k: 'stand', x: 19, y: 12, col: '#6a4ac8', name: 'Nachtmarkt', hello: 'Psst … Sachen, die man nur nachts braucht.', goods: [['nachtball', 900], ['beleber', 1400], ['echokristall', 1100]] }],
     name: 'Nocturna', outdoor: true, night: true, dark: 0.18, enc: null,
     rows: [
       'TTTTTTTTTTTTTTTT=TTTTTTTTT',

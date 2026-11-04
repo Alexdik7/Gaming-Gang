@@ -1,7 +1,7 @@
 // Oberwelt: Kachelbewegung, Kamera, NPCs, Trainer-Sichtlinien, Türen, Begegnungen, Tag/Nacht
 import { G, W, H, VH, COL, push, input, text, box, wait, fade, snap } from './engine.js';
 import { MAPS, TILE, SOLID, ENC } from './maps.js';
-import { charSheet, DIRS, tile, building, drawChar, tallOverlay, itemBall, treeCrown, TREE_KIND, grassFringe, shore, softShadow, cloudShadow, glow } from './pixel.js';
+import { standArt, charSheet, DIRS, tile, building, drawChar, tallOverlay, itemBall, treeCrown, TREE_KIND, grassFringe, shore, softShadow, cloudShadow, glow } from './pixel.js';
 // Untergründe, an deren Rand Gras über Wege/Sand wächst
 const GRASSY = new Set('.,:TPrUF'.split(''));
 const LANDISH = c => c !== null && c !== '~' && c !== 'B';
@@ -76,6 +76,7 @@ export class Overworld {
     if (c === '@' && this.holeOpen(x, y)) return true;
     if (this.boulderAt(x, y)) return true;
     if (this.M.decor) { const d = decorAt(this.M.decor, x, y); if (d && DECOR[d.d].solid) return true; }
+    if (this.M.props?.some(q => y === q.y && x >= q.x && x <= q.x + 1)) return true;
     if (c === 'E' && !this.g.state.flags[this.M.gates?.[x + ',' + y]]) return true;
     if (c === 'L') return true;
     const b = this.bldAt(x, y); if (b && !(x === b.x + b.door && y === b.y + b.h - 1)) return true;
@@ -341,6 +342,7 @@ export class Overworld {
       if (hd) { await this.g.pickup(hd); this.hidden = this.hidden.filter(h => h !== hd); return; }
       { const sp = baseSpots()[this.id]; if (sp && sp.x === fx && sp.y === fy) { await this.g.baseSpot(sp); return; } }
       if (this.M.decor) { const d = decorAt(this.M.decor, fx, fy); if (d) { await this.g.decorTalk(d); return; } }
+      { const q = this.M.props?.find(q => fy === q.y && fx >= q.x && fx <= q.x + 1); if (q) { await this.g.shop(q.goods, q.name, q.hello); return; } }
       if (this.ch(fx, fy) === '$') { await this.g.fieldObstacle('zerschneider', fx, fy); return; }
       if (this.ch(fx, fy) === '&') { await this.g.fieldObstacle('zertruemmerer', fx, fy); return; }
       const c = this.ch(fx, fy);
@@ -438,6 +440,7 @@ export class Overworld {
     // Geheimbasis: Platz in der Welt und Möbel im Raum
     { const sp = baseSpots()[this.id]; if (sp) { const b = this.g.state.base; drawSpot(ctx, sp, cx, cy, b && b.map === sp.map); } }
     if (this.M.decor) drawDecor(ctx, this.M.decor, cx, cy);
+    for (const q of this.M.props || []) ctx.drawImage(standArt(q.col), q.x * 16 - cx, q.y * 16 - cy - 10);
     // Kreaturen-Spur: wackelnde Halme, Pfotenabdrücke, Funkeln
     if (this.trail) {
       const T = this.trail, bx = T.x * 16 - cx, by = T.y * 16 - cy, w = Math.sin(G.t * 22) * (Math.sin(G.t * 3) > 0.2 ? 1.6 : 0.3);

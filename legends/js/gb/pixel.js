@@ -404,73 +404,138 @@ export function tallOverlay(f, pal = 'green') {
   return tallTop[pal][f];
 }
 
-// ---------------------------------------------------------------- Gebäude
+// ---------------------------------------------------------------- Gebäude (Handheld-Stil, je Art eigenes Design)
 const bCache = new Map();
+const INK = '#2a2232';
+// Dach: Schindelreihen mit Verlauf, First-Glanz, Traufe mit Stirnbrett und Schatten
+function roofArt(x, w, roofH, roof, style) {
+  x.fillStyle = INK; x.fillRect(0, 2, w, roofH + 1);
+  for (let yy = 3; yy < roofH; yy++) {
+    const row = Math.floor((yy - 3) / 4), inRow = (yy - 3) % 4, grad = 0.2 - ((yy - 3) / roofH) * 0.42;
+    for (let xx = 1; xx < w - 1; xx++) {
+      const off = row % 2 ? 3 : 0, seam = style === 'metal' ? xx % 5 === 0 : (xx + off) % 6 === 0;
+      let k = grad + (inRow === 0 ? 0.16 : inRow === 3 ? -0.22 : 0) + (seam ? -0.18 : 0) + (hash(Math.floor((xx + off) / 6), row, 21) - 0.5) * 0.08;
+      if (style === 'metal') k = grad + (seam ? -0.2 : xx % 5 === 1 ? 0.15 : 0);
+      x.fillStyle = shade(roof, k); x.fillRect(xx, yy, 1, 1);
+    }
+  }
+  x.fillStyle = shade(roof, 0.45); x.fillRect(1, 3, w - 2, 1);             // First
+  x.fillStyle = shade(roof, 0.15); x.fillRect(1, 3, 1, roofH - 4);          // Kante links (Licht)
+  x.fillStyle = shade(roof, -0.4); x.fillRect(w - 2, 3, 1, roofH - 4);      // Kante rechts (Schatten)
+  x.fillStyle = shade(roof, -0.55); x.fillRect(0, roofH - 2, w, 2);          // Traufe
+  x.fillStyle = shade(roof, 0.05); x.fillRect(1, roofH - 3, w - 2, 1);
+}
+function windowArt(x, wx, wy, night, o = {}) {
+  const ww = o.w || 10, wh = o.h || 10;
+  x.fillStyle = INK; x.fillRect(wx, wy, ww, wh);
+  x.fillStyle = o.frame || '#f4f0e8'; x.fillRect(wx + 1, wy + 1, ww - 2, wh - 2);
+  for (let yy = 0; yy < wh - 4; yy++) { const k = yy / (wh - 4); x.fillStyle = night ? shade('#ffd070', -k * 0.25) : shade('#a8d8f8', -k * 0.35); x.fillRect(wx + 2, wy + 2 + yy, ww - 4, 1); }
+  if (!night) { x.fillStyle = 'rgba(255,255,255,.85)'; for (let i = 0; i < 3; i++) x.fillRect(wx + 3 + i, wy + 5 - i, 1, 1); x.fillRect(wx + ww - 5, wy + wh - 4, 1, 1); }
+  x.fillStyle = o.frame ? shade(o.frame, -0.3) : '#8a7a6a'; if (!o.noCross) { x.fillRect(wx + Math.floor(ww / 2), wy + 2, 1, wh - 4); x.fillRect(wx + 2, wy + Math.floor(wh / 2), ww - 4, 1); }
+  // Fensterbank
+  x.fillStyle = '#ffffff'; x.fillRect(wx - 1, wy + wh, ww + 2, 1); x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(wx - 1, wy + wh + 1, ww + 2, 1);
+  if (o.shutter) { for (const sx of [wx - 3, wx + ww]) { x.fillStyle = INK; x.fillRect(sx, wy, 3, wh); x.fillStyle = o.shutter; x.fillRect(sx + 0.5, wy + 1, 2, wh - 2); x.fillStyle = shade(o.shutter, -0.3); for (let yy = wy + 2; yy < wy + wh - 1; yy += 2) x.fillRect(sx + 0.5, yy, 2, 1); } }
+  if (o.flowers) { x.fillStyle = '#7a4a2a'; x.fillRect(wx, wy + wh + 1, ww, 2); for (let i = 0; i < ww - 1; i += 2) { x.fillStyle = '#3a8a34'; x.fillRect(wx + i, wy + wh, 2, 1); x.fillStyle = ['#ff5a7a', '#ffd23a', '#ffffff', '#ff8a3a'][(i / 2 + wx) % 4]; x.fillRect(wx + i + (i % 4 ? 1 : 0), wy + wh - 1, 1, 1); } }
+}
+function doorArt(x, dx, h, kind, col) {
+  if (kind === 'glass') { // Schiebetür aus Glas
+    x.fillStyle = INK; x.fillRect(dx + 1, h - 18, 14, 18);
+    x.fillStyle = '#d8dce4'; x.fillRect(dx + 2, h - 17, 12, 17);
+    for (let yy = 0; yy < 14; yy++) { x.fillStyle = shade('#7ac0f0', -yy / 14 * 0.4); x.fillRect(dx + 3, h - 16 + yy, 4, 1); x.fillRect(dx + 9, h - 16 + yy, 4, 1); }
+    x.fillStyle = 'rgba(255,255,255,.8)'; x.fillRect(dx + 4, h - 14, 1, 4); x.fillRect(dx + 10, h - 14, 1, 4);
+    x.fillStyle = '#8a9098'; x.fillRect(dx + 7, h - 16, 2, 15);
+    x.fillStyle = '#c8c4b8'; x.fillRect(dx, h - 1, 16, 1); return;
+  }
+  x.fillStyle = INK; x.fillRect(dx + 2, h - 18, 12, 18);
+  x.fillStyle = shade(col, 0.2); x.fillRect(dx + 3, h - 17, 10, 1);
+  x.fillStyle = col; x.fillRect(dx + 3, h - 16, 10, 15);
+  x.fillStyle = shade(col, -0.28); x.fillRect(dx + 4, h - 14, 3, 5); x.fillRect(dx + 9, h - 14, 3, 5); x.fillRect(dx + 4, h - 7, 3, 4); x.fillRect(dx + 9, h - 7, 3, 4);
+  x.fillStyle = shade(col, 0.3); x.fillRect(dx + 4, h - 14, 3, 1); x.fillRect(dx + 9, h - 14, 3, 1);
+  x.fillStyle = '#f8d870'; x.fillRect(dx + 10, h - 9, 2, 2); x.fillStyle = '#a07820'; x.fillRect(dx + 11, h - 8, 1, 1);
+  x.fillStyle = '#b8b4c0'; x.fillRect(dx + 1, h - 1, 14, 1);
+}
+function plaque(x, cx, cy, txt, bg, ink, gold) {
+  x.font = 'bold 8px "Atkinson Hyperlegible", sans-serif'; const tw = Math.ceil(x.measureText(txt).width) + 8, sx = Math.round(cx - tw / 2);
+  x.fillStyle = 'rgba(0,0,0,.3)'; x.fillRect(sx + 1, cy + 1, tw, 11);
+  x.fillStyle = gold ? '#a87818' : INK; x.fillRect(sx - 1, cy - 1, tw + 2, 13);
+  x.fillStyle = gold ? '#f8d870' : bg; x.fillRect(sx, cy, tw, 11); if (gold) { x.fillStyle = bg; x.fillRect(sx + 1, cy + 1, tw - 2, 9); }
+  x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(sx + 1, cy + 1, tw - 2, 1);
+  x.fillStyle = ink; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, sx + tw / 2, cy + 6);
+}
+// Marktstand (32×26): Pfosten, gestreifte Markise mit Bogenkante, Theke mit Kisten voller Ware
+const standCache = {};
+export function standArt(col = '#e8584a') {
+  if (standCache[col]) return standCache[col];
+  const [c, x] = cv(32, 26), o = 10;
+  x.fillStyle = 'rgba(0,0,0,.22)'; x.fillRect(1, o + 13, 30, 3);
+  for (const px of [2, 28]) { x.fillStyle = INK; x.fillRect(px - 1, 3, 3, o + 12); x.fillStyle = '#a8784a'; x.fillRect(px, 4, 1, o + 10); }
+  // Theke
+  x.fillStyle = INK; x.fillRect(1, o + 3, 30, 11); x.fillStyle = '#c08a50'; x.fillRect(2, o + 4, 28, 9); x.fillStyle = '#e0aa70'; x.fillRect(2, o + 4, 28, 1);
+  for (let i = 4; i < 30; i += 6) { x.fillStyle = '#9a6a3a'; x.fillRect(i, o + 6, 1, 7); }
+  // Kisten mit Ware
+  const G = [['#e83a4a', '#ff8a9a'], ['#ffb02a', '#ffe08a'], ['#5ac84a', '#a8f090'], ['#4a68e8', '#a8c0ff']];
+  for (let i = 0; i < 4; i++) { const bx = 3 + i * 7; x.fillStyle = '#7a4a2a'; x.fillRect(bx, o + 1, 6, 3); for (let j = 0; j < 3; j++) { x.fillStyle = G[i][0]; x.fillRect(bx + j * 2, o, 2, 2); x.fillStyle = G[i][1]; x.fillRect(bx + j * 2, o, 1, 1); } }
+  // Markise
+  x.fillStyle = INK; x.fillRect(0, 0, 32, 8);
+  for (let i = 1; i < 31; i++) { x.fillStyle = Math.floor((i - 1) / 4) % 2 ? '#fffaf0' : col; x.fillRect(i, 1, 1, 5); }
+  for (let i = 0; i < 8; i++) { x.fillStyle = INK; x.beginPath(); x.arc(2 + i * 4, 6, 2.2, 0, Math.PI); x.fill(); x.fillStyle = i % 2 ? '#fffaf0' : col; x.beginPath(); x.arc(2 + i * 4, 6, 1.4, 0, Math.PI); x.fill(); }
+  x.fillStyle = 'rgba(255,255,255,.45)'; x.fillRect(1, 1, 30, 1);
+  return (standCache[col] = c);
+}
 export function building(b) {
   const k = JSON.stringify(b);
   if (bCache.has(k)) return bCache.get(k);
   const w = b.w * 16, h = b.h * 16, [c, x] = cv(w, h);
-  const roofH = (b.h - 2) * 16 + 6, wallY = roofH - 2;
-  const roof = b.roof || '#c84848', wall = b.wall || '#f0e8d8', ink = '#2e2636';
-  // ---- Wand: Holzbretter mit Körnung, Eckpfosten, Steinsockel
-  x.fillStyle = ink; x.fillRect(1, wallY, w - 2, h - wallY);
+  const kind = b.heal ? 'heal' : b.sign === 'LADEN' ? 'shop' : b.sign === 'ARENA' || b.sign === 'LIGA' ? 'arena' : b.sign === 'LABOR' ? 'lab' : 'house';
+  const roofH = (b.h - 2) * 16 + 6, wallY = roofH - 2, night = b.night;
+  const roof = kind === 'heal' ? '#e05848' : kind === 'shop' ? '#3a78c8' : b.roof || '#c84848', wall = kind === 'heal' || kind === 'shop' ? '#f8f6f0' : b.wall || '#f0e8d8', dc = b.doorCol || '#8a5a30';
+  // ---- Wand: Bretter bzw. glatter Putz, Eckpfosten, Steinsockel
+  x.fillStyle = INK; x.fillRect(1, wallY, w - 2, h - wallY);
   for (let yy = wallY; yy < h - 1; yy++) for (let xx = 2; xx < w - 2; xx++) {
-    const plank = (yy - wallY) % 4 === 3, n = hash(Math.floor(xx / 5), yy, 11) - 0.5;
-    x.fillStyle = shade(wall, plank ? -0.1 : n * 0.06); x.fillRect(xx, yy, 1, 1);
+    const plank = kind === 'house' && (yy - wallY) % 4 === 3, n = hash(Math.floor(xx / 5), yy, 11) - 0.5;
+    x.fillStyle = shade(wall, plank ? -0.1 : n * (kind === 'house' ? 0.06 : 0.02)); x.fillRect(xx, yy, 1, 1);
   }
   x.fillStyle = shade(wall, -0.18); x.fillRect(2, wallY, 2, h - wallY - 1); x.fillRect(w - 4, wallY, 2, h - wallY - 1);
-  x.fillStyle = shade(wall, 0.15); x.fillRect(2, wallY, 1, h - wallY - 1);
-  // Steinsockel
+  x.fillStyle = shade(wall, 0.2); x.fillRect(2, wallY, 1, h - wallY - 1);
   for (let xx = 2; xx < w - 2; xx++) for (let yy = h - 5; yy < h - 1; yy++) {
     const brick = ((xx + (yy % 2 ? 3 : 0)) % 6 === 0) || yy === h - 5;
     x.fillStyle = brick ? '#5a5866' : ['#8a8896', '#9694a2', '#a2a0ae'][Math.floor(hash(xx, yy, 5) * 3)]; x.fillRect(xx, yy, 1, 1);
   }
-  // Dachüberstand wirft Schatten auf die Wand
-  x.fillStyle = 'rgba(30,20,40,.35)'; x.fillRect(2, wallY, w - 4, 3);
+  // Farbband (Heilzentrum/Markt)
+  if (kind === 'heal' || kind === 'shop') { const bc = kind === 'heal' ? '#e8584a' : '#3a78c8'; x.fillStyle = bc; x.fillRect(2, h - 8, w - 4, 3); x.fillStyle = shade(bc, 0.3); x.fillRect(2, h - 8, w - 4, 1); }
+  x.fillStyle = 'rgba(30,20,40,.35)'; x.fillRect(2, wallY, w - 4, 3); x.fillStyle = 'rgba(30,20,40,.15)'; x.fillRect(2, wallY + 3, w - 4, 2);
   // ---- Fenster
   for (let i = 0; i < b.w; i++) {
     if (i === b.door) continue;
     const wx = i * 16 + 3, wy = wallY + 5;
-    if (i === 0 || i === b.w - 1 || (b.w > 4 && i % 2 === 0)) {
-      x.fillStyle = ink; x.fillRect(wx, wy, 10, 10);
-      x.fillStyle = '#e8e0d0'; x.fillRect(wx + 1, wy + 1, 8, 8);
-      for (let yy = 0; yy < 6; yy++) { x.fillStyle = b.night ? ['#fff0a8', '#ffe088', '#ffd070', '#f8c060', '#f0b050', '#e8a048'][yy] : ['#d8f0ff', '#b8e0fc', '#98d0f4', '#80c0ec', '#70b0e0', '#68a4d4'][yy]; x.fillRect(wx + 2, wy + 2 + yy, 6, 1); }
-      x.fillStyle = b.night ? '#c87830' : '#5888b8'; x.fillRect(wx + 4, wy + 2, 1, 6); x.fillRect(wx + 2, wy + 5, 6, 1);
-      if (!b.night) { x.fillStyle = '#ffffff'; x.fillRect(wx + 2, wy + 2, 2, 1); x.fillRect(wx + 2, wy + 3, 1, 1); }
-      x.fillStyle = shade(wall, 0.25); x.fillRect(wx - 1, wy + 10, 12, 1); x.fillStyle = shade(wall, -0.3); x.fillRect(wx - 1, wy + 11, 12, 1);
-    }
+    if (kind === 'heal' || kind === 'shop') { if (Math.abs(i - b.door) >= 2 || (b.w <= 4 && Math.abs(i - b.door) >= 1)) windowArt(x, i * 16 + 1, wy, night, { w: 14, h: 11, frame: '#e8ecf0', noCross: kind === 'shop' }); if (kind === 'shop' && !night && Math.abs(i - b.door) >= 2) { for (let r = 0; r < 2; r++) for (let j = 0; j < 4; j++) { x.fillStyle = ['#e85a5a', '#ffd23a', '#5ac85a', '#5a8ae8'][(j + r + i) % 4]; x.fillRect(i * 16 + 4 + j * 2.5, wy + 4 + r * 3, 2, 2); } } continue; }
+    if (i === 0 || i === b.w - 1 || (b.w > 4 && i % 2 === 0)) windowArt(x, wx, wy, night, kind === 'house' ? { shutter: shade(roof, -0.1), flowers: (i + b.x) % 2 === 0 } : {});
   }
-  // ---- Tür mit Rahmen, Füllungen, Klinke und Stufe
-  const dx = b.door * 16, dc = b.doorCol || '#8a5a30';
-  x.fillStyle = ink; x.fillRect(dx + 2, h - 18, 12, 18);
-  x.fillStyle = shade(dc, 0.15); x.fillRect(dx + 3, h - 17, 10, 1);
-  x.fillStyle = dc; x.fillRect(dx + 3, h - 16, 10, 15);
-  x.fillStyle = shade(dc, -0.25); x.fillRect(dx + 4, h - 14, 3, 5); x.fillRect(dx + 9, h - 14, 3, 5); x.fillRect(dx + 4, h - 7, 3, 4); x.fillRect(dx + 9, h - 7, 3, 4);
-  x.fillStyle = shade(dc, 0.3); x.fillRect(dx + 4, h - 14, 3, 1); x.fillRect(dx + 9, h - 14, 3, 1);
-  x.fillStyle = '#f8d870'; x.fillRect(dx + 10, h - 9, 2, 2); x.fillStyle = '#a07820'; x.fillRect(dx + 11, h - 8, 1, 1);
-  x.fillStyle = '#b8b4c0'; x.fillRect(dx + 1, h - 1, 14, 1);
-  // ---- Dach: Ziegelreihen, versetzt, Verlauf von hell (oben) nach dunkel
-  x.fillStyle = ink; x.fillRect(0, 2, w, roofH);
-  for (let yy = 3; yy < roofH + 1; yy++) {
-    const row = Math.floor((yy - 3) / 4), inRow = (yy - 3) % 4, grad = 0.18 - (yy / roofH) * 0.36;
-    for (let xx = 1; xx < w - 1; xx++) {
-      const off = row % 2 ? 3 : 0, seam = (xx + off) % 6 === 0;
-      let k2 = grad + (inRow === 0 ? 0.14 : inRow === 3 ? -0.2 : 0) + (seam ? -0.16 : 0) + (hash(Math.floor((xx + off) / 6), row, 21) - 0.5) * 0.1;
-      x.fillStyle = shade(roof, k2); x.fillRect(xx, yy, 1, 1);
-    }
+  // ---- Tür (+ Markise beim Markt/Heilzentrum, Säulen bei der Arena)
+  const dx = b.door * 16;
+  doorArt(x, dx, h, kind === 'heal' || kind === 'shop' || kind === 'lab' ? 'glass' : 'wood', dc);
+  if (kind === 'heal' || kind === 'shop') {
+    const ac = kind === 'heal' ? '#e8584a' : '#3a78c8', ax = dx - 4, aw = 24, ay = h - 23;
+    x.fillStyle = INK; x.fillRect(ax, ay, aw, 6);
+    for (let i = 0; i < aw - 2; i++) { x.fillStyle = Math.floor(i / 3) % 2 ? '#ffffff' : ac; x.fillRect(ax + 1 + i, ay + 1, 1, 4); }
+    for (let i = 0; i < aw - 2; i += 3) { x.fillStyle = Math.floor(i / 3) % 2 ? '#ffffff' : ac; x.fillRect(ax + 1 + i, ay + 5, 2, 1); }
+    x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(ax + 1, ay + 6, aw - 2, 1);
   }
-  x.fillStyle = shade(roof, 0.35); x.fillRect(1, 3, w - 2, 1);
-  x.fillStyle = shade(roof, -0.45); x.fillRect(1, roofH, w - 2, 1);
-  x.fillStyle = shade(roof, 0.12); x.fillRect(1, 3, 1, roofH - 2);
-  // ---- Schild
-  if (b.sign) {
-    const sx = Math.round(w / 2 - 14), sy = Math.max(6, roofH - 18);
-    x.fillStyle = 'rgba(0,0,0,.3)'; x.fillRect(sx, sy + 1, 30, 12);
-    x.fillStyle = ink; x.fillRect(sx - 1, sy - 1, 30, 12); x.fillStyle = b.signCol || '#f8f8f8'; x.fillRect(sx, sy, 28, 10);
-    x.fillStyle = 'rgba(255,255,255,.6)'; x.fillRect(sx, sy, 28, 1);
-    x.fillStyle = b.signInk || '#3a3040'; x.font = 'bold 8px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(b.sign, sx + 14, sy + 5.5);
-  }
-  if (b.chimney) { x.fillStyle = ink; x.fillRect(w - 14, 0, 8, 10); for (let yy = 1; yy < 9; yy++) for (let xx = w - 13; xx < w - 7; xx++) { x.fillStyle = ((xx + (yy % 2) * 2) % 4 === 0 || yy % 3 === 0) ? '#6a3828' : '#a86048'; x.fillRect(xx, yy, 1, 1); } }
+  if (kind === 'arena') { for (const px of [dx - 4, dx + 16]) { x.fillStyle = INK; x.fillRect(px, wallY + 2, 4, h - wallY - 3); x.fillStyle = '#e8e4d8'; x.fillRect(px + 1, wallY + 3, 2, h - wallY - 5); x.fillStyle = '#ffffff'; x.fillRect(px + 1, wallY + 3, 1, h - wallY - 5); x.fillStyle = '#c8c0b0'; x.fillRect(px, wallY + 2, 4, 2); } }
+  if (kind === 'house') { x.fillStyle = '#ffd870'; x.fillRect(dx + 15, h - 15, 2, 2); x.fillStyle = INK; x.fillRect(dx + 15, h - 13, 2, 1); x.fillStyle = '#a8584a'; x.fillRect(dx + 3, h, 10, 0); }
+  // ---- Dach
+  roofArt(x, w, roofH, roof, kind === 'lab' ? 'metal' : 'tile');
+  // ---- Dach-Extras und Schilder
+  if (kind === 'heal') {
+    const cx = Math.round(w / 2), cy = 11;
+    x.fillStyle = INK; x.beginPath(); x.arc(cx, cy, 7.5, 0, 7); x.fill(); x.fillStyle = '#ffffff'; x.beginPath(); x.arc(cx, cy, 6.5, 0, 7); x.fill();
+    x.fillStyle = '#e8584a'; x.fillRect(cx - 1.5, cy - 4.5, 3, 9); x.fillRect(cx - 4.5, cy - 1.5, 9, 3); x.fillStyle = '#ff9a8a'; x.fillRect(cx - 1.5, cy - 4.5, 1.5, 3);
+    plaque(x, w / 2, Math.max(cy + 9, roofH - 17), 'HEILZENTRUM', '#ffffff', '#c83a3a');
+  } else if (kind === 'shop') plaque(x, w / 2, Math.max(5, roofH - 18), 'MARKT', '#ffffff', '#2a5aa8');
+  else if (kind === 'arena') plaque(x, w / 2, Math.max(5, roofH - 18), b.sign, b.signCol || '#fff0d0', '#5a3a1a', true);
+  else if (b.sign) plaque(x, w / 2, Math.max(5, roofH - 18), b.sign, b.signCol || '#f8f8f8', b.signInk || '#3a3040');
+  if (kind === 'lab') { x.fillStyle = INK; x.fillRect(w - 12, 0, 1, 8); x.fillStyle = '#e84a4a'; x.fillRect(w - 13, 0, 3, 1); x.fillStyle = INK; x.beginPath(); x.ellipse(10, 6, 6, 4, -0.4, 0, 7); x.fill(); x.fillStyle = '#e8ecf0'; x.beginPath(); x.ellipse(10, 6, 5, 3, -0.4, 0, 7); x.fill(); x.fillStyle = '#9aa4b0'; x.fillRect(10, 6, 1, 4); }
+  if (b.chimney || kind === 'house') { const chx = w - 14; x.fillStyle = INK; x.fillRect(chx, 0, 8, 10); for (let yy = 1; yy < 9; yy++) for (let xx = chx + 1; xx < chx + 7; xx++) { x.fillStyle = ((xx + (yy % 2) * 2) % 4 === 0 || yy % 3 === 0) ? '#6a3828' : '#a86048'; x.fillRect(xx, yy, 1, 1); } x.fillStyle = '#5a5866'; x.fillRect(chx - 1, 0, 10, 2); }
   bCache.set(k, c);
   return c;
 }
