@@ -1211,4 +1211,4 @@ class EditorScene {
 const game = new Game();
 window.LU2 = game;
 game.start();
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && location.protocol === 'https:' && !window.Capacitor) navigator.serviceWorker.register('sw.js').catch(() => {});

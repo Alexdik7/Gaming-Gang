@@ -1,0 +1,6 @@
+{
+  "appId": "de.gaminggang.legendsunited",
+  "appName": "Legends United",
+  "webDir": "www",
+  "android": { "backgroundColor": "#0b1a14" }
+}

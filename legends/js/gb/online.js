@@ -53,6 +53,8 @@ export class Online {
   // ---------------------------------------------------------- Verbindung
   defaultServer() {
     if (this.cfg.server) return this.cfg.server;
+    // In der App (Capacitor) oder auf GitHub Pages gibt es keinen Server am selben Ort
+    if (window.Capacitor || location.hostname === 'localhost' && !location.port) return '';
     if (location.protocol.startsWith('http') && !location.hostname.endsWith('github.io')) return location.origin;
     return '';
   }

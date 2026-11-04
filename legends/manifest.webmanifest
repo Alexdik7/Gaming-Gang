@@ -1,7 +1,7 @@
 {
   "name": "Legends United",
   "short_name": "Legends",
-  "description": "Kreaturen-Abenteuer in 3D für bis zu vier Freunde.",
+  "description": "Kreaturen-Abenteuer im Handheld-Stil für bis zu vier Freunde.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "fullscreen",
