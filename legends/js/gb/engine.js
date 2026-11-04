@@ -102,6 +102,8 @@ export function fade(to, ms = 250) {
   return new Promise(res => { G.fadeTo = to; G.fadeSpeed = 1000 / ms; G.fadeRes = res; });
 }
 export const wait = ms => new Promise(r => setTimeout(r, ms));
+// Kampf-Übergang: schwarze Balken schieben sich abwechselnd von links und rechts ins Bild
+export function wipe(ms = 550) { return new Promise(res => { G.wipe = { t: 0, dur: ms / 1000, res }; }); }
 
 export function frame(dt) {
   G.t += dt;
@@ -123,6 +125,15 @@ export function frame(dt) {
     if (G.fadeA === G.fadeTo && G.fadeRes) { const r = G.fadeRes; G.fadeRes = null; r(); }
   }
   if (G.fadeA > 0) { ctx.fillStyle = `rgba(0,0,0,${G.fadeA})`; ctx.fillRect(0, 0, W, H); }
+  if (G.wipe) {
+    const wp = G.wipe; wp.t += dt; const k = Math.min(1, wp.t / wp.dur), n = 10, bh = H / n;
+    ctx.fillStyle = '#000';
+    for (let i = 0; i < n; i++) {
+      const ki = Math.max(0, Math.min(1, k * 1.6 - (i % 2 ? 0.25 : 0) - Math.abs(i - n / 2) * 0.03)), w = W * (1 - Math.pow(1 - ki, 3));
+      if (i % 2) ctx.fillRect(W - w, i * bh, w + 1, bh + 0.5); else ctx.fillRect(0, i * bh, w + 1, bh + 0.5);
+    }
+    if (k >= 1) { G.wipe = null; G.fadeA = G.fadeTo = 1; wp.res(); }
+  }
   endFrame();
 }
 

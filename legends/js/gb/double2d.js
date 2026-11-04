@@ -1,5 +1,5 @@
 // Doppelkampf-Bildschirm (2 gegen 2 oder 2 gegen Boss), lokal oder als Koop über den Server
-import { G, W, H, COL, push, pop, input, text, box, cursor, bar, inRect, wait, wrap } from './engine.js';
+import { G, W, H, COL, push, pop, input, text, box, cursor, bar, inRect, wait, wrap, fade } from './engine.js';
 import { DoubleBattle, SIDE, FOES } from '../battle/double.js';
 import { SPECIES } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
@@ -9,7 +9,9 @@ import { sfx, cry, setMusic } from '../core/audio.js';
 import { monSprite, trainerSprite } from './sprites.js';
 import { choose, party, evoScene, typeTag, say, ask, waitMsg } from './gbui.js';
 import { ITEMS } from './maps.js';
-import { itemFilter } from './battle2d.js';
+import { itemFilter, tinted } from './battle2d.js';
+import { crystalIcon } from './pixel.js';
+const backOut = t => 1 + 2.2 * Math.pow(t - 1, 3) + 1.2 * Math.pow(t - 1, 2);
 
 const BG = {
   gras: ['#a8e0f8', '#e0f8d0', '#78c858', '#58a848'], hoehle: ['#3a2a20', '#6a5040', '#9a7a58', '#7a5a40'], vulkan: ['#3a1a1a', '#b8583a', '#8a7a68', '#6a5a4a'], schnee: ['#a8c8e8', '#eef6ff', '#e0ecf8', '#c0d4e8'], wueste: ['#f8c878', '#fff0c8', '#e8c888', '#d0a868'], berg: ['#7898c8', '#d8e4f0', '#a89878', '#8a7a60'], arena: ['#d8c8a8', '#f0e8d0', '#c8a878', '#a88858'],
@@ -72,7 +74,10 @@ class DoubleScene {
       await evoScene(monSprite(m.sp, 'front', m.shiny, m.mut), monSprite(pe.to, 'front', m.shiny, m.mut), `${name} hat sich zu ${SPECIES[pe.to].name} entwickelt!`);
       evolve(m, pe.to); cry(SPECIES[pe.to].cry); this.g.markDex(pe.to, true);
     }
+    // weicher Übergang zurück ins Spiel
+    await fade(1, 450);
     pop(this);
+    if (b.result !== 'lose' || this.o.remote) setTimeout(() => fade(0, 450), 30);
     this.res({ result: b.result, xpLog: b.xpLog });
   }
   async remote(fn) {
@@ -171,9 +176,18 @@ class DoubleScene {
   }
   async appear(id) {
     const o = this.off[id], c = this.center(id), m = this.b.mon(id); if (!m) return;
-    o.vis = true; o.s = 0; o.x = 0; o.y = 0; sfx('whoosh');
-    for (let i = 0; i < 14; i++) { const a = i / 14 * 6.28; this.emit(c.x, c.y + 18, Math.cos(a) * 45, Math.sin(a) * 22, '#bff8ff', 0.4); }
-    await this.tween(0.3, k => (o.s = ease(k)));
+    // Bindkristall vom Bildrand im Bogen werfen (Bosse erscheinen direkt)
+    if (!(this.o.boss && SIDE(id) === 'f')) {
+      const from = SIDE(id) === 'f' ? { x: W + 10, y: 10 } : { x: -10, y: 100 }, land = { x: c.x, y: c.y + 14 };
+      this.crystal = { x: from.x, y: from.y, r: 0, img: crystalIcon('#7fe3ff') }; sfx('throw');
+      await this.tween(0.45, k => { this.crystal.x = from.x + (land.x - from.x) * k; this.crystal.y = from.y + (land.y - from.y) * k - Math.sin(k * Math.PI) * 30; this.crystal.r = k * 12; });
+      this.crystal = null;
+    }
+    o.vis = true; o.s = 0; o.x = 0; o.y = 0; o.flash = 1; sfx('whoosh');
+    const col = SPECIES[m.sp]?.model?.glow || '#bff8ff';
+    for (let i = 0; i < 18; i++) { const a = i / 18 * 6.28; this.emit(c.x, c.y + 18, Math.cos(a) * 50, Math.sin(a) * 24, i % 3 ? col : '#ffffff', 0.45); }
+    await this.tween(0.3, k => (o.s = backOut(k)));
+    this.tween(0.35, k => (o.flash = 1 - k));
     cry(SPECIES[m.sp].cry); await wait(200);
   }
   async animMove(id, tg, mv, hit) {
@@ -258,8 +272,12 @@ class DoubleScene {
       const m = b.mon(id), o = this.off[id]; if (!m || !o?.vis) continue;
       const p = this.pos(id), img = monSprite(m.sp, SIDE(id) === 'f' ? 'front' : 'back', m.shiny, m.mut), w = 64 * p.s * o.s;
       ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, 114); ctx.clip();
-      ctx.drawImage(img, p.x + o.x + 32 * p.s - w / 2, p.y + o.y + 64 * p.s - w, w, w); ctx.restore();
+      const dx = p.x + o.x + 32 * p.s - w / 2, dy = p.y + o.y + 64 * p.s - w;
+      ctx.drawImage(img, dx, dy, w, w);
+      if (o.flash > 0) { ctx.globalAlpha = Math.min(1, o.flash); ctx.drawImage(tinted(img, '#ffffff'), dx, dy, w, w); ctx.globalAlpha = 1; }
+      ctx.restore();
     }
+    if (this.crystal) { ctx.save(); ctx.translate(this.crystal.x, this.crystal.y); ctx.rotate(this.crystal.r); ctx.drawImage(this.crystal.img, -8, -8); ctx.restore(); }
     if (this.ownTrainers && this.o.ownLooks) this.o.ownLooks.forEach((l, k) => ctx.drawImage(trainerSprite(l, true), 6 + k * 56, 50));
     if (this.mode === 'target') { const p = this.pos(this.tlist[this.tcur]); const x = p.x + 32 * p.s, y = p.y + 2 + Math.sin(G.t * 8) * 2; ctx.fillStyle = '#e84a5f'; ctx.beginPath(); ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y); ctx.lineTo(x, y + 6); ctx.fill(); }
     for (const bo of this.bolts) { ctx.strokeStyle = bo.c; ctx.lineWidth = 2; ctx.beginPath(); let x = bo.a.x, y = bo.a.y; ctx.moveTo(x, y); for (let i = 1; i <= 6; i++) { x = bo.a.x + (bo.t.x - bo.a.x) * i / 6 + (i < 6 ? (Math.random() - 0.5) * 14 : 0); y = bo.a.y + (bo.t.y - bo.a.y) * i / 6 + (i < 6 ? (Math.random() - 0.5) * 14 : 0); ctx.lineTo(x, y); } ctx.stroke(); }

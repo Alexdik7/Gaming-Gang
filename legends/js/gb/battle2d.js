@@ -1,5 +1,5 @@
 // Kampfbildschirm im Handheld-Stil
-import { G, W, H, COL, push, pop, input, text, box, cursor, bar, inRect, wait, wrap } from './engine.js';
+import { G, W, H, COL, push, pop, input, text, box, cursor, bar, inRect, wait, wrap, fade } from './engine.js';
 import { Battle } from '../battle/battle.js';
 import { SPECIES } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
@@ -18,6 +18,15 @@ const BG = {
 const FOE = { x: 146, y: 8 }, OWN = { x: 26, y: 50 };
 export const itemFilter = it => m => !m.egg && (it.revive ? m.hp <= 0 : it.cure ? m.hp > 0 && !!m.status : m.hp > 0 && m.hp < maxHp(m));
 const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const backOut = t => 1 + 2.2 * Math.pow(t - 1, 3) + 1.2 * Math.pow(t - 1, 2);
+// Einfarbige Silhouette eines Sprites (weißes Aufleuchten beim Erscheinen, dunkle Umrisse bei wilden Kreaturen)
+const tintCache = new WeakMap();
+export function tinted(img, col) {
+  let m = tintCache.get(img); if (!m) tintCache.set(img, (m = {}));
+  if (!m[col]) { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const x = c.getContext('2d'); x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, c.width, c.height); m[col] = c; }
+  return m[col];
+}
 
 class BattleScene {
   constructor(game, o, res) {
@@ -25,7 +34,8 @@ class BattleScene {
     this.b = o.remote || new Battle({ team: this.s.team, foeTeam: o.foeTeam, wild: !o.trainer, trainer: o.trainer, canCatch: o.canCatch !== false });
     this.bg = BG[o.bg || 'gras'];
     this.msg = ''; this.chars = 0; this.mode = 'msg'; this.cur = 0; this.mcur = 0;
-    this.foeOff = { x: -200, y: 0, s: 1, vis: true, flash: false }; this.ownOff = { x: 0, y: 0, s: 0, vis: false, flash: false };
+    this.foeOff = { x: 0, y: 0, s: o.trainer ? 0 : 1, vis: !o.trainer, flash: 0 }; this.ownOff = { x: 0, y: 0, s: 0, vis: false, flash: 0 };
+    this.slide = 0; this.foeDark = o.trainer ? 0 : 1; this.foeBoxK = 0; this.ownBoxK = 0; this.rings = [];
     this.trainerOwn = { x: 0, vis: true }; this.trainerFoe = { x: 0, vis: !!o.trainer };
     this.hpD = { p: this.b.p.hp, f: this.b.f.hp }; this.xpD = this.b.p.xp;
     this.parts = []; this.tweens = []; this.crystal = null; this.bolts = [];
@@ -35,22 +45,30 @@ class BattleScene {
   async run() {
     const b = this.b, o = this.o;
     setMusic(o.music || o.trainer?.music || (o.intro === 'legend' ? 'legend' : o.trainer ? 'trainer' : 'battle'));
-    await this.tween(0.7, k => (this.foeOff.x = -200 * (1 - ease(k))));
+    // Auftritt: beide Plattformen gleiten mit den Trainern ins Bild
+    await this.tween(0.85, k => (this.slide = easeOut(k)));
     if (o.trainer) {
       await this.say(`${o.trainer.name} fordert dich heraus!`);
-      await this.tween(0.4, k => (this.trainerFoe.x = k * 120));
-      this.trainerFoe.vis = false;
-      await this.say(`${o.trainer.name} schickt ${monName(b.f)} in den Kampf!`, 700);
-      await this.appear('f');
+      this.note(`${o.trainer.name} schickt ${monName(b.f)} in den Kampf!`);
+      await this.tween(0.18, k => (this.trainerFoe.x = -6 * Math.sin(k * Math.PI)));
+      const out = this.tween(0.5, k => (this.trainerFoe.x = 130 * ease(k)));
+      await this.throwCrystal('f'); await out; this.trainerFoe.vis = false;
+      await wait(250);
     } else {
-      cry(SPECIES[b.f.sp].cry);
+      // wilde Kreatur: erst dunkle Silhouette, dann sichtbar
+      if (o.intro === 'legend') { G.shake = 1.4; sfx('encounter'); }
+      await wait(150);
+      await this.tween(o.intro === 'legend' ? 0.7 : 0.35, k => (this.foeDark = 1 - k));
+      cry(SPECIES[b.f.sp].cry); this.foeOff.flash = 0.6; this.tween(0.4, k => (this.foeOff.flash = 0.6 * (1 - k)));
       await this.say(o.intro === 'legend' ? `Das legendäre ${SPECIES[b.f.sp].name} erscheint!` : `Ein wildes ${SPECIES[b.f.sp].name} erscheint!`);
     }
-    this.showFoeBox = true;
-    await this.tween(0.35, k => (this.trainerOwn.x = -110 * k)); this.trainerOwn.vis = false;
-    await this.say(`Los, ${monName(b.p)}!`, 600);
-    await this.appear('p');
-    this.showOwnBox = true;
+    this.showFoeBox = true; await this.tween(0.25, k => (this.foeBoxK = easeOut(k)));
+    // eigener Trainer wirft den Kristall und läuft aus dem Bild
+    this.note(`Los, ${monName(b.p)}!`);
+    await this.tween(0.15, k => (this.trainerOwn.x = 4 * Math.sin(k * Math.PI)));
+    const exit = this.tween(0.55, k => (this.trainerOwn.x = -120 * ease(k)));
+    await wait(90); await this.throwCrystal('p'); await exit; this.trainerOwn.vis = false;
+    this.showOwnBox = true; await this.tween(0.25, k => (this.ownBoxK = easeOut(k)));
     while (!b.over) {
       const action = await this.chooseAction();
       if (!action) continue;
@@ -79,8 +97,28 @@ class BattleScene {
       evolve(m, pe.to); cry(SPECIES[pe.to].cry);
       this.g.markDex(pe.to, true);
     }
+    // weicher Übergang zurück: abblenden, Kampf schließen, Welt einblenden (bei Niederlage übernimmt das Spiel)
+    await fade(1, 450);
     pop(this);
+    if (b.result !== 'lose' || o.remote) setTimeout(() => fade(0, 450), 30);
     this.res({ result: b.result, caught: b.caught });
+  }
+  // Text anzeigen, ohne auf eine Taste zu warten (läuft neben Animationen)
+  note(t) { this.msg = t; this.chars = 0; this.mode = 'busy'; }
+  // Bindkristall im Bogen werfen, aufleuchten lassen und die Kreatur freisetzen
+  async throwCrystal(side) {
+    const t = this.center(side), m = side === 'f' ? this.b.f : this.b.p;
+    const from = side === 'f' ? { x: FOE.x + 46 + this.trainerFoe.x - 260 * (1 - this.slide), y: FOE.y + 22 } : { x: OWN.x + 46 + this.trainerOwn.x, y: OWN.y + 40 };
+    const col = SPECIES[m.sp]?.model?.glow || '#bff8ff';
+    this.crystal = { x: from.x, y: from.y, r: 0, img: crystalIcon(this.o.crystalCol || '#7fe3ff') }; sfx('throw');
+    const land = { x: t.x, y: t.y + 8 }, peak = side === 'f' ? 26 : 52;
+    await this.tween(0.55, k => { this.crystal.x = from.x + (land.x - from.x) * k; this.crystal.y = from.y + (land.y - from.y) * k - Math.sin(k * Math.PI) * peak; this.crystal.r = k * 14; });
+    // kurzes Wackeln, dann öffnet sich der Kristall mit Lichtring
+    await this.tween(0.16, k => (this.crystal.r = Math.sin(k * Math.PI * 2) * 0.4));
+    this.crystal = null; sfx('whoosh');
+    this.rings.push({ x: land.x, y: land.y, t: 0, c: col }, { x: land.x, y: land.y, t: -0.08, c: '#ffffff' });
+    for (let i = 0; i < 26; i++) { const a = i / 26 * 6.28, v = 40 + Math.random() * 40; this.emit(land.x, land.y, Math.cos(a) * v, Math.sin(a) * v * 0.6, i % 3 ? col : '#ffffff', 0.45, 2); }
+    await this.appear(side);
   }
 
   // Online: während auf den Server/Mitspieler gewartet wird, Wartemeldung zeigen
@@ -143,8 +181,8 @@ class BattleScene {
         case 'stat': this.sparkle(e.side, e.up ? '#ffb24a' : '#6aa8ff', e.up); sfx(e.up ? 'buff' : 'debuff'); await wait(450); break;
         case 'status': this.burst(e.side, { brand: '#ff6a2b', gift: '#b45ce0', starre: '#ffd23a' }[e.status], 20); await wait(300); break;
         case 'faint': await this.faint(e.side); break;
-        case 'send': await this.say(e.text, 600); if (e.side === 'p') { this.xpD = this.b.p.xp; this.hpD.p = this.b.p.hp; } else this.hpD.f = this.b.f.hp; await this.appear(e.side); if (e.side === 'f') this.g.markDex(this.b.f.sp); break;
-        case 'recall': { const ro = e.side === 'f' ? this.foeOff : this.ownOff; await this.say(e.text, 500); await this.tween(0.25, k => (ro.s = 1 - k)); ro.vis = false; break; }
+        case 'send': this.note(e.text); if (e.side === 'p') { this.xpD = this.b.p.xp; this.hpD.p = this.b.p.hp; } else this.hpD.f = this.b.f.hp; await this.throwCrystal(e.side); if (e.side === 'f') this.g.markDex(this.b.f.sp); await this.showBox(e.side); await wait(250); break;
+        case 'recall': await this.recall(e.side, e.text); break;
         case 'catch': await this.catchAnim(e.shakes, e.ok); break;
         case 'xp': { const m = this.b.team.find(x => x.uid === e.uid); if (m === this.b.p) await this.fillXp(); break; }
         case 'lvl': sfx('lvl'); this.sparkle('p', '#ffe27a', true); this.hpD.p = this.b.p.hp; await this.say(e.text); break;
@@ -170,7 +208,7 @@ class BattleScene {
   }
 
   // ---------------------------------------------------------- Animationen
-  center(side) { return side === 'f' ? { x: FOE.x + 32 + this.foeOff.x, y: FOE.y + 36 } : { x: OWN.x + 32 + this.ownOff.x, y: OWN.y + 36 }; }
+  center(side) { return side === 'f' ? { x: FOE.x + 32 + this.foeOff.x - 260 * (1 - this.slide), y: FOE.y + 36 } : { x: OWN.x + 32 + this.ownOff.x + 260 * (1 - this.slide), y: OWN.y + 36 }; }
   emit(x, y, vx, vy, c, life = 0.6, sz = 2) { this.parts.push({ x, y, vx, vy, c, l: life, ml: life, sz }); }
   burst(side, c, n = 20, sp = 60) { const p = this.center(side); for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = sp * (0.3 + Math.random()); this.emit(p.x, p.y, Math.cos(a) * v, Math.sin(a) * v, c, 0.5 + Math.random() * 0.3, 1.5 + Math.random() * 2); } }
   sparkle(side, c, up) { const p = this.center(side); for (let i = 0; i < 24; i++) this.emit(p.x + (Math.random() - 0.5) * 50, p.y + (up ? 20 : -25) - Math.random() * 10, 0, up ? -40 - Math.random() * 30 : 40, c, 0.8, 2); }
@@ -189,9 +227,10 @@ class BattleScene {
   }
   async appear(side) {
     const o = side === 'f' ? this.foeOff : this.ownOff, c = this.center(side);
-    o.vis = true; o.s = 0; o.x = 0; sfx('whoosh');
+    o.vis = true; o.s = 0; o.x = 0; o.flash = 1;
     for (let i = 0; i < 18; i++) { const a = i / 18 * 6.28; this.emit(c.x, c.y + 20, Math.cos(a) * 50, Math.sin(a) * 25, '#bff8ff', 0.4); }
-    await this.tween(0.3, k => (o.s = ease(k)));
+    await this.tween(0.32, k => (o.s = backOut(k)));
+    this.tween(0.35, k => (o.flash = 1 - k));
     cry(SPECIES[side === 'f' ? this.b.f.sp : this.b.p.sp].cry);
     await wait(250);
   }
@@ -200,7 +239,26 @@ class BattleScene {
     cry(SPECIES[side === 'f' ? this.b.f.sp : this.b.p.sp].cry); sfx('faint');
     await this.tween(0.5, k => (o.y = k * 64));
     o.vis = false; o.y = 0;
-    if (side === 'p') this.showOwnBox = false;
+    await this.hideBox(side);
+  }
+  // Lebensanzeige ein-/ausschieben (gegnerische links, eigene rechts)
+  async showBox(side) {
+    if (side === 'p') { this.showOwnBox = true; if (this.ownBoxK < 1) await this.tween(0.22, k => (this.ownBoxK = Math.max(this.ownBoxK, easeOut(k)))); }
+    else { this.showFoeBox = true; if (this.foeBoxK < 1) await this.tween(0.22, k => (this.foeBoxK = Math.max(this.foeBoxK, easeOut(k)))); }
+  }
+  async hideBox(side) {
+    const key = side === 'p' ? 'ownBoxK' : 'foeBoxK', from = this[key];
+    if (from > 0) await this.tween(0.18, k => (this[key] = from * (1 - k)));
+    if (side === 'p') this.showOwnBox = false; else this.showFoeBox = false;
+  }
+  // Zurückrufen: Kreatur leuchtet auf, schrumpft und fliegt als Lichtstrahl zum Trainer zurück
+  async recall(side, txt) {
+    const o = side === 'f' ? this.foeOff : this.ownOff, c = this.center(side), tx = side === 'f' ? W + 20 : -20, ty = side === 'f' ? 10 : 90;
+    this.note(txt); sfx('whoosh');
+    const hb = this.hideBox(side);
+    await this.tween(0.18, k => (o.flash = k));
+    await this.tween(0.28, k => { o.s = 1 - ease(k); for (let i = 0; i < 2; i++) this.emit(c.x + (tx - c.x) * k + (Math.random() - 0.5) * 8, c.y + (ty - c.y) * k + (Math.random() - 0.5) * 8, 0, 0, i ? '#ffffff' : '#ff8aa0', 0.3, 2.5); });
+    o.vis = false; o.flash = 0; await hb; await wait(150);
   }
   async animMove(side, id, hit) {
     const M = MOVES[id], col = TYPES[M.type].color, foe = side === 'p' ? 'f' : 'p';
@@ -268,7 +326,9 @@ class BattleScene {
     for (let i = this.tweens.length - 1; i >= 0; i--) { const tw = this.tweens[i]; tw.t += dt; const k = Math.min(1, tw.t / tw.dur); tw.fn(k); if (k >= 1) { this.tweens.splice(i, 1); tw.res(); } }
     for (const p of this.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.l -= dt; } this.parts = this.parts.filter(p => p.l > 0);
     for (const b of this.bolts) b.l -= dt; this.bolts = this.bolts.filter(b => b.l > 0);
+    for (const r of this.rings) r.t += dt; this.rings = this.rings.filter(r => r.t < 0.45);
     if (this.flash > 0) this.flash -= dt;
+    if (this.mode === 'busy') this.chars += dt * 70;
     if (this.mode === 'msg') {
       this.chars += dt * 70;
       const n = this.msg.length;
@@ -301,19 +361,22 @@ class BattleScene {
     const gr = ctx.createLinearGradient(0, 0, 0, 114); gr.addColorStop(0, sky); gr.addColorStop(0.55, sky2); gr.addColorStop(0.56, g1); gr.addColorStop(1, g2);
     ctx.fillStyle = gr; ctx.fillRect(0, 0, W, 114);
     // Plattformen
-    for (const [cx, cy, rx, ry] of [[178 + this.foeOff.x * 0, 70, 46, 10], [60, 112, 56, 12]]) {
+    const sF = -260 * (1 - this.slide), sO = 260 * (1 - this.slide);
+    for (const [cx, cy, rx, ry] of [[178 + sF, 70, 46, 10], [60 + sO, 112, 56, 12]]) {
       ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(cx, cy + 2, rx, ry, 0, 0, 7); ctx.fill();
       ctx.fillStyle = g2; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 7); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.beginPath(); ctx.ellipse(cx, cy - 2, rx - 6, ry - 4, 0, 0, 7); ctx.fill();
     }
     // Gegner
     const fo = this.foeOff;
-    if (this.trainerFoe.vis && this.o.trainer) ctx.drawImage(trainerSprite(this.o.trainer.look), FOE.x + this.trainerFoe.x, FOE.y + 2);
-    else if (fo.vis && b.f) this.drawSprite(ctx, monSprite(b.f.sp, 'front', b.f.shiny, b.f.mut), FOE.x + fo.x, FOE.y + fo.y, fo.s, 72);
+    if (fo.vis && b.f) this.drawSprite(ctx, monSprite(b.f.sp, 'front', b.f.shiny, b.f.mut), FOE.x + fo.x + sF, FOE.y + fo.y, fo.s, 72, fo.flash, this.foeDark);
+    if (this.trainerFoe.vis && this.o.trainer) ctx.drawImage(trainerSprite(this.o.trainer.look), FOE.x + this.trainerFoe.x + sF, FOE.y + 2);
     // eigene Seite
     const oo = this.ownOff;
-    if (this.trainerOwn.vis) ctx.drawImage(trainerSprite(this.s.look, true), OWN.x + this.trainerOwn.x, OWN.y + 4);
-    else if (oo.vis) this.drawSprite(ctx, monSprite(b.p.sp, 'back', b.p.shiny, b.p.mut), OWN.x + oo.x, OWN.y + oo.y, oo.s, 114);
+    if (oo.vis) this.drawSprite(ctx, monSprite(b.p.sp, 'back', b.p.shiny, b.p.mut), OWN.x + oo.x + sO, OWN.y + oo.y, oo.s, 114, oo.flash);
+    if (this.trainerOwn.vis) ctx.drawImage(trainerSprite(this.s.look, true), OWN.x + this.trainerOwn.x + sO, OWN.y + 4);
+    // Lichtringe beim Öffnen des Kristalls
+    for (const r of this.rings) if (r.t > 0) { ctx.globalAlpha = Math.max(0, 1 - r.t / 0.45); ctx.strokeStyle = r.c; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(r.x, r.y, 4 + r.t * 90, 2 + r.t * 40, 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
     // Kristall
     if (this.crystal) { ctx.save(); ctx.translate(this.crystal.x, this.crystal.y); ctx.rotate(this.crystal.r); ctx.drawImage(this.crystal.img, -8, -8); ctx.restore(); }
     // Blitze & Partikel
@@ -325,8 +388,8 @@ class BattleScene {
     for (const p of this.parts) { ctx.globalAlpha = Math.min(1, p.l / p.ml * 1.5); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.sz / 2, p.y - p.sz / 2, p.sz, p.sz); }
     ctx.globalAlpha = 1;
     // Infoboxen
-    if (this.showFoeBox && b.f) this.infoBox(ctx, b.f, 6, 8, false);
-    if (this.showOwnBox) this.infoBox(ctx, b.p, 128, 72, true);
+    if (this.showFoeBox && b.f) this.infoBox(ctx, b.f, 6 - 130 * (1 - this.foeBoxK), 8, false);
+    if (this.showOwnBox) this.infoBox(ctx, b.p, 128 + 130 * (1 - this.ownBoxK), 72, true);
     // Text & Menüs
     box(0, 113, W, 47, 'dark');
     if (this.mode === 'moves') return this.drawMoves(ctx);
@@ -339,10 +402,14 @@ class BattleScene {
     }
     if (this.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${this.flash * 2})`; ctx.fillRect(0, 0, W, H); }
   }
-  drawSprite(ctx, img, x, y, s, clipY) {
+  drawSprite(ctx, img, x, y, s, clipY, flash = 0, dark = 0) {
     if (s <= 0.01) return;
     ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, clipY); ctx.clip();
-    const w = 64 * s; ctx.drawImage(img, x + 32 - w / 2, y + 64 - w, w, w);
+    const w = 64 * s, dx = x + 32 - w / 2, dy = y + 64 - w;
+    ctx.drawImage(img, dx, dy, w, w);
+    if (dark > 0) { ctx.globalAlpha = dark; ctx.drawImage(tinted(img, '#1c1830'), dx, dy, w, w); }
+    if (flash > 0) { ctx.globalAlpha = Math.min(1, flash); ctx.drawImage(tinted(img, '#ffffff'), dx, dy, w, w); }
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
   infoBox(ctx, m, x, y, own) {

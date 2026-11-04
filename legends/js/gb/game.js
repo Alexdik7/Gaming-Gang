@@ -1,5 +1,5 @@
 // LEGENDS UNITED – Handheld-Edition: Spielablauf, Story, Brutstätte, Speichern
-import { G, W, H, COL, push, pop, input, text, box, cursor, wait, fade, initEngine, bindPad, frame, wrap } from './engine.js';
+import { G, W, H, COL, push, pop, input, text, box, cursor, wait, fade, wipe, initEngine, bindPad, frame, wrap } from './engine.js';
 import { MAPS, LOOK, ENC, SHOP, ITEMS } from './maps.js';
 import { Overworld } from './overworld.js';
 import { battle } from './battle2d.js';
@@ -482,7 +482,8 @@ class Game {
     await this.afterBattle(r);
     return r;
   }
-  async flashIn() { for (let i = 0; i < 3; i++) { await fade(0.8, 60); await fade(0, 60); } await fade(1, 200); setTimeout(() => fade(0, 200), 30); }
+  // Übergang in den Kampf: zwei Blitze, dann schließen Balken das Bild; der Kampf blendet danach selbst auf
+  async flashIn() { for (let i = 0; i < 2; i++) { await fade(0.85, 70); await fade(0, 90); } await wipe(520); setTimeout(() => fade(0, 260), 30); }
   async trainerFight(t) {
     const s = this.state;
     if (!s.team.some(m => !m.egg && m.hp > 0)) { await say('Deine Kreaturen sind erschöpft!'); return false; }
