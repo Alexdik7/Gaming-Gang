@@ -6,6 +6,8 @@ import { sfx, cry, setMusic } from '../core/audio.js';
 import { SPECIES } from '../data/creatures.js';
 import { createMon, healMon, monName } from '../data/mon.js';
 import { LOOK, ITEMS } from './maps.js';
+import * as A3 from './akt3.js';
+const ACTS = [A3];
 
 const give = async (g, k, n = 1) => { const s = g.state; s.bag[k] = (s.bag[k] || 0) + n; sfx('caught'); await say(`${s.name} erhält ${n > 1 ? n + '× ' : ''}${ITEMS[k].name.toUpperCase()}!`); };
 const COUNTER = { zundrak: 'tidolin', tidolin: 'moospip', moospip: 'zundrak' };
@@ -88,7 +90,8 @@ export function mainGoal(s) {
   if (!f.waldherz) return f.heardWaldherz ? { t: 'Das Waldherz', d: 'Beruhige das Waldherz – eine riesige Revierkreatur auf der Lichtung im Westen des Glimmwalds. Schleich dich an!', map: 'glimmwald' } : { t: 'Das schlafende Dorf', d: 'In Glimmdorf schlafen alle. Finde Mira, die Arenaleiterin.', map: 'glimmdorf' };
   if (!s.badges[2]) return { t: 'Arena Glimmdorf', d: 'Fordere Sporenhexe Mira heraus! Feuer-, Luft- und Magie-Attacken helfen gegen Pflanze und Gift.', map: 'glimmdorf' };
   if (!f.jaro3) return { t: 'Jaro', d: 'Jaro wartet am Nordrand von Glimmdorf.', map: 'glimmdorf' };
-  return { t: 'Fortsetzung folgt', d: 'Funkenhafen liegt auf der Ostinsel – dorthin geht es nur mit dem Schiff. (Kommt in Phase 3!) Bis dahin: Kreaturen sammeln, Revierkreaturen besiegen, Lied und Logbuch suchen.', map: 'glimmdorf' };
+  for (const A of ACTS) { const r = A.goal?.(s); if (r) return r; }
+  return { t: 'Fortsetzung folgt', d: 'Die nächste Etappe kommt mit dem nächsten Update! Bis dahin: Kreaturen sammeln, Revierkreaturen besiegen, kochen, Lied und Logbuch suchen.', map: g_lastMap(s) };
 }
 export function sideTasks(s) {
   return Object.entries(QUESTS).filter(([id]) => s.flags['qa_' + id] || s.flags['quest_' + id]).map(([id, q]) => ({ t: q.title, d: s.flags['quest_' + id] ? 'Erledigt!' : `Zeige ${SPECIES[q.want].name}.`, done: !!s.flags['quest_' + id] }));
@@ -103,12 +106,14 @@ export function contacts(s) {
   if (s.badges[0]) c.push({ id: 'rhea', name: 'Kapitänin Rhea' });
   if (s.badges[1]) c.push({ id: 'okko', name: 'Okko' });
   if (s.badges[2]) c.push({ id: 'mira', name: 'Mira' });
+  for (const A of ACTS) A.contacts?.(s, c);
   return c;
 }
 const OMA = ['Deine Mutter hat als Kind jeden Morgen am Strand nach Flaschenpost gesucht. Gefunden hat sie nie eine – aber sie hat nie aufgehört.', 'Liv konnte keine Suppe kochen. Gar keine. Aber sie konnte einen Sturm riechen, Stunden bevor er kam.', 'Weißt du, warum das Schiff Morgenstern hieß? Weil du an einem Morgen geboren wurdest, als der letzte Stern noch am Himmel stand.', 'Der Wärter Bosse und deine Mutter haben oft im Leuchtturm gesessen und über Karten gebrütet. Frag ihn doch mal.'];
 export async function call(g, id) {
   const s = g.state, N = { name: contacts(s).find(c => c.id === id)?.name };
   sfx('click'); await say('Tuut … tuut …'); await wait(300);
+  for (const A of ACTS) if (A.CALLS?.[id]) return say(A.CALLS[id], N);
   if (id === 'oma') { s.flags.omaCall = ((s.flags.omaCall || 0) + 1) % OMA.length; return say([`Hallo, ${s.name}! Schön, dass du anrufst.`, OMA[s.flags.omaCall]], N); }
   if (id === 'kehl') {
     const n = Object.keys(s.dex.caught).length;
@@ -174,7 +179,7 @@ export async function talkStory(g, n) {
     case 'gd_oma': return say(['Im Glimmwald gibt es scheue Waldwesen. Sylphie heißen sie.', 'Sie lieben bittere Klarbeeren. Wer ihnen eine schenkt, gewinnt vielleicht eine Freundin.'], N);
     case 'jaro_gd': return jaroGlimm(g, n);
     case 'heal_gast': return say(['Im Hafen beißen die Fische am besten bei Nacht.', 'Und wenn du eine Kreatur zum ersten Mal bindest, bekommst du einen Eintrag in der Chronik. Prof. Kehl ruft an, wenn du viele hast!'], N);
-    default: return false;
+    default: for (const A of ACTS) { const r = await A.talk(g, n); if (r !== false) return r; } return false;
   }
 }
 
@@ -294,7 +299,7 @@ async function jaroGlimm(g, n) {
   const won = await g.trainerFight({ name: 'Rivale Jaro', look: LOOK.jaro, team: [['boebrisel', 24], ['kieselkopp', 24], ['nachtwolp', 25], [evo, 28]], reward: 2600, lose: 'Argh! Wieder nicht! Aber knapp, oder?', bg: 'wald' });
   await say([won ? 'Jaro: Okay, okay. Du bist gut. Aber ich hol auf!' : 'Jaro: Ha! Diesmal ich!', 'Jaro: Für Funkenhafen brauchen wir ein Schiff. Mein Onkel in Ankerbrück baut gerade eins …', 'Jaro: Ich sag dir Bescheid, wenn es fertig ist. Versprochen ist versprochen!'], { name: 'Jaro' });
   await fade(1, 250); f.jaro3 = true; g.ow.npcs = g.ow.npcs.filter(x => x !== n); await fade(0, 250);
-  await say('Pager: Fortsetzung folgt – das Schiff nach Funkenhafen kommt in Phase 3!'); g.save(true);
+  g.save(true);
 }
 
 // Revierkreatur mit Story (Waldherz)
@@ -332,11 +337,12 @@ export async function afterTrainer(g) {
   }
 }
 
-export async function afterGym(g, id) { const f = g.state.flags; if (id === 'rhea') f.badge1Jaro = true; if (id === 'mira') f.badge3Jaro = true; }
+export async function afterGym(g, id) { const f = g.state.flags; if (id === 'rhea') f.badge1Jaro = true; if (id === 'mira') f.badge3Jaro = true; for (const A of ACTS) await A.afterGym?.(g, id); }
 
 // ---------------------------------------------------------------- Ereignisse beim Betreten
 export async function mapEvent(g, id) {
   const s = g.state, ow = g.ow, f = s.flags;
+  for (const A of ACTS) await A.mapEvent?.(g, id);
   if (id === 'ankerbrueck' && !f.reachedAnker) {
     f.reachedAnker = true; ow.busy = true; await wait(450);
     await say(['Ankerbrück! Der größte Hafen im Süden von Kalmara.', 'Aber irgendetwas ist seltsam. Der Leuchtfeuer-Turm am Hafen ist dunkel, und die Leute schauen besorgt aufs Meer.']);
@@ -403,3 +409,7 @@ export async function firstMorning(g) {
   await say([`${s.name} erhält den PAGER!`, 'Der Pager zeigt dir immer, was als Nächstes zu tun ist. Drück START und wähle PAGER.', 'Oben rechts siehst du außerdem eine Minikarte.']);
   await say('Der Strand liegt im Süden des Dorfes. Lauf schon – Pip wartet!', N);
 }
+
+const g_lastMap = s => s.map || 'muschelbucht';
+// Akte einhängen: Arenen, Aufträge, Logbuch und Lied zusammenführen
+for (const A of ACTS) { A.init?.({ give, addLog }); Object.assign(GYMS, A.GYMS); Object.assign(QUESTS, A.QUESTS); Object.assign(LOGS, A.LOGS); Object.assign(SONG, A.SONG); }

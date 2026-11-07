@@ -62,7 +62,7 @@ class BattleScene {
   constructor(game, o, res) {
     this.g = game; this.o = o; this.res = res; this.s = game.state;
     this.b = o.remote || new Battle({ team: this.s.team, foeTeam: o.foeTeam, wild: !o.trainer, trainer: o.trainer, canCatch: o.canCatch !== false });
-    if (!o.remote) { this.b.expShare = !!(this.s.bag?.epteiler && !this.s.flags?.epOff); this.b.amulet = !!this.s.bag?.schutzamulett; }
+    if (!o.remote) { this.b.expShare = !!(this.s.bag?.epteiler && !this.s.flags?.epOff); this.b.amulet = !!this.s.bag?.schutzamulett; const bf = this.s.buff; if (bf?.n > 0) { for (const k of ['atk', 'def', 'spa', 'spd', 'spe']) if (bf[k]) this.b.st.p[k] = bf[k]; if (!--bf.n) this.s.buff = null; } }
     this.bgKey = BG[o.bg] ? o.bg : 'gras'; this.bg = BG[this.bgKey];
     this.msg = ''; this.chars = 0; this.mode = 'msg'; this.cur = 0; this.mcur = 0;
     this.foeOff = { x: 0, y: 0, s: o.trainer ? 0 : 1, vis: !o.trainer, flash: 0 }; this.ownOff = { x: 0, y: 0, s: 0, vis: false, flash: 0 };
@@ -380,7 +380,7 @@ class BattleScene {
     sfx('shiny'); await wait(300);
   }
   // Sonderwirkung der Ballsorten
-  ballCond(it) { return this.ballCond0(it) * (this.b.f.surprised ? 1.5 : 1); }
+  ballCond(it) { return this.ballCond0(it) * (this.b.f.surprised ? 1.5 : 1) * (this.s.catchBoost > 0 ? 1.5 : 1); }
   ballCond0(it) {
     const b = this.b, S = SPECIES[b.f.sp], g = this.g;
     switch (it.cond) {

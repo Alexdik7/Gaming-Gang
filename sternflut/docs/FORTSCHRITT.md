@@ -19,3 +19,9 @@
 - **Füttern** (`M.shy`): scheue Kreaturen mit der Lieblingsbeere füttern → schließen sich freiwillig an (falsche Beere → flieht bis morgen)
 - Story: Okko und Schwester Nebel in der Sandgrotte (Quelle versiegt), Prof. Kehl im Glimmwald, schlafendes Glimmdorf und das Waldherz, Jaro und die Frau in der weißen Kutte
 - Arenen: Okko (Erde, Dünenorden), Mira (Pflanze/Gift, Sporenorden); Liedsteine 2 und 3; Logbuchseiten 4–6; 2 neue Suchaufträge
+
+## v0.3 – Phase 3: Die Seeschwalbe (Arenen 4 und 5)
+- Schiffsreisen mit Kapitän Harm (`travel.js`: `PORTS`, `sailMenu`, Reise-Szene), Häfen Ankerbrück, Funkenhafen, Nebelklippe
+- Reiten (Sattel von Hedda, START → REITEN, `RIDE` in kalmara3.js), Lager mit Kochen (Zelt, START → LAGER, 8 Rezepte, Zutaten in der Markthalle)
+- 20 neue Kreaturen (76–95) + 10 Attacken; Karten: Funkenhafen, Ostweide (Ranch), Kraftwerk (Schaltplatten-Rätsel), Nebelklippe (Nebel), Nebelpfad, Wrack der Abendstern (dunkel), Arenen 4 und 5
+- Story (`akt3.js`): Bruder Funke und der Tor-Kristall, Livs Sattel, Schwester Nebel verlässt den Orden, Kapitän Morrow und Livs Brief, Ysoldes Vision, erste Begegnung mit der Äbtissin Sela – und Pips Licht

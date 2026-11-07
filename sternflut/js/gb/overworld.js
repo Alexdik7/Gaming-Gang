@@ -38,7 +38,7 @@ export class Overworld {
     const M = MAPS[id]; this.id = id; this.M = M;
     this.w = M.rows[0].length; this.h = M.rows.length;
     const s = this.g.state; s.map = id;
-    this.p = { x, y, dir: dir || s.dir || 'down', px: x * 16, py: y * 16, moving: false, step: 0, turnT: 0, jump: 0 };
+    this.p = { x, y, dir: dir || s.dir || 'down', px: x * 16, py: y * 16, moving: false, step: 0, turnT: 0, jump: 0, ride: M.outdoor && !M.cave ? s.ride || null : null };
     s.surf = !!s.surf && M.rows[y]?.[x] === '~'; this.p.surf = s.surf;
     this.npcs = (M.npcs || []).filter(n => !(n.hideIf && s.flags[n.hideIf]) && !(n.showIf && !s.flags[n.showIf])).map(n => ({ ...n, ox: n.x, oy: n.y, px: n.x * 16, py: n.y * 16, moving: false, wt: 1 + Math.random() * 3, step: 0 }));
     this.items = (M.items || []).filter(i => !s.flags[i.id] && i.item !== 'ball52');
@@ -173,7 +173,7 @@ export class Overworld {
       if (G.t - (this.arrivedAt || 0) < 0.05) this.stepMove(carry + dt);
     }
   }
-  moveDur() { const p = this.p; return p.jump ? 0.42 : p.slide ? 0.1 : p.sneak ? 0.34 : (input.held('b') && !this.M.indoor ? (this.g.state.wind > 0 ? 0.095 : 0.13) : this.g.state.wind > 0 ? 0.17 : 0.22); }
+  moveDur() { const p = this.p; return p.jump ? 0.42 : p.slide ? 0.1 : p.ride ? 0.115 : p.sneak ? 0.34 : (input.held('b') && !this.M.indoor ? (this.g.state.wind > 0 ? 0.095 : 0.13) : this.g.state.wind > 0 ? 0.17 : 0.22); }
   stepMove(dt) {
     const p = this.p;
     p.t += dt / this.moveDur();
@@ -287,7 +287,7 @@ export class Overworld {
       }
     } else if (encId && this.M.outdoor && !p.surf && Math.random() < 0.045) this.spawnTrail();
     if (encId && !(s.repel > 0) && ((c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%') || (this.M.cave && c === 'c'))) {
-      if (Math.random() < ENC[encId].rate * (s.lure > 0 ? 2 : 1) * (p.sneak ? 0.6 : 1)) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.M.bg || 'gras', null, { sneak: !!p.sneak });
+      if (Math.random() < ENC[encId].rate * (s.lure > 0 ? 2 : 1) * (p.sneak ? 0.6 : 1) * (p.ride ? 0.5 : 1)) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.M.bg || 'gras', null, { sneak: !!p.sneak });
     }
   }
 
@@ -438,6 +438,7 @@ export class Overworld {
   // ---------------------------------------------------------- Wetter (Regen wechselt täglich, Asche am Vulkan, Schnee im Norden)
   weather() {
     if (!this.M.outdoor) return null;
+    if (this.M.fog) return 'fog';
     const W0 = { route3: 'ash', ignis: 'ash', kraterherz: 'ash', route5: 'snow', frostheim: 'snow', frostgipfel: 'snow' };
     if (W0[this.id]) return W0[this.id];
     const day = Math.floor(Date.now() / 864e5), R = ['duenenpfad', 'ankerbrueck', 'muschelbucht'], i = R.indexOf(this.id);
@@ -446,6 +447,11 @@ export class Overworld {
   drawWeather(ctx, cx, cy) {
     const w = this.weather(); if (!w) return;
     const t = G.t, md = (v, m) => ((v % m) + m) % m;
+    if (w === 'fog') { // Nebelschwaden in zwei Ebenen
+      ctx.fillStyle = 'rgba(220,226,240,.18)'; ctx.fillRect(0, 0, W, VH);
+      for (let i = 0; i < 9; i++) { const y = md(i * 47 - cy * 0.3, VH + 40) - 20, x = md(i * 91 + t * (6 + (i % 3) * 3) - cx * 0.5, W + 160) - 80; ctx.fillStyle = `rgba(235,240,250,${0.16 + (i % 3) * 0.05})`; ctx.beginPath(); ctx.ellipse(x, y, 70 + (i % 4) * 14, 12 + (i % 3) * 4, 0, 0, 7); ctx.fill(); }
+      return;
+    }
     if (w === 'rain') {
       ctx.fillStyle = 'rgba(30,40,70,.18)'; ctx.fillRect(0, 0, W, VH);
       ctx.strokeStyle = 'rgba(200,220,255,.55)'; ctx.lineWidth = 1; ctx.beginPath();
@@ -532,10 +538,16 @@ export class Overworld {
     const actors = [...this.npcs.map(n => ({ alpha: n.alpha, revier: n.revier, shy: n.shy, mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
       { look: this.g.state.look, dir: p.dir, frame: p.frame, hop: p.hop || 0, px: p.px, py: p.py - (p.hop || 0) - (p.bob || 0) + (p.sneak ? 4 : 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
       ...(this.g.remoteActors?.(this.id) || [])];
-    const lead = this.f?.vis && !p.surf && this.g.state.team.find(m => !m.egg && m.hp > 0);
+    const lead = this.f?.vis && !p.surf && !p.ride && this.g.state.team.find(m => !m.egg && m.hp > 0);
     if (lead) { const F = this.f; actors.push({ follow: lead, px: F.px, py: F.py, x: F.x, y: F.y, dir: F.dir }); }
     actors.sort((a, b) => a.py - b.py);
     for (const a of actors) {
+      if (a.me && p.ride && !p.surf) { // Reiten: Reittier unter der Figur, Figur sitzt erhöht
+        const rm = this.g.state.team.find(m => (m.uid || m.sp) === p.ride) || this.g.state.team.find(m => !m.egg), up = a.dir === 'up', gal = p.moving ? Math.round(Math.abs(Math.sin((p.t || 0) * Math.PI * 2)) * -2) : Math.round(Math.sin(G.t * 3));
+        ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(a.px - cx + 8, a.py - cy + 14, 9, 3, 0, 0, 7); ctx.fill();
+        if (rm) { ctx.save(); ctx.translate(Math.round(a.px - cx + 8), Math.round(a.py - cy - 14 + gal)); if (a.dir === 'right') ctx.scale(-1, 1); ctx.drawImage(monSprite(rm.sp, up ? 'iconback' : 'icon', rm.shiny, rm.mut), -16, 0); ctx.restore(); }
+        drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 17 + gal); continue;
+      }
       if (a.me && p.surf) { const sm = this.g.surfMon?.(); const bob = Math.round(Math.sin(G.t * 4)); if (sm) { const up = a.dir === 'up'; ctx.save(); ctx.translate(Math.round(a.px - cx + 8), Math.round(a.py - cy - 6 + bob)); if (a.dir === 'right') ctx.scale(-1, 1); ctx.drawImage(monSprite(sm.sp, up ? 'iconback' : 'icon', sm.shiny, sm.mut), -16, 0); ctx.restore(); } drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 7 + bob); continue; }
       if (a.follow) {
         const m = a.follow, img = monSprite(m.sp, a.dir === 'up' ? 'iconback' : 'icon', m.shiny, m.mut), mv = p.moving || !!this.f.anim, hopY = mv ? -Math.round(Math.abs(Math.sin((this.f.k || 0) * Math.PI)) * 2) : (Math.floor(G.t * 2) % 2 ? -1 : 0);

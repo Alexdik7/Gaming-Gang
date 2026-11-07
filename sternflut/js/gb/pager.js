@@ -18,9 +18,13 @@ export const WORLD = {
   glimmpfad: { x: 92, y: 42, name: 'Glimmpfad' },
   glimmwald: { x: 62, y: 52, name: 'Glimmwald' },
   glimmdorf: { x: 56, y: 38, name: 'Glimmdorf', town: true },
-  funkenhafen: { x: 186, y: 48, name: 'Funkenhafen', town: true, future: true },
+  funkenhafen: { x: 184, y: 50, name: 'Funkenhafen', town: true },
+  ostweide: { x: 204, y: 44, name: 'Ostweide' },
+  nebelklippe: { x: 150, y: 16, name: 'Nebelklippe', town: true },
+  nebelpfad: { x: 168, y: 12, name: 'Nebelpfad' },
+  glutinsel: { x: 196, y: 108, name: 'Glutinsel', town: true, future: true },
 };
-const LINKS = [['ankerbrueck', 'duenenpfad'], ['duenenpfad', 'muschelbucht'], ['muschelbucht', 'strand'], ['ankerbrueck', 'kuestenweg'], ['kuestenweg', 'duenenhain'], ['duenenhain', 'sandgrotte'], ['duenenhain', 'glimmpfad'], ['glimmpfad', 'glimmwald'], ['glimmwald', 'glimmdorf'], ['ankerbrueck', 'funkenhafen']];
+const LINKS = [['ankerbrueck', 'duenenpfad'], ['duenenpfad', 'muschelbucht'], ['muschelbucht', 'strand'], ['ankerbrueck', 'kuestenweg'], ['kuestenweg', 'duenenhain'], ['duenenhain', 'sandgrotte'], ['duenenhain', 'glimmpfad'], ['glimmpfad', 'glimmwald'], ['glimmwald', 'glimmdorf'], ['ankerbrueck', 'funkenhafen'], ['funkenhafen', 'ostweide'], ['ankerbrueck', 'nebelklippe'], ['nebelklippe', 'nebelpfad'], ['ankerbrueck', 'glutinsel']];
 export const worldOf = (s, id) => (WORLD[id] ? id : MAPS[id]?.indoor ? s.ret?.map : id);
 
 class PagerScene {
@@ -75,7 +79,7 @@ class PagerScene {
     for (let i = 0; i < 26; i++) { ctx.fillStyle = 'rgba(40,90,70,.25)'; ctx.fillRect(28 + (i * 37) % 184, 38 + (i * 23) % 96, 5, 1); }
     // Inseln
     ctx.fillStyle = '#5a9a7a';
-    for (const [x, y, rx, ry] of [[128, 92, 20, 40], [118, 46, 34, 16], [70, 46, 28, 14], [188, 48, 16, 10]]) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 7); ctx.fill(); }
+    for (const [x, y, rx, ry] of [[128, 92, 20, 40], [118, 46, 34, 16], [70, 46, 28, 14], [192, 48, 18, 10], [158, 14, 18, 8], [196, 110, 12, 8]]) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 7); ctx.fill(); }
     ctx.fillStyle = INK2;
     for (const [a, b] of LINKS) { const A = WORLD[a], B = WORLD[b]; const n = Math.hypot(B.x - A.x, B.y - A.y) / 3; for (let i = 0; i < n; i++) if (i % 2 === 0) ctx.fillRect(Math.round(A.x + (B.x - A.x) * i / n), Math.round(A.y + (B.y - A.y) * i / n), 1, 1); }
     for (const [id, P] of Object.entries(WORLD)) {

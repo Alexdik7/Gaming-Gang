@@ -16,6 +16,7 @@ import { genderOf } from '../data/mon.js';
 import { initAudio, sfx, cry, setMusic, setAudio, audioState } from '../core/audio.js';
 import { mulberry } from '../core/noise.js';
 import { pagerScreen } from './pager.js';
+import * as TR from './travel.js';
 import { doubleBattle, localDouble } from './double2d.js';
 import { COOP, foeSlots, helperSlots } from '../data/coop.js';
 import { DoubleBattle } from '../battle/double.js';
@@ -172,8 +173,8 @@ class Game {
   // ---------------------------------------------------------- Menüs
   async startMenu() {
     const s = this.state, ow = this.ow; ow.busy = true;
-    const items = [...(s.bag.pager ? ['PAGER'] : []), ...(s.flags.dex ? ['CHRONIK'] : []), ...(s.team.length ? ['TEAM'] : []), 'BEUTEL', ...(s.bag.telefon ? ['TELEFON'] : []), s.name.toUpperCase(), 'PER CODE', 'SPEICHERN', 'OPTIONEN', 'ZURÜCK'];
-    const D = { PAGER: 'Zeigt dein nächstes Ziel, Aufgaben, das Logbuch der Morgenstern und das Lied der Gezeiten.', TELEFON: 'Freunde und Helfer anrufen.', 'PER CODE': 'Mit Freunden per Code tauschen oder gegen ihr Team kämpfen – ohne Internet-Server.', CHRONIK: 'Ein Verzeichnis aller Kreaturen, die du gesehen oder gebunden hast.', TEAM: 'Zeigt dein Team, Werte und Attacken. Hier kannst du auch die Reihenfolge ändern.', BEUTEL: 'Gegenstände, Bälle und Basis-Items, die du gesammelt hast.', ONLINE: 'Mit Freunden kämpfen, tauschen, gemeinsam spielen und Raids bestreiten.', SPEICHERN: 'Fortschritt speichern oder als Sicherungs-Code teilen.', OPTIONEN: 'Textgeschwindigkeit, Musik und Ton einstellen.', 'ZURÜCK': 'Das Menü schließen und weiterspielen.' };
+    const items = [...(s.bag.pager ? ['PAGER'] : []), ...(s.flags.dex ? ['CHRONIK'] : []), ...(s.team.length ? ['TEAM'] : []), 'BEUTEL', ...(s.bag.sattel ? [ow.p.ride ? 'ABSTEIGEN' : 'REITEN'] : []), ...(s.bag.zelt ? ['LAGER'] : []), ...(s.bag.telefon ? ['TELEFON'] : []), s.name.toUpperCase(), 'PER CODE', 'SPEICHERN', 'OPTIONEN', 'ZURÜCK'];
+    const D = { REITEN: 'Auf einer großen Kreatur aus deinem Team reiten – viel schneller über Land.', ABSTEIGEN: 'Vom Reittier absteigen.', LAGER: 'Ein Lager aufschlagen: rasten, kochen und mit dem Team spielen.', PAGER: 'Zeigt dein nächstes Ziel, Aufgaben, das Logbuch der Morgenstern und das Lied der Gezeiten.', TELEFON: 'Freunde und Helfer anrufen.', 'PER CODE': 'Mit Freunden per Code tauschen oder gegen ihr Team kämpfen – ohne Internet-Server.', CHRONIK: 'Ein Verzeichnis aller Kreaturen, die du gesehen oder gebunden hast.', TEAM: 'Zeigt dein Team, Werte und Attacken. Hier kannst du auch die Reihenfolge ändern.', BEUTEL: 'Gegenstände, Bälle und Basis-Items, die du gesammelt hast.', ONLINE: 'Mit Freunden kämpfen, tauschen, gemeinsam spielen und Raids bestreiten.', SPEICHERN: 'Fortschritt speichern oder als Sicherungs-Code teilen.', OPTIONEN: 'Textgeschwindigkeit, Musik und Ton einstellen.', 'ZURÜCK': 'Das Menü schließen und weiterspielen.' };
     const opts = items.map(k => ({ label: k, desc: D[k] || 'Dein Trainerpass mit Orden, Geld und Spielzeit.' }));
     for (;;) {
       const i = await choose(opts, { above: false, x: W - 86, w: 83 });
@@ -186,6 +187,8 @@ class Game {
       if (k === 'SPEICHERN') { const c = await choose([{ label: 'Speichern', desc: 'Fortschritt auf diesem Gerät speichern.' }, { label: 'Sicherungs-Code', desc: 'Spielstand als Code teilen – so geht nie etwas verloren, auch bei einem neuen Handy.' }, 'Zurück']); if (c === 0) { this.save(); await say(`${s.name} hat das Spiel gespeichert.`); } else if (c === 1) await this.exportSave(); }
       if (k === 'OPTIONEN') await this.options();
       if (k === 'PAGER') await pagerScreen(this);
+      if (k === 'REITEN' || k === 'ABSTEIGEN') { await TR.toggleRide(this); s.ride = ow.p.ride; break; }
+      if (k === 'LAGER') { await TR.camp(this); break; }
       if (k === 'TELEFON') { const c = ST.contacts(s); const j = await choose([...c.map(x => ({ label: x.name, desc: 'Anrufen' })), 'Zurück'], { title: 'MUSCHELFON' }); if (j !== null && j < c.length) await ST.call(this, c[j].id); }
       if (k === 'PER CODE') { const j = await choose([{ label: 'Tauschen', desc: 'Kreaturen mit Freunden per Code tauschen.' }, { label: 'Kämpfen', desc: 'Gegen das Team eines Freundes kämpfen.' }, 'Zurück'], { title: 'PER CODE' }); if (j === 0) await tradeMenu(this); if (j === 1) await fightMenu(this); }
     }
@@ -466,6 +469,8 @@ class Game {
 
   onStep() {
     const s = this.state;
+    if (s.shinyBoost > 0 && !--s.shinyBoost) this.ow.notify('Der Glücksspieß wirkt nicht mehr.');
+    if (s.catchBoost > 0 && !--s.catchBoost) this.ow.notify('Das Fängerbrot wirkt nicht mehr.');
     this.online.pos();
     if (s.steps % 150 === 0) { const L = s.team.find(m => !m.egg && m.hp > 0); if (L) { const before = L.friendship || 70; L.friendship = Math.min(255, before + 2); if (before < 200 && L.friendship >= 200) setTimeout(() => this.ow.notify(`${monName(L)} vertraut dir blind. Resonanz ist jetzt möglich!`), 50); } }
     const ev = stepBreeding(s);
@@ -580,7 +585,7 @@ class Game {
     if (music) setMusic(music);
     await wait(f ? 900 : 450);
   }
-  shinyRoll(m) { if (!m.shiny && this.state.bag.glanzamulett && Math.random() < 2 / 512) m.shiny = true; return m; }
+  shinyRoll(m) { const s = this.state; if (!m.shiny && Math.random() < ((s.bag.glanzamulett ? 2 : 0) + (s.shinyBoost > 0 ? 3 : 0)) / 512) m.shiny = true; return m; }
   pickWild(encId, sneak) {
     const sw = this.swarm();
     if (encId === sw.enc && Math.random() < 0.4) return this.shinyRoll(createMon(sw.sp, sw.lv[0] + Math.floor(Math.random() * (sw.lv[1] - sw.lv[0] + 1))));
