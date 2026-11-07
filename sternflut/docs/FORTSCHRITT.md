@@ -55,3 +55,9 @@
 - Dr. Fossa (Dünenhain, am Eingang der Sandgrotte) gibt das **Grabset**, erweckt Fossilien und kauft Schätze (Urbernstein, Sternquarz, Goldmuschel, Meteorit).
 - Minispiel `DigScene`: 13×7 Felder mit Erdschichten. HACKE (Kreuz, kostet 1) oder HAMMER (3×3, kostet 2), die Wandleiste hält 54 Punkte. 2–4 Funde je nach Welt (`LOOT`), Bedienung mit Tippen oder Steuerkreuz + A/B.
 - 6 Ur-Kreaturen (`data/fossil.js`, Nr. 256–261): Ammolit→Ammokron, Krallix→Urkrallor, Schwingstein→Aerodax (Entwicklung mit Lv 40, Erweckung mit Lv 25).
+
+## v1.3 – Heimatinsel
+- `island.js` (Akt-Modul): Kapitänin Wenke in Ankerbrück gibt ab Orden 1 den **Inselkompass**. Im Freien aus dem Beutel benutzen → Heimatinsel (`s.islandRet` merkt den Ort). Zurück geht es mit Bootsfrau Ebbe am Steg.
+- Karte `heimatinsel` wird aus dem Ausbaustand erzeugt (`buildIsland(s)`, Prüfung über `M.sig` in `mapEvent`).
+- Baumeisterin Tilda baut 5 Projekte (`PROJECTS`) gegen Geld und Grabschätze: Hütte (`inselhaus`: Bett + PC), Beerenfeld (6 Sträucher), Weide (6 Kreaturen aus der Box, die täglich EP sammeln, höchstens 7 Tage), Werkstatt (`inselwerk`: Tüftler Bo, `RECIPES` für Kugeln und Tränke) und Leuchtfeuer.
+- `story.useItem` fragt jetzt alle Akt-Module ab.

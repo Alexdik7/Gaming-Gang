@@ -38,7 +38,7 @@ Spiele: `sternflut/` (NEU, Nachfolger von Legends: eigenes Kreaturen-RPG, 3 Welt
 - Ist ein Push fehlgeschlagen, einfach erneut pushen (passiert gelegentlich).
 
 ## Stand (aktualisieren!)
-- **Sternflut v1.2 (alle 3 Welten spielbar, 255 Kreaturen, Doppelkämpfe + Duo-Kombos in `duo.js`/`combos.js`, Ausgrabungen + Fossilien in `dig.js`/`fossil.js`)** – Fork der Legends-Technik in `sternflut/` (eigener Spielstand `sf-save`, Test-Server: `cd sternflut && python3 -m http.server 8053`, Tests `node sternflut/tools/e2e/run.cjs all`, Karten `node sternflut/tools/checkmaps.mjs`):
+- **Sternflut v1.3 (alle 3 Welten spielbar, 255 Kreaturen, Doppelkämpfe + Duo-Kombos in `duo.js`/`combos.js`, Ausgrabungen + Fossilien in `dig.js`/`fossil.js`, Heimatinsel in `island.js`)** – Fork der Legends-Technik in `sternflut/` (eigener Spielstand `sf-save`, Test-Server: `cd sternflut && python3 -m http.server 8053`, Tests `node sternflut/tools/e2e/run.cjs all`, Karten `node sternflut/tools/checkmaps.mjs`):
   - Story/Talk/Sperren in `js/gb/story.js` (game.js delegiert: talkStory, afterTrainer, mapEvent, edgeBlock, songStone, altarStory, onCaught, afterGym), Pager in `js/gb/pager.js`, Minikarte `overworld.drawMini`, Leuchtturm `building({tower})`
   - Kreaturen in `js/data/kalmara1.js` (Nr. 1–45 + Aurelune 250) und `kalmara2.js` (46–75)
   - Mechaniken: Revier (`M.revier`, `overworld.revierCheck`, `game.revierBattle`), Schleichen (`p.sneak`, A im hohen Gras), Füttern (`M.shy`, `game.feedShy`), neue Regionsdateien in `creatures2.js` importieren

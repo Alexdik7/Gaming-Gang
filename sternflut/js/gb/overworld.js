@@ -427,7 +427,7 @@ export class Overworld {
       if (c === 'V') { await say('Im Fernsehen läuft eine Sendung über Kreaturen, die nur nachts erscheinen.'); return; }
       if (c === 'K') { await say(['Ein Regal voller Bücher.', '„Mutationen – Wenn zwei Kreaturen ein Ei teilen“, Band 3…'][Math.floor(Math.random() * 2)]); return; }
       if (c === 'M') { await say('Eine summende Maschine. Lämpchen blinken in allen Farben.'); return; }
-      if (c === 'Y' && this.id === 'home') { await this.g.rest(); return; }
+      if (c === 'Y' && (this.id === 'home' || this.id === 'inselhaus')) { await this.g.rest(); return; }
       if (c === '~' && !this.p.surf) { await this.g.water(fx, fy); return; }
       if (c === '~' && this.M.fishing !== false) { await this.g.fish(); return; }
       if (c === 'U') { await this.g.berry(fx, fy); return; }

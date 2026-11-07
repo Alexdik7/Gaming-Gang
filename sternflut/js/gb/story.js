@@ -13,9 +13,10 @@ import * as A6 from './akt6.js';
 import * as A7 from './akt7.js';
 import * as EX from './extras.js';
 import * as DG from './dig.js';
-const ACTS = [A3, A4, A5, A6, A7, EX, DG];
+import * as IS from './island.js';
+const ACTS = [A3, A4, A5, A6, A7, EX, DG, IS];
 export const fishGame = g => EX.fishGame(g);
-export const useItem = (g, k) => EX.useItem(g, k);
+export const useItem = async (g, k) => { for (const A of ACTS) if (await A.useItem?.(g, k)) return true; return false; };
 
 const give = async (g, k, n = 1) => { const s = g.state; s.bag[k] = (s.bag[k] || 0) + n; sfx('caught'); await say(`${s.name} erhält ${n > 1 ? n + '× ' : ''}${ITEMS[k].name.toUpperCase()}!`); };
 const COUNTER = { zundrak: 'tidolin', tidolin: 'moospip', moospip: 'zundrak' };
