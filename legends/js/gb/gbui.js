@@ -3,7 +3,17 @@ import { G, W, H, COL, push, pop, input, text, wrap, box, cursor, bar, inRect, r
 import { sfx } from '../core/audio.js';
 import { SPECIES, RARITY } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
-import { TYPES } from '../data/types.js';
+import { TYPES, effectiveness } from '../data/types.js';
+// Wie gut passt eine Kreatur gegen den Gegner? best = stärkste eigene Attacke, danger = stärkster Gegner-Typ gegen uns
+export function matchup(m, foe) {
+  if (!foe || m.egg) return null;
+  const ft = SPECIES[foe.sp].types, mt = SPECIES[m.sp].types;
+  const dmg = m.moves.map(x => MOVES[x.id]).filter(M => M && M.cat !== 'status' && M.pow > 0);
+  const best = dmg.length ? Math.max(...dmg.map(M => effectiveness(M.type, ft))) : null;
+  const danger = Math.max(...ft.map(t => effectiveness(t, mt)));
+  return { best, danger };
+}
+function pill(ctx, x, y, label, col) { const w = Math.ceil(measure(label, 5.5)) + 6; ctx.fillStyle = '#183830'; ctx.fillRect(x - 1, y - 1, w + 2, 9); ctx.fillStyle = col; ctx.fillRect(x, y, w, 7); text(label, x + w / 2, y - 0.5, '#ffffff', 5.5, 'center', null, true); return w + 3; }
 import { calcStats, maxHp, monName, xpForLevel, genderOf } from '../data/mon.js';
 
 // ♂/♀ als Pixel-Grafik (die Schrift hat keine sauberen Zeichen dafür). gd: 1 männlich, 2 weiblich
@@ -195,6 +205,14 @@ class Party {
         text(`${m.hp}/${maxHp(m)}`, big ? x + w - 6 : x + w - 5, big ? y + 50 : y + 13, '#ffffff', 7, 'right', '#1a3a5a', true);
         if (m.mut) text('MUT', big ? x + 64 : x + 30, big ? y + 6 : y + 13, '#ffd0f0', 6, 'left', null, true);
         if (m.status) text({ brand: 'BRD', gift: 'GIF', starre: 'STR' }[m.status], big ? x + 64 : x + 55, big ? y + 16 : y + 13, '#ffe08a', 6, 'left', '#5a2020', true);
+        const mu = this.o.vs && m.hp > 0 && matchup(m, this.o.vs);
+        if (mu) { // Hinweis beim Wechseln: wer passt gegen den Gegner?
+          let px = big ? x + 38 : x + 66; const py = big ? y + 20 : y + 14;
+          if (mu.best >= 2) px += pill(ctx, px, py, mu.best >= 4 ? 'SUPER ×4' : 'EFFEKTIV', '#28a048');
+          else if (mu.best === 0) px += pill(ctx, px, py, 'KEINE WIRKUNG', '#787878');
+          else if (mu.best !== null && mu.best < 1) px += pill(ctx, px, py, 'SCHWACH', '#d07020');
+          if (mu.danger >= 2) pill(ctx, big ? x + 38 : px, big ? py + 9 : py, big || px === x + 66 ? 'GEFAHR' : '!', '#c83030');
+        }
         if (this.o.filter && this.o.select && !this.o.filter(m)) { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x, y, w, h); }
       } else text(`noch ca. ${Math.max(1, Math.round(m.steps / 50))} Runden`, nx, big ? y + 44 : y + 13, '#e8f0ff', 6.5);
     });

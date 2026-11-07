@@ -679,3 +679,11 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
 - **Mitläufer:**
   - Er schaut immer zum Spieler.
   - Dreht sich der Spieler im Stand um, stellt sich der Mitläufer nach 0,45 s hinter dessen Rücken (`F.anim`, nur wenn das Feld frei ist).
+
+## v2.10.1 – Hinweise beim Wechseln, Blickrichtung des Mitläufers
+- **Team-Bildschirm im Kampf** (`party(..., { vs: gegner })`, `matchup` in gbui):
+  - Grünes „EFFEKTIV“ bzw. „SUPER ×4“, wenn eine eigene Attacke sehr effektiv ist.
+  - Orangenes „SCHWACH“, wenn alle Attacken wenig ausrichten, graues „KEINE WIRKUNG“, wenn gar keine wirkt.
+  - Rotes „GEFAHR“ bzw. „!“, wenn ein Typ des Gegners sehr effektiv gegen die eigene Kreatur ist.
+  - Gilt für den freiwilligen Wechsel, den Wechsel nach einem K.O. und den Wechsel vor der nächsten Trainer-Kreatur (dort zählt die kommende Kreatur).
+- **Mitläufer:** Beim Laufen schaut er in die eigene Laufrichtung, auch an Ecken. Im Stand schaut er in dieselbe Richtung wie der Spieler.

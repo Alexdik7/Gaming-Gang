@@ -110,7 +110,7 @@ class BattleScene {
       if (!action) continue;
       await this.play(await this.remote(() => b.turn(action)));
       if (b.awaitSwitch) {
-        let i = null; while (i === null) i = await party(this.teamState(), { select: true, prompt: 'Wer soll kämpfen?', filter: m => !m.egg && m.hp > 0 });
+        let i = null; while (i === null) i = await party(this.teamState(), { select: true, prompt: 'Wer soll kämpfen?', vs: this.b.f, filter: m => !m.egg && m.hp > 0 });
         await this.play(await this.remote(() => b.forcedSwitch(i)));
       }
       if (b.waitingOther) await this.play(await this.remote(() => b.recv()));
@@ -203,7 +203,7 @@ class BattleScene {
     }
     if (i === 2) {
       this.mode = 'busy';
-      const ti = await party(this.teamState(), { select: true, prompt: 'Welche Kreatur einwechseln?', filter: m => !m.egg && m.hp > 0 && m !== b.p });
+      const ti = await party(this.teamState(), { select: true, prompt: 'Welche Kreatur einwechseln?', vs: this.b.f, filter: m => !m.egg && m.hp > 0 && m !== b.p });
       if (ti === null) { this.mode = 'menu'; return; }
       return done({ t: 'switch', i: ti });
     }
@@ -231,7 +231,7 @@ class BattleScene {
           if (e.side === 'f' && this.o.trainer && !this.o.remote && this.dP && this.b.p.hp > 0 && this.b.team.some(m => !m.egg && m.hp > 0 && m !== this.b.p)) {
             await this.say(`${this.o.trainer.name} wird ${monName(e.mon)} einsetzen.`, 400);
             this.mode = 'busy';
-            if (await ask(`Möchtest du ${monName(this.b.p)} auswechseln?`)) { const ti = await party(this.teamState(), { select: true, prompt: 'Welche Kreatur einwechseln?', filter: m => !m.egg && m.hp > 0 && m !== this.b.p }); if (ti !== null) shift = ti; }
+            if (await ask(`Möchtest du ${monName(this.b.p)} auswechseln?`)) { const ti = await party(this.teamState(), { select: true, prompt: 'Welche Kreatur einwechseln?', vs: e.mon, filter: m => !m.egg && m.hp > 0 && m !== this.b.p }); if (ti !== null) shift = ti; }
           }
           this.note(e.text);
           if (e.side === 'p') { this.dP = e.mon || this.b.p; this.xpD = this.dP.xp; this.hpD.p = this.dP.hp; this.dLvl[this.dP.uid] = this.dP.lvl; } else { this.dF = e.mon || this.b.f; this.hpD.f = this.dF.hp; }

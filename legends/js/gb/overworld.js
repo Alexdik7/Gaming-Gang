@@ -127,8 +127,10 @@ export class Overworld {
             if (F.idle > 0.45 && !this.solid(bx, by, true) && this.ch(bx, by) !== '~' && !this.bldAt(bx, by)) { F.anim = { t: 0, fx: F.x, fy: F.y, tx: bx, ty: by }; F.idle = 0; }
           } else F.idle = 0;
         } else F.idle = 0;
-        const ddx = p.px - F.px, ddy = p.py - F.py;
-        if (Math.abs(ddx) + Math.abs(ddy) > 2) F.dir = Math.abs(ddx) > Math.abs(ddy) ? (ddx > 0 ? 'right' : 'left') : (ddy > 0 ? 'down' : 'up');
+        // Blickrichtung: beim Laufen in die eigene Laufrichtung, im Stand wie der Spieler (Blick auf seinen Rücken)
+        const A = F.anim, mx = A ? A.tx - A.fx : p.moving ? F.tx - F.fx : 0, my = A ? A.ty - A.fy : p.moving ? F.ty - F.fy : 0;
+        if (mx || my) F.dir = Math.abs(mx) > Math.abs(my) ? (mx > 0 ? 'right' : 'left') : (my > 0 ? 'down' : 'up');
+        else if (!p.moving) { const [dx, dy] = DX[p.dir]; F.dir = F.x === p.x - dx && F.y === p.y - dy ? p.dir : (Math.abs(p.x - F.x) > Math.abs(p.y - F.y) ? (p.x > F.x ? 'right' : 'left') : (p.y > F.y ? 'down' : 'up')); }
       } }
     // Zwischensequenz: Kinobalken + Kameraschwenk; endet von selbst, sobald die Steuerung frei ist
     if (this.cine) { const C = this.cine; if (!this.busy) C.on = false; const mv = (v, to, sp) => (v < to ? Math.min(to, v + sp * dt) : Math.max(to, v - sp * dt)); C.b = mv(C.b, C.on ? 1 : 0, 2.6); C.k = mv(C.k, C.on && C.focus ? 1 : 0, 1.5); if (!C.on && C.b === 0 && C.k === 0) this.cine = null; }
