@@ -9,11 +9,11 @@ const LANDISH = c => c !== null && c !== '~' && c !== 'B';
 const LL = {};
 // rote Silhouette (Umriss der Alpha-Kreaturen), einmal pro Art erzeugt
 const RED = new Map();
-function redSil(sp, img) {
-  if (RED.has(sp)) return RED.get(sp);
+function redSil(sp, img, col = '#ff2a2a') {
+  const key = sp + col; if (RED.has(key)) return RED.get(key);
   const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const x = c.getContext('2d');
-  x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = '#ff2a2a'; x.fillRect(0, 0, c.width, c.height);
-  RED.set(sp, c); return c;
+  x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, c.width, c.height);
+  RED.set(key, c); return c;
 }
 function lightLayer(sun) {
   const key = sun + ':' + VH; if (LL[key]) return LL[key];
@@ -64,6 +64,16 @@ export class Overworld {
         break;
       }
     }
+    // Revierkreaturen (täglich neu, Story-Reviere bleiben bis zum Sieg) und scheue Kreaturen zum Füttern
+    { const day = Math.floor(Date.now() / 864e5);
+      for (const R of M.revier || []) {
+        if ((R.showIf && !s.flags[R.showIf]) || (R.hideIf && s.flags[R.hideIf]) || (!R.story && s.flags[`rv:${day}:${R.id}`])) continue;
+        this.npcs.push({ id: 'rv_' + R.id, revier: R, mon: R.sp, x: R.x, y: R.y, ox: R.x, oy: R.y, px: R.x * 16, py: R.y * 16, dir: 'down', moving: false, wander: R.story ? 0 : 1, wt: 2, step: 0 });
+      }
+      for (const S of M.shy || []) {
+        if (s.flags['shy_' + S.id] || s.flags[`shyFled:${day}:${S.id}`]) continue;
+        this.npcs.push({ id: 'sh_' + S.id, shy: S, mon: S.sp, x: S.x, y: S.y, ox: S.x, oy: S.y, px: S.x * 16, py: S.y * 16, dir: 'down', moving: false, wander: 1, wt: 3, step: 0 });
+      } }
     this.banner = (M.outdoor || M.cave || M.banner) ? { t: 2.2, name: M.name } : null;
     this.music();
     this.g.onMapLoad?.(id);
@@ -163,7 +173,7 @@ export class Overworld {
       if (G.t - (this.arrivedAt || 0) < 0.05) this.stepMove(carry + dt);
     }
   }
-  moveDur() { const p = this.p; return p.jump ? 0.42 : p.slide ? 0.1 : (input.held('b') && !this.M.indoor ? (this.g.state.wind > 0 ? 0.095 : 0.13) : this.g.state.wind > 0 ? 0.17 : 0.22); }
+  moveDur() { const p = this.p; return p.jump ? 0.42 : p.slide ? 0.1 : p.sneak ? 0.34 : (input.held('b') && !this.M.indoor ? (this.g.state.wind > 0 ? 0.095 : 0.13) : this.g.state.wind > 0 ? 0.17 : 0.22); }
   stepMove(dt) {
     const p = this.p;
     p.t += dt / this.moveDur();
@@ -262,6 +272,8 @@ export class Overworld {
     if (pf && !s.flags[pf]) { s.flags[pf] = true; sfx('lvl'); G.shake = 0.4; this.notify('Klick! Irgendwo hat sich ein Tor geöffnet.'); }
     if (p.surf && c !== '~') { p.surf = false; s.surf = false; this.music(); }
     if (await this.checkTrainers()) return;
+    if (p.sneak && !this.isGrass(p.x, p.y)) { p.sneak = false; this.notify('Du stehst wieder auf.'); }
+    if (await this.revierCheck()) return;
     if (p.surf && this.M.surfEnc) { if (Math.random() < ENC[this.M.surfEnc].rate) await this.g.wildBattle(this.M.surfEnc, 'wasser'); return; }
     const encId = this.M.enc;
     // Kreaturen-Spuren: raschelnde oder funkelnde Stelle im hohen Gras
@@ -269,16 +281,29 @@ export class Overworld {
     if (T && T.x === p.x && T.y === p.y) { this.trail = null; await this.g.trailBattle(T, this.M.cave ? 'hoehle' : this.id === 'altwald' ? 'wald' : this.M.bg || 'gras'); return; }
     if (T) {
       if (--T.life <= 0) this.trail = null;
-      else if (T.hops < 2 && Math.abs(T.x - p.x) + Math.abs(T.y - p.y) <= 1 && Math.random() < 0.3) {
+      else if (!p.sneak && T.hops < 2 && Math.abs(T.x - p.x) + Math.abs(T.y - p.y) <= 1 && Math.random() < 0.3) {
         const opts = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => [T.x + a, T.y + b]).filter(([a, b]) => this.isGrass(a, b) && Math.abs(a - p.x) + Math.abs(b - p.y) > 1 && !this.npcAt(a, b));
         if (opts.length) { const [a, b] = opts[Math.floor(Math.random() * opts.length)]; T.px = T.x; T.py = T.y; T.x = a; T.y = b; T.hops++; T.pt = 0; sfx('grass'); this.notify('Es ist weggehuscht! Schleich dich näher heran …'); }
       }
     } else if (encId && this.M.outdoor && !p.surf && Math.random() < 0.045) this.spawnTrail();
     if (encId && !(s.repel > 0) && ((c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%') || (this.M.cave && c === 'c'))) {
-      if (Math.random() < ENC[encId].rate * (s.lure > 0 ? 2 : 1)) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.M.bg || 'gras');
+      if (Math.random() < ENC[encId].rate * (s.lure > 0 ? 2 : 1) * (p.sneak ? 0.6 : 1)) await this.g.wildBattle(encId, this.M.cave ? 'hoehle' : this.M.bg || 'gras', null, { sneak: !!p.sneak });
     }
   }
 
+  // Revier: im Umkreis r warnt die Kreatur; wer trotzdem näher kommt (oder direkt daneben steht), wird angegriffen. Geduckt ist der Umkreis nur 1.
+  async revierCheck() {
+    const p = this.p;
+    for (const n of this.npcs) {
+      if (!n.revier) continue;
+      const R = n.revier, d = Math.abs(n.x - p.x) + Math.abs(n.y - p.y), rad = p.sneak ? 1 : R.r;
+      if (d > rad) { n.warned = false; n.lastD = d; continue; }
+      if (d <= 1 || (n.warned && d < n.lastD)) { this.emote = { n, t: 0.8 }; sfx('encounter'); G.shake = 0.8; await this.g.revierBattle(n, true); return true; }
+      if (!n.warned) { n.warned = true; this.emote = { n, t: 1.2 }; G.shake = 0.5; sfx('encounter'); this.notify(`${SPECIES[R.sp].name} warnt: Revier! Zurück oder duck dich.`); }
+      n.lastD = d;
+    }
+    return false;
+  }
   isGrass(x, y) { const c = this.ch(x, y); return x >= 0 && y >= 0 && x < this.w && y < this.h && (c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%'); }
   spawnTrail() {
     const p = this.p, C = [];
@@ -406,6 +431,7 @@ export class Overworld {
       if (c === '~' && this.M.fishing !== false) { await this.g.fish(); return; }
       if (c === 'U') { await this.g.berry(fx, fy); return; }
       if (c === 'b') { await say('Ein schwerer Felsbrocken. Er bewegt sich keinen Millimeter.'); return; }
+      if (this.isGrass(p.x, p.y) && this.g.state.team.length) { p.sneak = !p.sneak; sfx('grass'); this.notify(p.sneak ? 'Du duckst dich ins Gras. Ganz leise … (A: aufstehen)' : 'Du stehst wieder auf.'); return; }
     } finally { this.busy = false; }
   }
 
@@ -503,8 +529,8 @@ export class Overworld {
       if (T.kind === 'glitzer') { const on = Math.sin(G.t * 7) > 0, sx = bx + 8 + Math.round(Math.sin(G.t * 1.7) * 3), sy = by + 1; ctx.fillStyle = on ? '#ffffff' : '#ffe36b'; ctx.fillRect(sx - 1, sy - (on ? 4 : 2), 2, on ? 8 : 4); ctx.fillRect(sx - (on ? 4 : 2), sy - 1, on ? 8 : 4, 2); }
     }
     // Figuren nach y sortiert
-    const actors = [...this.npcs.map(n => ({ alpha: n.alpha, mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
-      { look: this.g.state.look, dir: p.dir, frame: p.frame, hop: p.hop || 0, px: p.px, py: p.py - (p.hop || 0) - (p.bob || 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
+    const actors = [...this.npcs.map(n => ({ alpha: n.alpha, revier: n.revier, shy: n.shy, mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
+      { look: this.g.state.look, dir: p.dir, frame: p.frame, hop: p.hop || 0, px: p.px, py: p.py - (p.hop || 0) - (p.bob || 0) + (p.sneak ? 4 : 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
       ...(this.g.remoteActors?.(this.id) || [])];
     const lead = this.f?.vis && !p.surf && this.g.state.team.find(m => !m.egg && m.hp > 0);
     if (lead) { const F = this.f; actors.push({ follow: lead, px: F.px, py: F.py, x: F.x, y: F.y, dir: F.dir }); }
@@ -516,16 +542,18 @@ export class Overworld {
         ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(a.px - cx + 8, a.py - cy + 14, 6, 2, 0, 0, 7); ctx.fill();
         ctx.save(); ctx.translate(Math.round(a.px - cx + 8), Math.round(a.py - cy - 15 + hopY)); if (a.dir === 'right') ctx.scale(-1, 1); ctx.drawImage(img, -16, 0); ctx.restore();
         if (this.fEmote?.t > 0) { const ex = a.px - cx + 4, ey = a.py - cy - 22; ctx.fillStyle = '#28202c'; ctx.fillRect(ex - 1, ey - 1, 10, 9); ctx.fillStyle = '#fff'; ctx.fillRect(ex, ey, 8, 7); ctx.fillStyle = '#e84a6a'; [[1, 1, 2, 2], [5, 1, 2, 2], [1, 2, 6, 2], [2, 4, 4, 1], [3, 5, 2, 1]].forEach(([q, w2, e, r]) => ctx.fillRect(ex + q, ey + w2, e, r)); }
-      } else if (a.alpha) { // Alpha: groß, rote Aura, Schatten, leichtes Atmen
-        const img = monSprite(a.mon, 'icon'), b = Math.sin(G.t * 2.4), sz = Math.round(44 + b), ax = Math.round(a.px - cx + 8), ay = Math.round(a.py - cy + 14);
+      } else if (a.alpha || a.revier) { // Alpha (rot) und Revier (orange): groß, Aura, Schatten, leichtes Atmen
+        const img = monSprite(a.mon, 'icon'), b = Math.sin(G.t * 2.4), sz = Math.round((a.revier ? 40 : 44) + b), ax = Math.round(a.px - cx + 8), ay = Math.round(a.py - cy + 14);
         ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(ax, ay, 11, 3, 0, 0, 7); ctx.fill();
-        ctx.globalAlpha = 0.55 + b * 0.2; ctx.drawImage(glow(26, '255,40,40'), ax - 26, ay - 44); ctx.globalAlpha = 1;
-        const red = redSil(a.mon, img);
+        ctx.globalAlpha = 0.55 + b * 0.2; ctx.drawImage(glow(26, a.revier ? '255,150,40' : '255,40,40'), ax - 26, ay - 44); ctx.globalAlpha = 1;
+        const red = redSil(a.mon, img, a.revier ? '#ff9a30' : undefined);
         ctx.imageSmoothingEnabled = false; ctx.save(); ctx.translate(ax, ay - sz + 6); if (a.dir === 'right') ctx.scale(-1, 1);
         ctx.globalAlpha = 0.8 + b * 0.2; for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(red, -sz / 2 + ox, oy, sz, sz); ctx.globalAlpha = 1;
         ctx.drawImage(img, -sz / 2, 0, sz, sz); ctx.restore();
-        if (Math.floor(G.t * 1.5) % 4 === 0) { ctx.fillStyle = '#ff3030'; ctx.fillRect(ax - 3, ay - sz - 2, 2, 2); ctx.fillRect(ax + 1, ay - sz - 2, 2, 2); }
-      } else if (a.mon) ctx.drawImage(monSprite(a.mon, 'icon'), a.px - cx - 8, a.py - cy - 16 + Math.round(Math.sin(G.t * 2) * 1));
+        if (a.revier) { ctx.globalAlpha = 0.25 + 0.1 * Math.sin(G.t * 3); ctx.strokeStyle = '#ffb040'; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.ellipse(ax, ay - 2, a.revier.r * 16 + 8, a.revier.r * 8 + 4, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; }
+        if (!a.revier && Math.floor(G.t * 1.5) % 4 === 0) { ctx.fillStyle = '#ff3030'; ctx.fillRect(ax - 3, ay - sz - 2, 2, 2); ctx.fillRect(ax + 1, ay - sz - 2, 2, 2); }
+      } else if (a.mon) { ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(a.px - cx + 8, a.py - cy + 14, 6, 2, 0, 0, 7); ctx.fill(); ctx.save(); ctx.translate(Math.round(a.px - cx + 8), Math.round(a.py - cy - 16 + Math.sin(G.t * 2))); if (a.dir === 'right') ctx.scale(-1, 1); ctx.drawImage(monSprite(a.mon, 'icon'), -16, 0); ctx.restore();
+        if (a.shy && Math.floor(G.t * 0.8) % 3 === 0) { const hx = a.px - cx + 4, hy = a.py - cy - 24; ctx.fillStyle = '#28202c'; ctx.fillRect(hx - 1, hy - 1, 10, 9); ctx.fillStyle = '#fff'; ctx.fillRect(hx, hy, 8, 7); text('?', hx + 4, hy - 1, '#3a8ad8', 8, 'center', null, true); } }
       else {
         if (this.ch(a.x, a.y + 1) === '~') { // Spiegelung im Wasser
           const wx = a.x * 16 - cx, wy = (a.y + 1) * 16 - cy;

@@ -10,3 +10,12 @@
 - Pager (Ziel, Aufgaben, Logbuch, Lied, Karte), Minikarte, Muschelfon (Oma, Prof. Kehl, Jaro, Rhea)
 - Story Akt 1: Gezeitenkompass + Stilles Ei, Revier-Kneifling, Starterwahl am Strand, Rivale Jaro, Versprechen im Leuchtturm, Erster Bund, Orden der Stillen See in der Werft (Schwester Nebel), Leuchtfeuer entzünden, Arena 1 (Kapitänin Rhea), Liedstein 1, Logbuchseiten 1–3
 - Karten: Muschelbucht, Muschelstrand, Dünenpfad, Ankerbrück + Innenräume
+
+## v0.2 – Phase 2: Dünenhain und Glimmwald (Arenen 2 und 3)
+- 30 neue Kreaturen (Nr. 46–75) + 18 neue Attacken, Datei `js/data/kalmara2.js`
+- Karten: Küstenweg, Dünenhain (Oase, Basar), Sandgrotte, Glimmpfad, Glimmwald, Glimmdorf, Arena 2 und 3
+- **Revierkreaturen** (`M.revier`): warnen im Umkreis, greifen an, wer näher kommt; geduckt nur aus 1 Feld. Täglich neu, seltene Beute. Story-Revier „Waldherz“
+- **Schleichen**: im hohen Gras A drücken → ducken (langsamer, weniger Begegnungen, seltene Arten häufiger, überraschte Kreaturen 1,5× leichter zu fangen, Spuren hüpfen nicht weg)
+- **Füttern** (`M.shy`): scheue Kreaturen mit der Lieblingsbeere füttern → schließen sich freiwillig an (falsche Beere → flieht bis morgen)
+- Story: Okko und Schwester Nebel in der Sandgrotte (Quelle versiegt), Prof. Kehl im Glimmwald, schlafendes Glimmdorf und das Waldherz, Jaro und die Frau in der weißen Kutte
+- Arenen: Okko (Erde, Dünenorden), Mira (Pflanze/Gift, Sporenorden); Liedsteine 2 und 3; Logbuchseiten 4–6; 2 neue Suchaufträge

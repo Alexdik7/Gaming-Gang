@@ -21,11 +21,29 @@ export const GYMS = {
     outro: ['Rhea: Deine Mutter … Liv war meine beste Freundin. Wir sind zusammen zur See gefahren, bevor sie die Morgenstern bekam.', 'Rhea: An ihrem letzten Abend sagte sie: „Der Kompass wird den Weg finden, wenn ich es nicht kann.“', 'Rhea: Ich habe nie verstanden, was sie meinte. Bis heute.'],
     after: ['Rhea: Der Ankerorden steht dir! Wenn du Fragen über Liv hast – ruf mich an.'],
   },
+  okko: {
+    badge: 1, badgeName: 'DÜNENORDEN', team: [['kieselkopp', 18], ['dunaro', 19], ['sandvipa', 19], ['kaktoral', 21]], reward: 2200, bg: 'wueste',
+    intro: ['Okko: Du hast mich aus der Grotte geholt – und die Quelle wieder zum Fließen gebracht.', 'Okko: In Dünenhain sagt man: Wer Wasser bringt, dem gehört der Sand.', 'Okko: Aber meinen Orden bekommst du nur, wenn du mich in meinem Element schlägst. Los!'],
+    lose: 'Okko: Der Sand rinnt mir durch die Finger … Du bist schnell. Schneller als der Wind.',
+    gift: { text: ['Okko: Nimm diesen Attacken-Kristall. Sandsturz – damit wirbelst du jeden Gegner durcheinander.'], items: { ak_sandsturz: 1, supertrank: 3 } },
+    outro: ['Okko: Die Kutten-Leute haben nach der Strophe gegraben. Und Schwester Nebel trug Seiten aus einem alten Logbuch bei sich.', 'Okko: Seiten mit dem Wappen der Morgenstern. Woher hat der Orden die?', 'Okko: Westlich von hier liegt der Glimmwald. Mira ist dort Arenaleiterin – aber ich habe seit Tagen nichts von ihr gehört.'],
+    after: ['Okko: Der Dünenorden steht dir! Der Glimmpfad beginnt im Westen der Oase.'],
+  },
+  mira: {
+    badge: 2, badgeName: 'SPORENORDEN', team: [['myzelchen', 23], ['toxquak', 24], ['glimmhut', 24], ['fungorax', 27]], reward: 2800, bg: 'wald',
+    intro: ['Mira: Das Waldherz schläft wieder, und mein Dorf ist wach. Das verdanke ich dir.', 'Mira: Ich bin Mira. Meine Kreaturen sind leise, giftig und geduldig – wie der Wald selbst.', 'Mira: Zeig mir, ob du das Dunkel nicht fürchtest!'],
+    lose: 'Mira: Du leuchtest heller als jeder Glimmhut. Der Wald hat dich gesehen.',
+    gift: { text: ['Mira: Nimm dieses Schutzamulett. Es hat mich einmal vor einem Waldkoloss gerettet.'], items: { schutzamulett: 1, hypertrank: 2 } },
+    outro: ['Mira: Unter den Wurzeln des Waldherzens lag einst ein Splitter aus Sternenglas. Er ist weg.', 'Mira: Wer ihn genommen hat, wusste genau, wonach er sucht. Der Orden … oder jemand, der ihm Befehle gibt.', 'Mira: Die nächste Arena ist in Funkenhafen, auf der Ostinsel. Dorthin kommt man nur mit dem Schiff.'],
+    after: ['Mira: Der Sporenorden steht dir. Pass auf dich auf, wenn die Nacht kommt.'],
+  },
 };
 export const LIGA = {};
 export const QUESTS = {
   mb_frau: { want: 'lumoth', title: 'Licht für Ines', ask: ['Nachts sehe ich auf dem Dünenpfad manchmal kleine Lichter tanzen. Lumoths sollen das sein.', 'Würdest du mir eins zeigen? Mein Sohn hat früher immer davon erzählt …'], thanks: ['Oh … {mon}! Es leuchtet genau so, wie er es beschrieben hat.', 'Danke. Nimm das hier – damit finden dich Kreaturen leichter.'], reward: { lockfutter: 3 }, after: 'Mein Sohn ist Matrose auf einem großen Schiff. Vielleicht siehst du ihn eines Tages.' },
   ab_kid: { want: 'zappgecko', title: 'Der knisternde Gecko', ask: ['Kennst du Zappgeckos? Die kleben an Masten und knistern!', 'Die gibt es auf dem Dünenpfad. Bringst du mir einen zum Anschauen?'], thanks: ['WOW, {mon} knistert ja wirklich!', 'Hier, das hab ich am Hafen gefunden.'], reward: { ak_funkenkette: 1 }, after: 'Wenn ich groß bin, werde ich Ingenieur in Funkenhafen!' },
+  dh_kind: { want: 'skarabix', title: 'Tariks Sonnenkäfer', ask: ['Ich will einen Skarabix sehen! Die rollen Sonnenkugeln!', 'Am Küstenweg gibt es welche, aber nur am Tag.'], thanks: ['Er rollt wirklich eine Kugel aus Licht! {mon} ist der Beste!', 'Hier, die hat mir Okko geschenkt. Ich brauch sie nicht.'], reward: { ankerkugel: 3 }, after: 'Wenn ich groß bin, werde ich Sandläufer wie Okko!' },
+  gd_jaeger: { want: 'nachtwolp', title: 'Der Welpe im Mondlicht', ask: ['Früher hatte ich einen Nachtwolp. Er ist mit dem Rudel gezogen, als er groß war.', 'Zeig mir einen – nachts im Glimmwald. Ich habe dafür etwas, das ein Seemann vor Jahren hier verloren hat.'], thanks: ['{mon} … Die gleichen Augen. Danke.', 'Diese Seite trug ein Seemann der Morgenstern bei sich. Er kam vor zehn Jahren durch den Wald – allein.'], reward: { echomuschel: 2 }, log: 6, after: 'Der Seemann sagte, er müsse eine Nachricht nach Muschelbucht bringen. Angekommen ist er dort wohl nie.' },
   ab_alte: { want: 'perlschild', title: 'Perlen der Seefrau', ask: ['Früher hat mir ein Perlschild jeden Morgen eine Perle an den Steg gebracht.', 'Man angelt sie im Hafenbecken. Zeigst du mir eines? Ich gebe dir dafür etwas, das ich lange aufbewahrt habe.'], thanks: ['Ach, {mon} … Die Perlen auf seinem Panzer glänzen wie früher.', 'Hier. Diese Seite hat vor Jahren ein Fischer aus dem Netz gezogen. Ich glaube, sie gehört dir.'], reward: { echomuschel: 2 }, log: 2, after: 'Liv hat in diesem Haus oft Tee getrunken. Sie lachte so laut, dass die Möwen erschraken.' },
 };
 
@@ -33,10 +51,15 @@ export const QUESTS = {
 export const LOGS = {
   1: ['Tag 1. Die Morgenstern läuft aus. {name} hat geweint, als ich ging.', 'Ich habe Mama Wella versprochen, in einem Jahr zurück zu sein. Der Kompass zeigt hinaus – weiter, als jede Karte reicht.'],
   2: ['Tag 19. Wir haben einen Stein mit einer Strophe gefunden. Das Lied der Gezeiten!', 'Acht Steine im Archipel. Ich glaube, zusammen ergeben sie keinen Text – sondern eine Karte.'],
+  4: ['Tag 51. In der Sandgrotte unter Dünenhain steht die zweite Strophe. Die Quelle dort singt dieselbe Melodie.', 'Ich habe die Hälfte meiner Seiten versteckt. Falls die Stille sie findet, soll sie nur Bruchstücke haben.'],
+  5: ['Tag 64. Im Glimmwald leuchtet nachts ein Herz aus Pilzen. Unter seinen Wurzeln liegt ein Splitter aus Sternenglas.', 'Er ist kalt und warm zugleich – wie das Ei, das wir an Bord haben. Ich habe ihn dort gelassen. Er gehört dem Wald.'],
+  6: ['Tag 70. Kurs Südost. Die Nadel zittert jetzt stärker. Wir sind nah.', 'Rhea, wenn du das liest: Kümmere dich um mein Kind. Und sag ihm, dass ich jeden Abend an es denke.'],
   3: ['Tag 33. In Ankerbrück fragte mich eine Frau in grauer Kutte nach dem Kompass. Sie nannte sich „die Stille“.', 'Ich habe ihr nichts gesagt. Aber sie wusste von dem Tor. Woher?'],
 };
 export const SONG = {
   song1: ['Strophe I – Ankerbrück', '„Wo die Flut den Mond verschluckt, / liegt ein Kompass, der nicht ruht.', 'Folg der Nadel, nicht dem Nord – / Heimat ist ein ferner Ort.“'],
+  song2: ['Strophe II – Sandgrotte', '„Wo der Sand das Wasser trinkt, / wo die Quelle leise singt,', 'zähl die Sterne, sieben weit – / dort beginnt die Gezeitenzeit.“'],
+  song3: ['Strophe III – Glimmdorf', '„Wo das Herz im Dunkeln glüht, / wo kein Licht die Wurzeln sieht,', 'liegt ein Splitter, kalt und klar – / Spiegel dessen, was einst war.“'],
 };
 export async function addLog(g, n) {
   const s = g.state; if (s.flags['log' + n]) return;
@@ -57,7 +80,15 @@ export function mainGoal(s) {
   if (!f.beaconLit) return { t: 'Licht für die Schiffe', d: 'Bring die Feuerlinse in den Leuchtfeuer-Turm am Hafen und entzünde das Licht.', map: 'ankerbrueck' };
   if (!s.badges[0]) return { t: 'Arena Ankerbrück', d: 'Kapitänin Rhea ist zurück. Fordere sie in ihrer Arena heraus! Pflanzen- und Elektro-Attacken helfen gegen Wasser.', map: 'ankerbrueck' };
   if (!f.jaro2) return { t: 'Jaro am Hafen', d: 'Jaro wartet auf dem Marktplatz von Ankerbrück auf dich.', map: 'ankerbrueck' };
-  return { t: 'Fortsetzung folgt', d: 'Die Brücke nach Dünenhain wird repariert. Dort warten Arena 2 und neue Kreaturen. (Kommt in Phase 2!) Bis dahin: Kreaturen sammeln, Aufgaben erfüllen, Lied und Logbuch suchen.', map: 'ankerbrueck' };
+  if (!f.reachedDH) return { t: 'Über die Brücke', d: 'Die Brücke im Norden von Ankerbrück ist repariert. Folge dem Küstenweg nach Dünenhain.', map: 'duenenhain' };
+  if (!f.heardOkko) return { t: 'Die versiegte Oase', d: 'In Dünenhain stimmt etwas nicht. Sprich mit Oma Sefa an der Oase.', map: 'duenenhain' };
+  if (!f.okkoBack) return { t: 'Die Sandgrotte', d: 'Okko verfolgt den Orden in die Sandgrotte – der Eingang liegt in den Felsen im Nordosten von Dünenhain.', map: 'duenenhain' };
+  if (!s.badges[1]) return { t: 'Arena Dünenhain', d: 'Fordere Sandläufer Okko heraus! Wasser- und Pflanzen-Attacken helfen gegen Erde.', map: 'duenenhain' };
+  if (!f.reachedGD) return { t: 'Der Glimmwald', d: 'Folge dem Glimmpfad nach Westen und durch den Glimmwald bis nach Glimmdorf.', map: 'glimmdorf' };
+  if (!f.waldherz) return f.heardWaldherz ? { t: 'Das Waldherz', d: 'Beruhige das Waldherz – eine riesige Revierkreatur auf der Lichtung im Westen des Glimmwalds. Schleich dich an!', map: 'glimmwald' } : { t: 'Das schlafende Dorf', d: 'In Glimmdorf schlafen alle. Finde Mira, die Arenaleiterin.', map: 'glimmdorf' };
+  if (!s.badges[2]) return { t: 'Arena Glimmdorf', d: 'Fordere Sporenhexe Mira heraus! Feuer-, Luft- und Magie-Attacken helfen gegen Pflanze und Gift.', map: 'glimmdorf' };
+  if (!f.jaro3) return { t: 'Jaro', d: 'Jaro wartet am Nordrand von Glimmdorf.', map: 'glimmdorf' };
+  return { t: 'Fortsetzung folgt', d: 'Funkenhafen liegt auf der Ostinsel – dorthin geht es nur mit dem Schiff. (Kommt in Phase 3!) Bis dahin: Kreaturen sammeln, Revierkreaturen besiegen, Lied und Logbuch suchen.', map: 'glimmdorf' };
 }
 export function sideTasks(s) {
   return Object.entries(QUESTS).filter(([id]) => s.flags['qa_' + id] || s.flags['quest_' + id]).map(([id, q]) => ({ t: q.title, d: s.flags['quest_' + id] ? 'Erledigt!' : `Zeige ${SPECIES[q.want].name}.`, done: !!s.flags['quest_' + id] }));
@@ -70,6 +101,8 @@ export function contacts(s) {
   if (s.bag.telefon) c.push({ id: 'kehl', name: 'Prof. Kehl' });
   if (f.promise) c.push({ id: 'jaro', name: 'Jaro' });
   if (s.badges[0]) c.push({ id: 'rhea', name: 'Kapitänin Rhea' });
+  if (s.badges[1]) c.push({ id: 'okko', name: 'Okko' });
+  if (s.badges[2]) c.push({ id: 'mira', name: 'Mira' });
   return c;
 }
 const OMA = ['Deine Mutter hat als Kind jeden Morgen am Strand nach Flaschenpost gesucht. Gefunden hat sie nie eine – aber sie hat nie aufgehört.', 'Liv konnte keine Suppe kochen. Gar keine. Aber sie konnte einen Sturm riechen, Stunden bevor er kam.', 'Weißt du, warum das Schiff Morgenstern hieß? Weil du an einem Morgen geboren wurdest, als der letzte Stern noch am Himmel stand.', 'Der Wärter Bosse und deine Mutter haben oft im Leuchtturm gesessen und über Karten gebrütet. Frag ihn doch mal.'];
@@ -82,6 +115,8 @@ export async function call(g, id) {
     return say([`Kehl: ${s.name}! Wie geht es dem Kompass? … Ich meine – wie geht es dir?`, `Kehl: Deine Chronik zählt ${n} gebundene Kreaturen. ${n < 10 ? 'Da geht noch mehr!' : 'Beeindruckend!'}`, `Kehl: Mein Tipp: ${mainGoal(s).d}`], N);
   }
   if (id === 'jaro') return say(s.badges[0] ? ['Jaro: Du hast den Ankerorden? Pff. Ich hol ihn mir morgen.', 'Jaro: Und dann hol ich dich ein. Versprochen ist versprochen!'] : ['Jaro: Was gibt’s? Ich trainiere gerade!', 'Jaro: Wir sehen uns in Ankerbrück. Und dann zeig ich dir, wer zuerst das Ende des Meeres sieht!'], N);
+  if (id === 'okko') return say(['Okko: Hey! Die Oase ist wieder voll. Die Kinder baden jeden Tag!', 'Okko: Tipp von mir: Revierkreaturen warnen dich, bevor sie angreifen. Wer sich duckt und anschleicht, wird nicht bemerkt.'], N);
+  if (id === 'mira') return say(['Mira: Der Wald ist ruhig. Aber der Splitter unter dem Waldherz … er fehlt mir.', 'Mira: Scheue Kreaturen mögen Beeren. Jede hat ihre Lieblingssorte – probier es aus.'], N);
   if (id === 'rhea') return say(['Rhea: Ahoi! Liv hat mir mal erzählt, dass in jeder Arenastadt ein alter Liedstein steht.', 'Rhea: Acht Strophen. Sie war überzeugt, dass sie zusammen etwas zeigen – nicht erzählen.'], N);
 }
 
@@ -115,9 +150,29 @@ export async function talkStory(g, n) {
       return say(f.beaconLit ? ['Das Leuchtfeuer brennt wieder! Alle Boote sind zurück. Danke dir!'] : ['Die Alte Werft liegt im Süden des Hafens. Pass auf dich auf!'], N);
     case 'ab_frau': return say(f.beaconLit ? ['Mein Mann ist wieder da! Das Leuchtfeuer hat ihn heimgebracht.'] : ['Mein Mann ist noch draußen auf See … Ohne Leuchtfeuer …'], N);
     case 'guide': return say(['Hey, zukünftiger Champion! Kapitänin Rhea wartet ganz oben.', 'Ihre Kreaturen sind Wasser-Typen. Pflanzen- und Elektro-Attacken treffen sie hart!'], N);
-    case 'rhea': return g.gym(n);
+    case 'rhea': case 'okko': case 'mira': return g.gym(n);
     case 'nebel': return nebel(g, n);
     case 'jaro_ank': return jaroAnker(g, n);
+    case 'pip_r2':
+      s.flags.pipR2 = true; await say(['Pip: Psst. Hast du das Dunaro da oben gesehen? Es verteidigt sein Revier.', 'Pip: Wenn du im hohen Gras A drückst, duckst du dich. Dann hört dich keiner kommen!', 'Pip: Und scheue Kreaturen kann man mit Beeren füttern. Woher ich das weiß? Das Meer hat’s mir erzählt.'], N);
+      await give(g, 'lockfutter', 2); g.ow.npcs = g.ow.npcs.filter(x => x !== n); return;
+    case 'dh_sefa':
+      if (!f.heardOkko) { f.heardOkko = true; g.save(true); return say(['Die Oase … sie trocknet aus. Seit gestern fließt die Quelle in der Sandgrotte nicht mehr.', 'Leute in grauen Kutten sind in die Grotte gestiegen. Sie suchen einen alten Stein mit Versen.', 'Mein Enkel Okko – unser Arenaleiter – ist ihnen hinterher. Er ist noch nicht zurück.', 'Die Grotte liegt in den Felsen im Nordosten. Bitte, hilf ihm!'], N); }
+      return say(f.okkoBack ? ['Die Quelle singt wieder. Hörst du sie?', 'Wer genau hinhört, erkennt eine Melodie. Ganz alt.'] : ['Die Sandgrotte liegt in den Felsen im Nordosten. Bitte beeil dich!'], N);
+    case 'dh_haendler': return say(['Der Basar hat Kugeln, die es nur hier gibt! Ankerkugeln für Revierkreaturen, Splitterkugeln für Mutige.', 'Und Lockfutter – streu es im Gras, dann kommen doppelt so viele Kreaturen.'], N);
+    case 'dh_okkovater': return say(['Okko war schon als Kind schneller als jeder Sandsturm.', 'Seine Mutter … sie fuhr auf der Morgenstern mit. Als Steuerfrau. Er spricht nicht gern darüber.'], N);
+    case 'jaro_dh':
+      await say(['Jaro: Na endlich! Ich warte hier schon seit Stunden!', 'Jaro: Hab ein Wettrennen mit einem Fennika gemacht. Verloren. Aber nur knapp!', `Jaro: Weißt du, ${s.name} … in der Nacht vor dem Sturm habe ich geträumt, deine Mutter steht am Leuchtturm und winkt.`, 'Jaro: Blöd, oder? Egal. Ich trainiere im Glimmwald. Bis dann!'], N);
+      await fade(1, 250); f.jaroDH = true; g.ow.npcs = g.ow.npcs.filter(x => x !== n); await fade(0, 250); return;
+    case 'okko_grotte': return say(f.nebel2 ? ['Okko: Du hast sie vertrieben? Wahnsinn! Ich geh zurück und öffne die Arena.'] : ['Okko: Wer bist du? … Egal. Die Kutten-Leute sind ganz hinten, beim alten Liedstein.', 'Okko: Ihre Kreaturen haben meine besiegt. Pass auf – ihre Anführerin ist stark.'], N);
+    case 'nebel2': return nebel2(g, n);
+    case 'kehl_wald': return kehlWald(g, n);
+    case 'mira_dorf':
+      if (!f.heardWaldherz) { f.heardWaldherz = true; g.save(true); return say(['Mira: Du bist wach? Gut. Dann bist du nicht von hier.', 'Mira: Seit drei Nächten stößt das Waldherz Schlafsporen aus. Das ganze Dorf schläft. Meine Kreaturen auch.', 'Mira: Das Waldherz ist ein uraltes Fungorax, eine Revierkreatur. Jemand hat unter seinen Wurzeln gegraben – jetzt ist es außer sich.', 'Mira: Es lebt auf der Lichtung im Westen des Glimmwalds. Schleich dich im Gras an, sonst greift es aus der Ferne an.', 'Mira: Bitte – beruhige es.'], N); }
+      return say('Mira: Die Lichtung liegt im Westen des Glimmwalds. Sei vorsichtig!', N);
+    case 'gd_schlaf1': case 'gd_schlaf2': return say(f.waldherz ? ['Ahh … Was für ein langer Schlaf. Ich habe von leuchtenden Pilzen geträumt.'] : ['Zzz … Zzz …', '(Der Dorfbewohner schläft tief und fest.)'], N);
+    case 'gd_oma': return say(['Im Glimmwald gibt es scheue Waldwesen. Sylphie heißen sie.', 'Sie lieben bittere Klarbeeren. Wer ihnen eine schenkt, gewinnt vielleicht eine Freundin.'], N);
+    case 'jaro_gd': return jaroGlimm(g, n);
     case 'heal_gast': return say(['Im Hafen beißen die Fische am besten bei Nacht.', 'Und wenn du eine Kreatur zum ersten Mal bindest, bekommst du einen Eintrag in der Chronik. Prof. Kehl ruft an, wenn du viele hast!'], N);
     default: return false;
   }
@@ -211,6 +266,49 @@ async function nebel(g, n) {
   await say('Pager: Bring die Feuerlinse in den Leuchtfeuer-Turm am Hafen!'); g.save(true);
 }
 
+async function nebel2(g, n) {
+  const s = g.state, f = s.flags, N = { name: n.name };
+  if (!f.tr_orden3 || !f.tr_orden4) return say('Schwester Nebel: Meine Novizen sind noch nicht fertig mit dir.', N);
+  await g.cutIn(n);
+  await say(['Schwester Nebel: Du schon wieder. Mit dem Kompass.', 'Schwester Nebel: Weißt du, was hier steht? „Zähl die Sterne, sieben weit.“ Deine Mutter hat das auch gelesen.', 'Schwester Nebel: Wir haben ihre Seiten. Nicht alle – aber genug, um zu wissen, dass sie das Tor gefunden hat.', 'Schwester Nebel: Und dass sie dort geblieben ist. Willst du wissen, warum? Dann besiege mich!'], N);
+  const won = await g.trainerFight({ name: 'Schwester Nebel', look: n.look, team: [['sandvipa', 16], ['echolot', 16], ['flackerl', 17], ['quarzel', 18]], reward: 1600, lose: 'Wieder … Wie kann das sein?', music: 'boss', bg: 'hoehle' });
+  if (!won) return say('Schwester Nebel: Komm wieder, wenn du erwachsen bist.', N);
+  await say(['Schwester Nebel: … Die Äbtissin sagt, deine Mutter hat sich entschieden. Für das Meer. Gegen dich.', 'Schwester Nebel: Ich habe ihr nie geglaubt. Bis heute nicht. Aber ich habe meine Befehle.', 'Schwester Nebel: Hier. Diese Seite ist mir aus dem Mantel gefallen. Behalte sie.'], N);
+  await fade(1, 300); f.nebel2 = true; f.okkoBack = true; g.ow.npcs = g.ow.npcs.filter(x => x !== n && x.id !== 'okko_grotte'); await fade(0, 300);
+  await addLog(g, 4);
+  sfx('heal'); await say(['Irgendwo tief in der Grotte gluckert es. Die Quelle fließt wieder!', 'Okko ist zurück nach Dünenhain gelaufen. Die Arena ist offen!', '(Der Liedstein hinten in der Grotte ist jetzt frei.)']); g.save(true);
+}
+
+async function kehlWald(g, n) {
+  const s = g.state, f = s.flags, N = { name: n.name };
+  await say([`Kehl: ${s.name}! Was für ein Zufall. Ich sammle hier Sporenproben.`, 'Kehl: Sag mal … zeigt der Kompass hier im Wald immer noch nach Südosten?', 'Kehl: Hm. Faszinierend. Ich kannte jemanden, der hatte auch so einen. Lange her.', 'Kehl: Ach, und falls du zum Waldherz willst: Es mag keine Eindringlinge. Duck dich im hohen Gras – mit A.', 'Kehl: Hier, das Schutzamulett hat mir oft geholfen. Nimm es.'], N);
+  if (!s.bag.schutzamulett) await give(g, 'schutzamulett'); else await give(g, 'lockfutter', 2);
+  await say('Kehl: Wir sehen uns. Viel früher, als du denkst.', N);
+  await fade(1, 250); f.kehlWald = true; g.ow.npcs = g.ow.npcs.filter(x => x !== n); await fade(0, 250); g.save(true);
+}
+
+async function jaroGlimm(g, n) {
+  const s = g.state, f = s.flags;
+  await say(['Jaro: Drei Orden. Du hast drei, ich habe zwei. Noch!', 'Jaro: Weißt du, wer mir im Wald begegnet ist? Eine Frau in einer weißen Kutte. Ganz ruhig. Unheimlich ruhig.', `Jaro: Sie hat gefragt, ob ich ${s.name} kenne. Und ob du gut auf deinen Kompass aufpasst.`, 'Jaro: Ich hab ihr gesagt, sie soll sich verziehen. Und jetzt: Zeig mir, ob du stärker geworden bist!'], { name: 'Jaro' });
+  const opp = counterOf(s), evo = SPECIES[opp].evo?.to || opp;
+  const won = await g.trainerFight({ name: 'Rivale Jaro', look: LOOK.jaro, team: [['boebrisel', 24], ['kieselkopp', 24], ['nachtwolp', 25], [evo, 28]], reward: 2600, lose: 'Argh! Wieder nicht! Aber knapp, oder?', bg: 'wald' });
+  await say([won ? 'Jaro: Okay, okay. Du bist gut. Aber ich hol auf!' : 'Jaro: Ha! Diesmal ich!', 'Jaro: Für Funkenhafen brauchen wir ein Schiff. Mein Onkel in Ankerbrück baut gerade eins …', 'Jaro: Ich sag dir Bescheid, wenn es fertig ist. Versprochen ist versprochen!'], { name: 'Jaro' });
+  await fade(1, 250); f.jaro3 = true; g.ow.npcs = g.ow.npcs.filter(x => x !== n); await fade(0, 250);
+  await say('Pager: Fortsetzung folgt – das Schiff nach Funkenhafen kommt in Phase 3!'); g.save(true);
+}
+
+// Revierkreatur mit Story (Waldherz)
+export async function revierStory(g, n, r) {
+  const s = g.state, f = s.flags;
+  if (n.revier.id !== 'waldherz') return;
+  if (r?.result === 'win' || r?.result === 'caught') {
+    f.waldherz = true; sfx('heal');
+    await say(['Das riesige Fungorax sinkt zu Boden. Seine Sporen werden golden – dann verlöschen sie.', 'Ruhig atmet das Waldherz unter den Bäumen. Zwischen seinen Wurzeln liegt ein aufgewühltes Loch … und darin ein Blatt Papier.']);
+    await addLog(g, 5);
+    await say(['Von Norden her hört man Stimmen. Glimmdorf erwacht!', 'Mira ist zurück in ihrer Arena.']); g.save(true);
+  }
+}
+
 async function jaroAnker(g, n) {
   const s = g.state, f = s.flags;
   await say(['Jaro: Da bist du! Du hast den Ankerorden?! Ich war zuerst in der Stadt – aber die Arena war zu!', 'Jaro: Egal. Zeig mir, wie stark du geworden bist!'], { name: 'Jaro' });
@@ -221,7 +319,7 @@ async function jaroAnker(g, n) {
   // Prof. Kehl ruft an: EP-Teiler
   sfx('dex'); await say(['Dein Muschelfon klingelt …', `Kehl: ${s.name}! Ich habe von deinem Sieg gehört. Ich habe etwas für dich – den EP-Teiler.`, 'Kehl: Damit bekommt dein ganzes Team Erfahrung. Und hier ein paar Sonderbonbons für schwere Kämpfe.', 'Kehl: … Und sag mal, zeigt der Kompass noch immer nach Südosten?']);
   s.bag.epteiler = 1; await give(g, 'sonderbonbon', 5);
-  await say(['Den EP-Teiler schaltest du im Beutel unter BASIS-ITEMS an und aus.', 'Pager: Fortsetzung folgt – die Brücke nach Dünenhain kommt in Phase 2!']);
+  await say(['Den EP-Teiler schaltest du im Beutel unter BASIS-ITEMS an und aus.', 'Pager: Die Brücke im Norden von Ankerbrück ist repariert – weiter nach Dünenhain!']);
   g.save(true);
 }
 
@@ -234,7 +332,7 @@ export async function afterTrainer(g) {
   }
 }
 
-export async function afterGym(g, id) { if (id === 'rhea') g.state.flags.badge1Jaro = true; }
+export async function afterGym(g, id) { const f = g.state.flags; if (id === 'rhea') f.badge1Jaro = true; if (id === 'mira') f.badge3Jaro = true; }
 
 // ---------------------------------------------------------------- Ereignisse beim Betreten
 export async function mapEvent(g, id) {
@@ -244,6 +342,8 @@ export async function mapEvent(g, id) {
     await say(['Ankerbrück! Der größte Hafen im Süden von Kalmara.', 'Aber irgendetwas ist seltsam. Der Leuchtfeuer-Turm am Hafen ist dunkel, und die Leute schauen besorgt aufs Meer.']);
     ow.busy = false; g.save(true);
   }
+  if (id === 'duenenhain' && !f.reachedDH) { f.reachedDH = true; ow.busy = true; await wait(450); await say(['Dünenhain – die Oasenstadt zwischen den Dünen.', 'Doch die Oase ist nur noch eine Pfütze. Die Leute schauen besorgt auf den ausgetrockneten Brunnen.']); ow.busy = false; g.save(true); }
+  if (id === 'glimmdorf' && !f.reachedGD) { f.reachedGD = true; ow.busy = true; await wait(450); await say(['Glimmdorf. Zwischen den Baumhäusern leuchten Pilze in Türkis und Gold.', 'Aber es ist seltsam still. Auf den Wegen liegen Dorfbewohner – und schlafen.']); ow.busy = false; g.save(true); }
   if (id === 'strand' && !f.prolog && f.pagerGiven) {
     const pip = ow.npcs.find(n => n.id === 'pip_strand'); if (!pip) return;
     ow.busy = true; await wait(500); ow.emote = { n: pip, t: 1 }; sfx('encounter');
@@ -262,6 +362,8 @@ export function edgeBlock(g, map, to) {
     if (!f.gotBalls) return block(g, ['Prof. Kehl wartet im Labor auf dich – das Haus mit dem Schild LABOR.']);
     if (!f.promise) return block(g, ['Wärter Bosse und Jaro warten im alten Leuchtturm im Nordosten des Dorfes.']);
   }
+  if (map === 'ankerbrueck' && to === 'kuestenweg' && !f.jaro2) return block(g, ['Bauarbeiter: Halt! Die Brücke ist noch nicht ganz fertig.', 'Bauarbeiter: Komm wieder, wenn du dir den Ankerorden geholt hast – dann sind wir durch.']);
+  if (map === 'duenenhain' && to === 'glimmpfad' && !g.state.badges[1]) return block(g, ['Ein Karawanenwächter: Der Glimmpfad ist bei Sandsturm gefährlich.', 'Erst wenn Okko dir seinen Orden gibt, lasse ich dich durch.']);
   return false;
 }
 export function moveBlock() { return false; }

@@ -380,7 +380,8 @@ class BattleScene {
     sfx('shiny'); await wait(300);
   }
   // Sonderwirkung der Ballsorten
-  ballCond(it) {
+  ballCond(it) { return this.ballCond0(it) * (this.b.f.surprised ? 1.5 : 1); }
+  ballCond0(it) {
     const b = this.b, S = SPECIES[b.f.sp], g = this.g;
     switch (it.cond) {
       case 'nacht': return g.isNight() || g.ow?.M?.cave ? 3.5 : 1;

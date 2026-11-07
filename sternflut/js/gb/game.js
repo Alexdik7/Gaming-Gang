@@ -458,6 +458,7 @@ class Game {
   async onMapLoad(id) {
     const s = this.state;
     if ((MAPS[id]?.buildings || []).some(b => b.heal)) s.flags['fly_' + id] = true;
+    s.flags['seen_' + id] = true;
     { const sw = this.swarm(), M = MAPS[id]; if (sw && M?.enc === sw.enc && s.flags.swarmDay !== sw.day && s.team.length) { s.flags.swarmDay = sw.day; this.ow.busy = true; await wait(450); sfx('dex'); await say(`Massenausbruch! Hier im Gebiet tauchen heute besonders viele ${SPECIES[sw.sp].name} auf!`); this.ow.busy = false; } }
     await ST.mapEvent(this, id);
   }
@@ -510,6 +511,50 @@ class Game {
     const e = pool[Math.floor(r() * pool.length)], top = Math.max(...list.map(x => x[3]));
     return { key, sp: e[0], lv: Math.min(100, top + 7), seed: h };
   }
+  // Revierkreatur: stark, aber berechenbar. Wer sich angeschlichen hat, erwischt sie unvorbereitet.
+  async revierBattle(n, attacked) {
+    const s = this.state, R = n.revier, ow = this.ow, S = SPECIES[R.sp], sneak = !!ow.p.sneak;
+    cry(S.cry); G.shake = 0.8;
+    if (R.story) await say(R.id === 'waldherz' ? ['Zwischen den Bäumen erhebt sich ein riesiges Fungorax. Goldene Sporen wirbeln um seinen Hut.', 'Das WALDHERZ! Es spürt dich – und es ist wütend.'] : `Ein riesiges ${S.name}!`);
+    else await say(attacked ? `${S.name} stürmt aus seinem Revier auf dich zu!` : [`Ein mächtiges ${S.name} bewacht dieses Revier.`, 'Revierkreaturen sind stärker als normal – und bringen seltene Beute.']);
+    if (!attacked && !R.story && !await ask(`Gegen ${S.name} kämpfen?`)) return;
+    const m = createMon(R.sp, R.lv); for (const k of Object.keys(m.iv)) m.iv[k] = Math.max(m.iv[k], 24);
+    m.revier = true; m.hp = maxHp(m); this.shinyRoll(m);
+    if (sneak) { m.hp = Math.floor(maxHp(m) * 0.75); await say('Du hast dich angeschlichen! Es ist überrascht und angeschlagen.'); }
+    const r = await this.wildBattle(ow.M.enc, ow.M.bg || 'gras', m, { noCatch: !!R.story });
+    if (R.story) { if (r?.result === 'win') { ow.npcs = ow.npcs.filter(x => x !== n); } await ST.revierStory(this, n, r); return; }
+    if (!r || (r.result !== 'win' && r.result !== 'caught')) return;
+    s.flags[`rv:${Math.floor(Date.now() / 864e5)}:${R.id}`] = true; ow.npcs = ow.npcs.filter(x => x !== n);
+    const L = ['sternkristall', 'ankerkugel', 'sonderbonbon', 'supertrank', 'echomuschel', 'lockfutter'], it = L[Math.floor(Math.random() * L.length)];
+    s.bag[it] = (s.bag[it] || 0) + 2; sfx('caught'); await say(`Im Revier findest du 2× ${ITEMS[it].name}!`); this.save(true);
+  }
+  // Scheue Kreatur: mit der Lieblingsbeere füttern, dann schließt sie sich freiwillig an
+  async feedShy(n) {
+    const s = this.state, S = n.shy, Sp = SPECIES[S.sp], day = Math.floor(Date.now() / 864e5);
+    await say(`Ein scheues ${Sp.name} beobachtet dich mit großen Augen.`);
+    const berries = Object.keys(ITEMS).filter(k => /beere/.test(k) && s.bag[k]);
+    if (!berries.length) return say('Vielleicht würde es eine Beere annehmen … aber du hast keine dabei.');
+    const i = await choose([...berries.map(k => ({ label: ITEMS[k].name, right: '×' + s.bag[k], desc: 'Vorsichtig hinhalten.' })), 'Lieber nicht'], { title: 'Welche Beere?' });
+    if (i === null || i >= berries.length) return;
+    const k = berries[i]; s.bag[k]--;
+    if (k !== S.likes) {
+      await say([`${Sp.name} schnuppert an der ${ITEMS[k].name} …`, 'Es rümpft die Nase und huscht davon! (Morgen ist es wieder da.)']);
+      s.flags[`shyFled:${day}:${S.id}`] = true; this.ow.npcs = this.ow.npcs.filter(x => x !== n); return;
+    }
+    n.fed = (n.fed || 0) + 1; cry(Sp.cry);
+    if (n.fed < (this.ow.p.sneak ? 1 : 2)) return say([`${Sp.name} frisst die ${ITEMS[k].name} – erst zögerlich, dann gierig!`, 'Es kommt ein Stückchen näher. Vielleicht noch eine?']);
+    await say([`${Sp.name} frisst und schmiegt sich an dich!`, `${Sp.name} möchte mit dir kommen!`]);
+    const m = createMon(S.sp, S.lv, Math.random, { friendship: 220 }); this.shinyRoll(m);
+    s.flags['shy_' + S.id] = true; this.ow.npcs = this.ow.npcs.filter(x => x !== n);
+    const isNew = !s.dex.caught[m.sp]; this.markDex(m.sp, true); sfx('caught');
+    if (isNew) { await say(`Die Daten von ${Sp.name} werden in der Chronik eingetragen.`); await dexEntry(m.sp, Object.keys(s.dex.caught).length); }
+    if (genderOf(m)) await say(`${Sp.name} ist ein${genderOf(m) === 1 ? ' Männchen ♂' : ' Weibchen ♀'}.`);
+    if (await ask(`Möchtest du ${Sp.name} einen Spitznamen geben?`)) m.nick = await inputName('Spitzname', Sp.name);
+    await ST.onCaught(this, m);
+    if (s.team.length < 6) s.team.push(m); else { s.box.push(m); await say(`${monName(m)} wurde in die Box geschickt.`); }
+    if (isNew) await this.dexRewards();
+    this.save(true);
+  }
   async alphaBattle(n) {
     const s = this.state, A = n.alpha, ow = this.ow;
     cry(SPECIES[A.sp].cry); G.shake = 1;
@@ -521,7 +566,7 @@ class Game {
     const r = await this.wildBattle(ow.M.enc, ow.M.bg || 'gras', m);
     if (!r || (r.result !== 'win' && r.result !== 'caught')) return;
     s.flags[A.key] = true; ow.npcs = ow.npcs.filter(x => x !== n);
-    const LOOT = ['sternkristall', 'sonderbonbon', 'sonderbonbon', 'topbeleber', 'toptrank', 'beleber', 'hypertrank', 'ak_magmaflut', 'ak_wellenschlag', 'ak_blizzard', 'ak_orkan', 'ak_felsgranate', 'ak_schattenball', 'ak_sonnenstrahl', 'ak_blitzschlag'];
+    const LOOT = ['sternkristall', 'sonderbonbon', 'sonderbonbon', 'topbeleber', 'toptrank', 'beleber', 'hypertrank', 'ak_sandsturz', 'ak_funkenkette', 'ak_gezeitenschlag', 'echomuschel', 'ankerkugel'];
     const it = LOOT[Math.floor(Math.random() * LOOT.length)], k = it.startsWith('ak_') || it.startsWith('top') ? 1 : it === 'sternkristall' ? 3 : 2;
     s.bag[it] = (s.bag[it] || 0) + k; s.money += A.lv * 60; sfx('caught');
     await say([r.result === 'caught' ? 'Das Alpha gehört jetzt zu dir!' : 'Das Alpha zieht sich zurück …', `Es hat etwas fallen lassen: ${k > 1 ? k + '× ' : ''}${ITEMS[it].name}!`, `Dazu findest du ${A.lv * 60} ◈.`]);
@@ -536,12 +581,13 @@ class Game {
     await wait(f ? 900 : 450);
   }
   shinyRoll(m) { if (!m.shiny && this.state.bag.glanzamulett && Math.random() < 2 / 512) m.shiny = true; return m; }
-  pickWild(encId) {
+  pickWild(encId, sneak) {
     const sw = this.swarm();
     if (encId === sw.enc && Math.random() < 0.4) return this.shinyRoll(createMon(sw.sp, sw.lv[0] + Math.floor(Math.random() * (sw.lv[1] - sw.lv[0] + 1))));
     const night = this.isNight(), list = ENC[encId].list.filter(e => !e[4] || (e[4] === 'night') === night);
-    let r = Math.random() * list.reduce((a, e) => a + e[1], 0);
-    for (const e of list) { r -= e[1]; if (r <= 0) return this.shinyRoll(createMon(e[0], e[2] + Math.floor(Math.random() * (e[3] - e[2] + 1)))); }
+    const wt = e => (sneak ? Math.sqrt(e[1]) * 3 : e[1]); // geduckt: seltene Arten häufiger
+    let r = Math.random() * list.reduce((a, e) => a + wt(e), 0);
+    for (const e of list) { r -= wt(e); if (r <= 0) return this.shinyRoll(createMon(e[0], e[2] + Math.floor(Math.random() * (e[3] - e[2] + 1)))); }
     return this.shinyRoll(createMon(list[0][0], list[0][2]));
   }
   // Dr. Vato belohnt das Füllen der Chronik
@@ -577,10 +623,13 @@ class Game {
   async wildBattle(encId, bg, mon, opt = {}) {
     const s = this.state; if (!s.team.some(m => !m.egg && m.hp > 0)) return;
     this.ow.busy = true;
-    const foe = mon || this.pickWild(encId);
+    const foe = mon || this.pickWild(encId, opt.sneak);
+    if (opt.sneak && !mon) foe.surprised = true;
     if (encId) this.lastWild = { sp: foe.sp, lvl: foe.lvl, enc: encId, bg };
     this.markDex(foe.sp);
-    sfx('encounter'); await this.flashIn();
+    sfx('encounter');
+    if (foe.surprised) await say(`Psst! Du hast ein ahnungsloses ${SPECIES[foe.sp].name} entdeckt. Überrascht ist es leichter zu fangen!`);
+    await this.flashIn();
     const r = await battle(this, { foeTeam: [foe], bg, canCatch: !opt.noCatch, intro: SPECIES[foe.sp].legendary ? 'legend' : foe.alpha ? 'alpha' : 'wild', music: foe.alpha || foe.revier ? 'boss' : undefined });
     await this.afterBattle(r, opt.noBlackout);
     return r;
@@ -882,6 +931,8 @@ class Game {
   async talk(n) {
     const s = this.state, N = { name: n.name };
     if (n.alpha) return this.alphaBattle(n);
+    if (n.revier) return this.revierBattle(n);
+    if (n.shy) return this.feedShy(n);
     if (n.trainer) { if (s.flags[n.id]) return say(n.trainer.after || n.trainer.lose || 'Guter Kampf!', N); return this.trainerBattle(n); }
     if (QUESTS[n.id]) return this.quest(n, QUESTS[n.id]);
     { const r = await ST.talkStory(this, n); if (r !== false) return r; }

@@ -189,6 +189,8 @@ const DRAW = {
     x.fillStyle = '#3e2818'; x.fillRect(0, 15, 16, 1);
     x.fillStyle = '#58a848'; x.fillRect((s * 5) % 14, 10, 2, 2);
   },
+  sandsign: (x, f, s) => { DRAW.sand(x, f, s); x.fillStyle = 'rgba(90,60,30,.25)'; x.fillRect(3, 13, 11, 2); x.fillStyle = '#5a3a20'; x.fillRect(7, 9, 2, 6); x.fillRect(2, 2, 12, 9); x.fillStyle = '#d8a868'; x.fillRect(3, 3, 10, 7); x.fillStyle = '#8a6038'; x.fillRect(4, 5, 8, 1); x.fillRect(4, 7, 6, 1); },
+  sandrock: (x, f, s) => { DRAW.sand(x, f, s); x.fillStyle = 'rgba(90,60,30,.3)'; x.beginPath(); x.ellipse(9, 13, 7, 2.5, 0, 0, 7); x.fill(); DRAW.rockTop(x); },
   sign: (x, f, s) => {
     grass(x, s); x.fillStyle = '#5a3a20'; x.fillRect(7, 9, 2, 6); x.fillRect(2, 2, 12, 9);
     x.fillStyle = '#d8a868'; x.fillRect(3, 3, 10, 7); x.fillStyle = '#8a6038'; x.fillRect(4, 5, 8, 1); x.fillRect(4, 7, 6, 1);
