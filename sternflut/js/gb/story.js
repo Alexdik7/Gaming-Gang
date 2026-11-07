@@ -333,9 +333,9 @@ async function jaroAnker(g, n) {
   await say([won ? 'Jaro: … Okay. Du bist gut. Richtig gut.' : 'Jaro: Ha! Sieg für mich!', 'Jaro: Hör mal. Die Kutten-Leute fragen in jeder Stadt nach einem Kompass mit Stern und Welle.', 'Jaro: Das ist deiner, oder? Pass auf dich auf. Ich will nicht, dass mein Rivale verschwindet.', 'Jaro: Die Brücke nach Dünenhain wird gerade repariert. Wer zuerst drüben ist!'], { name: 'Jaro' });
   await fade(1, 250); f.jaro2 = true; g.ow.npcs = g.ow.npcs.filter(x => x !== n); await fade(0, 250);
   // Prof. Kehl ruft an: EP-Teiler
-  sfx('dex'); await say(['Dein Muschelfon klingelt …', `Kehl: ${s.name}! Ich habe von deinem Sieg gehört. Ich habe etwas für dich – den EP-Teiler.`, 'Kehl: Damit bekommt dein ganzes Team Erfahrung. Und hier ein paar Sonderbonbons für schwere Kämpfe.', 'Kehl: … Und sag mal, zeigt der Kompass noch immer nach Südosten?']);
-  s.bag.epteiler = 1; await give(g, 'sonderbonbon', 5);
-  await say(['Den EP-Teiler schaltest du im Beutel unter BASIS-ITEMS an und aus.', 'Pager: Die Brücke im Norden von Ankerbrück ist repariert – weiter nach Dünenhain!']);
+  sfx('dex'); await say(['Dein Muschelfon klingelt …', `Kehl: ${s.name}! Ich habe von deinem Sieg gehört. Ich habe etwas für dich!`, 'Kehl: Ein paar Sonderbonbons für schwere Kämpfe.', 'Kehl: … Und sag mal, zeigt der Kompass noch immer nach Südosten?']);
+  await give(g, 'sonderbonbon', 5);
+  await say(['Pager: Die Brücke im Norden von Ankerbrück ist repariert – weiter nach Dünenhain!']);
   g.save(true);
 }
 

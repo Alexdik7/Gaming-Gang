@@ -78,3 +78,6 @@
   - Neue Hooks in story.js: `sideTasks` und `afterTrainer` fragen jetzt alle Akt-Module ab (Pager → AUFGABEN).
 - Fehler: Der Charakter-Editor beim neuen Spiel blieb schwarz, weil nach dem Prolog nicht wieder eingeblendet wurde. Behoben in `editor()` mit `fade(0)`.
 - Neu: OPTIONEN → **Aussehen ändern** (Name und Look jederzeit änderbar).
+
+## v1.5.1 – EP-Teiler ab Spielbeginn
+- Den EP-Teiler gibt es jetzt von Anfang an: im Start-Beutel (`newState`) und für alte Spielstände in `enterWorld`. Kehls Anruf nach dem 2. Jaro-Kampf bringt nur noch die Sonderbonbons.

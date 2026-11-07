@@ -75,7 +75,7 @@ class Game {
   newState(name, look) {
     return {
       v: 2, name, look, map: 'home', x: 2, y: 3, dir: 'down', team: [], box: [], money: 1000,
-      bag: { trank: 2 }, dex: { seen: {}, caught: {} }, flags: {}, badges: [], time: DAY * 8 / 24, playtime: 0, steps: 0,
+      bag: { trank: 2, epteiler: 1 }, dex: { seen: {}, caught: {} }, flags: {}, badges: [], time: DAY * 8 / 24, playtime: 0, steps: 0,
       daycare: { mons: [], steps: 0, egg: null }, healPoint: { map: 'home', x: 2, y: 3 },
     };
   }
@@ -161,6 +161,7 @@ class Game {
 
   async enterWorld(fresh) {
     const s = this.state;
+    s.bag ||= {}; s.bag.epteiler ||= 1; // EP-Teiler gibt es von Anfang an
     s.flags ||= {}; s.daycare ||= { mons: [], steps: 0, egg: null }; s.badges ||= [];
     if (s.base) MAPS.basis = baseMap(s.base.theme, `${s.name}s Geheimbasis`, s.base.items);
     if (s.map === 'gast' || (s.map === 'basis' && !s.base)) { const r = s.ret || { map: 'muschelbucht', x: 4, y: 9 }; s.map = r.map; s.x = r.x; s.y = r.y; }
