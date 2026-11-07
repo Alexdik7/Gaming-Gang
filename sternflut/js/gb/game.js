@@ -156,7 +156,7 @@ class Game {
   }
 
   editor(preset) {
-    return new Promise(res => { const E = new EditorScene(this, preset, v => { pop(E); res(v); }); push(E); });
+    return new Promise(res => { const E = new EditorScene(this, preset, v => { pop(E); res(v); }); push(E); fade(0, 300); });
   }
 
   async enterWorld(fresh) {
@@ -447,8 +447,9 @@ class Game {
   }
   async options() {
     for (;;) {
-      const i = await choose([`Musik: ${audioState.music ? 'AN' : 'AUS'}`, `Effekte: ${audioState.sfx ? 'AN' : 'AUS'}`, `Text: ${['LANGSAM', 'NORMAL', 'SCHNELL', 'SOFORT'][settings.textSpeed]}`, 'Zurück'], { title: 'OPTIONEN', above: false, x: 40, w: 160 });
-      if (i === null || i === 3) break;
+      const i = await choose([`Musik: ${audioState.music ? 'AN' : 'AUS'}`, `Effekte: ${audioState.sfx ? 'AN' : 'AUS'}`, `Text: ${['LANGSAM', 'NORMAL', 'SCHNELL', 'SOFORT'][settings.textSpeed]}`, ...(this.state ? ['Aussehen ändern'] : []), 'Zurück'], { title: 'OPTIONEN', above: false, x: 40, w: 160 });
+      if (i === null || i === (this.state ? 4 : 3)) break;
+      if (i === 3 && this.state) { const st = await this.editor({ name: this.state.name, look: this.state.look }); this.state.name = st.name; this.state.look = st.look; this.save(true); await say('Dein neues Aussehen steht dir!'); continue; }
       if (i === 0) setAudio('music', !audioState.music);
       if (i === 1) setAudio('sfx', !audioState.sfx);
       if (i === 2) settings.textSpeed = (settings.textSpeed + 1) % 4;

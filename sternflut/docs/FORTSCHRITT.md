@@ -68,3 +68,13 @@
   - Fellmuster nur auf der Hauptfarbe (Streifen, Flecken, Sattel, farbige Spitzen; der Ton bleibt über `cv.tn` erhalten)
   - Augen mit Irisfarbe, Punktaugen, Brauen bei Entwicklungen, Wangenröte bei Babys
   - Kronen gibt es nur noch bei Legendären (Größe ≥ 1,45), sonst wechseln Kamm, Hörner und Krone ab.
+
+## v1.5 – Nebenquest „Rette die Prinzessin Ari“ + Fehlerbehebung
+- `ari.js` (Akt-Modul):
+  - Hauptmann Gerold in Kronfels startet die Quest (`ari_start`). Fischer Jonte gibt danach den Weg in die neue **Möwengrotte** frei (Eingang am Ostrand von Kronfels).
+  - In der Grotte warten 3 Sturmpiraten, davon die Zwillinge Flick & Flack im Doppelkampf. Sie geben den Kerkerschlüssel (`ari_key`), der das Gitter `E` öffnet.
+  - Danach folgt die Befreiung und ein Doppelkampf **mit Ari als Partnerin** gegen Käpt’n Krähe und Bootsfrau Gischt.
+  - Belohnung: 7000 ◈, 52-Ball und 3 Sonderbonbons (`ari_done`).
+  - Neue Hooks in story.js: `sideTasks` und `afterTrainer` fragen jetzt alle Akt-Module ab (Pager → AUFGABEN).
+- Fehler: Der Charakter-Editor beim neuen Spiel blieb schwarz, weil nach dem Prolog nicht wieder eingeblendet wurde. Behoben in `editor()` mit `fade(0)`.
+- Neu: OPTIONEN → **Aussehen ändern** (Name und Look jederzeit änderbar).

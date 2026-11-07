@@ -14,7 +14,8 @@ import * as A7 from './akt7.js';
 import * as EX from './extras.js';
 import * as DG from './dig.js';
 import * as IS from './island.js';
-const ACTS = [A3, A4, A5, A6, A7, EX, DG, IS];
+import * as AR from './ari.js';
+const ACTS = [A3, A4, A5, A6, A7, EX, DG, IS, AR];
 export const fishGame = g => EX.fishGame(g);
 export const useItem = async (g, k) => { for (const A of ACTS) if (await A.useItem?.(g, k)) return true; return false; };
 
@@ -103,7 +104,8 @@ export function mainGoal(s) {
   return { t: 'Fortsetzung folgt', d: 'Die nächste Etappe kommt mit dem nächsten Update! Bis dahin: Kreaturen sammeln, Revierkreaturen besiegen, kochen, Lied und Logbuch suchen.', map: g_lastMap(s) };
 }
 export function sideTasks(s) {
-  return Object.entries(QUESTS).filter(([id]) => s.flags['qa_' + id] || s.flags['quest_' + id]).map(([id, q]) => ({ t: q.title, d: s.flags['quest_' + id] ? 'Erledigt!' : `Zeige ${SPECIES[q.want].name}.`, done: !!s.flags['quest_' + id] }));
+  const extra = ACTS.flatMap(A => A.sideTasks?.(s) || []);
+  return [...extra, ...Object.entries(QUESTS).filter(([id]) => s.flags['qa_' + id] || s.flags['quest_' + id]).map(([id, q]) => ({ t: q.title, d: s.flags['quest_' + id] ? 'Erledigt!' : `Zeige ${SPECIES[q.want].name}.`, done: !!s.flags['quest_' + id] }))];
 }
 
 // ---------------------------------------------------------------- Telefon
@@ -344,6 +346,7 @@ export async function afterTrainer(g) {
     const w = ow.npcs.find(n => n.id === 'orden_wache');
     if (w) { await say('Der Novize stolpert zur Seite. Der Weg in die Werft ist frei!'); ow.npcs = ow.npcs.filter(n => n !== w); }
   }
+  for (const A of ACTS) await A.afterTrainer?.(g);
 }
 
 export async function afterGym(g, id) { const f = g.state.flags; if (id === 'rhea') f.badge1Jaro = true; if (id === 'mira') f.badge3Jaro = true; for (const A of ACTS) await A.afterGym?.(g, id); }
