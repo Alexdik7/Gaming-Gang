@@ -129,7 +129,7 @@ export const MAPS3 = {
     items: [{ id: 'it_tf1', x: 1, y: 1, item: 'toptrank', n: 3 }, { id: 'it_tf2', x: 16, y: 10, item: 'topbeleber', n: 2 }],
   },
   grund: {
-    name: 'Grund der Tiefe', outdoor: true, underwater: true, enc: null, bg: 'wasser', darkRadius: 96,
+    name: 'Grund der Tiefe', outdoor: true, underwater: true, enc: null, bg: 'wasser', darkRadius: 140,
     rows: ['RRRRRRRRRRRRR', 'RsssssssssssR', 'RsssssssssssR', 'RsssssssssssR', 'RsssssssssssR', 'RsssssssssssR', 'RsssssssssssR', 'RsssssssssssR', 'RsssssssssssR', 'RsssssssssssR', 'RRRRRRsRRRRRR'],
     warps: [{ x: 6, y: 10, to: 'tiefe', tx: 8, ty: 11, dir: 'down' }],
     npcs: [

@@ -222,6 +222,7 @@ class Game {
       const k = keys[i], it = ITEMS[k];
       if (k === 'epteiler') { s.flags.epOff = !s.flags.epOff; sfx('click'); await say(s.flags.epOff ? 'Der EP-Teiler ist jetzt AUS. Nur Kreaturen, die kämpfen, bekommen EP.' : 'Der EP-Teiler ist jetzt AN. Das ganze Team bekommt EP!'); continue; }
       if (it.candy) { await this.useCandy(k); continue; }
+      if (await ST.useItem(this, k)) { if (this.fieldExit) return; continue; }
       if (k === 'lockfutter') { s.bag[k]--; s.lure = 200; sfx('heal'); await say('Du streust Lockfutter aus. 200 Schritte lang tauchen im hohen Gras doppelt so viele Kreaturen auf!'); continue; }
       if (k === 'echomuschel') { const L = this.lastWild; if (!L || !ENC[L.enc]) { await say('Die Muschel rauscht leise. Erst nach einer Begegnung mit einer wilden Kreatur kann sie ein Echo rufen.'); continue; } s.bag[k]--; sfx('dex'); await say(`Du hältst die Echomuschel ans Ohr … Ein ${SPECIES[L.sp].name} antwortet!`); this.fieldExit = true; await this.wildBattle(L.enc, L.bg, this.shinyRoll(createMon(L.sp, L.lvl))); return; }
       if (!(it.heal || it.cure || it.revive || it.tm)) { await say(it.desc); continue; }
@@ -836,6 +837,7 @@ class Game {
   }
 
   async fish() {
+    return ST.fishGame(this);
     const s = this.state;
     if (!s.bag.angel) return say('Das Wasser ist glasklar. Mit einer Angel könnte man hier etwas fangen.');
     if (!s.team.some(m => !m.egg && m.hp > 0)) return say('Deine Kreaturen sind zu erschöpft.');

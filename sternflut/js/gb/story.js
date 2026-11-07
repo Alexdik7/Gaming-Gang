@@ -11,7 +11,10 @@ import * as A4 from './akt4.js';
 import * as A5 from './akt5.js';
 import * as A6 from './akt6.js';
 import * as A7 from './akt7.js';
-const ACTS = [A3, A4, A5, A6, A7];
+import * as EX from './extras.js';
+const ACTS = [A3, A4, A5, A6, A7, EX];
+export const fishGame = g => EX.fishGame(g);
+export const useItem = (g, k) => EX.useItem(g, k);
 
 const give = async (g, k, n = 1) => { const s = g.state; s.bag[k] = (s.bag[k] || 0) + n; sfx('caught'); await say(`${s.name} erhält ${n > 1 ? n + '× ' : ''}${ITEMS[k].name.toUpperCase()}!`); };
 const COUNTER = { zundrak: 'tidolin', tidolin: 'moospip', moospip: 'zundrak' };
@@ -71,7 +74,7 @@ export async function addLog(g, n) {
   const s = g.state; if (s.flags['log' + n]) return;
   s.flags['log' + n] = true; s.bag.logbuch = 1; sfx('dex');
   const c = Object.keys(s.flags).filter(k => /^log\d+$/.test(k)).length;
-  await say([`${s.name} findet eine LOGBUCHSEITE der Morgenstern! (${c}/40)`, ...LOGS[n].map(t => t.replace('{name}', s.name))]);
+  await say([`${s.name} findet eine LOGBUCHSEITE der Morgenstern! (${c}/${Object.keys(LOGS).length})`, ...LOGS[n].map(t => t.replace('{name}', s.name))]);
 }
 
 // ---------------------------------------------------------------- Pager: aktuelles Ziel

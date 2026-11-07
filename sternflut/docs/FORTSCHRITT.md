@@ -38,3 +38,9 @@
 - Frostholm: Frosthafen, Frostpfad, Erzmine (Kampf gegen Prof. Kehl), Erzheim, Eisgipfel (Boreal)
 - Arenen 9–12 (Nami, Thalia, Ingrid mit Eisrutsch-Arena, Bjarne), Gezeitenjäger und Jägerin Vex, Corvin kommt mit der Albatros
 - 50 neue Kreaturen (111–160), Logbuchseiten 13–15
+
+## v1.0 – Phase 6–8: Welt 2 komplett, Welt 3, Extras – das Spiel steht
+- **Welt 2, Teil 2** (`akt6.js`, `maps3.js`, `welt2b.js` Nr. 161–210): Flüge mit Corvins Albatros (`AIR`), Wolkenreich (Wolkenmeer-Kachel `°`, Arenen 13 Seraphine, 14 Orion in der Sternwarte), Schattenmeer (Nocthal, Geisterbucht mit Vex, Nachtfels, Arenen 15 Mortis, 16 Selene), die Tiefe und der Grund: Liv, Kehl, Thalassyr, das Stille Ei schlüpft (Aurelune), Lied der Gezeiten. Liga der Weiten See (Korvan, Freya, Nyra, Solon, Kaiserin Maris). Legendäre: Aerion, Noctyra, Boreal
+- **Welt 3** (`akt7.js`, `maps4.js`, `welt3.js` Nr. 211–255, neuer Typ **Astral**): Sternentor, Nyxara (violettes Licht), Lumara und Ältester Oru, Prüfung der Nacht (Nyxion), Himmelsfaden, Raumstation Halo (Rask, AURA), Stationsausbau mit Sternstaub (6 Module: Brutkammer, Sternengarten, Hangar mit Expeditionen, Observatorium, Kampfsimulator, Sternenantrieb für Weltenreisen), Verteidigung gegen Schwärme, Finale im Sternenherz (Kehl, Thalassyrs Sternengestalt, Kosmara, Erster Bund lernt Ursprungsflut, Pip schließt sich an), Abspann über alle drei Welten. Postgame-Legendäre: Solaryx, Halora, Kosmara
+- **Extras** (`extras.js`): Kopfgeldbrett (Brix in Ankerbrück, Perlhafen, Lumara; täglicher Steckbrief), Wetterglas, Fährtenleser, Logbuch-Lupe, Angel-Minispiel mit Timing, Geisterschiff (Nebelklippe, nachts) mit Kapitän Grimbart
+- Logbuch: 19 Seiten über drei Welten

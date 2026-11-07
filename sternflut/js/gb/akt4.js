@@ -218,6 +218,7 @@ export async function afterChampion(g, first) {
 export async function mapEvent(g, id) {
   const s = g.state, ow = g.ow, f = s.flags;
   const unlock = (k, name) => { if (!f['port_' + k]) { f['port_' + k] = true; ow.notify(`Kapitän Harm segelt jetzt auch ${name}!`); } };
+  if ((s.world || 1) !== 1) return;
   if (f.aebtissin1) unlock('glutinsel', 'zur Glutinsel');
   if (s.badges[5]) unlock('sturmspitze', 'nach Sturmspitze');
   if (s.badges[6]) unlock('kronfels', 'nach Kronfels');

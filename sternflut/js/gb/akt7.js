@@ -230,7 +230,7 @@ async function finale(g, n) {
   const P = createMon('pipstern', 70, Math.random, { friendship: 255 }); P.nick = 'Pip'; P.bond = 'pip'; g.markDex('pipstern', true);
   if (s.team.length < 6) s.team.push(P); else s.box.push(P);
   sfx('caught'); await say('Pip schließt sich deinem Team an!');
-  f.finale3 = true; f.w3done = true; ow.npcs = ow.npcs.filter(x => x !== n); g.save(true);
+  f.finale3 = true; f.w3done = true; station(s).lastDef = Date.now(); ow.npcs = ow.npcs.filter(x => x !== n); g.save(true);
   await fade(1, 800); await credits(g); ow.load('halo_kern', 7, 9, 'down'); setMusic(null); ow.music(); await fade(0, 800);
   await say(['Station Halo. Die Lichter leuchten golden. Jaro schläft auf einer Kiste, Pip zählt Sterne durch das Fenster.', 'Die Geschichte ist erzählt – aber Halo braucht seinen Kommandanten. Baue die Station aus, erkunde Nyxara und finde die letzten Legendären!']);
   ow.busy = false; g.save(true);
