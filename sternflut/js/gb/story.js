@@ -15,7 +15,8 @@ import * as EX from './extras.js';
 import * as DG from './dig.js';
 import * as IS from './island.js';
 import * as AR from './ari.js';
-const ACTS = [A3, A4, A5, A6, A7, EX, DG, IS, AR];
+import * as VA from './vato.js';
+const ACTS = [A3, A4, A5, A6, A7, EX, DG, IS, AR, VA];
 export const fishGame = g => EX.fishGame(g);
 export const useItem = async (g, k) => { for (const A of ACTS) if (await A.useItem?.(g, k)) return true; return false; };
 
@@ -84,7 +85,7 @@ export async function addLog(g, n) {
 export function mainGoal(s) {
   const f = s.flags;
   if (!f.prolog) return { t: 'Der Morgen nach dem Sturm', d: 'Pip wartet am Strand südlich von Muschelbucht. Etwas Glänzendes wurde angespült!', map: 'strand' };
-  if (!f.gotBalls) return { t: 'Der Kompass', d: 'Prof. Kehl will den Kompass in ihrem Labor in Muschelbucht untersuchen.', map: 'muschelbucht' };
+  if (!f.gotBalls) return { t: 'Der Kompass', d: 'Prof. Kehl will den Kompass im Labor von Dr. Vato in Muschelbucht untersuchen. Sie forscht dort als Gast.', map: 'muschelbucht' };
   if (!f.promise) return { t: 'Das Versprechen', d: 'Jaro wartet oben im alten Leuchtturm am Ostrand von Muschelbucht.', map: 'muschelbucht' };
   if (!f.reachedAnker) return { t: 'Auf nach Ankerbrück', d: 'Folge dem Dünenpfad nach Norden bis zur Hafenstadt Ankerbrück.', map: 'ankerbrueck' };
   if (!f.heardBeacon) return { t: 'Ein dunkler Hafen', d: 'Irgendetwas stimmt in Ankerbrück nicht. Sprich mit dem Matrosen am Steg im Osten.', map: 'ankerbrueck' };

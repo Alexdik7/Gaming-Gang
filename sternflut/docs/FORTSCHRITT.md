@@ -81,3 +81,8 @@
 
 ## v1.5.1 – EP-Teiler ab Spielbeginn
 - Den EP-Teiler gibt es jetzt von Anfang an: im Start-Beutel (`newState`) und für alte Spielstände in `enterWorld`. Kehls Anruf nach dem 2. Jaro-Kampf bringt nur noch die Sonderbonbons.
+
+## v1.5.2 – Dr. Vato
+- `vato.js` (Akt-Modul): Dr. Vato (blonder Zopf, `LOOK_VATO`) leitet das Labor in Muschelbucht („Labor von Dr. Vato“). **Prof. Kehl forscht dort als Gast.**
+- Erstes Gespräch: Vorstellung, Erfinder des EP-Teilers, Geschenk (5 Fangkugeln, 3 Heiltränke), danach Kontakt im PAGER (`CALLS.vato`).
+- Nach dem Champion-Titel (`flags.champion`): Kampf gegen Dr. Vato (6 Kreaturen, Lv 66–70). Belohnung: 9000 ◈ und das **Glanzamulett** (neu in `ITEMS`, mehr schillernde Kreaturen).
