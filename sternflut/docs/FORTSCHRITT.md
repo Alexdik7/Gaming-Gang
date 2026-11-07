@@ -49,3 +49,9 @@
 - **Doppelkämpfe nur gegen Trainer** (`duo.js`: Liste `DOUBLE`, 17 Trainer über alle Welten) und Arenen 4 (Volta) + 13 (Seraphine) mit `double: true`. `trainerFight` leitet bei `t.double` auf `duoFight` um (2 gegen 2, beide Gegner-Plätze aus einem Team). Mit nur einer kampffähigen Kreatur gibt es einen normalen Kampf.
 - **Duostein**: Belohnung für den ersten gewonnenen Doppelkampf. Danach steht im Doppelkampf statt FLUCHT **KOMBO** im Menü (nur für Platz p0, einmal pro Kampf).
 - **Kombos** (`data/combos.js`, `DoubleBattle.useCombo`): Typpaar der beiden ersten Typen → Name und Zusatzwirkung, z. B. Dampfgeysir (Feuer+Wasser), Lebensquell (Pflanze+Wasser heilt), Gewitterflut (Elektro+Wasser lähmt). Gleiche Typen haben eigene Namen, alle übrigen heißen Duo-Sturm. Die Kombo trifft alle Gegner mit Stärke 120 und dem besseren der beiden Typen und geht immer zuerst.
+
+## v1.2 – Ausgrabungen
+- `dig.js` (als Akt-Modul in `ACTS`): 8 Grabstellen („Glitzernder Fels“, `n.dig`) in Sandgrotte, Glutkrater, Erzmine und Kristallwald. `placeSpot` sucht freie Felder an der Wand, ohne die Karte zu zerschneiden (Erreichbarkeitsprüfung). Die Stellen werden erst in `init` platziert, wenn MAPS2–4 geladen sind. Jede Stelle füllt sich täglich neu (`flags[grab_i] = Tag`).
+- Dr. Fossa (Dünenhain, am Eingang der Sandgrotte) gibt das **Grabset**, erweckt Fossilien und kauft Schätze (Urbernstein, Sternquarz, Goldmuschel, Meteorit).
+- Minispiel `DigScene`: 13×7 Felder mit Erdschichten. HACKE (Kreuz, kostet 1) oder HAMMER (3×3, kostet 2), die Wandleiste hält 54 Punkte. 2–4 Funde je nach Welt (`LOOT`), Bedienung mit Tippen oder Steuerkreuz + A/B.
+- 6 Ur-Kreaturen (`data/fossil.js`, Nr. 256–261): Ammolit→Ammokron, Krallix→Urkrallor, Schwingstein→Aerodax (Entwicklung mit Lv 40, Erweckung mit Lv 25).

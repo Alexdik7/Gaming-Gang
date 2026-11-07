@@ -12,7 +12,8 @@ import * as A5 from './akt5.js';
 import * as A6 from './akt6.js';
 import * as A7 from './akt7.js';
 import * as EX from './extras.js';
-const ACTS = [A3, A4, A5, A6, A7, EX];
+import * as DG from './dig.js';
+const ACTS = [A3, A4, A5, A6, A7, EX, DG];
 export const fishGame = g => EX.fishGame(g);
 export const useItem = (g, k) => EX.useItem(g, k);
 

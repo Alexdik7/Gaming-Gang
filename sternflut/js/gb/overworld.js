@@ -1,6 +1,7 @@
 // Oberwelt: Kachelbewegung, Kamera, NPCs, Trainer-Sichtlinien, Türen, Begegnungen, Tag/Nacht
 import { G, W, H, VH, COL, push, input, text, box, wait, fade, snap } from './engine.js';
 import { MAPS, TILE, SOLID, ENC } from './maps.js';
+import { drawDigActor } from './dig.js';
 import { standArt, charSheet, DIRS, tile, building, drawChar, tallOverlay, itemBall, treeCrown, TREE_KIND, grassFringe, shore, softShadow, cloudShadow, glow } from './pixel.js';
 // Untergründe, an deren Rand Gras über Wege/Sand wächst
 const GRASSY = new Set('.,:TPrUF'.split(''));
@@ -536,7 +537,7 @@ export class Overworld {
       if (T.kind === 'glitzer') { const on = Math.sin(G.t * 7) > 0, sx = bx + 8 + Math.round(Math.sin(G.t * 1.7) * 3), sy = by + 1; ctx.fillStyle = on ? '#ffffff' : '#ffe36b'; ctx.fillRect(sx - 1, sy - (on ? 4 : 2), 2, on ? 8 : 4); ctx.fillRect(sx - (on ? 4 : 2), sy - 1, on ? 8 : 4, 2); }
     }
     // Figuren nach y sortiert
-    const actors = [...this.npcs.map(n => ({ alpha: n.alpha, revier: n.revier, shy: n.shy, mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
+    const actors = [...this.npcs.map(n => ({ dig: n.dig, alpha: n.alpha, revier: n.revier, shy: n.shy, mon: n.mon, look: n.look, dir: n.dir, frame: n.frame || 0, px: n.px, py: n.py, x: n.moving ? n.tx : n.x, y: n.moving ? n.ty : n.y })),
       { look: this.g.state.look, dir: p.dir, frame: p.frame, hop: p.hop || 0, px: p.px, py: p.py - (p.hop || 0) - (p.bob || 0) + (p.sneak ? 4 : 0), x: p.moving ? p.tx : p.x, y: p.moving ? p.ty : p.y, me: true },
       ...(this.g.remoteActors?.(this.id) || [])];
     const lead = this.f?.vis && !p.surf && !p.ride && this.g.state.team.find(m => !m.egg && m.hp > 0);
@@ -555,6 +556,7 @@ export class Overworld {
         ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(a.px - cx + 8, a.py - cy + 14, 6, 2, 0, 0, 7); ctx.fill();
         ctx.save(); ctx.translate(Math.round(a.px - cx + 8), Math.round(a.py - cy - 15 + hopY)); if (a.dir === 'right') ctx.scale(-1, 1); ctx.drawImage(img, -16, 0); ctx.restore();
         if (this.fEmote?.t > 0) { const ex = a.px - cx + 4, ey = a.py - cy - 22; ctx.fillStyle = '#28202c'; ctx.fillRect(ex - 1, ey - 1, 10, 9); ctx.fillStyle = '#fff'; ctx.fillRect(ex, ey, 8, 7); ctx.fillStyle = '#e84a6a'; [[1, 1, 2, 2], [5, 1, 2, 2], [1, 2, 6, 2], [2, 4, 4, 1], [3, 5, 2, 1]].forEach(([q, w2, e, r]) => ctx.fillRect(ex + q, ey + w2, e, r)); }
+      } else if (a.dig) { drawDigActor(ctx, a, cx, cy, this.g.state);
       } else if (a.alpha || a.revier) { // Alpha (rot) und Revier (orange): groß, Aura, Schatten, leichtes Atmen
         const img = monSprite(a.mon, 'icon'), b = Math.sin(G.t * 2.4), sz = Math.round((a.revier ? 40 : 44) + b), ax = Math.round(a.px - cx + 8), ay = Math.round(a.py - cy + 14);
         ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(ax, ay, 11, 3, 0, 0, 7); ctx.fill();
