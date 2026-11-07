@@ -1604,7 +1604,7 @@ class EditorScene {
     box(4, 20, 104, 136);
     ctx.drawImage(trainerSprite(this.look), 24, 26);
     const dirs = ['down', 'left', 'up', 'right'], d = dirs[Math.floor(G.t * 1.2) % 4];
-    ctx.save(); ctx.translate(40, 108); ctx.scale(2, 2); drawChar(ctx, this.look, d, Math.floor(G.t * 5) % 3, 0, 0); ctx.restore();
+    ctx.save(); ctx.translate(40, 108); ctx.scale(2, 2); drawChar(ctx, this.look, d, [1, 3, 2, 3][Math.floor(G.t * 6) % 4], 0, 0); ctx.restore();
     text(this.name || '???', 56, 146, COL.ink, 8.5, 'center', COL.shadow, true);
     box(112, 20, 124, 136);
     this.rows.forEach(([lab, k], i) => {

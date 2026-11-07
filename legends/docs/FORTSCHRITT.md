@@ -666,3 +666,16 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
 - **Mitläufer und Surf-Kreatur:**
   - Sie schauen in die Laufrichtung: links normal, rechts gespiegelt, nach oben mit der neuen kleinen Rückansicht `monSprite(sp, 'iconback')`.
 - **Geschenk:** 25 Sonderbonbons kommen einmalig per Anruf (`flags.candy25`).
+
+## v2.10 – Neue Menschen-Figuren und Mitläufer hinter dem Rücken
+- **Figuren neu gezeichnet** (`js/gb/people.js`, `figure()`):
+  - Farbrampen mit kühlen Schatten und warmem Licht, Haar-Glanz, Ohren, Wangen und Hände.
+  - Schuhe mit Sohlenlicht, Kragen und Shirt vorn, Rucksack hinten und an der Seite.
+  - Selektiver Umriss: Lichtseite in dunkler Eigenfarbe, Schattenseite fast schwarz.
+- **Laufzyklus** mit 5 Bildern je Richtung:
+  - Bilder: Stand, Schritt A, Schritt B, Durchgang, Blinzeln. Die Arme schwingen gegengleich, das vordere Bein ist näher und heller.
+  - Zuordnung: Schritt in der ersten Feldhälfte, Durchgang in der zweiten (`p.frame`/`n.frame` in overworld.js).
+  - Im Stand blinzeln alle Figuren gelegentlich (`drawChar`, `sheet.seed`).
+- **Mitläufer:**
+  - Er schaut immer zum Spieler.
+  - Dreht sich der Spieler im Stand um, stellt sich der Mitläufer nach 0,45 s hinter dessen Rücken (`F.anim`, nur wenn das Feld frei ist).

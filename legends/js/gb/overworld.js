@@ -116,6 +116,20 @@ export class Overworld {
   update(dt) {
     const p = this.p, s = this.g.state;
     if (this.banner) { this.banner.t -= dt; if (this.banner.t <= 0) this.banner = null; }
+    // Mitläufer: stellt sich hinter den Rücken des Spielers und schaut ihn an
+    { const F = this.f, p = this.p;
+      if (F?.vis && !p.surf) {
+        if (F.anim) { const A = F.anim; A.t = Math.min(1, A.t + dt / 0.24); F.px = (A.fx + (A.tx - A.fx) * A.t) * 16; F.py = (A.fy + (A.ty - A.fy) * A.t) * 16; F.k = A.t; if (A.t >= 1) { F.x = A.tx; F.y = A.ty; F.anim = null; } }
+        else if (!p.moving && !this.busy) {
+          const [dx, dy] = DX[p.dir], bx = p.x - dx, by = p.y - dy;
+          if (F.x !== bx || F.y !== by) {
+            F.idle = (F.idle || 0) + dt;
+            if (F.idle > 0.45 && !this.solid(bx, by, true) && this.ch(bx, by) !== '~' && !this.bldAt(bx, by)) { F.anim = { t: 0, fx: F.x, fy: F.y, tx: bx, ty: by }; F.idle = 0; }
+          } else F.idle = 0;
+        } else F.idle = 0;
+        const ddx = p.px - F.px, ddy = p.py - F.py;
+        if (Math.abs(ddx) + Math.abs(ddy) > 2) F.dir = Math.abs(ddx) > Math.abs(ddy) ? (ddx > 0 ? 'right' : 'left') : (ddy > 0 ? 'down' : 'up');
+      } }
     // Zwischensequenz: Kinobalken + Kameraschwenk; endet von selbst, sobald die Steuerung frei ist
     if (this.cine) { const C = this.cine; if (!this.busy) C.on = false; const mv = (v, to, sp) => (v < to ? Math.min(to, v + sp * dt) : Math.max(to, v - sp * dt)); C.b = mv(C.b, C.on ? 1 : 0, 2.6); C.k = mv(C.k, C.on && C.focus ? 1 : 0, 1.5); if (!C.on && C.b === 0 && C.k === 0) this.cine = null; }
     if (this.notice) { this.notice.t -= dt; if (this.notice.t <= 0) this.notice = null; }
@@ -156,7 +170,7 @@ export class Overworld {
     const F = this.f; if (F) { F.px = (F.fx + (F.tx - F.fx) * k) * 16; F.py = (F.fy + (F.ty - F.fy) * k) * 16; F.k = k; if (k >= 1) { F.x = F.tx; F.y = F.ty; } }
     p.hop = p.jump ? Math.sin(k * Math.PI) * 10 : 0;
     // Gang: 4 Phasen pro Feld (Fuß links, Mitte, Fuß rechts, Mitte) und leichtes Wippen
-    p.frame = p.slide ? 0 : k > 0.15 && k < 0.65 ? (p.step % 2 ? 1 : 2) : 0;
+    p.frame = p.slide ? 0 : k < 0.55 ? (p.step % 2 ? 1 : 2) : 3; // Schritt, dann Durchgang (Beine beisammen)
     p.bob = p.slide || p.jump ? 0 : Math.abs(Math.sin(k * Math.PI)) * 0.67;
     if (k >= 1) {
       this.carry = (p.t - 1) * this.moveDur(); this.arrivedAt = G.t;
@@ -203,6 +217,7 @@ export class Overworld {
     this.dust(); const p = this.p; p.moving = true; p.fx = p.x; p.fy = p.y; p.tx = tx; p.ty = ty; p.t = 0; p.jump = jump; if (jump) sfx('whoosh');
     const F = this.f;
     if (F) {
+      if (F.anim) { F.x = F.anim.tx; F.y = F.anim.ty; F.anim = null; }
       F.fx = F.x; F.fy = F.y; F.tx = p.x; F.ty = p.y;
       if (p.surf) { F.fx = F.tx = tx; F.fy = F.ty = ty; F.vis = false; }
       else { const ddx = F.tx - F.fx, ddy = F.ty - F.fy; if (ddx || ddy) F.dir = Math.abs(ddx) > Math.abs(ddy) ? (ddx > 0 ? 'right' : 'left') : (ddy > 0 ? 'down' : 'up'); F.vis = this.ch(F.tx, F.ty) !== '~' && (F.tx !== tx || F.ty !== ty); }
@@ -306,7 +321,7 @@ export class Overworld {
     for (const n of this.npcs) {
       if (n.moving) {
         n.t += dt / 0.3; const k = Math.min(1, n.t);
-        n.px = (n.x + (n.tx - n.x) * k) * 16; n.py = (n.y + (n.ty - n.y) * k) * 16; n.frame = k > 0.25 && k < 0.75 ? (n.step % 2 ? 1 : 2) : 0;
+        n.px = (n.x + (n.tx - n.x) * k) * 16; n.py = (n.y + (n.ty - n.y) * k) * 16; n.frame = k < 0.55 ? (n.step % 2 ? 1 : 2) : 3;
         if (k >= 1) { n.moving = false; n.x = n.tx; n.y = n.ty; n.step++; n.frame = 0; n.res?.(); }
         continue;
       }
@@ -494,7 +509,7 @@ export class Overworld {
     for (const a of actors) {
       if (a.me && p.surf) { const sm = this.g.surfMon?.(); const bob = Math.round(Math.sin(G.t * 4)); if (sm) { const up = a.dir === 'up'; ctx.save(); ctx.translate(Math.round(a.px - cx + 8), Math.round(a.py - cy - 6 + bob)); if (a.dir === 'right') ctx.scale(-1, 1); ctx.drawImage(monSprite(sm.sp, up ? 'iconback' : 'icon', sm.shiny, sm.mut), -16, 0); ctx.restore(); } drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 7 + bob); continue; }
       if (a.follow) {
-        const m = a.follow, img = monSprite(m.sp, a.dir === 'up' ? 'iconback' : 'icon', m.shiny, m.mut), mv = p.moving, hopY = mv ? -Math.round(Math.abs(Math.sin((this.f.k || 0) * Math.PI)) * 2) : (Math.floor(G.t * 2) % 2 ? -1 : 0);
+        const m = a.follow, img = monSprite(m.sp, a.dir === 'up' ? 'iconback' : 'icon', m.shiny, m.mut), mv = p.moving || !!this.f.anim, hopY = mv ? -Math.round(Math.abs(Math.sin((this.f.k || 0) * Math.PI)) * 2) : (Math.floor(G.t * 2) % 2 ? -1 : 0);
         ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(a.px - cx + 8, a.py - cy + 14, 6, 2, 0, 0, 7); ctx.fill();
         ctx.save(); ctx.translate(Math.round(a.px - cx + 8), Math.round(a.py - cy - 15 + hopY)); if (a.dir === 'right') ctx.scale(-1, 1); ctx.drawImage(img, -16, 0); ctx.restore();
         if (this.fEmote?.t > 0) { const ex = a.px - cx + 4, ey = a.py - cy - 22; ctx.fillStyle = '#28202c'; ctx.fillRect(ex - 1, ey - 1, 10, 9); ctx.fillStyle = '#fff'; ctx.fillRect(ex, ey, 8, 7); ctx.fillStyle = '#e84a6a'; [[1, 1, 2, 2], [5, 1, 2, 2], [1, 2, 6, 2], [2, 4, 4, 1], [3, 5, 2, 1]].forEach(([q, w2, e, r]) => ctx.fillRect(ex + q, ey + w2, e, r)); }

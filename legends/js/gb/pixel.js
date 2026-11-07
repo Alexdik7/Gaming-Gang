@@ -1,6 +1,7 @@
 // Prozedurale Pixel-Art: Kacheln (16×16), Gebäude, Spielfiguren (16×18, 4 Richtungen × 3 Frames), Objekte
 import { mulberry } from '../core/noise.js';
 import { snap } from './engine.js';
+import { figure as figure2, FRAMES } from './people.js';
 
 export const T = 16;
 const cv = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return [c, x]; };
@@ -686,15 +687,17 @@ const sprCache = new Map();
 export function charSheet(look) {
   const k = JSON.stringify(look);
   if (sprCache.has(k)) return sprCache.get(k);
-  // Blatt: 3 Frames × 4 Richtungen (down, up, left, right), je 16×24
-  const [c, x] = cv(48, 96);
-  ['down', 'up', 'left', 'right'].forEach((d, di) => [0, 1, 2].forEach(si => x.drawImage(figure(look, d, si), si * 16, di * 24)));
+  // Blatt: 5 Bilder × 4 Richtungen (down, up, left, right), je 16×24 – Stand, Schritt A, Schritt B, Durchgang, Blinzeln
+  const [c, x] = cv(16 * FRAMES, 96);
+  ['down', 'up', 'left', 'right'].forEach((d, di) => { for (let si = 0; si < FRAMES; si++) x.drawImage(figure2(look, d, si), si * 16, di * 24); });
+  let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0; c.seed = (h % 1000) / 137;
   sprCache.set(k, c);
   return c;
 }
 export const DIRS = ['down', 'up', 'left', 'right'];
 export function drawChar(ctx, look, dir, frame, x, y, hop = 0) {
   const sh = charSheet(look), k = 1 - Math.min(0.4, hop / 25);
+  if (!frame && (performance.now() / 1000 + sh.seed) % 3.4 < 0.14) frame = 4; // gelegentlich blinzeln
   ctx.fillStyle = `rgba(0,0,0,${0.22 * k})`; ctx.beginPath(); ctx.ellipse(x + 8, y + 15 + hop, 5.5 * k, 2 * k, 0, 0, 7); ctx.fill();
   ctx.drawImage(sh, frame * 16, DIRS.indexOf(dir) * 24, 16, 24, snap(x), snap(y - 9), 16, 24);
 }
