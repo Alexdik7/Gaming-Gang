@@ -39,10 +39,10 @@ const OUT = [24, 20, 32];
 // ---------------------------------------------------------------- Rasterizer
 const L = (() => { const v = [-0.5, -0.62, 0.6]; const n = Math.hypot(...v); return v.map(x => x / n); })();
 class Canvas64 {
-  constructor(n = 64) { this.n = n; this.id = new Int16Array(n * n).fill(-1); this.col = new Array(n * n).fill(null); this.parts = []; }
+  constructor(n = 64) { this.n = n; this.id = new Int16Array(n * n).fill(-1); this.col = new Array(n * n).fill(null); this.tn = new Int8Array(n * n); this.parts = []; }
   // e: Ellipse  {x,y,rx,ry,a,c,tone,line}
   add(p) { const i = this.parts.length; this.parts.push(p); p.shape === 'e' ? this.ell(p, i) : this.poly(p, i); }
-  set(x, y, i, c) { if (x < 0 || y < 0 || x >= this.n || y >= this.n) return; const k = y * this.n + x; this.id[k] = i; this.col[k] = c; }
+  set(x, y, i, c, t = 2) { if (x < 0 || y < 0 || x >= this.n || y >= this.n) return; const k = y * this.n + x; this.id[k] = i; this.col[k] = c; this.tn[k] = t; }
   ell(p, i) {
     const R = ramp(p.c), ca = Math.cos(p.a || 0), sa = Math.sin(p.a || 0), m = Math.max(p.rx, p.ry) + 1;
     for (let y = Math.floor(p.y - m); y <= p.y + m; y++) for (let x = Math.floor(p.x - m); x <= p.x + m; x++) {
@@ -52,7 +52,7 @@ class Canvas64 {
       // Normale in Bildkoordinaten zurückdrehen
       const nx = u * ca - v * sa, ny = u * sa + v * ca, nz = Math.sqrt(Math.max(0, 1 - d));
       const lum = (nx * L[0] + ny * L[1] + nz * L[2]) + (p.tone || 0) * 0.3;
-      this.set(x, y, i, p.flat ? R[2 + (p.tone || 0)] : R[lum > 0.93 && !p.matte ? 4 : lum > 0.62 ? 3 : lum > 0.18 ? 2 : 1]);
+      const t = p.flat ? 2 + (p.tone || 0) : lum > 0.93 && !p.matte ? 4 : lum > 0.62 ? 3 : lum > 0.18 ? 2 : 1; this.set(x, y, i, R[t], t);
     }
   }
   poly(p, i) {
@@ -67,7 +67,7 @@ class Canvas64 {
       }
       if (!ins) continue;
       const lum = 0.55 - ((px - cx) / w) * 0.35 - ((py - cy) / h) * 0.45 + (p.tone || 0) * 0.3;
-      this.set(x, y, i, p.flat ? R[2 + (p.tone || 0)] : R[lum > 0.78 ? 3 : lum > 0.2 ? 2 : 1]);
+      const t = p.flat ? 2 + (p.tone || 0) : lum > 0.78 ? 3 : lum > 0.2 ? 2 : 1; this.set(x, y, i, R[t], t);
     }
   }
   // Konturen: außen dunkel, innen (Teil vor Teil) in der Konturfarbe des vorderen Teils
@@ -79,7 +79,7 @@ class Canvas64 {
       if (i < 0) { if (nb.some(j => j >= 0)) outer.push(k); continue; }
       const p = this.parts[i];
       if (p.line === false) continue;
-      if (nb.some(j => j >= 0 && j < i && this.parts[j].line !== false && !this.parts[j].noInner)) col[k] = ramp(p.c)[0];
+      if (nb.some(j => j >= 0 && j < i && this.parts[j].line !== false && !this.parts[j].noInner)) { col[k] = ramp(p.c)[0]; this.tn[k] = 0; }
     }
     for (const k of outer) { const x = k % n, y = (k / n) | 0; const j = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].map(([a, b]) => (a >= 0 && b >= 0 && a < n && b < n) ? id[b * n + a] : -1).find(v => v >= 0 && v < this.parts.length); col[k] = this.parts[j].glowLine ? ramp(this.parts[j].c)[1] : OUT; id[k] = 9999; }
   }
@@ -322,6 +322,7 @@ function face(cv, M, C, big) {
     const h = style === 'big' || big ? 4 : 3, w = style === 'big' ? 3 : 2;
     for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) cv.px(x - (w >> 1) + xx, y - 1 + yy, EYE);
     cv.px(x - (w >> 1), y - 1, [255, 255, 255]);
+    if (M.iris && style === 'std' && EYE[0] === 32) { const g = ramp(C.glow === '#ffffff' ? C.accent : C.glow)[1]; for (let xx = 0; xx < w; xx++) cv.px(x - (w >> 1) + xx, y - 1 + h - 1, g); }
     if (style === 'big') { const g = ramp(C.glow === '#ffffff' ? '#58a8f8' : C.glow); cv.px(x, y + h - 2, g[2]); cv.px(x + 1, y + h - 2, g[3]); }
   }
   const D = ramp(C.main)[0];
@@ -347,6 +348,66 @@ function sparkleAura(cv, C, seed) {
 }
 
 // Skalierung aller Teile um den Fußpunkt (32,60)
+// ---------------------------------------------------------------- Art-Varianten
+function hashStr(t) { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function variant(spec) {
+  let h = hashStr(spec.kind + spec.main + spec.accent + (spec.glow || '') + (spec.extras || []).join()); const rnd = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0) % 10000) / 10000;
+  const big = (spec.stage || 1) > 1;
+  return {
+    hs: (big ? 0.9 : 1.0) + rnd() * 0.3, bx: 0.86 + rnd() * 0.32, by: 0.92 + rnd() * 0.14,
+    pat: ['none', 'none', 'stripes', 'spots', 'saddle', 'stripes', 'spots', 'tips'][Math.floor(rnd() * 8)], per: 5 + Math.floor(rnd() * 3), tilt: rnd() * 0.9 - 0.45, off: Math.floor(rnd() * 7),
+    eye: rnd() < 0.18 ? 'dot' : undefined, brow: rnd() < 0.45, blush: rnd() < 0.5, iris: rnd() < 0.6, head: ['crest', 'horns', 'crown', 'crest', 'horns'][Math.floor(rnd() * 5)], seed: h,
+  };
+}
+const centerOf = p => p.shape === 'e' ? [p.x, p.y] : [p.pts.reduce((a, q) => a + q[0], 0) / p.pts.length, p.pts.reduce((a, q) => a + q[1], 0) / p.pts.length];
+function groupOf(M, x, y) {
+  const { head: h, body: b } = M;
+  if (Math.hypot(x - h.x, y - h.y) < h.r * 1.35) return 'h';
+  if (((x - b.x) / (b.rx * 1.15)) ** 2 + ((y - b.y) / (b.ry * 1.15)) ** 2 < 1) return 'b';
+  return '';
+}
+function morphFn(M, V, g) {
+  const { head: h, body: b } = M;
+  if (g === 'h') return [x => h.x + (x - h.x) * V.hs, y => h.y + (y - h.y) * V.hs, V.hs, V.hs];
+  if (g === 'b') return [x => b.x + (x - b.x) * V.bx, y => b.y + (y - b.y) * V.by, V.bx, V.by];
+  return [x => x, y => y, 1, 1];
+}
+function morphParts(parts, M, V) {
+  return parts.map(p => {
+    const [cx, cy] = centerOf(p), [fx, fy, kx, ky] = morphFn(M, V, groupOf(M, cx, cy));
+    return p.shape === 'e' ? { ...p, x: fx(p.x), y: fy(p.y), rx: p.rx * kx, ry: p.ry * ky } : { ...p, pts: p.pts.map(([x, y]) => [fx(x), fy(y)]) };
+  });
+}
+function morphMeta(M, V) {
+  const pt = q => { if (!q) return q; const [fx, fy] = morphFn(M, V, groupOf(M, q[0], q[1])); return [fx(q[0]), fy(q[1])]; };
+  return { ...M, head: { ...M.head, r: M.head.r * V.hs }, body: { ...M.body, rx: M.body.rx * V.bx, ry: M.body.ry * V.by }, eyes: M.eyes.map(pt), nose: pt(M.nose), mouth: pt(M.mouth), grin: pt(M.grin), fangs: pt(M.fangs), tongue: pt(M.tongue) };
+}
+// Fellmuster nur auf Teilen in der Hauptfarbe, Ton (Licht/Schatten) bleibt erhalten
+function pattern(cv, M, C, V) {
+  if (V.pat === 'none') return;
+  const n = cv.n, b = M.body, h = M.head, [hh, ss, ll] = rgb2hsl(hex2rgb(C.main));
+  const mark = V.pat === 'tips' ? C.accent : ll > 0.5 ? '#' + hsl2rgb([hueToward(hh, 0.72, 0.15), Math.min(1, ss * 1.1), ll - 0.24]).map(v => v.toString(16).padStart(2, '0')).join('') : '#' + hsl2rgb([hueToward(hh, 0.15, 0.1), ss * 0.85, Math.min(0.92, ll + 0.2)]).map(v => v.toString(16).padStart(2, '0')).join('');
+  const R = ramp(mark);
+  let sd = V.seed || 7; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const spots = Array.from({ length: 5 }, () => { const a = rnd() * 6.28, d = 0.25 + rnd() * 0.55; return [b.x + Math.cos(a) * b.rx * d, b.y - Math.abs(Math.sin(a)) * b.ry * d * 0.9, 1.3 + rnd() * 1.3]; });
+  for (let k = 0; k < n * n; k++) {
+    const i = cv.id[k], t = cv.tn[k]; if (i < 0 || i >= cv.parts.length || t < 1) continue;
+    const p = cv.parts[i]; if (p.c !== C.main) continue;
+    const x = k % n, y = (k / n) | 0, inB = ((x + 0.5 - b.x) / b.rx) ** 2 + ((y + 0.5 - b.y) / b.ry) ** 2;
+    let on = false;
+    if (V.pat === 'stripes') on = inB < 0.95 && y < b.y + b.ry * 0.35 && ((((x + y * V.tilt + V.off) % V.per) + V.per) % V.per) < 2;
+    else if (V.pat === 'spots') on = spots.some(([sx, sy, r]) => (x + 0.5 - sx) ** 2 + (y + 0.5 - sy) ** 2 < r * r);
+    else if (V.pat === 'saddle') on = inB < 0.9 && y < b.y - b.ry * 0.2;
+    else if (V.pat === 'tips') on = inB > 1.3 && Math.hypot(x - h.x, y - h.y) > h.r * 1.25 && y < b.y + b.ry * 0.6 && (Math.hypot(x - b.x, y - b.y) > Math.max(b.rx, b.ry) * 1.45);
+    if (on) cv.col[k] = R[t];
+  }
+}
+function brows(cv, M, C) {
+  const D = ramp(C.main)[0];
+  for (const [x, y] of M.eyes) { const e = [Math.round(x), Math.round(y)]; cv.px(e[0] - 2, e[1] - 3, D); cv.px(e[0] - 1, e[1] - 3, D); cv.px(e[0], e[1] - 2, D); cv.px(e[0] + 1, e[1] - 2, D); }
+}
+function blush(cv, M) { for (const [x, y] of M.eyes) { cv.px(x - 1, y + 3, [248, 140, 150]); cv.px(x, y + 3, [248, 140, 150]); } }
+
 function scaleParts(parts, k, ox = 32, oy = 61) {
   const tx = v => ox + (v - ox) * k, ty = v => oy + (v - oy) * k;
   return parts.map(p => p.shape === 'e' ? { ...p, x: tx(p.x), y: ty(p.y), rx: p.rx * k, ry: p.ry * k } : { ...p, pts: p.pts.map(([x, y]) => [tx(x), ty(y)]) });
@@ -368,7 +429,8 @@ export function paintCreature(spec, view = 'front', shiny = false, n = 64) {
   const M0 = tpl(C, spec.stage || 1);
   const size = spec.size || 1, k = Math.max(0.74, Math.min(1.06, 0.6 + size * 0.33));
   const back = view === 'back';
-  const ex = extras(spec.extras, M0, C);
+  const V0 = variant(spec), exl = (spec.size || 1) < 1.45 ? [...new Set((spec.extras || []).map(e => e === 'crown' ? V0.head : e))] : spec.extras;
+  const ex = extras(exl, M0, C);
   let parts = [...ex.back, ...M0.parts, ...ex.fr];
   // Rückansicht: Dinge hinter dem Körper (Schweif, Flügel) kommen nach vorn
   if (back) {
@@ -376,12 +438,17 @@ export function paintCreature(spec, view = 'front', shiny = false, n = 64) {
     parts = [...M0.parts.filter(p => !behind.includes(p)), ...ex.back, ...ex.fr, ...behind.map(p => ({ ...p, tone: 0 }))];
     parts = parts.map(p => (p.c === C.accent && p.matte) ? { ...p, c: C.main } : p); // Bauchseite verdeckt
   }
+  // Art-eigene Abwandlung: Kopf-/Körperproportionen, Fellmuster, Augen (fest aus den Farben abgeleitet)
+  const V = V0;
+  const MV = morphMeta(M0, V);
+  parts = morphParts(parts, M0, V);
   const cv = new Canvas64(n), q = n / 64;
   for (const p of scaleParts(scaleParts(parts, k), q, 0, 0)) cv.add(p);
   cv.lines();
-  const M = scaleMeta(scaleMeta(M0, k), q, 0, 0);
+  const M = scaleMeta(scaleMeta(MV, k), q, 0, 0);
+  if (n >= 64) pattern(cv, M, C, V);
   if (n < 64) { if (!back) for (const [x, y] of M.eyes) { cv.px(x, y, [32, 24, 40]); cv.px(x, y - 1, [32, 24, 40]); } return cv.toCanvas(back); }
-  if (!back) { face(cv, M, C, (spec.stage || 1) === 1 && size < 0.8); marks(cv, M, C); }
+  if (!back) { face(cv, { ...M, eye: M.eye || V.eye, iris: V.iris }, C, (spec.stage || 1) === 1 && size < 0.8); if (V.brow && (spec.stage || 1) > 1) brows(cv, M, C); if (V.blush && (spec.stage || 1) === 1) blush(cv, M); marks(cv, M, C); }
   else if (M.shell || M.shellLine) marks(cv, M, C);
   if (spec.extras?.includes('aura')) sparkleAura(cv, C, (spec.main.charCodeAt(1) * 977) | 1);
   return cv.toCanvas(back);

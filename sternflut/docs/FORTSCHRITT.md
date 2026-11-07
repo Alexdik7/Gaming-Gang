@@ -61,3 +61,10 @@
 - Karte `heimatinsel` wird aus dem Ausbaustand erzeugt (`buildIsland(s)`, Prüfung über `M.sig` in `mapEvent`).
 - Baumeisterin Tilda baut 5 Projekte (`PROJECTS`) gegen Geld und Grabschätze: Hütte (`inselhaus`: Bett + PC), Beerenfeld (6 Sträucher), Weide (6 Kreaturen aus der Box, die täglich EP sammeln, höchstens 7 Tage), Werkstatt (`inselwerk`: Tüftler Bo, `RECIPES` für Kugeln und Tränke) und Leuchtfeuer.
 - `story.useItem` fragt jetzt alle Akt-Module ab.
+
+## v1.4 – Kreaturen-Grafik
+- `monart.js`: `variant(spec)` leitet aus den Farben jeder Art eine feste Abwandlung ab:
+  - Kopfgröße und Körperbreite/-höhe (`morphParts`/`morphMeta`)
+  - Fellmuster nur auf der Hauptfarbe (Streifen, Flecken, Sattel, farbige Spitzen; der Ton bleibt über `cv.tn` erhalten)
+  - Augen mit Irisfarbe, Punktaugen, Brauen bei Entwicklungen, Wangenröte bei Babys
+  - Kronen gibt es nur noch bei Legendären (Größe ≥ 1,45), sonst wechseln Kamm, Hörner und Krone ab.
