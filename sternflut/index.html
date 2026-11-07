@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Sternflut</title>
+<meta name="description" content="Sternflut – die Reise ans Ende des Meeres. Kreaturen-Abenteuer im Handheld-Stil.">
+<meta name="theme-color" content="#14204a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sternflut">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="gb.css">
+</head>
+<body>
+<main id="console">
+  <div class="bezel">
+    <div class="led"><i></i>POWER</div>
+    <canvas id="screen"></canvas>
+    <div class="brand">STERN<b>FLUT</b></div>
+  </div>
+  <div id="pad">
+    <div class="dpad" aria-label="Steuerkreuz">
+      <span data-d="up"></span><span data-d="down"></span><span data-d="left"></span><span data-d="right"></span><em></em>
+    </div>
+    <div class="ab">
+      <button data-btn="b" aria-label="B">B</button>
+      <button data-btn="a" aria-label="A">A</button>
+    </div>
+    <div class="ss">
+      <button data-btn="select">SELECT</button>
+      <button data-btn="start">START</button>
+    </div>
+  </div>
+</main>
+<div id="nameinput" hidden></div>
+<script type="module" src="js/gb/game.js"></script>
+</body>
+</html>

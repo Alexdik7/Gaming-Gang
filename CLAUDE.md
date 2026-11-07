@@ -1,7 +1,7 @@
 # Gaming Gang – Projektgedächtnis
 
 Repo `Alexdik7/Gaming-Gang`, Branch `main`. GitHub Pages ist live: https://alexdik7.github.io/Gaming-Gang/
-Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legends United“, Hauptprojekt), `wolkenpfad/` (3D-Endlos-Läufer à la Temple Run, eigene Welt; three.js lokal in `lib/`, Logik in `game.js`, Doku in `wolkenpfad/README.md`, Test über `window.WP` + Autopilot).
+Spiele: `sternflut/` (NEU, Nachfolger von Legends: eigenes Kreaturen-RPG, 3 Welten – Bauplan `sternflut/docs/KONZEPT.md`), `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legends United“, Hauptprojekt), `wolkenpfad/` (3D-Endlos-Läufer à la Temple Run, eigene Welt; three.js lokal in `lib/`, Logik in `game.js`, Doku in `wolkenpfad/README.md`, Test über `window.WP` + Autopilot).
 
 ## Nutzer
 - Deutsch, spielt auf dem **iPhone**: Web-App über „Zum Home-Bildschirm“, Updates kommen über GitHub Pages und `sw.js`. Android interessiert ihn nicht.
@@ -38,6 +38,10 @@ Spiele: `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legend
 - Ist ein Push fehlgeschlagen, einfach erneut pushen (passiert gelegentlich).
 
 ## Stand (aktualisieren!)
+- **Sternflut v0.1 (Phase 1)** – Fork der Legends-Technik in `sternflut/` (eigener Spielstand `sf-save`, Test-Server: `cd sternflut && python3 -m http.server 8053`, Tests `node sternflut/tools/e2e/run.cjs all`, Karten `node sternflut/tools/checkmaps.mjs`):
+  - Story/Talk/Sperren in `js/gb/story.js` (game.js delegiert: talkStory, afterTrainer, mapEvent, edgeBlock, songStone, altarStory, onCaught, afterGym), Pager in `js/gb/pager.js`, Minikarte `overworld.drawMini`, Leuchtturm `building({tower})`
+  - Kreaturen in `js/data/kalmara1.js` (Nr. 1–45 + Aurelune 250), neue Regionsdateien in `creatures2.js` importieren
+  - Akt 1: Muschelbucht → Strand (Prolog) → Dünenpfad → Ankerbrück (Werft, Leuchtfeuer, Arena Rhea). Nächster Schritt: Phase 2 laut KONZEPT.md
 - **Legends United v2.10.1** (Vorbild ab jetzt: **Pokémon Smaragd** – Grafik, Bewegung, Menüs):
   - Inhalt: 150 Kreaturen, 8 Arenen, Liga, Postgame (Hüter), Raids 4v1 mit KI-Helfern und Online-Koop, Nihilux
   - Technik: komponierte Musik, Android-App, flüssige Subpixel-Bewegung, neue Weltgrafik
