@@ -25,7 +25,7 @@ function helpers(p) {
         const { createMon } = await import('./js/data/mon.js'); const { MOVES } = await import('./js/data/moves.js');
         if (o.noEnc) { const { ENC } = await import('./js/gb/maps.js'); for (const k in ENC) ENC[k].rate = 0; }
         const s = LU2.newState(o.name || 'Alex', o.look);
-        s.flags = { lindeTalked: 1, starter: 'funkfux', kian1: 1, kian2: 1, dex: 1, gotBalls: 1, ...(o.flags || {}) };
+        s.flags = { lindeTalked: 1, starter: 'funkfux', kian1: 1, kian2: 1, dex: 1, gotBalls: 1, candy25: 1, epGift: 1, ...(o.flags || {}) }; // Geschenk-Anrufe im Test aus
         s.badges = o.badges || []; Object.assign(s.bag, o.bag || {}); s.time = o.time ?? 720;
         s.team = (o.team || [['glutfux', 30]]).map(([sp, l]) => createMon(sp, l));
         if (o.strong) s.team.forEach(m => { m.moves.sort((a, b) => MOVES[b.id].pow - MOVES[a.id].pow); m.moves.forEach(mv => (mv.pp = 999)); });

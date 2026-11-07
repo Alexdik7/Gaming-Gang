@@ -26,7 +26,7 @@ const S = {
     await T.b.close();
     const zeros = d.filter(v => v === 0).length, pos = d.filter(v => v > 0), mn = Math.min(...pos), spikes = pos.filter(v => v > mn * 1.5).length, mx = Math.max(...pos.filter(v => v <= mn * 1.5));
     // einzelne ausgelassene Bilder (Testrechner ohne Grafikkarte) sind erlaubt, Stillstände nicht
-    return { ok: zeros === 0 && mx - mn < 0.5 && spikes <= 2, frames: d.length, zeros, spikes, min: mn, max: mx, errs: T.errs };
+    return { ok: d.length > 30 && zeros === 0 && mx - mn < 0.5 && spikes <= 2, frames: d.length, zeros, spikes, min: mn, max: mx, errs: T.errs };
   },
   // Trainerkampf: Intro, Zwangswechsel nach K.O., Lebensanzeigen nach Wechsel sichtbar, weiches Ende
   async battle() {
