@@ -15,6 +15,7 @@ export const TYPES = {
   metall:   { name: 'Metall',   color: '#9fb0bf' },
   geist:    { name: 'Geist',    color: '#8a7dd6' },
   magie:    { name: 'Magie',    color: '#ff7ad9' },
+  astral:   { name: 'Astral',   color: '#7a6aff' },
 };
 
 // [stark gegen], [schwach gegen], [wirkungslos gegen]
@@ -26,14 +27,15 @@ const CHART = {
   elektro:  [['wasser', 'luft'], ['elektro', 'pflanze', 'drache'], ['erde']],
   eis:      [['pflanze', 'erde', 'luft', 'drache'], ['feuer', 'wasser', 'eis', 'metall'], []],
   drache:   [['drache'], ['metall'], ['magie']],
-  schatten: [['licht', 'geist', 'magie'], ['schatten'], []],
+  schatten: [['licht', 'geist', 'magie', 'astral'], ['schatten'], []],
   licht:    [['schatten', 'geist'], ['licht', 'metall'], []],
   erde:     [['feuer', 'elektro', 'gift', 'metall'], ['pflanze'], ['luft']],
   luft:     [['pflanze'], ['elektro', 'metall'], []],
   gift:     [['pflanze', 'magie'], ['gift', 'erde', 'geist'], ['metall']],
-  metall:   [['eis', 'magie'], ['feuer', 'wasser', 'elektro', 'metall'], []],
+  metall:   [['eis', 'magie', 'astral'], ['feuer', 'wasser', 'elektro', 'metall'], []],
   geist:    [['geist', 'magie'], ['schatten'], ['normal']],
-  magie:    [['drache', 'schatten'], ['feuer', 'metall', 'gift'], []],
+  magie:    [['drache', 'schatten'], ['feuer', 'metall', 'gift', 'astral'], []],
+  astral:   [['magie', 'drache', 'geist', 'licht'], ['metall', 'astral', 'schatten'], []],
 };
 
 export function effectiveness(atkType, defTypes) {

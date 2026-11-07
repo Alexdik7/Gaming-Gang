@@ -31,3 +31,10 @@
 - Glutinsel + Glutpfad + Glutkrater (Arena 6 Hekla), Sturmspitze + Windpass (Arena 7 Corvin), Kronfels + Kloster (Finale gegen Äbtissin Sela, Kehls Verrat, Okko findet seine Mutter), Arena 8 Tamas
 - Liga-Insel: Jaros letzter Kampf, Top 4 (Lio, Marisol, Raven, Saphira), Champion Admiral Brann; Ruhmeshalle mit neuem Abspann; Ende in Muschelbucht – der Kompass erwacht
 - Logbuchseiten 9–12, Strophen VI–VIII (Lied vollständig)
+
+## v0.5 – Phase 5: Welt 2, Teil 1 – Die Weite See
+- Durch das Tor (Portal-Szene), Treibholzinsel, Perlhafen: die Morgenstern wird dein Schiff (Jaro als Steuermann), Häfen mit `world: 2`
+- Tauchen (`M.underwater`: blaue Tönung, Lichtstrahlen, Blasen) ins Korallenriff und nach Coralis; Tiefseekugel
+- Frostholm: Frosthafen, Frostpfad, Erzmine (Kampf gegen Prof. Kehl), Erzheim, Eisgipfel (Boreal)
+- Arenen 9–12 (Nami, Thalia, Ingrid mit Eisrutsch-Arena, Bjarne), Gezeitenjäger und Jägerin Vex, Corvin kommt mit der Albatros
+- 50 neue Kreaturen (111–160), Logbuchseiten 13–15

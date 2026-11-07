@@ -624,6 +624,13 @@ export class Overworld {
       }
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     }
+    // Nyxara: violettes Licht, schwebende Lichtfunken; Station: kühles Licht und Statuslämpchen
+    if (this.M.alien) {
+      ctx.fillStyle = this.M.space ? 'rgba(40,10,90,.42)' : 'rgba(110,50,190,.24)'; ctx.fillRect(0, 0, W, VH);
+      for (let i = 0; i < 24; i++) { const k = (G.t * 0.08 + i / 24) % 1, x = ((i * 89 - cx * 0.2) % W + W) % W + Math.sin(G.t + i) * 4, y = VH - k * VH; ctx.fillStyle = i % 3 ? 'rgba(200,170,255,.7)' : 'rgba(140,255,240,.8)'; ctx.fillRect(x | 0, y | 0, 1 + (i % 2), 1 + (i % 2)); }
+      if (this.M.space) for (let i = 0; i < 40; i++) { ctx.fillStyle = `rgba(255,250,230,${0.4 + 0.6 * Math.abs(Math.sin(G.t * 1.3 + i))})`; ctx.fillRect((i * 61) % W, (i * 37) % VH, 1, 1); }
+    }
+    if (this.M.station) { ctx.fillStyle = 'rgba(40,120,170,.12)'; ctx.fillRect(0, 0, W, VH); for (let y = (G.t * 20) % 4; y < VH; y += 4) { ctx.fillStyle = 'rgba(160,230,255,.04)'; ctx.fillRect(0, y | 0, W, 1); } }
     // Unter Wasser: blaue Tönung, Lichtstrahlen von oben, aufsteigende Blasen
     if (this.M.underwater) {
       ctx.fillStyle = 'rgba(20,90,170,.30)'; ctx.fillRect(0, 0, W, VH);

@@ -9,7 +9,9 @@ import { LOOK, ITEMS } from './maps.js';
 import * as A3 from './akt3.js';
 import * as A4 from './akt4.js';
 import * as A5 from './akt5.js';
-const ACTS = [A3, A4, A5];
+import * as A6 from './akt6.js';
+import * as A7 from './akt7.js';
+const ACTS = [A3, A4, A5, A6, A7];
 
 const give = async (g, k, n = 1) => { const s = g.state; s.bag[k] = (s.bag[k] || 0) + n; sfx('caught'); await say(`${s.name} erhält ${n > 1 ? n + '× ' : ''}${ITEMS[k].name.toUpperCase()}!`); };
 const COUNTER = { zundrak: 'tidolin', tidolin: 'moospip', moospip: 'zundrak' };
@@ -374,7 +376,8 @@ export function edgeBlock(g, map, to) {
   if (map === 'duenenhain' && to === 'glimmpfad' && !g.state.badges[1]) return block(g, ['Ein Karawanenwächter: Der Glimmpfad ist bei Sandsturm gefährlich.', 'Erst wenn Okko dir seinen Orden gibt, lasse ich dich durch.']);
   return false;
 }
-export function moveBlock() { return false; }
+export function moveBlock(g, map, x, y) { for (const A of ACTS) if (A.moveBlock?.(g, map, x, y)) return true; return false; }
+export async function afterBattleHook(g, r) { for (const A of ACTS) await A.afterBattle?.(g, r); }
 
 // ---------------------------------------------------------------- Liedsteine und Altar
 export async function songStone(g, id) {

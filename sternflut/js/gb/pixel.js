@@ -189,6 +189,11 @@ const DRAW = {
     x.fillStyle = '#3e2818'; x.fillRect(0, 15, 16, 1);
     x.fillStyle = '#58a848'; x.fillRect((s * 5) % 14, 10, 2, 2);
   },
+  cloud: (x, f, s) => { // Wolkenmeer unter den schwebenden Inseln
+    const g = x.createLinearGradient(0, 0, 0, 16); g.addColorStop(0, '#8cc4f4'); g.addColorStop(1, '#a8d4fa'); x.fillStyle = g; x.fillRect(0, 0, 16, 16);
+    const r = mulberry(s + 91);
+    for (let i = 0; i < 3; i++) { const cx = r() * 16, cy = 4 + r() * 10, rw = 4 + r() * 5; x.fillStyle = '#d8e8f8'; x.beginPath(); x.ellipse(cx, cy + 1, rw, rw * 0.55, 0, 0, 7); x.fill(); x.fillStyle = '#f8fbff'; x.beginPath(); x.ellipse(cx - 0.5, cy, rw * 0.85, rw * 0.45, 0, 0, 7); x.fill(); }
+  },
   sandsign: (x, f, s) => { DRAW.sand(x, f, s); x.fillStyle = 'rgba(90,60,30,.25)'; x.fillRect(3, 13, 11, 2); x.fillStyle = '#5a3a20'; x.fillRect(7, 9, 2, 6); x.fillRect(2, 2, 12, 9); x.fillStyle = '#d8a868'; x.fillRect(3, 3, 10, 7); x.fillStyle = '#8a6038'; x.fillRect(4, 5, 8, 1); x.fillRect(4, 7, 6, 1); },
   sandrock: (x, f, s) => { DRAW.sand(x, f, s); x.fillStyle = 'rgba(90,60,30,.3)'; x.beginPath(); x.ellipse(9, 13, 7, 2.5, 0, 0, 7); x.fill(); DRAW.rockTop(x); },
   sign: (x, f, s) => {

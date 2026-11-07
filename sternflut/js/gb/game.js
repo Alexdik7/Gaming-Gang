@@ -473,7 +473,7 @@ class Game {
     if (s.catchBoost > 0 && !--s.catchBoost) this.ow.notify('Das Fängerbrot wirkt nicht mehr.');
     this.online.pos();
     if (s.steps % 150 === 0) { const L = s.team.find(m => !m.egg && m.hp > 0); if (L) { const before = L.friendship || 70; L.friendship = Math.min(255, before + 2); if (before < 200 && L.friendship >= 200) setTimeout(() => this.ow.notify(`${monName(L)} vertraut dir blind. Resonanz ist jetzt möglich!`), 50); } }
-    const ev = stepBreeding(s);
+    const ev = stepBreeding(s); if (s.station?.mods?.labor) ev.push(...stepBreeding(s));
     for (const e of ev) {
       if (e.t === 'eggReady') this.ow.notify('Die Brutstätte in Ankerbrück hat ein Ei für dich!');
       if (e.t === 'hatch' && !this.hatching) { this.hatching = true; setTimeout(() => this.doHatch(e.uid), 50); }
@@ -531,7 +531,7 @@ class Game {
     const r = await this.wildBattle(ow.M.enc, ow.M.bg || 'gras', m, { noCatch: !!R.story && !R.legend });
     if (R.legend) {
       if (r?.result === 'caught') { s.flags[R.hideIf] = true; ow.npcs = ow.npcs.filter(x => x !== n); await say(`${S.name} hat dich als würdig erkannt!`); this.save(true); }
-      else if (r?.result === 'win') { ow.npcs = ow.npcs.filter(x => x !== n); await say(`${S.name} zieht sich zurück. Es wird an diesen Ort zurückkehren …`); }
+      else if (r?.result === 'win') { s.flags[R.id + 'Besiegt'] = true; ow.npcs = ow.npcs.filter(x => x !== n); await say(`${S.name} zieht sich zurück. Es wird an diesen Ort zurückkehren …`); }
       return;
     }
     if (R.story) { if (r?.result === 'win') { ow.npcs = ow.npcs.filter(x => x !== n); } await ST.revierStory(this, n, r); return; }
@@ -592,7 +592,7 @@ class Game {
     if (music) setMusic(music);
     await wait(f ? 900 : 450);
   }
-  shinyRoll(m) { const s = this.state; if (!m.shiny && Math.random() < ((s.bag.glanzamulett ? 2 : 0) + (s.shinyBoost > 0 ? 3 : 0)) / 512) m.shiny = true; return m; }
+  shinyRoll(m) { const s = this.state; if (!m.shiny && Math.random() < ((s.bag.glanzamulett ? 2 : 0) + (s.shinyBoost > 0 ? 3 : 0) + (s.station?.mods?.observatorium ? 2 : 0)) / 512) m.shiny = true; return m; }
   pickWild(encId, sneak) {
     const sw = this.swarm();
     if (encId === sw.enc && Math.random() < 0.4) return this.shinyRoll(createMon(sw.sp, sw.lv[0] + Math.floor(Math.random() * (sw.lv[1] - sw.lv[0] + 1))));
@@ -687,6 +687,7 @@ class Game {
       if (isNew) await this.dexRewards();
     }
     for (const m of s.team) delete m._fainted;
+    await ST.afterBattleHook(this, r);
     if (r.result === 'lose' && noBlackout) { s.team.forEach(healMon); await fade(0, 150); }
     else if (r.result === 'lose') {
       const lost = Math.floor(s.money / 4); s.money -= lost;

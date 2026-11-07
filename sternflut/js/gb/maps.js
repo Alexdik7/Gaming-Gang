@@ -7,9 +7,9 @@ export const TILE = {
   '.': 'grass', ',': 'flowers', ':': 'tall', T: 'tree', P: 'pine', D: 'dtree', '~': 'water', '=': 'path', s: 'sand', R: 'rock', F: 'fence', L: 'ledge', S: 'sign', B: 'bridge',
   '$': 'cutbush', '&': 'crack', c: 'cave', W: 'cwall', O: 'hole', p: 'stone', I: 'pillar', A: 'altar', r: 'rune', g: 'gym', b: 'boulder',
   a: 'ash', h: 'ashtall', v: 'lava', X: 'basalt', e: 'ember', j: 'metal', J: 'mwall', n: 'snow', y: 'snowtall', i: 'ice', G: 'snowpine', q: 'snowrock', U: 'berry', d: 'dune', f: 'brush', z: 'cactus', H: 'sandwall', l: 'tfloor', E: 'gate', N: 'plate', _: 'mground', '^': 'cliff', '%': 'mgrass', '@': 'hole',
-  '!': 'sandsign', '*': 'sandrock', o: 'floor', x: 'tilefl', '#': 'wall', w: 'window', K: 'shelf', C: 'counter', t: 'table', Y: 'bed', V: 'tv', M: 'machine', Q: 'pc', k: 'plant', u: 'rug', m: 'mat', Z: 'orbs',
+  '!': 'sandsign', '*': 'sandrock', '°': 'cloud', o: 'floor', x: 'tilefl', '#': 'wall', w: 'window', K: 'shelf', C: 'counter', t: 'table', Y: 'bed', V: 'tv', M: 'machine', Q: 'pc', k: 'plant', u: 'rug', m: 'mat', Z: 'orbs',
 };
-export const SOLID = new Set('!*TPD~RFSWIArb#wKCtYVMQkZvXJGqUzH^$&'.split(''));
+export const SOLID = new Set('°!*TPD~RFSWIArb#wKCtYVMQkZvXJGqUzH^$&'.split(''));
 
 const LOOK = {
   oma: { skin: '#f0c8a8', hair: '#d8d8e0', outfit: '#8a6ab8', pants: '#5a4a6a', accent: '#f0d080' },

@@ -216,5 +216,5 @@ async function albatros(g) {
   await say(['Über dem Hafen öffnet sich ein Riss aus Licht. Ein Flugzeug stürzt heraus, fängt sich knapp über dem Wasser – und landet holpernd im Hafenbecken.', 'Corvin: JUHUUU! Ich wusste, dass die Albatros es schafft!'], { name: 'Corvin' });
   await say([`Corvin: ${s.name}! Als das Tor aufging, bin ich einfach hinterhergeflogen. Hat drei Tage gedauert. Und meine Frisur ist ruiniert.`, 'Corvin: Hab gehört, hier gibt es ein Wolkenreich, wohin kein Schiff kommt. Das ist genau mein Ding.', 'Corvin: Wenn du so weit bist – die Albatros bringt dich überall hin.'], { name: 'Corvin' });
   f.albatros = true; ow.busy = false; g.save(true);
-  await say('Pager: Das Wolkenreich wartet. (Kommt mit dem nächsten Update!)');
+  await say('Pager: Neues Ziel – das Wolkenreich! Sprich mit Corvin, um zu fliegen.');
 }
