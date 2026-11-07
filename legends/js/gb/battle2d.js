@@ -3,7 +3,7 @@ import { G, W, H, COL, push, pop, input, text, box, cursor, bar, inRect, wait, w
 import { Battle, RESO_MIN } from '../battle/battle.js';
 import { SPECIES } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
-import { TYPES } from '../data/types.js';
+import { TYPES, effectiveness } from '../data/types.js';
 import { maxHp, monName, xpForLevel, evolve, calcStats, genderOf } from '../data/mon.js';
 import { bgArt, platArt } from './battlebg.js';
 import { sfx, cry, setMusic } from '../core/audio.js';
@@ -35,6 +35,12 @@ export function tinted(img, col) {
 // Resonanz-Form: Farben leuchten in der Seelenfarbe, heller Umriss
 const resoCache = new WeakMap();
 export function resoColor(sp) { const M = SPECIES[sp]; return M?.model?.glow || TYPES[M?.types?.[0]]?.color || '#ffd23a'; }
+// kleines Zeichen hinter dem Attackennamen: grüne Pfeile = sehr effektiv, rote = wenig, graues X = keine Wirkung
+function effMark(ctx, x, y, e) {
+  if (e === 0) { ctx.fillStyle = '#808080'; for (let i = 0; i < 5; i++) { ctx.fillRect(x + i, y + i, 1.5, 1.5); ctx.fillRect(x + 4 - i, y + i, 1.5, 1.5); } return; }
+  const up = e > 1, n = e >= 4 || e <= 0.25 ? 2 : 1; ctx.fillStyle = up ? '#28a048' : '#d84830';
+  for (let k = 0; k < n; k++) for (let r = 0; r < 3; r++) { const yy = up ? y + r + k * 3 : y + 2 - r + k * 3; ctx.fillRect(x + 2 - r, yy, 1 + r * 2, 1); }
+}
 export function resoSprite(img, col) {
   let m = resoCache.get(img); if (!m) resoCache.set(img, (m = {}));
   if (m[col]) return m[col];
@@ -528,7 +534,7 @@ class BattleScene {
     ctx.restore();
   }
   infoBox(ctx, m, x, y, own) {
-    const w = 106, h = own ? 39 : 30;
+    const w = 106, h = own ? 39 : 36;
     // Smaragd-Box: cremefarben, dunkler Rand, spitz zulaufende Seite zur Kreatur hin
     const shape = (i) => { const L = x + i, T = y + i, Rr = x + w - i, B = y + h - i; ctx.beginPath();
       if (own) { ctx.moveTo(L + 7, T); ctx.lineTo(Rr - 3, T); ctx.lineTo(Rr, T + 3); ctx.lineTo(Rr, B - 3); ctx.lineTo(Rr - 3, B); ctx.lineTo(L + 7, B); ctx.lineTo(L, B - 9); ctx.lineTo(L, T + 9); }
@@ -552,6 +558,7 @@ class BattleScene {
     text('KP', hx + 7, y + 15.2, '#583000', 5.5, 'center', null, true);
     const hpd = own ? this.hpD.p : this.hpD.f;
     bar(hx + 15, y + 16.5, 54, 3.5, hpd / mx);
+    if (!own) text(`${Math.max(0, Math.round(hpd))}/ ${mx}`, x + w - 14, y + 21.5, COL.ink, 7, 'right', COL.shadow, true);
     if (own) {
       text(`${Math.max(0, Math.round(hpd))}/ ${mx}`, x + w - 8, y + 22.5, COL.ink, 7.5, 'right', COL.shadow, true);
       const lo = xpForLevel(lv), hi = xpForLevel(lv + 1);
@@ -576,10 +583,15 @@ class BattleScene {
   drawMoves(ctx) {
     const ms = this.b.p.moves;
     box(0, 113, 160, 47);
-    ms.forEach((mv, i) => { const x = 14 + (i % 2) * 74, y = 121 + Math.floor(i / 2) * 16; if (this.mcur === i) cursor(x - 9, y + 1); text(MOVES[mv.id].name, x, y, mv.pp ? COL.ink : COL.inkSoft, 7.8, 'left', COL.shadow, true); });
+    const ft = this.dF ? SPECIES[this.dF.sp].types : null;
+    const eff = M => (!ft || M.cat === 'status' ? null : effectiveness(M.type, ft));
+    ms.forEach((mv, i) => { const x = 14 + (i % 2) * 74, y = 121 + Math.floor(i / 2) * 16; if (this.mcur === i) cursor(x - 9, y + 1); text(MOVES[mv.id].name, x, y, mv.pp ? COL.ink : COL.inkSoft, 7.8, 'left', COL.shadow, true);
+      const e = eff(MOVES[mv.id]); if (e !== null && e !== 1) effMark(ctx, x + 63, y + 3, e); });
     box(160, 113, 80, 47);
     const mv = ms[this.mcur];
-    if (mv) { const M = MOVES[mv.id]; text(`AP ${mv.pp}/${M.pp}`, 200, 120, COL.ink, 8, 'center', COL.shadow, true); typeTag(M.type, 183, 133); text(M.cat === 'status' ? 'Status' : `Stärke ${M.pow}`, 200, 146, COL.inkSoft, 6.5, 'center', null); }
+    if (mv) { const M = MOVES[mv.id]; text(`AP ${mv.pp}/${M.pp}`, 200, 120, COL.ink, 8, 'center', COL.shadow, true); typeTag(M.type, 183, 133); const e = eff(M);
+      if (e === null || e === 1) text(M.cat === 'status' ? 'Status' : `Stärke ${M.pow} · normal`, 200, 146, COL.inkSoft, 6.5, 'center', null);
+      else text(e === 0 ? 'Keine Wirkung' : e > 1 ? `Sehr effektiv ×${e}` : `Wenig effektiv ×${e}`, 200, 146, e === 0 ? '#808080' : e > 1 ? '#209040' : '#d05020', 6.5, 'center', null, true); }
   }
 }
 

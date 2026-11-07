@@ -632,6 +632,14 @@ class Game {
     // Wer das Plateau betritt, beginnt die Liga von vorn (wie es sich gehört)
     if (id === 'liga') for (const k of ['e4_1', 'e4_2', 'e4_3', 'e4_4', 'aurin']) delete s.flags[k];
     if (id === 'liga' && !s.flags.kian3) await this.kianFinal();
+    // Geschenk: 25 Sonderbonbons (einmalig, Wunsch des Spielers)
+    if (!s.flags.candy25 && s.team.length && s.flags.starter) {
+      this.ow.busy = true; await wait(450); s.flags.candy25 = true; sfx('dex');
+      await say(['Dein Funkgerät klingelt …', `Dr. Vato: ${s.name}, die Gaming Gang schickt dir ein Paket!`]);
+      s.bag.sonderbonbon = (s.bag.sonderbonbon || 0) + 25; sfx('caught');
+      await say([`${s.name} erhält 25× Sonderbonbon!`, 'Im Beutel unter ITEMS auswählen – jedes bringt eine Kreatur 1 Level weiter.']);
+      this.ow.busy = false; this.save(true);
+    }
     // Dr. Vato ruft an: EP-Teiler und Sonderbonbons (nach dem ersten Orden, auch für alte Spielstände)
     if (!s.flags.epGift && s.badges.some(Boolean) && s.team.length) {
       this.ow.busy = true; await wait(450); s.flags.epGift = true; sfx('dex');

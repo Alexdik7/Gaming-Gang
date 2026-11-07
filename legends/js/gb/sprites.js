@@ -42,7 +42,8 @@ export function monSprite(sp, view = 'front', shiny = false, mut = false) {
   const S = SPECIES[sp] || ensureSpecies(sp);
   let spec = S.model;
   if (mut) spec = { ...spec, main: shiftHue(spec.main, -0.12), extras: [...new Set([...(spec.extras || []), 'gem'])] };
-  const img = polish(view === 'icon' ? paintCreature(spec, 'front', shiny, 32) : paintCreature(spec, view, shiny), view === 'icon');
+  const small = view === 'icon' || view === 'iconback'; // 'iconback': kleine Rückansicht für Mitläufer und Surfen
+  const img = polish(small ? paintCreature(spec, view === 'iconback' ? 'back' : 'front', shiny, 32) : paintCreature(spec, view, shiny), small);
   cache.set(k, img);
   return img;
 }

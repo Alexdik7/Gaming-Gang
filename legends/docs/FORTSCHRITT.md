@@ -657,3 +657,12 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
   - Laden ab 2 Orden für 3000 ◈.
   - Außerdem in der Alpha-Beute, bei versteckten Funden und als Chronik-Belohnung (30 und 60 Arten).
 - **Top-Trank** heilt alle KP (Laden ab 5 Orden, 2500 ◈). Den **Top-Beleber** (volle KP) gibt es als Alpha-Beute.
+
+## v2.9.1 – Effektivität sichtbar, KP-Zahlen beim Gegner, Blickrichtung
+- **Attackenauswahl:**
+  - Hinter dem Namen zeigen grüne Pfeile „sehr effektiv“ an (×4 als Doppelpfeil), rote „wenig effektiv“ und ein graues X „keine Wirkung“.
+  - Im Infofeld steht zum Beispiel „Sehr effektiv ×2“. Grundlage sind `effMark` und `effectiveness`, bezogen auf den aktuell sichtbaren Gegner.
+- **Gegner-Statusbox:** zeigt jetzt ebenfalls KP als Zahl (Box 36 statt 30 hoch).
+- **Mitläufer und Surf-Kreatur:**
+  - Sie schauen in die Laufrichtung: links normal, rechts gespiegelt, nach oben mit der neuen kleinen Rückansicht `monSprite(sp, 'iconback')`.
+- **Geschenk:** 25 Sonderbonbons kommen einmalig per Anruf (`flags.candy25`).

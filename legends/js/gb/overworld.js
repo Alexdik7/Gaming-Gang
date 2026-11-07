@@ -492,9 +492,9 @@ export class Overworld {
     if (lead) { const F = this.f; actors.push({ follow: lead, px: F.px, py: F.py, x: F.x, y: F.y, dir: F.dir }); }
     actors.sort((a, b) => a.py - b.py);
     for (const a of actors) {
-      if (a.me && p.surf) { const sm = this.g.surfMon?.(); const bob = Math.round(Math.sin(G.t * 4)); if (sm) ctx.drawImage(monSprite(sm.sp, 'icon', sm.shiny, sm.mut), a.px - cx - 8, a.py - cy - 6 + bob); drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 7 + bob); continue; }
+      if (a.me && p.surf) { const sm = this.g.surfMon?.(); const bob = Math.round(Math.sin(G.t * 4)); if (sm) { const up = a.dir === 'up'; ctx.save(); ctx.translate(Math.round(a.px - cx + 8), Math.round(a.py - cy - 6 + bob)); if (a.dir === 'right') ctx.scale(-1, 1); ctx.drawImage(monSprite(sm.sp, up ? 'iconback' : 'icon', sm.shiny, sm.mut), -16, 0); ctx.restore(); } drawChar(ctx, a.look, a.dir, 0, a.px - cx, a.py - cy - 7 + bob); continue; }
       if (a.follow) {
-        const m = a.follow, img = monSprite(m.sp, 'icon', m.shiny, m.mut), mv = p.moving, hopY = mv ? -Math.round(Math.abs(Math.sin((this.f.k || 0) * Math.PI)) * 2) : (Math.floor(G.t * 2) % 2 ? -1 : 0);
+        const m = a.follow, img = monSprite(m.sp, a.dir === 'up' ? 'iconback' : 'icon', m.shiny, m.mut), mv = p.moving, hopY = mv ? -Math.round(Math.abs(Math.sin((this.f.k || 0) * Math.PI)) * 2) : (Math.floor(G.t * 2) % 2 ? -1 : 0);
         ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(a.px - cx + 8, a.py - cy + 14, 6, 2, 0, 0, 7); ctx.fill();
         ctx.save(); ctx.translate(Math.round(a.px - cx + 8), Math.round(a.py - cy - 15 + hopY)); if (a.dir === 'right') ctx.scale(-1, 1); ctx.drawImage(img, -16, 0); ctx.restore();
         if (this.fEmote?.t > 0) { const ex = a.px - cx + 4, ey = a.py - cy - 22; ctx.fillStyle = '#28202c'; ctx.fillRect(ex - 1, ey - 1, 10, 9); ctx.fillStyle = '#fff'; ctx.fillRect(ex, ey, 8, 7); ctx.fillStyle = '#e84a6a'; [[1, 1, 2, 2], [5, 1, 2, 2], [1, 2, 6, 2], [2, 4, 4, 1], [3, 5, 2, 1]].forEach(([q, w2, e, r]) => ctx.fillRect(ex + q, ey + w2, e, r)); }
