@@ -42,7 +42,7 @@ class DoubleScene {
   async run() {
     const b = this.b, o = this.o;
     setMusic(o.music || (this.raid ? 'legend' : o.boss ? 'boss' : 'trainer'));
-    await this.say(o.boss ? `${o.title} greift an!` : `${o.title} fordern euch heraus!`);
+    await this.say(o.intro || (o.boss ? `${o.title} greift an!` : `${o.title} fordern euch heraus!`));
     this.trainersVis = false;
     for (const id of ['f0', 'f1']) if (b.mon(id)) { if (!o.boss) await this.say(`${b.slots[id].owner} schickt ${monName(b.mon(id))}!`, 500); await this.appear(id); this.g.markDex(b.mon(id).sp); }
     this.ownTrainers = false;
@@ -55,6 +55,7 @@ class DoubleScene {
       if (!mine.length && o.remote) { await this.play(await this.remote(() => b.recv())); continue; }
       let quit = false;
       for (const id of mine) {
+        if (id === 'p1' && acts.p0?.t === 'combo') continue;
         const a = await this.chooseAction(id);
         acts[id] = a; if (a.t === 'forfeit') { quit = true; break; }
       }
@@ -69,6 +70,12 @@ class DoubleScene {
       if (o.remote && !b.over && b.need.length) await this.play(await this.remote(() => b.recv()));
       if (quit) break;
     }
+    if (b.result === 'win' && o.trainer) {
+      this.trainersVis = true;
+      if (o.trainer.lose) await this.say(o.trainer.lose);
+      if (o.trainer.reward) { this.s.money += o.trainer.reward; await this.say(`Du erhältst ${o.trainer.reward} ◈ Preisgeld!`); }
+    }
+    if (b.result === 'lose' && !o.remote) await this.say(`${this.s.name} hat keine kampffähigen Kreaturen mehr… Alles wird schwarz.`);
     if (!o.remote) for (const pe of b.pendingEvos) {
       const m = this.s.team.find(x => x.uid === pe.uid); if (!m || m.hp <= 0) continue;
       const name = monName(m); sfx('evo');
@@ -115,11 +122,27 @@ class DoubleScene {
       if (k === null) { this.mode = 'menu'; return; }
       return this.done({ t: 'switch', i: k });
     }
+    if (i === 3 && this.comboReady()) {
+      if (await ask(`Duo-Kombo einsetzen? ${monName(b.mon('p0'))} und ${monName(b.mon('p1'))} greifen zusammen alle Gegner an. (Nur einmal pro Kampf!)`)) { sfx('buff'); return this.done({ t: 'combo' }); }
+      this.mode = 'menu'; return;
+    }
     if (i === 3) {
       if (this.o.remote && await ask(this.raid ? 'Möchtest du aufgeben? Der Raid endet dann für alle.' : 'Möchtest du aufgeben? Der Kampf endet dann für euch beide.')) return this.done({ t: 'forfeit' });
       if (!this.o.remote) await say('Aus diesem Kampf gibt es kein Entkommen!');
       this.mode = 'menu';
     }
+  }
+  comboReady() { const b = this.b; return !this.o.remote && !this.raid && this.actor === 'p0' && !!this.s.bag.duostein && !b.combo?.p && b.alive('p0') && b.alive('p1'); }
+  async animCombo(e) {
+    const A = this.off[e.slot], B = this.off[e.ally], ca = TYPES[e.types[0]].color, cb = TYPES[e.types[1]].color;
+    sfx('whoosh'); G.shake = 0.4;
+    await this.tween(0.35, k => { A.x = 14 * Math.sin(k * Math.PI); B.x = 14 * Math.sin(k * Math.PI); A.y = B.y = -10 * Math.sin(k * Math.PI); });
+    const p = this.center(e.slot), q = this.center(e.ally), mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2 - 10;
+    for (let i = 0; i < 40; i++) { const a = i / 40 * 6.28; this.emit(mx + Math.cos(a) * 30, my + Math.sin(a) * 16, -Math.cos(a) * 60, -Math.sin(a) * 30, i % 2 ? ca : cb, 0.5, 2.5); }
+    this.flashCol = '#ffffff'; this.flashT = 0.5; sfx('super');
+    await wait(450);
+    for (const f of FOES(e.slot).filter(f => this.b.slots[f] && this.b.alive(f))) { const t = this.center(f); for (let i = 0; i < 26; i++) { const k = i / 26; this.emit(mx + (t.x - mx) * k, my + (t.y - my) * k, (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40, i % 2 ? ca : cb, 0.6, 3); } }
+    G.shake = 1; await wait(350);
   }
   pickMove() {
     const m = this.b.mon(this.actor), mv = m.moves[this.mcur]; if (!mv || mv.pp <= 0) { sfx('weak'); return; }
@@ -138,6 +161,7 @@ class DoubleScene {
       switch (e.t) {
         case 'msg': await this.say(e.text); break;
         case 'move': await this.animMove(id, e.target, e.move, e.hit); break;
+        case 'combo': await this.animCombo(e); break;
         case 'hp':
           if (e.heal) { this.burst(id, '#7dffb0', 16, 40); sfx('heal'); }
           else if (e.dot) { this.burst(id, TYPES[e.type].color, 14); this.blink(id); sfx('weak'); }
@@ -146,7 +170,7 @@ class DoubleScene {
           break;
         case 'stat': this.burst(id, e.up ? '#ffb24a' : '#6aa8ff', 18, 40); sfx(e.up ? 'buff' : 'debuff'); await wait(400); break;
         case 'status': this.burst(id, { brand: '#ff6a2b', gift: '#b45ce0', starre: '#ffd23a' }[e.status], 20); await wait(300); break;
-        case 'faint': { const o = this.off[id]; cry(SPECIES[this.b.mon(id)?.sp || 'hoppel'].cry); sfx('faint'); await this.tween(0.5, k => (o.y = k * 64)); o.vis = false; o.y = 0; break; }
+        case 'faint': { const o = this.off[id]; { const fm = this.b.mon(id); if (fm && SPECIES[fm.sp]) cry(SPECIES[fm.sp].cry); } sfx('faint'); await this.tween(0.5, k => (o.y = k * 64)); o.vis = false; o.y = 0; break; }
         case 'send': await this.say(e.text, 600); this.hpD[id] = this.b.mon(id).hp; await this.appear(id); if (SIDE(id) === 'f') this.g.markDex(this.b.mon(id).sp); break;
         case 'recall': { const o = this.off[id]; await this.say(e.text, 500); await this.tween(0.25, k => (o.s = 1 - k)); o.vis = false; break; }
         case 'lvl': sfx('lvl'); this.hpD[id] = this.b.mon(id)?.hp ?? this.hpD[id]; await this.say(e.text); break;
@@ -233,6 +257,7 @@ class DoubleScene {
   update(dt) {
     for (let i = this.tweens.length - 1; i >= 0; i--) { const tw = this.tweens[i]; tw.t += dt; const k = Math.min(1, tw.t / tw.dur); tw.fn(k); if (k >= 1) { this.tweens.splice(i, 1); tw.res(); } }
     for (const p of this.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.l -= dt; } this.parts = this.parts.filter(p => p.l > 0);
+    if (this.flashT > 0) this.flashT -= dt;
     for (const bo of this.bolts) bo.l -= dt; this.bolts = this.bolts.filter(bo => bo.l > 0);
     const tp = input.tap;
     if (this.mode === 'msg') {
@@ -274,6 +299,7 @@ class DoubleScene {
       if (o.flash > 0) { ctx.globalAlpha = Math.min(1, o.flash); ctx.drawImage(tinted(img, '#ffffff'), dx, dy, w, w); ctx.globalAlpha = 1; }
       ctx.restore();
     }
+    if (this.flashT > 0) { ctx.globalAlpha = Math.min(0.8, this.flashT * 1.6); ctx.fillStyle = this.flashCol; ctx.fillRect(0, 0, W, 114); ctx.globalAlpha = 1; }
     if (this.crystal) { ctx.save(); ctx.translate(this.crystal.x, this.crystal.y); ctx.rotate(this.crystal.r); ctx.drawImage(this.crystal.img, -8, -8); ctx.restore(); }
     if (this.ownTrainers && this.o.ownLooks) this.o.ownLooks.forEach((l, k) => ctx.drawImage(trainerSprite(l, true), 6 + k * 56, 50));
     if (this.mode === 'target') { const p = this.pos(this.tlist[this.tcur]); const x = p.x + 32 * p.s, y = p.y + 2 + Math.sin(G.t * 8) * 2; ctx.fillStyle = '#e84a5f'; ctx.beginPath(); ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y); ctx.lineTo(x, y + 6); ctx.fill(); }
@@ -292,7 +318,7 @@ class DoubleScene {
     for (const l of lines.slice(0, 2)) { text(l.slice(0, Math.max(0, n)), 9, y, '#fff', 8.5, 'left', '#50586a'); n -= l.length + 1; y += 15; }
     if (this.mode === 'menu') {
       box(120, 114, 117, 43);
-      ['KAMPF', 'BEUTEL', 'TEAM', this.o.remote ? 'AUFGEBEN' : 'FLUCHT'].forEach((s, i) => { const x = 134 + (i % 2) * 52, yy = 121 + Math.floor(i / 2) * 16; if (this.cur === i) cursor(x - 9, yy + 1); text(s, x, yy, COL.ink, s.length > 6 ? 7 : 8.5, 'left', COL.shadow, true); });
+      ['KAMPF', 'BEUTEL', 'TEAM', this.o.remote ? 'AUFGEBEN' : this.comboReady() ? 'KOMBO' : 'FLUCHT'].forEach((s, i) => { const x = 134 + (i % 2) * 52, yy = 121 + Math.floor(i / 2) * 16; if (this.cur === i) cursor(x - 9, yy + 1); text(s, x, yy, s === 'KOMBO' ? '#c87800' : COL.ink, s.length > 6 ? 7 : 8.5, 'left', COL.shadow, true); });
     }
   }
   miniBox(id, x, y) {

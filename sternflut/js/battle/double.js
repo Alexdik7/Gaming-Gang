@@ -4,6 +4,7 @@ import { SPECIES } from '../data/creatures.js';
 import { MOVES } from '../data/moves.js';
 import { effectiveness } from '../data/types.js';
 import { calcStats, maxHp, monName, giveXp, xpBonus } from '../data/mon.js';
+import { comboOf } from '../data/combos.js';
 import { STAGE, ACC_STAGE, STAT_NAME, STATUS_NAME, freshStages } from './battle.js';
 
 export const SIDE = id => id[0];
@@ -67,12 +68,15 @@ export class DoubleBattle {
   // actions: { p0: {t:'move', i, target} | {t:'switch', i} | {t:'item', target, amount}, ... } – fehlende → KI
   turn(actions = {}) {
     if (this.over) return [];
-    const ev = [], list = [];
+    const ev = []; let list = [];
     for (const id of this.ids()) {
       if (!this.alive(id)) continue;
       const s = this.slots[id];
       for (let n = 0; n < s.acts; n++) list.push({ id, a: (!s.ai && actions[id]) || this.aiAction(id), n });
     }
+    const cx = list.find(x => x.a.t === 'combo' && this.alive(ALLY(x.id)) && !this.combo?.[SIDE(x.id)]);
+    list = list.filter(x => x.a.t !== 'combo' || x === cx);
+    if (cx) list = list.filter(x => x.id !== ALLY(cx.id));
     for (const x of list.filter(x => x.a.t === 'forfeit')) { ev.push({ t: 'msg', text: `${this.slots[x.id].owner} gibt auf!` }); return this.finish(ev, 'lose'); }
     for (const x of list.filter(x => x.a.t === 'switch')) if (this.canSwitchTo(x.id, x.a.i)) this.doSwitch(x.id, x.a.i, ev);
     for (const x of list.filter(x => x.a.t === 'item')) {
@@ -84,12 +88,12 @@ export class DoubleBattle {
       const on = this.ids().find(o => this.slots[o].pool === s.pool && this.slots[o].i === x.a.target);
       if (on) ev.push({ t: 'hp', slot: on, hp: m.hp, max: maxHp(m), heal: true });
     }
-    const movers = list.filter(x => x.a.t === 'move').map(x => ({ ...x, spe: this.eff(x.id, 'spe') + this.rnd() * 0.01 - x.n * 1000 }));
+    const movers = list.filter(x => x.a.t === 'move' || x.a.t === 'combo').map(x => ({ ...x, spe: x.a.t === 'combo' ? 1e6 : this.eff(x.id, 'spe') + this.rnd() * 0.01 - x.n * 1000 }));
     movers.sort((a, b) => b.spe - a.spe);
     for (const x of movers) {
       if (this.over) break;
       if (!this.alive(x.id)) continue;
-      this.useMove(x.id, x.a, ev);
+      if (x.a.t === 'combo') this.useCombo(x.id, ev); else this.useMove(x.id, x.a, ev);
       this.checkFaints(ev);
     }
     if (!this.over) this.endOfTurn(ev);
@@ -110,6 +114,33 @@ export class DoubleBattle {
     let tg = a.target;
     if (!tg || SIDE(tg) === SIDE(id) || !this.alive(tg)) tg = FOES(id).find(f => this.alive(f) && f === a.target) || FOES(id).find(f => this.alive(f));
     return tg;
+  }
+
+  // Duo-Kombo: beide Kreaturen einer Seite greifen gemeinsam alle Gegner an
+  useCombo(id, ev) {
+    const bId = ALLY(id), a = this.mon(id), b = this.mon(bId);
+    if (!b || b.hp <= 0) return this.useMove(id, { i: 0 }, ev);
+    (this.combo ||= {})[SIDE(id)] = true;
+    const ta = SPECIES[a.sp].types[0], tb = SPECIES[b.sp].types[0], C = comboOf(ta, tb);
+    ev.push({ t: 'msg', text: `${monName(a)} und ${monName(b)} vereinen ihre Kräfte!` });
+    ev.push({ t: 'combo', slot: id, ally: bId, types: [ta, tb], name: C.name });
+    ev.push({ t: 'msg', text: `DUO-KOMBO: ${C.name}!` });
+    const lvl = (a.lvl + b.lvl) / 2, best = x => Math.max(this.eff(x, 'atk'), this.eff(x, 'spa'));
+    const A = (best(id) + best(bId)) / 2;
+    for (const tg of FOES(id).filter(f => this.slots[f] && this.alive(f))) {
+      const target = this.mon(tg), T = SPECIES[target.sp].types;
+      const type = [ta, tb].sort((x, y) => effectiveness(y, T) - effectiveness(x, T))[0], e = Math.max(0.5, effectiveness(type, T));
+      const D = (this.eff(tg, 'def') + this.eff(tg, 'spd')) / 2;
+      let dmg = Math.floor((((2 * lvl) / 5 + 2) * 120 * (A / D)) / 50 + 2);
+      dmg = Math.max(1, Math.floor(dmg * 1.5 * e * (0.9 + this.rnd() * 0.1)));
+      target.hp = Math.max(0, target.hp - dmg);
+      ev.push({ t: 'hp', slot: tg, hp: target.hp, max: maxHp(target), eff: e, crit: false, type });
+      if (e > 1) ev.push({ t: 'msg', text: `Sehr effektiv gegen ${this.label(tg)}!` });
+      const fx = C.fx;
+      if (fx?.status && target.hp > 0 && !target.status && this.rnd() * 100 < fx.chance) { target.status = fx.status; ev.push({ t: 'status', slot: tg, status: fx.status }); ev.push({ t: 'msg', text: `${this.label(tg)} erleidet ${STATUS_NAME[fx.status]}!` }); }
+      if (fx?.stat && target.hp > 0) { const st = this.slots[tg].st; if (st[fx.stat] > -6) { st[fx.stat] += fx.stages; ev.push({ t: 'stat', slot: tg, up: false }); ev.push({ t: 'msg', text: `${STAT_NAME[fx.stat]} von ${this.label(tg)} sinkt!` }); } }
+    }
+    if (C.fx?.heal) for (const x of [id, bId]) { const m = this.mon(x); if (!m || m.hp <= 0) continue; m.hp = Math.min(maxHp(m), m.hp + Math.floor(maxHp(m) * C.fx.heal)); ev.push({ t: 'hp', slot: x, hp: m.hp, max: maxHp(m), heal: true }); ev.push({ t: 'msg', text: `${this.label(x)} schöpft neue Kraft.` }); }
   }
 
   useMove(id, a, ev) {

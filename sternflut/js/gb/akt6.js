@@ -20,8 +20,8 @@ const AIR = { frosthafen: { name: 'Frosthafen', x: 4, y: 8 }, perlhafen: { name:
 let H; export function init(h) { H = h; }
 
 export const GYMS = {
-  seraphine: { badge: 12, badgeName: 'WOLKENORDEN', team: [['wolkenbaer', 79], ['sturmfalke', 79], ['regenbogling', 80], ['federkoenig', 81], ['gewitterbock', 82]], reward: 10400, bg: 'berg',
-    intro: ['Seraphine: Willkommen über den Wolken! Hier oben gibt es keinen Boden – nur Vertrauen.', 'Seraphine: Ich bin Seraphine. Ich bin noch nie gefallen. Mal sehen, ob du mich zum ersten Mal stolpern lässt!'],
+  seraphine: { badge: 12, double: true, badgeName: 'WOLKENORDEN', team: [['wolkenbaer', 79], ['sturmfalke', 79], ['regenbogling', 80], ['federkoenig', 81], ['gewitterbock', 82]], reward: 10400, bg: 'berg',
+    intro: ['Seraphine: Willkommen über den Wolken! Hier oben gibt es keinen Boden – nur Vertrauen.', 'Seraphine: Ich bin Seraphine. Ich bin noch nie gefallen. Mal sehen, ob du mich zum ersten Mal stolpern lässt!', 'Seraphine: Und hier oben tanzt man nie allein – wir kämpfen im Doppel!'],
     lose: 'Seraphine: Huch! … Ich bin gefallen. Und es war wunderschön.',
     gift: { text: ['Seraphine: Nimm diese Sonderbonbons – leicht wie Wolken!'], items: { sonderbonbon: 5, toptrank: 2 } },
     outro: ['Seraphine: In Astralis, am Ende des Wolkenpfads, liegt die Sternwarte. Orion wartet dort.', 'Seraphine: Er sagt, er habe in den Sternen ein Lied gefunden. Dein Lied.'],

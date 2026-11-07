@@ -11,8 +11,8 @@ export function init(h) { H = h; }
 
 export const GYMS = {
   volta: {
-    badge: 3, badgeName: 'FUNKENORDEN', team: [['blitzhase', 30], ['zahnradling', 31], ['medusprak', 31], ['voltrex', 34]], reward: 3400, bg: 'arena',
-    intro: ['Volta: Du hast meine Stadt wieder zum Leuchten gebracht. Danke.', 'Volta: Ich bin Volta, Ingenieur und Arenaleiter. Ich rechne alles durch – auch dich.', 'Volta: Laut meinen Berechnungen gewinne ich zu 73 Prozent. Beweis mir das Gegenteil!'],
+    badge: 3, double: true, badgeName: 'FUNKENORDEN', team: [['blitzhase', 30], ['zahnradling', 31], ['medusprak', 31], ['voltrex', 34]], reward: 3400, bg: 'arena',
+    intro: ['Volta: Du hast meine Stadt wieder zum Leuchten gebracht. Danke.', 'Volta: Ich bin Volta, Ingenieur und Arenaleiter. Ich rechne alles durch – auch dich.', 'Volta: In meiner Arena wird doppelt gerechnet: zwei gegen zwei!', 'Volta: Laut meinen Berechnungen gewinne ich zu 73 Prozent. Beweis mir das Gegenteil!'],
     lose: 'Volta: 27 Prozent … Ich muss meine Formeln überarbeiten. Beeindruckend.',
     gift: { text: ['Volta: Nimm auch diese Top-Tränke. Selbst gebraut – na ja, gekauft.'], items: { toptrank: 2, ak_funkenkette: 1 } },
     outro: ['Volta: Der Tor-Kristall, den Bruder Funke laden wollte … Ich habe so eine Energiesignatur schon einmal gemessen.', 'Volta: Vor zehn Jahren. In der Nacht, als die Morgenstern auslief. Ein Lichtblitz am Horizont, Richtung Südost.', 'Volta: Ach, und: Rancherin Hedda auf der Ostweide sucht jemanden, dem sie ihren alten Sattel anvertrauen kann.'],

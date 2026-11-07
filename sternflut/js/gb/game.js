@@ -20,6 +20,7 @@ import * as TR from './travel.js';
 import { doubleBattle, localDouble } from './double2d.js';
 import { COOP, foeSlots, helperSlots } from '../data/coop.js';
 import { DoubleBattle } from '../battle/double.js';
+import * as DUO from './duo.js';
 import * as ST from './story.js';
 import { tradeMenu, fightMenu } from './codes.js';
 const HUETER = [];
@@ -658,6 +659,7 @@ class Game {
     const foe = t.mons ? t.mons.map(m => { const c = JSON.parse(JSON.stringify(m)); healMon(c); return c; }) : t.team.map(([sp, l]) => createMon(sp, l, rnd));
     foe.forEach(m => this.markDex(m.sp));
     sfx('encounter'); await this.trainerIn();
+    if (t.double && DUO.canDouble(s)) return DUO.duoFight(this, t, foe);
     t.reso ??= /Champion|Top-4|^Umbra|Hüter/.test(t.name);
     const r = await battle(this, { foeTeam: foe, trainer: t, canCatch: false, bg: t.bg || (this.ow.M.gym ? 'arena' : this.ow.M.cave ? 'hoehle' : 'gras') });
     await this.afterBattle(r, t.noBlackout);
@@ -666,7 +668,7 @@ class Game {
   async trainerBattle(n) {
     const tr = n.trainer;
     await say(tr.lines, { name: n.name });
-    const won = await this.trainerFight({ name: n.name, look: n.look, team: tr.team, reward: tr.reward, lose: tr.lose, bg: this.ow.M.bg });
+    const won = await this.trainerFight({ name: n.name, look: n.look, team: tr.team, reward: tr.reward, lose: tr.lose, bg: this.ow.M.bg, double: DUO.DOUBLE.has(n.id) });
     if (won) { this.state.flags[n.id] = true; await this.story(); }
   }
   async afterBattle(r, noBlackout) {
@@ -1207,7 +1209,7 @@ class Game {
     if (s.badges[G.badge]) return say(G.after, N);
     if (G.badge > 0 && !s.badges[G.badge - 1]) return say('Komm wieder, wenn du die vorherigen Orden hast!', N);
     await say(G.intro, N);
-    const won = await this.trainerFight({ name: n.name, look: n.look, team: G.team, reward: G.reward, lose: G.lose, bg: G.bg || 'arena', music: 'ldr' + G.badge });
+    const won = await this.trainerFight({ name: n.name, look: n.look, team: G.team, reward: G.reward, lose: G.lose, bg: G.bg || 'arena', music: 'ldr' + G.badge, double: G.double });
     if (!won) return say('Komm wieder, wenn du stärker bist!', N);
     s.badges[G.badge] = true; sfx('caught');
     await say([`${s.name} erhält den ${G.badgeName}!`, ...G.gift.text]);
