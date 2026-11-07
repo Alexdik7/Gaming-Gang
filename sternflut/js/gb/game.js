@@ -520,13 +520,20 @@ class Game {
   async revierBattle(n, attacked) {
     const s = this.state, R = n.revier, ow = this.ow, S = SPECIES[R.sp], sneak = !!ow.p.sneak;
     cry(S.cry); G.shake = 0.8;
-    if (R.story) await say(R.id === 'waldherz' ? ['Zwischen den Bäumen erhebt sich ein riesiges Fungorax. Goldene Sporen wirbeln um seinen Hut.', 'Das WALDHERZ! Es spürt dich – und es ist wütend.'] : `Ein riesiges ${S.name}!`);
+    if (R.legend) await say([`Die Luft beginnt zu vibrieren. Ein uraltes Wesen erhebt sich vor dir …`, `${S.name}, ein Wächter des Archipels!`]);
+    else if (R.story) await say(R.id === 'waldherz' ? ['Zwischen den Bäumen erhebt sich ein riesiges Fungorax. Goldene Sporen wirbeln um seinen Hut.', 'Das WALDHERZ! Es spürt dich – und es ist wütend.'] : `Ein riesiges ${S.name}!`);
     else await say(attacked ? `${S.name} stürmt aus seinem Revier auf dich zu!` : [`Ein mächtiges ${S.name} bewacht dieses Revier.`, 'Revierkreaturen sind stärker als normal – und bringen seltene Beute.']);
     if (!attacked && !R.story && !await ask(`Gegen ${S.name} kämpfen?`)) return;
     const m = createMon(R.sp, R.lv); for (const k of Object.keys(m.iv)) m.iv[k] = Math.max(m.iv[k], 24);
     m.revier = true; m.hp = maxHp(m); this.shinyRoll(m);
     if (sneak) { m.hp = Math.floor(maxHp(m) * 0.75); await say('Du hast dich angeschlichen! Es ist überrascht und angeschlagen.'); }
-    const r = await this.wildBattle(ow.M.enc, ow.M.bg || 'gras', m, { noCatch: !!R.story });
+    if (R.legend) { m.revier = false; m.hp = maxHp(m); }
+    const r = await this.wildBattle(ow.M.enc, ow.M.bg || 'gras', m, { noCatch: !!R.story && !R.legend });
+    if (R.legend) {
+      if (r?.result === 'caught') { s.flags[R.hideIf] = true; ow.npcs = ow.npcs.filter(x => x !== n); await say(`${S.name} hat dich als würdig erkannt!`); this.save(true); }
+      else if (r?.result === 'win') { ow.npcs = ow.npcs.filter(x => x !== n); await say(`${S.name} zieht sich zurück. Es wird an diesen Ort zurückkehren …`); }
+      return;
+    }
     if (R.story) { if (r?.result === 'win') { ow.npcs = ow.npcs.filter(x => x !== n); } await ST.revierStory(this, n, r); return; }
     if (!r || (r.result !== 'win' && r.result !== 'caught')) return;
     s.flags[`rv:${Math.floor(Date.now() / 864e5)}:${R.id}`] = true; ow.npcs = ow.npcs.filter(x => x !== n);
@@ -937,6 +944,7 @@ class Game {
     const s = this.state, N = { name: n.name };
     if (n.alpha) return this.alphaBattle(n);
     if (n.revier) return this.revierBattle(n);
+    if (n.trainer && n.trainer.e4) return this.ligaTrainer?.(n);
     if (n.shy) return this.feedShy(n);
     if (n.trainer) { if (s.flags[n.id]) return say(n.trainer.after || n.trainer.lose || 'Guter Kampf!', N); return this.trainerBattle(n); }
     if (QUESTS[n.id]) return this.quest(n, QUESTS[n.id]);
@@ -1097,13 +1105,10 @@ class Game {
   async hallOfFame() {
     const s = this.state, first = !s.flags.champion;
     s.flags.champion = true; s.hof = (s.hof || 0) + 1;
-    await say(['Aurin: Komm mit. Es ist Zeit, dich in der Ruhmeshalle zu verewigen.']);
+    await say(['Brann: Komm mit. Es ist Zeit, dich in der Ruhmeshalle von Kalmara zu verewigen.']);
     await fade(1, 500);
     await new Promise(res => { push(new HallScene(this, res)); fade(0, 300); });
-    await fade(1, 300);
-    this.ow.load('home', 2, 3, 'down');
-    await fade(0, 500);
-    if (first) await say(['Zuhause riecht es nach Pfannkuchen.', 'Mama: Champion! Ich habe es immer gewusst!', 'Mama: Ach ja – Dr. Vato hat angerufen. Er möchte dich dringend im Labor sprechen.']);
+    await ST.afterChampion(this, first);
     this.save(true);
   }
 
@@ -1257,7 +1262,7 @@ class HallScene {
     this.g = g; this.res = res; this.t = 0; const s = g.state;
     this.team = s.team.filter(m => !m.egg);
     const seen = Object.keys(s.dex.seen).length, caught = Object.keys(s.dex.caught).length;
-    this.credits = ['LEGENDS UNITED', '', `Champion: ${s.name}`, `Chronik: ${seen} gesehen, ${caught} gebunden`, `Orden: ${s.badges.filter(Boolean).length} · Herzsteine: 7/7`, '', 'Rivale: Kian', 'Verbündete: Lyra', 'Anführer von Team Eklipse: Umbra', '', 'Arenaleiter', 'Gorm · Selma · Meri · Halvar', 'Morwen · Sahra · Brann · Vala', '', 'Top 4', 'Ranka · Aeris · Mirella · Thalor', 'Champion a.D.: Aurin', '', 'Idee & Spieltest: Gaming Gang', 'Code, Pixel-Art & Musik: mit Claude', '', 'Danke fürs Spielen!'];
+    this.credits = ['STERNFLUT', 'Welt 1 – Der Kalmara-Archipel', '', `Champion: ${s.name}`, `Chronik: ${seen} gesehen, ${caught} gebunden`, `Orden: ${s.badges.filter(Boolean).length} · Strophen: ${Object.keys(s.flags).filter(k => /^song\d$/.test(k)).length}/8`, '', 'Rivale: Jaro', 'Freund: Pip', 'Großmutter: Wella', 'Kapitän der Seeschwalbe: Harm', '', 'Arenaleiter', 'Rhea · Okko · Mira · Volta', 'Ysolde · Hekla · Corvin · Tamas', '', 'Top 4', 'Lio · Marisol · Raven · Saphira', 'Champion a.D.: Admiral Brann', '', 'Der Orden der Stillen See', 'Äbtissin Sela · Schwester Nebel · Bruder Funke', '', 'Für Liv Sund, Kapitänin der Morgenstern', '', 'Idee & Spieltest: Gaming Gang', 'Code, Pixel-Art & Musik: mit Claude', '', 'Die Reise geht weiter …'];
     this.tEnd = 2 + this.team.length * 0.7 + 3 + this.credits.length * 0.9 + 2;
     setMusic('title');
   }

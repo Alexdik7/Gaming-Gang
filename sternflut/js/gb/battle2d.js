@@ -388,6 +388,7 @@ class BattleScene {
       case 'flut': return S.types.includes('wasser') || this.bgKey === 'wasser' || g.ow?.weather?.() === 'rain' ? 3.5 : 1;
       case 'tempo': return (this.turnN || 0) === 0 ? 4 : 0.6;
       case 'echo': return Math.min(4, 1 + (this.turnN || 0) * 0.6);
+      case 'tief': return g.ow?.M?.underwater || S.types.includes('wasser') ? 4 : 1;
       case 'anker': return b.f.alpha || b.f.revier ? 4 : 1;
       case 'splitter': return b.f.hp <= maxHp(b.f) * 0.25 ? 5 : 0.4;
       default: return 1;

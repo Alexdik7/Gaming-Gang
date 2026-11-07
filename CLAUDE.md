@@ -38,12 +38,12 @@ Spiele: `sternflut/` (NEU, Nachfolger von Legends: eigenes Kreaturen-RPG, 3 Welt
 - Ist ein Push fehlgeschlagen, einfach erneut pushen (passiert gelegentlich).
 
 ## Stand (aktualisieren!)
-- **Sternflut v0.3 (Phase 3 fertig)** – Fork der Legends-Technik in `sternflut/` (eigener Spielstand `sf-save`, Test-Server: `cd sternflut && python3 -m http.server 8053`, Tests `node sternflut/tools/e2e/run.cjs all`, Karten `node sternflut/tools/checkmaps.mjs`):
+- **Sternflut v0.5 (Welt 1 komplett, Welt 2 begonnen)** – Fork der Legends-Technik in `sternflut/` (eigener Spielstand `sf-save`, Test-Server: `cd sternflut && python3 -m http.server 8053`, Tests `node sternflut/tools/e2e/run.cjs all`, Karten `node sternflut/tools/checkmaps.mjs`):
   - Story/Talk/Sperren in `js/gb/story.js` (game.js delegiert: talkStory, afterTrainer, mapEvent, edgeBlock, songStone, altarStory, onCaught, afterGym), Pager in `js/gb/pager.js`, Minikarte `overworld.drawMini`, Leuchtturm `building({tower})`
   - Kreaturen in `js/data/kalmara1.js` (Nr. 1–45 + Aurelune 250) und `kalmara2.js` (46–75)
   - Mechaniken: Revier (`M.revier`, `overworld.revierCheck`, `game.revierBattle`), Schleichen (`p.sneak`, A im hohen Gras), Füttern (`M.shy`, `game.feedShy`), neue Regionsdateien in `creatures2.js` importieren
   - Akte als Module (`akt3.js` …) in `story.js` → `ACTS` einhängen (GYMS/QUESTS/LOGS/SONG/CALLS/goal/talk/mapEvent/afterGym); Reisen/Lager/Reiten in `travel.js`
-  - Akt 1+2: Muschelbucht → Ankerbrück (Arena 1) → Küstenweg → Dünenhain/Sandgrotte (Arena 2) → Glimmpfad → Glimmwald → Glimmdorf (Arena 3). Akt 3: Schiff → Funkenhafen (Arena 4) → Nebelklippe (Arena 5). Nächster Schritt: Phase 4 (Glutinsel, Sturmspitze, Kronfels, Orden-Finale, Top 4, Champion Brann → Welt 2)
+  - Akt 1+2: Muschelbucht → Ankerbrück (Arena 1) → Küstenweg → Dünenhain/Sandgrotte (Arena 2) → Glimmpfad → Glimmwald → Glimmdorf (Arena 3). Akt 3: Schiff → Funkenhafen (Arena 4) → Nebelklippe (Arena 5). Akt 4 (`akt4.js`): Arenen 6–8, Kloster, Liga, Ende W1. Welt 2 (`akt5.js`, Karten in `maps2.js`, Kreaturen `welt2a.js`, `s.world = 2`, Häfen mit `world: 2`): Treibholz, Perlhafen (Morgenstern), Tauchen ins Korallenriff (`M.underwater`), Coralis, Frostholm, Erzmine (Kehl), Erzheim → Arenen 9–12. Nächster Schritt: Phase 6 (Wolkenreich per Flugzeug, Schattenmeer, Arenen 13–16, Top 4 W2, Liv finden, Ei schlüpft)
 - **Legends United v2.10.1** (Vorbild ab jetzt: **Pokémon Smaragd** – Grafik, Bewegung, Menüs):
   - Inhalt: 150 Kreaturen, 8 Arenen, Liga, Postgame (Hüter), Raids 4v1 mit KI-Helfern und Online-Koop, Nihilux
   - Technik: komponierte Musik, Android-App, flüssige Subpixel-Bewegung, neue Weltgrafik

@@ -173,7 +173,7 @@ export class Overworld {
       if (G.t - (this.arrivedAt || 0) < 0.05) this.stepMove(carry + dt);
     }
   }
-  moveDur() { const p = this.p; return p.jump ? 0.42 : p.slide ? 0.1 : p.ride ? 0.115 : p.sneak ? 0.34 : (input.held('b') && !this.M.indoor ? (this.g.state.wind > 0 ? 0.095 : 0.13) : this.g.state.wind > 0 ? 0.17 : 0.22); }
+  moveDur() { const p = this.p; return p.jump ? 0.42 : p.slide ? 0.1 : this.M.underwater ? 0.3 : p.ride ? 0.115 : p.sneak ? 0.34 : (input.held('b') && !this.M.indoor ? (this.g.state.wind > 0 ? 0.095 : 0.13) : this.g.state.wind > 0 ? 0.17 : 0.22); }
   stepMove(dt) {
     const p = this.p;
     p.t += dt / this.moveDur();
@@ -557,8 +557,8 @@ export class Overworld {
       } else if (a.alpha || a.revier) { // Alpha (rot) und Revier (orange): groß, Aura, Schatten, leichtes Atmen
         const img = monSprite(a.mon, 'icon'), b = Math.sin(G.t * 2.4), sz = Math.round((a.revier ? 40 : 44) + b), ax = Math.round(a.px - cx + 8), ay = Math.round(a.py - cy + 14);
         ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(ax, ay, 11, 3, 0, 0, 7); ctx.fill();
-        ctx.globalAlpha = 0.55 + b * 0.2; ctx.drawImage(glow(26, a.revier ? '255,150,40' : '255,40,40'), ax - 26, ay - 44); ctx.globalAlpha = 1;
-        const red = redSil(a.mon, img, a.revier ? '#ff9a30' : undefined);
+        ctx.globalAlpha = 0.55 + b * 0.2; ctx.drawImage(glow(26, a.revier?.legend ? '255,230,120' : a.revier ? '255,150,40' : '255,40,40'), ax - 26, ay - 44); ctx.globalAlpha = 1;
+        const red = redSil(a.mon, img, a.revier?.legend ? '#fff0a0' : a.revier ? '#ff9a30' : undefined);
         ctx.imageSmoothingEnabled = false; ctx.save(); ctx.translate(ax, ay - sz + 6); if (a.dir === 'right') ctx.scale(-1, 1);
         ctx.globalAlpha = 0.8 + b * 0.2; for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(red, -sz / 2 + ox, oy, sz, sz); ctx.globalAlpha = 1;
         ctx.drawImage(img, -sz / 2, 0, sz, sz); ctx.restore();
@@ -623,6 +623,15 @@ export class Overworld {
         ctx.globalAlpha = on; ctx.drawImage(glow(4, '200,255,120'), fx - 4, fy - 4); ctx.fillStyle = '#f8ffb0'; ctx.fillRect(fx, fy, 1, 1);
       }
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+    // Unter Wasser: blaue Tönung, Lichtstrahlen von oben, aufsteigende Blasen
+    if (this.M.underwater) {
+      ctx.fillStyle = 'rgba(20,90,170,.30)'; ctx.fillRect(0, 0, W, VH);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 6; i++) { const x = ((i * 53 - cx * 0.4 + Math.sin(G.t * 0.4 + i) * 14) % (W + 60) + W + 60) % (W + 60) - 30; ctx.fillStyle = `rgba(150,220,255,${0.06 + 0.03 * Math.sin(G.t + i)})`; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + 18, 0); ctx.lineTo(x + 48, VH); ctx.lineTo(x + 26, VH); ctx.fill(); }
+      ctx.restore();
+      for (let i = 0; i < 18; i++) { const k = (G.t * 0.25 + i / 18) % 1, bx = ((i * 71) % W) + Math.sin(G.t * 2 + i) * 3, by = VH - k * (VH + 20); ctx.fillStyle = 'rgba(220,245,255,.55)'; ctx.fillRect(bx | 0, by | 0, 2, 2); ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillRect(bx | 0, by | 0, 1, 1); }
+      const ppx = p.px - cx + 10, ppy = p.py - cy - 10 - ((G.t * 18) % 16); ctx.fillStyle = 'rgba(230,250,255,.7)'; ctx.fillRect(ppx | 0, ppy | 0, 2, 2);
     }
     // Leuchttürme: rotierender Lichtkegel in Dämmerung und Nacht
     if (this.M.outdoor && (night || this.g.dusk() > 0.15)) for (const b of this.blds) {

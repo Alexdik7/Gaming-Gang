@@ -52,7 +52,7 @@ class SailScene {
 export function travelScene(g, kind) { return new Promise(res => push(new SailScene(g, res, kind))); }
 
 export async function sailMenu(g, here) {
-  const s = g.state, list = Object.entries(PORTS).filter(([id]) => id !== here && s.flags['port_' + id]);
+  const s = g.state, list = Object.entries(PORTS).filter(([id, P]) => id !== here && s.flags['port_' + id] && (P.world || 1) === (s.world || 1));
   if (!list.length) return say('Kapitän Harm: Wir haben noch kein Ziel. Komm wieder, wenn es Neuigkeiten gibt.', { name: 'Kapitän Harm' });
   const i = await choose([...list.map(([, P]) => ({ label: P.name, desc: 'Mit der Seeschwalbe dorthin segeln.' })), 'Hierbleiben'], { title: 'WOHIN?' });
   if (i === null || i >= list.length) return;

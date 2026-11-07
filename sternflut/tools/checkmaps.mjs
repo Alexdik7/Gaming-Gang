@@ -2,6 +2,8 @@
 // Prüft Zeilenbreiten, Übergänge (Kanten/Warps/Türen), Figuren auf begehbaren Feldern und Erreichbarkeit.
 // Browser-Funktionen werden nicht gebraucht: maps.js ist reine Daten.
 import { MAPS, SOLID } from '../js/gb/maps.js';
+import { MAPS2 } from '../js/gb/maps2.js';
+Object.assign(MAPS, MAPS2);
 
 let errors = 0, warns = 0;
 const err = (m, t) => { errors++; console.log(`✗ ${m}: ${t}`); };

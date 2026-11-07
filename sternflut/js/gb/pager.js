@@ -22,10 +22,29 @@ export const WORLD = {
   ostweide: { x: 204, y: 44, name: 'Ostweide' },
   nebelklippe: { x: 150, y: 16, name: 'Nebelklippe', town: true },
   nebelpfad: { x: 168, y: 12, name: 'Nebelpfad' },
-  glutinsel: { x: 196, y: 108, name: 'Glutinsel', town: true, future: true },
+  glutinsel: { x: 196, y: 108, name: 'Glutinsel', town: true },
+  glutpfad: { x: 214, y: 104, name: 'Glutpfad' },
+  glutkrater: { x: 226, y: 98, name: 'Glutkrater' },
+  sturmspitze: { x: 40, y: 104, name: 'Sturmspitze', town: true },
+  windpass: { x: 40, y: 88, name: 'Windpass' },
+  kronfels: { x: 70, y: 124, name: 'Kronfels', town: true },
+  ligainsel: { x: 100, y: 128, name: 'Liga-Insel', town: true },
 };
-const LINKS = [['ankerbrueck', 'duenenpfad'], ['duenenpfad', 'muschelbucht'], ['muschelbucht', 'strand'], ['ankerbrueck', 'kuestenweg'], ['kuestenweg', 'duenenhain'], ['duenenhain', 'sandgrotte'], ['duenenhain', 'glimmpfad'], ['glimmpfad', 'glimmwald'], ['glimmwald', 'glimmdorf'], ['ankerbrueck', 'funkenhafen'], ['funkenhafen', 'ostweide'], ['ankerbrueck', 'nebelklippe'], ['nebelklippe', 'nebelpfad'], ['ankerbrueck', 'glutinsel']];
-export const worldOf = (s, id) => (WORLD[id] ? id : MAPS[id]?.indoor ? s.ret?.map : id);
+const LINKS = [['ankerbrueck', 'duenenpfad'], ['duenenpfad', 'muschelbucht'], ['muschelbucht', 'strand'], ['ankerbrueck', 'kuestenweg'], ['kuestenweg', 'duenenhain'], ['duenenhain', 'sandgrotte'], ['duenenhain', 'glimmpfad'], ['glimmpfad', 'glimmwald'], ['glimmwald', 'glimmdorf'], ['ankerbrueck', 'funkenhafen'], ['funkenhafen', 'ostweide'], ['ankerbrueck', 'nebelklippe'], ['nebelklippe', 'nebelpfad'], ['ankerbrueck', 'glutinsel'], ['glutinsel', 'glutpfad'], ['glutpfad', 'glutkrater'], ['ankerbrueck', 'sturmspitze'], ['sturmspitze', 'windpass'], ['ankerbrueck', 'kronfels'], ['kronfels', 'ligainsel']];
+export const WORLD2 = {
+  treibholz: { x: 70, y: 110, name: 'Treibholz' },
+  perlhafen: { x: 110, y: 96, name: 'Perlhafen', town: true },
+  korallenriff: { x: 120, y: 116, name: 'Korallenriff' },
+  korallenstadt: { x: 140, y: 120, name: 'Coralis', town: true },
+  frosthafen: { x: 120, y: 50, name: 'Frosthafen', town: true },
+  frostpfad: { x: 132, y: 40, name: 'Frostpfad' },
+  erzmine: { x: 150, y: 40, name: 'Erzmine' },
+  erzheim: { x: 168, y: 44, name: 'Erzheim', town: true },
+  eisgipfel: { x: 132, y: 26, name: 'Eisgipfel' },
+  wolkenreich: { x: 196, y: 70, name: 'Wolkenreich', town: true, future: true },
+};
+const LINKS2 = [['treibholz', 'perlhafen'], ['perlhafen', 'korallenriff'], ['korallenriff', 'korallenstadt'], ['perlhafen', 'frosthafen'], ['frosthafen', 'frostpfad'], ['frostpfad', 'erzmine'], ['erzmine', 'erzheim'], ['frostpfad', 'eisgipfel'], ['frosthafen', 'wolkenreich']];
+export const worldOf = (s, id) => (WORLD[id] || WORLD2[id] ? id : MAPS[id]?.indoor ? s.ret?.map : id);
 
 class PagerScene {
   constructor(g, res) { this.g = g; this.res = res; this.tab = 0; this.scroll = 0; this.t = 0; }
@@ -74,24 +93,24 @@ class PagerScene {
     ctx.restore();
   }
   map(ctx) {
-    const s = this.g.state, here = worldOf(s, this.g.ow.id), goal = mainGoal(s).map, t = this.t;
+    const s = this.g.state, here = worldOf(s, this.g.ow.id), goal = mainGoal(s).map, t = this.t, w2 = (s.world || 1) === 2, WM = w2 ? WORLD2 : WORLD, LK = w2 ? LINKS2 : LINKS;
     ctx.fillStyle = '#86c8b0'; ctx.fillRect(24, 33, 192, 104);
     for (let i = 0; i < 26; i++) { ctx.fillStyle = 'rgba(40,90,70,.25)'; ctx.fillRect(28 + (i * 37) % 184, 38 + (i * 23) % 96, 5, 1); }
     // Inseln
     ctx.fillStyle = '#5a9a7a';
-    for (const [x, y, rx, ry] of [[128, 92, 20, 40], [118, 46, 34, 16], [70, 46, 28, 14], [192, 48, 18, 10], [158, 14, 18, 8], [196, 110, 12, 8]]) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 7); ctx.fill(); }
+    for (const [x, y, rx, ry] of w2 ? [[70, 112, 14, 6], [112, 98, 22, 10], [140, 118, 18, 8], [130, 44, 30, 16], [160, 44, 18, 10], [196, 70, 20, 8]] : [[128, 92, 20, 40], [118, 46, 34, 16], [70, 46, 28, 14], [192, 48, 18, 10], [158, 14, 18, 8], [196, 110, 12, 8], [40, 98, 12, 12], [72, 124, 14, 7], [100, 128, 8, 5]]) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 7); ctx.fill(); }
     ctx.fillStyle = INK2;
-    for (const [a, b] of LINKS) { const A = WORLD[a], B = WORLD[b]; const n = Math.hypot(B.x - A.x, B.y - A.y) / 3; for (let i = 0; i < n; i++) if (i % 2 === 0) ctx.fillRect(Math.round(A.x + (B.x - A.x) * i / n), Math.round(A.y + (B.y - A.y) * i / n), 1, 1); }
-    for (const [id, P] of Object.entries(WORLD)) {
+    for (const [a, b] of LK) { const A = WM[a], B = WM[b]; const n = Math.hypot(B.x - A.x, B.y - A.y) / 3; for (let i = 0; i < n; i++) if (i % 2 === 0) ctx.fillRect(Math.round(A.x + (B.x - A.x) * i / n), Math.round(A.y + (B.y - A.y) * i / n), 1, 1); }
+    for (const [id, P] of Object.entries(WM)) {
       const known = !P.future && (s.flags['seen_' + id] || ['muschelbucht', 'strand'].includes(id) || s.flags['fly_' + id]);
       ctx.fillStyle = known ? INK : 'rgba(22,54,42,.4)';
       if (P.town) ctx.fillRect(P.x - 3, P.y - 3, 6, 6); else ctx.fillRect(P.x - 1, P.y - 1, 3, 3);
       text(known ? P.name : '???', P.x + 6, P.y - 4, known ? INK : 'rgba(22,54,42,.5)', 6, 'left', null, P.town);
     }
-    const H0 = WORLD[here]; if (H0 && Math.sin(t * 6) > -0.2) { ctx.fillStyle = '#e84a5f'; ctx.beginPath(); ctx.arc(H0.x, H0.y, 3, 0, 7); ctx.fill(); }
-    const G0 = WORLD[goal]; if (G0) { const b = Math.abs(Math.sin(t * 3)) * 3; ctx.fillStyle = '#f8d040'; ctx.beginPath(); ctx.moveTo(G0.x, G0.y - 5 - b); ctx.lineTo(G0.x - 3, G0.y - 10 - b); ctx.lineTo(G0.x + 3, G0.y - 10 - b); ctx.fill(); }
+    const H0 = WM[here]; if (H0 && Math.sin(t * 6) > -0.2) { ctx.fillStyle = '#e84a5f'; ctx.beginPath(); ctx.arc(H0.x, H0.y, 3, 0, 7); ctx.fill(); }
+    const G0 = WM[goal]; if (G0) { const b = Math.abs(Math.sin(t * 3)) * 3; ctx.fillStyle = '#f8d040'; ctx.beginPath(); ctx.moveTo(G0.x, G0.y - 5 - b); ctx.lineTo(G0.x - 3, G0.y - 10 - b); ctx.lineTo(G0.x + 3, G0.y - 10 - b); ctx.fill(); }
     text('● Du   ▼ Ziel', 30, 128, INK, 6, 'left', null, true);
-    text('KALMARA-ARCHIPEL', 210, 128, INK, 6, 'right', null, true);
+    text(w2 ? 'DIE WEITE SEE' : 'KALMARA-ARCHIPEL', 210, 128, INK, 6, 'right', null, true);
   }
 }
 export function pagerScreen(g) { return new Promise(res => push(new PagerScene(g, res))); }

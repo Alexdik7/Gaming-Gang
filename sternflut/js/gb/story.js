@@ -7,7 +7,9 @@ import { SPECIES } from '../data/creatures.js';
 import { createMon, healMon, monName } from '../data/mon.js';
 import { LOOK, ITEMS } from './maps.js';
 import * as A3 from './akt3.js';
-const ACTS = [A3];
+import * as A4 from './akt4.js';
+import * as A5 from './akt5.js';
+const ACTS = [A3, A4, A5];
 
 const give = async (g, k, n = 1) => { const s = g.state; s.bag[k] = (s.bag[k] || 0) + n; sfx('caught'); await say(`${s.name} erhält ${n > 1 ? n + '× ' : ''}${ITEMS[k].name.toUpperCase()}!`); };
 const COUNTER = { zundrak: 'tidolin', tidolin: 'moospip', moospip: 'zundrak' };
@@ -411,5 +413,6 @@ export async function firstMorning(g) {
 }
 
 const g_lastMap = s => s.map || 'muschelbucht';
+export async function afterChampion(g, first) { for (const A of ACTS) if (A.afterChampion) return A.afterChampion(g, first); }
 // Akte einhängen: Arenen, Aufträge, Logbuch und Lied zusammenführen
 for (const A of ACTS) { A.init?.({ give, addLog }); Object.assign(GYMS, A.GYMS); Object.assign(QUESTS, A.QUESTS); Object.assign(LOGS, A.LOGS); Object.assign(SONG, A.SONG); }
