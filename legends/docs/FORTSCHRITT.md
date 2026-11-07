@@ -647,3 +647,13 @@ Wurde mit v0.3 entfernt. Kampflogik, Daten und Server leben in der Handheld-Edit
 - **Zwischensequenzen** (`game.cutIn(ziel)`, `ow.cine`):
   - Kinobalken, leichte Abdunklung und ein weicher Kameraschwenk zur Figur. Das Ende kommt automatisch, sobald die Steuerung frei ist.
   - Eingebaut bei: Kian (Route 2, Liga), Nyx (Ignis, Versteck, Tempel), Lyra, Umbra (Hauptquartier, Finale) und Nihilux.
+
+## v2.9 – Sonderbonbon, EP-Teiler, Top-Items
+- **EP-Teiler** (Schlüssel-Item):
+  - Dr. Vato schickt ihn nach dem ersten Orden per Anruf, zusammen mit 5 Sonderbonbons (`flags.epGift`, gilt auch für alte Spielstände).
+  - Alle kampffähigen Teammitglieder, die nicht gekämpft haben, bekommen 50 % der EP (`battle.expShare` in `awardXp`).
+  - Im Beutel unter BASIS-ITEMS lässt er sich an- und ausschalten (`flags.epOff`).
+- **Sonderbonbon:** +1 Level samt neuer Attacke und Entwicklung (`game.useCandy`).
+  - Laden ab 2 Orden für 3000 ◈.
+  - Außerdem in der Alpha-Beute, bei versteckten Funden und als Chronik-Belohnung (30 und 60 Arten).
+- **Top-Trank** heilt alle KP (Laden ab 5 Orden, 2500 ◈). Den **Top-Beleber** (volle KP) gibt es als Alpha-Beute.

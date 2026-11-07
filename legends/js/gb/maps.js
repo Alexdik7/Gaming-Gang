@@ -1249,7 +1249,7 @@ export const ENC = {
   wasser: { rate: 1, list: [['flossling', 60, 5, 12], ['glibbo', 30, 5, 10], ['kieselkrebs', 8, 8, 12], ['tiefenkiemer', 2, 18, 22], ['goldbarbe', 3, 10, 20]] },
 };
 
-export const SHOP = [['kristall', 200], ['trank', 300], ['heilbeere', 350], ['klarbeere', 300], ['sternkristall', 700], ['tempokristall', 900, 1], ['freundkristall', 600, 1], ['nachtkristall', 1000, 2], ['flutkristall', 1000, 3], ['echokristall', 1200, 4], ['supertrank', 700], ['beleber', 1500], ['hypertrank', 1200]];
+export const SHOP = [['kristall', 200], ['trank', 300], ['heilbeere', 350], ['klarbeere', 300], ['sternkristall', 700], ['tempokristall', 900, 1], ['freundkristall', 600, 1], ['nachtkristall', 1000, 2], ['flutkristall', 1000, 3], ['echokristall', 1200, 4], ['supertrank', 700], ['beleber', 1500], ['hypertrank', 1200], ['sonderbonbon', 3000, 2], ['toptrank', 2500, 5]];
 export const ITEMS = {
   kristall: { name: 'Bindball', desc: 'Bindet geschwächte wilde Kreaturen.', ball: 1, col: '#7fe3ff' },
   sternkristall: { name: 'Sternball', desc: 'Bindet mit doppelter Chance.', ball: 2, col: '#ffd84a' },
@@ -1274,6 +1274,10 @@ export const ITEMS = {
   ball52: { name: '52-Ball', desc: 'Der legendäre Ball der Gaming Gang. Fängt jede Kreatur – garantiert. Nur 11 Stück sind in der Welt versteckt.', ball: 255, col: '#e8c020', master: true },
   urkristall: { name: 'Urball', desc: 'Ein uralter Ball von Dr. Vato, mit Runen verziert. Bindet mit zehnfacher Chance.', ball: 10, col: '#d8a830' },
   hypertrank: { name: 'Hypertrank', desc: 'Heilt 200 KP.', heal: 200 },
+  toptrank: { name: 'Top-Trank', desc: 'Heilt alle KP einer Kreatur.', heal: 9999 },
+  topbeleber: { name: 'Top-Beleber', desc: 'Weckt eine kampfunfähige Kreatur mit allen KP wieder auf.', revive: 1 },
+  sonderbonbon: { name: 'Sonderbonbon', desc: 'Ein buntes Bonbon voller Energie. Eine Kreatur steigt sofort um 1 Level auf.', candy: true },
+  epteiler: { name: 'EP-Teiler', desc: 'Von Dr. Vato. Ist er an, bekommen alle Kreaturen im Team, die nicht gekämpft haben, die Hälfte der EP. Zum Ein- und Ausschalten auswählen.', key: true },
   vk_zerschneider: { name: 'VM01 Zerschneider', desc: 'Versteckte Maschine: lehrt Zerschneider. Unbegrenzt nutzbar. Außerhalb von Kämpfen zerschneidet sie kleine Büsche.', tm: 'zerschneider', hm: true, key: true },
   vk_zertruemmerer: { name: 'VM02 Zertrümmerer', desc: 'Versteckte Maschine: lehrt Zertrümmerer. Außerhalb von Kämpfen zertrümmert sie rissige Felsen.', tm: 'zertruemmerer', hm: true, key: true },
   vk_surfer: { name: 'VM03 Surfer', desc: 'Versteckte Maschine: lehrt Surfer. Mit dem Wellenreiter kannst du damit übers Wasser reiten.', tm: 'surfer', hm: true, key: true },

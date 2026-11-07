@@ -762,14 +762,21 @@ export function itemIcon(id, I = {}) {
     const [cc, x] = cv(16, 16); c = cc;
     const ink = '#1a1620', O = (f) => { x.fillStyle = ink; f(1); };
     if (/trank/.test(id)) { // Sprühflasche
-      const col = id === 'supertrank' ? '#e85a8a' : id === 'hypertrank' ? '#f0c030' : '#a868e8';
+      const col = id === 'supertrank' ? '#e85a8a' : id === 'hypertrank' ? '#f0c030' : id === 'toptrank' ? '#38d0a0' : '#a868e8';
       x.fillStyle = ink; x.fillRect(4, 5, 8, 10); x.fillRect(6, 1, 4, 5); x.fillStyle = '#e8e8f0'; x.fillRect(7, 2, 2, 3); x.fillStyle = '#9098a8'; x.fillRect(5, 4, 6, 2);
       x.fillStyle = col; x.fillRect(5, 6, 6, 8); x.fillStyle = shade(col, 0.4); x.fillRect(5, 6, 2, 7); x.fillStyle = '#ffffff'; x.fillRect(6, 9, 4, 2); x.fillStyle = col; x.fillRect(7, 9, 2, 2);
     } else if (/beere/.test(id)) { // Beere mit Blatt
       const col = id === 'klarbeere' ? '#4a8ae8' : '#e83a4a';
       x.fillStyle = ink; x.beginPath(); x.arc(8, 10, 5.5, 0, 7); x.fill(); x.fillStyle = col; x.beginPath(); x.arc(8, 10, 4.5, 0, 7); x.fill();
       x.fillStyle = shade(col, 0.5); x.fillRect(6, 7, 2, 2); x.fillStyle = '#3a9a34'; x.fillRect(8, 2, 4, 3); x.fillStyle = '#6ad050'; x.fillRect(9, 2, 2, 1); x.fillStyle = '#5a3a20'; x.fillRect(8, 4, 1, 2);
-    } else if (id === 'beleber') { x.fillStyle = ink; x.beginPath(); x.moveTo(8, 1); x.lineTo(14, 8); x.lineTo(8, 15); x.lineTo(2, 8); x.fill(); x.fillStyle = '#ffd23a'; x.beginPath(); x.moveTo(8, 3); x.lineTo(12, 8); x.lineTo(8, 13); x.lineTo(4, 8); x.fill(); x.fillStyle = '#fff8c0'; x.fillRect(7, 5, 2, 4); }
+    } else if (id === 'sonderbonbon') { // eingewickeltes Bonbon mit gedrehten Enden
+      x.fillStyle = ink; x.fillRect(4, 4, 8, 8); x.fillRect(1, 5, 4, 6); x.fillRect(11, 5, 4, 6);
+      x.fillStyle = '#5a8cff'; x.fillRect(5, 5, 6, 6); x.fillStyle = '#a8c8ff'; x.fillRect(2, 6, 2, 4); x.fillRect(12, 6, 2, 4);
+      x.fillStyle = '#ffffff'; x.fillRect(5, 7, 6, 2); x.fillStyle = '#f04a6a'; x.fillRect(7, 5, 2, 6); x.fillStyle = '#ffffff'; x.fillRect(6, 6, 1, 1);
+    } else if (id === 'epteiler') { // kleines Gerät mit Antenne und Anzeige
+      x.fillStyle = ink; x.fillRect(3, 4, 10, 11); x.fillRect(10, 1, 2, 4); x.fillStyle = '#4a9a5a'; x.fillRect(4, 5, 8, 9);
+      x.fillStyle = '#c8f0b0'; x.fillRect(5, 6, 6, 4); x.fillStyle = '#2a5a30'; x.fillRect(6, 8, 1, 1); x.fillRect(8, 7, 1, 2); x.fillRect(10, 6, 1, 3); x.fillStyle = '#ffd23a'; x.fillRect(6, 11, 4, 2);
+    } else if (id === 'beleber' || id === 'topbeleber') { const top = id === 'topbeleber'; x.fillStyle = ink; x.beginPath(); x.moveTo(8, 1); x.lineTo(14, 8); x.lineTo(8, 15); x.lineTo(2, 8); x.fill(); x.fillStyle = top ? '#ff9a2a' : '#ffd23a'; x.beginPath(); x.moveTo(8, 3); x.lineTo(12, 8); x.lineTo(8, 13); x.lineTo(4, 8); x.fill(); x.fillStyle = '#fff8c0'; x.fillRect(7, 5, 2, 4); }
     else if (I.tm || I.hm) { // Attacken-Kristall bzw. VM-Scheibe
       const col = I.hm ? '#e8c020' : '#b070e0';
       x.fillStyle = ink; x.beginPath(); x.arc(8, 8, 7, 0, 7); x.fill(); x.fillStyle = col; x.beginPath(); x.arc(8, 8, 6, 0, 7); x.fill();

@@ -81,7 +81,7 @@ export class Overworld {
     if (!M.outdoor || !M.enc) return [];
     let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     const rnd = () => ((h = (h * 1103515245 + 12345) >>> 0) / 4294967296), out = [];
-    const POOL = ['heilbeere', 'trank', 'kristall', 'klarbeere', 'supertrank', 'sternkristall', 'trank', 'heilbeere'];
+    const POOL = ['heilbeere', 'trank', 'kristall', 'klarbeere', 'supertrank', 'sternkristall', 'sonderbonbon', 'heilbeere'];
     const busy = new Set([...(M.npcs || []), ...(M.items || [])].map(o => o.x + ',' + o.y));
     for (let tries = 0; tries < 200 && out.length < 2; tries++) {
       const x = 1 + Math.floor(rnd() * (this.w - 2)), y = 1 + Math.floor(rnd() * (this.h - 2)), c = M.rows[y][x];

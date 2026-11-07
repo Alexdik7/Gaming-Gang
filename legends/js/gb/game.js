@@ -3,12 +3,12 @@ import { G, W, H, COL, push, pop, input, text, box, cursor, wait, fade, wipe, ir
 import { MAPS, LOOK, ENC, SHOP, ITEMS } from './maps.js';
 import { Overworld } from './overworld.js';
 import { battle } from './battle2d.js';
-import { say, ask, choose, party, summary, dex, card, inputName, hatchScene, settings, typeTag, dexEntry, healAnim } from './gbui.js';
+import { say, ask, choose, party, summary, dex, card, inputName, hatchScene, settings, typeTag, dexEntry, healAnim, evoScene } from './gbui.js';
 import { drawChar, itemIcon } from './pixel.js';
 import { monSprite, trainerSprite } from './sprites.js';
 import { SPECIES, STARTERS } from '../data/creatures.js';
 import '../data/creatures2.js';
-import { createMon, healMon, maxHp, monName } from '../data/mon.js';
+import { createMon, healMon, maxHp, monName, giveXp, xpForLevel, evolve } from '../data/mon.js';
 import { MOVES } from '../data/moves.js';
 import { itemFilter } from './battle2d.js';
 import { ensureSpecies, stepBreeding, hatch, canBreed, compatibility } from '../data/breeding.js';
@@ -311,11 +311,13 @@ class Game {
         POCK.forEach((_, q) => { ctx.fillStyle = q === this.pocket ? '#e84a5f' : '#a8a090'; ctx.fillRect(18 + q * 9, 96, 6, 4); });
         text('◀  ▶', 38, 102, COL.inkSoft, 6.5, 'center');
       };
-      const opts = keys.length ? keys.map(k => ({ label: ITEMS[k].name, right: ITEMS[k].key ? '' : '×' + s.bag[k], desc: ITEMS[k].desc })) : [{ label: '(leer)', desc: 'In dieser Tasche ist noch nichts.', disabled: true }];
+      const opts = keys.length ? keys.map(k => ({ label: ITEMS[k].name, right: ITEMS[k].key ? (k === 'epteiler' ? (s.flags.epOff ? 'AUS' : 'AN') : '') : '×' + s.bag[k], desc: ITEMS[k].desc })) : [{ label: '(leer)', desc: 'In dieser Tasche ist noch nichts.', disabled: true }];
       const i = await choose([...opts, { label: 'Zurück', desc: 'Den Beutel schließen.' }], { title: '◀ ' + pn + ' ▶', above: false, x: 78, w: 159, tabs: true, side, max: 7 });
       if (i === 'L' || i === 'R') { this.pocket = (this.pocket + (i === 'L' ? POCK.length - 1 : 1)) % POCK.length; continue; }
       if (i === null || i === opts.length || !keys.length) return;
       const k = keys[i], it = ITEMS[k];
+      if (k === 'epteiler') { s.flags.epOff = !s.flags.epOff; sfx('click'); await say(s.flags.epOff ? 'Der EP-Teiler ist jetzt AUS. Nur Kreaturen, die kämpfen, bekommen EP.' : 'Der EP-Teiler ist jetzt AN. Das ganze Team bekommt EP!'); continue; }
+      if (it.candy) { await this.useCandy(k); continue; }
       if (!(it.heal || it.cure || it.revive || it.tm)) { await say(it.desc); continue; }
       if (it.heal || it.cure || it.revive) {
         const t = await party(s, { select: true, prompt: it.revive ? 'Wen beleben?' : it.cure ? 'Wen kurieren?' : 'Wen heilen?', filter: itemFilter(it) });
@@ -327,6 +329,30 @@ class Game {
       }
       if (it.tm) await this.useTm(k, it);
     }
+  }
+  // Sonderbonbon: +1 Level mit neuen Attacken und Entwicklung
+  async useCandy(k) {
+    const s = this.state;
+    const t = await party(s, { select: true, prompt: 'Wem das Sonderbonbon geben?', filter: m => !m.egg && m.lvl < 100 });
+    if (t === null) return;
+    const m = s.team[t]; s.bag[k]--; sfx('lvl');
+    const res = giveXp(m, xpForLevel(m.lvl + 1) - m.xp);
+    await say(`${monName(m)} erreicht Level ${m.lvl}!`);
+    for (const r of res) if (r.t === 'learn') {
+      const M = MOVES[r.id];
+      if (m.moves.length < 4) { m.moves.push({ id: r.id, pp: M.pp }); await say(`${monName(m)} hat ${M.name} erlernt!`); continue; }
+      if (!await ask(`${monName(m)} möchte ${M.name} lernen. Eine Attacke vergessen?`)) continue;
+      const i = await choose([...m.moves.map(x => MOVES[x.id].name), 'Nicht lernen'], { title: 'Vergessen:' });
+      if (i === null || i === 4) continue;
+      m.moves[i] = { id: r.id, pp: M.pp }; await say(`${monName(m)} hat ${M.name} erlernt!`);
+    }
+    const ev = res.find(r => r.t === 'evo');
+    if (ev) {
+      const old = monName(m); sfx('evo');
+      await evoScene(monSprite(m.sp, 'front', m.shiny, m.mut), monSprite(ev.to, 'front', m.shiny, m.mut), `${old} hat sich zu ${SPECIES[ev.to].name} entwickelt!`);
+      evolve(m, ev.to); cry(SPECIES[ev.to].cry); this.markDex(ev.to, true);
+    }
+    this.save(true);
   }
   // Attacken-Kristall: passende Kreatur (gleicher Typ oder Attacke im Lernset) lernt die Attacke
   canTm(m, id) {
@@ -606,6 +632,14 @@ class Game {
     // Wer das Plateau betritt, beginnt die Liga von vorn (wie es sich gehört)
     if (id === 'liga') for (const k of ['e4_1', 'e4_2', 'e4_3', 'e4_4', 'aurin']) delete s.flags[k];
     if (id === 'liga' && !s.flags.kian3) await this.kianFinal();
+    // Dr. Vato ruft an: EP-Teiler und Sonderbonbons (nach dem ersten Orden, auch für alte Spielstände)
+    if (!s.flags.epGift && s.badges.some(Boolean) && s.team.length) {
+      this.ow.busy = true; await wait(450); s.flags.epGift = true; sfx('dex');
+      await say(['Dein Funkgerät klingelt …', `Dr. Vato: ${s.name}! Ich habe etwas Neues erfunden – den EP-Teiler!`, 'Dr. Vato: Damit bekommt dein ganzes Team Erfahrung, auch wer gerade nicht kämpft. Und hier noch ein paar Sonderbonbons für schwierige Kämpfe!']);
+      s.bag.epteiler = 1; s.bag.sonderbonbon = (s.bag.sonderbonbon || 0) + 5; sfx('caught');
+      await say([`${s.name} erhält den EP-Teiler!`, `${s.name} erhält 5× Sonderbonbon!`, 'Den EP-Teiler kannst du im Beutel in der Tasche BASIS-ITEMS ein- und ausschalten.']);
+      this.ow.busy = false; this.save(true);
+    }
     { const sw = this.swarm(), M = MAPS[id]; if (M?.enc === sw.enc && s.flags.swarmDay !== sw.day && s.team.length) { s.flags.swarmDay = sw.day; this.ow.busy = true; await wait(450); sfx('dex'); await say(`Massenausbruch! Hier im Gebiet tauchen heute besonders viele ${SPECIES[sw.sp].name} auf!`); this.ow.busy = false; } }
     if (id === 'ligachamp' && !s.flags.umbra_end) await this.lyraHeal();
     if (id === 'route2' && s.flags.gotBalls && !s.flags.kian2) {
@@ -682,8 +716,8 @@ class Game {
     const r = await this.wildBattle(ow.M.enc, ow.M.bg || 'gras', m);
     if (!r || (r.result !== 'win' && r.result !== 'caught')) return;
     s.flags[A.key] = true; ow.npcs = ow.npcs.filter(x => x !== n);
-    const LOOT = ['sternkristall', 'sternkristall', 'beleber', 'hypertrank', 'supertrank', 'ak_magmaflut', 'ak_wellenschlag', 'ak_blizzard', 'ak_orkan', 'ak_felsgranate', 'ak_schattenball', 'ak_sonnenstrahl', 'ak_blitzschlag'];
-    const it = LOOT[Math.floor(Math.random() * LOOT.length)], k = it.startsWith('ak_') ? 1 : it === 'sternkristall' ? 3 : 2;
+    const LOOT = ['sternkristall', 'sonderbonbon', 'sonderbonbon', 'topbeleber', 'toptrank', 'beleber', 'hypertrank', 'ak_magmaflut', 'ak_wellenschlag', 'ak_blizzard', 'ak_orkan', 'ak_felsgranate', 'ak_schattenball', 'ak_sonnenstrahl', 'ak_blitzschlag'];
+    const it = LOOT[Math.floor(Math.random() * LOOT.length)], k = it.startsWith('ak_') || it.startsWith('top') ? 1 : it === 'sternkristall' ? 3 : 2;
     s.bag[it] = (s.bag[it] || 0) + k; s.money += A.lv * 60; sfx('caught');
     await say([r.result === 'caught' ? 'Das Alpha gehört jetzt zu dir!' : 'Das Alpha zieht sich zurück …', `Es hat etwas fallen lassen: ${k > 1 ? k + '× ' : ''}${ITEMS[it].name}!`, `Dazu findest du ${A.lv * 60} ◈.`]);
     this.save(true);
@@ -708,7 +742,7 @@ class Game {
   // Dr. Vato belohnt das Füllen der Chronik
   async dexRewards() {
     const s = this.state, n = Object.keys(s.dex.caught).filter(id => !SPECIES[id]?.fusion).length;
-    const R = [[5, { kristall: 5 }], [10, { sternkristall: 5 }], [20, { supertrank: 5 }], [30, { hypertrank: 3, sternkristall: 5 }], [45, { glanzamulett: 1 }], [60, { sternkristall: 10 }], [80, { urkristall: 1 }], [100, { hypertrank: 10, money: 20000 }], [125, { sternkristall: 20 }], [150, { urkristall: 2, money: 50000 }]];
+    const R = [[5, { kristall: 5 }], [10, { sternkristall: 5 }], [20, { supertrank: 5 }], [30, { hypertrank: 3, sternkristall: 5, sonderbonbon: 3 }], [45, { glanzamulett: 1 }], [60, { sternkristall: 10, sonderbonbon: 5 }], [80, { urkristall: 1 }], [100, { hypertrank: 10, money: 20000 }], [125, { sternkristall: 20 }], [150, { urkristall: 2, money: 50000 }]];
     for (const [k, rew] of R) {
       if (n < k || s.flags['dexR' + k]) continue;
       s.flags['dexR' + k] = true; sfx('dex');

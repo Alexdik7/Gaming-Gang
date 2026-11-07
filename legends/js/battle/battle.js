@@ -281,6 +281,18 @@ export class Battle {
         if (r.t === 'evo' && !this.pendingEvos.some(p => p.uid === m.uid)) this.pendingEvos.push({ uid: m.uid, to: r.to });
       }
     }
+    // EP-Teiler: alle anderen kampffähigen Teammitglieder bekommen die Hälfte
+    if (this.expShare) {
+      const rest = this.team.filter(m => !m.egg && m.hp > 0 && !alive.includes(m) && m.lvl < 100);
+      if (rest.length) ev.push({ t: 'msg', text: 'Dank EP-Teiler erhält auch der Rest des Teams EP!' });
+      for (const m of rest) {
+        for (const r of giveXp(m, Math.max(1, Math.floor(base * 0.5 * xpBonus(m))))) {
+          if (r.t === 'lvl') ev.push({ t: 'lvl', uid: m.uid, lvl: r.lvl, text: `${monName(m)} erreicht Level ${r.lvl}!` });
+          if (r.t === 'learn') ev.push({ t: 'learn', uid: m.uid, id: r.id });
+          if (r.t === 'evo' && !this.pendingEvos.some(p => p.uid === m.uid)) this.pendingEvos.push({ uid: m.uid, to: r.to });
+        }
+      }
+    }
     this.participants = new Set([this.p.uid]);
   }
 
