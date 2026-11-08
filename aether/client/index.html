@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1830">
+<title>Aetherwild Online</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="brand"><span class="logo">✦</span> AETHERWILD <small>ONLINE · Fundament 0.1</small></header>
+
+<section class="screen" id="s-server" hidden>
+  <form id="f-server" class="card">
+    <h2>Weltserver</h2>
+    <p>Gib die Adresse eines laufenden Aetherwild-Servers ein (z. B. <code>http://localhost:8070</code>).</p>
+    <input id="server-url" placeholder="https://…" required>
+    <button>Verbinden</button>
+    <p class="err" id="server-err"></p>
+  </form>
+</section>
+
+<section class="screen" id="s-login" hidden>
+  <form id="f-auth" class="card">
+    <div class="tabs"><button type="button" id="tab-login" class="on">Anmelden</button><button type="button" id="tab-register">Registrieren</button></div>
+    <input id="user" placeholder="Name" autocomplete="username" required minlength="3" maxlength="16">
+    <input id="pass" type="password" placeholder="Passwort (mind. 8 Zeichen)" autocomplete="current-password" required minlength="8">
+    <button id="auth-go">Anmelden</button>
+    <p class="err" id="auth-err"></p>
+    <button type="button" class="link" id="change-server">Server wechseln</button>
+  </form>
+</section>
+
+<section class="screen" id="s-chars" hidden>
+  <div class="card">
+    <h2>Deine Trainer</h2>
+    <div id="char-list"></div>
+    <button id="new-char">+ Neuer Charakter</button>
+    <button class="link" id="logout">Abmelden</button>
+  </div>
+</section>
+
+<section class="screen" id="s-create" hidden>
+  <form id="f-create" class="card wide">
+    <h2>Neuer Charakter</h2>
+    <div id="preview"></div>
+    <label>Haut</label><div class="row" id="pick-body"></div>
+    <label>Haare</label><div class="row" id="pick-hair"></div>
+    <label>Kleidung</label><div class="row" id="pick-color"></div>
+    <input id="char-name" placeholder="Charaktername" required minlength="3" maxlength="16">
+    <label>Erster Partner</label><div id="starters"></div>
+    <button>Reise beginnen</button>
+    <p class="err" id="create-err"></p>
+    <button type="button" class="link" id="create-back">Zurück</button>
+  </form>
+</section>
+
+<section class="screen" id="s-game" hidden>
+  <div class="hud"><b id="place"></b><span id="online"></span><button id="leave">⏏</button></div>
+  <div class="stage"><canvas id="world"></canvas></div>
+  <div class="pad">
+    <button data-dir="u" style="grid-area:u">▲</button><button data-dir="l" style="grid-area:l">◀</button>
+    <button data-dir="r" style="grid-area:r">▶</button><button data-dir="d" style="grid-area:d">▼</button>
+  </div>
+  <div class="chat">
+    <div id="chat-log"></div>
+    <form id="f-chat"><select id="chat-ch"><option value="map">Hier</option><option value="global">Welt</option></select><input id="chat-in" maxlength="200" placeholder="Nachricht · /w Name Text" autocomplete="off"><button>➤</button></form>
+  </div>
+</section>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

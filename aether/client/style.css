@@ -1,0 +1,38 @@
+:root { --bg: #1a1830; --card: #26233f; --ink: #f2eee0; --mute: #a8a2c0; --acc: #f0c040; --acc2: #64b0f0; --bad: #ff7a6a; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 15px/1.4 system-ui, -apple-system, sans-serif; }
+body { display: flex; flex-direction: column; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); overflow: hidden; }
+.brand { padding: 8px 16px; font-weight: 800; letter-spacing: .2em; color: var(--acc); }
+.brand small { color: var(--mute); letter-spacing: .05em; font-weight: 500; }
+.logo { display: inline-block; transform: rotate(12deg); color: var(--acc2); }
+.screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 16px; overflow: auto; min-height: 0; }
+.card { width: 100%; max-width: 360px; background: var(--card); border: 2px solid #3a3660; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 6px 0 #110f22; }
+.card.wide { max-width: 520px; }
+h2 { margin: 0; font-size: 18px; }
+input, select { font: inherit; padding: 10px; border-radius: 6px; border: 2px solid #3a3660; background: #14122a; color: var(--ink); min-width: 0; }
+button { font: inherit; font-weight: 700; padding: 10px 14px; border-radius: 6px; border: 0; background: var(--acc); color: #2a2010; cursor: pointer; }
+button.link { background: none; color: var(--mute); font-weight: 500; text-decoration: underline; }
+.tabs { display: flex; gap: 6px; } .tabs button { flex: 1; background: #3a3660; color: var(--mute); } .tabs button.on { background: var(--acc2); color: #0e1830; }
+.err { color: var(--bad); min-height: 1em; margin: 0; }
+canvas { image-rendering: pixelated; }
+#char-list { display: flex; flex-direction: column; gap: 8px; }
+.char { display: grid; grid-template-columns: 64px 1fr; grid-template-rows: auto auto; align-items: center; text-align: left; background: #33305a; color: var(--ink); }
+.char canvas { grid-row: span 2; width: 48px; height: 60px; } .char small { color: var(--mute); }
+#preview { display: flex; justify-content: center; gap: 8px; background: #5fae4e; border-radius: 8px; padding: 8px; }
+#preview canvas { width: 48px; height: 60px; }
+.row { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatch { width: 32px; height: 32px; padding: 0; border: 3px solid transparent; } .swatch.on { border-color: #fff; }
+label { color: var(--mute); font-size: 13px; margin-bottom: -6px; }
+#starters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.starter { background: #33305a; color: var(--ink); border: 3px solid; text-align: left; font-weight: 500; opacity: .65; padding: 8px; }
+.starter.on { opacity: 1; box-shadow: 0 0 0 2px #fff inset; } .starter p { font-size: 11px; margin: 4px 0 0; color: var(--mute); } .starter small { display: block; font-size: 11px; }
+#s-game { padding: 0; align-items: stretch; }
+.hud { display: flex; gap: 10px; align-items: center; padding: 4px 12px; } .hud span { color: var(--mute); flex: 1; } .hud button { padding: 4px 10px; background: #3a3660; color: var(--ink); }
+.stage { flex: 1 1 auto; min-height: 200px; display: flex; align-items: center; justify-content: center; background: #0e0c1e; }
+.pad { display: grid; grid-template-areas: ". u ." "l . r" ". d ."; grid-template-columns: repeat(3, 52px); gap: 4px; justify-content: center; padding: 6px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.pad button { height: 44px; background: #3a3660; color: var(--ink); font-size: 18px; }
+.chat { padding: 0 8px 8px; } #chat-log { height: 96px; overflow-y: auto; font-size: 13px; background: #14122a; border-radius: 6px; padding: 4px 8px; }
+.ln.sys { color: var(--acc); } .ln.global { color: var(--acc2); } .ln.whisper { color: #e88ac8; }
+#f-chat { display: flex; gap: 4px; margin-top: 4px; } #f-chat input { flex: 1; padding: 8px; } #f-chat button { padding: 8px 12px; } #f-chat select { padding: 8px 4px; }
+@media (min-width: 800px) { .pad { display: none; } }
+.screen[hidden] { display: none !important; }

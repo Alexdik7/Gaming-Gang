@@ -1,0 +1,14 @@
+{
+  "name": "aetherwild-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Autoritativer Weltserver für Aetherwild Online",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  },
+  "engines": { "node": ">=22.13" },
+  "dependencies": { "ws": "^8.18.0" }
+}

@@ -1,7 +1,7 @@
 # Gaming Gang – Projektgedächtnis
 
 Repo `Alexdik7/Gaming-Gang`, Branch `main`. GitHub Pages ist live: https://alexdik7.github.io/Gaming-Gang/
-Spiele: `sternflut/` (NEU, Nachfolger von Legends: eigenes Kreaturen-RPG, 3 Welten – Bauplan `sternflut/docs/KONZEPT.md`), `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legends United“, Hauptprojekt), `wolkenpfad/` (3D-Endlos-Läufer à la Temple Run, eigene Welt; three.js lokal in `lib/`, Logik in `game.js`, Doku in `wolkenpfad/README.md`, Test über `window.WP` + Autopilot).
+Spiele: `aether/` (NEU: „Aetherwild Online“, eigenes Online-Kreaturen-MMORPG, Node-Server + Web-Client, Doku in `aether/docs/`, Tests `cd aether/server && npm test` + `node aether/tools/e2e.cjs`), `sternflut/` (NEU, Nachfolger von Legends: eigenes Kreaturen-RPG, 3 Welten – Bauplan `sternflut/docs/KONZEPT.md`), `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legends United“, Hauptprojekt), `wolkenpfad/` (3D-Endlos-Läufer à la Temple Run, eigene Welt; three.js lokal in `lib/`, Logik in `game.js`, Doku in `wolkenpfad/README.md`, Test über `window.WP` + Autopilot).
 
 ## Nutzer
 - Deutsch, spielt auf dem **iPhone**: Web-App über „Zum Home-Bildschirm“, Updates kommen über GitHub Pages und `sw.js`. Android interessiert ihn nicht.
@@ -38,6 +38,7 @@ Spiele: `sternflut/` (NEU, Nachfolger von Legends: eigenes Kreaturen-RPG, 3 Welt
 - Ist ein Push fehlgeschlagen, einfach erneut pushen (passiert gelegentlich).
 
 ## Stand (aktualisieren!)
+- **Aetherwild Online v0.1 (Fundament):** Meilenstein 1 (Konzept) + 2 (Login, Charaktere, autoritative Bewegung, Chat, 2 Karten, SQLite) fertig, 17 Tests + Browser-E2E. Nächster Schritt: Vertical Slice (Kampf-Engine `shared/battle/`, Fangen, NPCs, Quests) laut `aether/docs/DEVELOPMENT_ROADMAP.md`. Server braucht Hosting (Empfehlung VPS + Postgres, Nutzer entscheidet).
 - **Sternflut v1.5.3 (alle 3 Welten spielbar, 255 Kreaturen, Doppelkämpfe + Duo-Kombos in `duo.js`/`combos.js`, Ausgrabungen + Fossilien in `dig.js`/`fossil.js`, Heimatinsel in `island.js`, Sprite-Varianten `variant()` in monart.js, Nebenquest Prinzessin Ari in `ari.js` + Möwengrotte, OPTIONEN → Aussehen ändern, Dr. Vato leitet das Labor in `vato.js` – Prof. Kehl ist dort Gast-Forscherin, EP-Teiler ab Start)** – Fork der Legends-Technik in `sternflut/` (eigener Spielstand `sf-save`, Test-Server: `cd sternflut && python3 -m http.server 8053`, Tests `node sternflut/tools/e2e/run.cjs all`, Karten `node sternflut/tools/checkmaps.mjs`):
   - Story/Talk/Sperren in `js/gb/story.js` (game.js delegiert: talkStory, afterTrainer, mapEvent, edgeBlock, songStone, altarStory, onCaught, afterGym), Pager in `js/gb/pager.js`, Minikarte `overworld.drawMini`, Leuchtturm `building({tower})`
   - Kreaturen in `js/data/kalmara1.js` (Nr. 1–45 + Aurelune 250) und `kalmara2.js` (46–75)
