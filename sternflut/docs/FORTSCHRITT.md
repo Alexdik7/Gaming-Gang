@@ -95,3 +95,6 @@
 - Effektivität im Doppelkampf: Zeichen je Gegner hinter jeder Attacke (Reihenfolge wie oben links/rechts), rechts im Feld „Name – Sehr eff./Wenig eff./Keine/Normal“ für beide Gegner, bei der Zielwahl zusätzlich Hinweis über den Gegnern. `effMark` aus battle2d exportiert, `effOn`/`drawTargetEff` in double2d.
 - Anzeige folgt jetzt den Ereignissen (`this.dm[slot]`) statt dem schon fertig berechneten Zug: Beim Zurückrufen sieht man die alte Kreatur, beim Umfallen die besiegte (nicht schon die nachrückende), Statusbox verschwindet nach dem Besiegen. `send`-Ereignisse tragen `hp`.
 - Hänger behoben: Fallen beide eigenen Kreaturen und es gibt nur noch eine Reserve, wird der zweite Platz leer gelassen (`forcedSwitch(id, -1)`), statt endlos eine Auswahl zu verlangen.
+
+## v1.5.5 – Offline-Schutz
+- `sw.js`: Netz zuerst, aber nur `r.ok`-Antworten werden gespeichert. Bei 404/Fehlerseite (z. B. Seite offline/gesperrt) liefert der Service Worker die gespeicherte Fassung, bei Navigation notfalls `index.html`. Vorher hat eine 404-Seite den Speicher überschrieben → Spiel startete gar nicht mehr. Getestet mit Server, der auf 404 umschaltet (alt: „Error response“, neu: Spiel startet).

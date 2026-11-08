@@ -1,5 +1,5 @@
 // Offline-Cache: Spieldateien werden beim ersten Start gespeichert, Updates im Hintergrund geholt
-const CACHE = 'sternflut-v1.5.4';
+const CACHE = 'sternflut-v1.5.5';
 const FILES = ['./', './index.html', './gb.css', './manifest.webmanifest', './icon-192.png', './apple-touch-icon.png', './fonts/fonts.css', './fonts/pixelify-latin.woff2', './fonts/atkinson-400.woff2', './fonts/atkinson-700.woff2', './fonts/pixelify-latin-ext.woff2',
   './js/core/noise.js', './js/core/audio.js', './js/core/music.js', './js/battle/battle.js', './js/battle/double.js', './js/data/coop.js', './js/data/combos.js', './js/data/fossil.js',
   './js/data/types.js', './js/data/moves.js', './js/data/creatures.js', './js/data/creatures2.js', './js/data/kalmara1.js', './js/data/kalmara2.js', './js/data/kalmara3.js', './js/data/kalmara4.js', './js/data/welt2a.js', './js/data/welt2b.js', './js/data/welt3.js', './js/data/mon.js', './js/data/breeding.js',
@@ -10,5 +10,10 @@ self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Pr
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET' || u.origin !== location.origin) return;
-  e.respondWith(fetch(e.request).then(r => { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(e.request, c)); return r; }).catch(() => caches.match(e.request)));
+  // Netz zuerst, aber nur gute Antworten speichern. Fehlerseiten (404, Server weg) nie über die gespeicherte Version legen –
+  // dann lieber die letzte funktionierende Fassung aus dem Speicher zeigen.
+  e.respondWith(fetch(e.request).then(r => {
+    if (r.ok) { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(e.request, c)); return r; }
+    return caches.match(e.request, { ignoreSearch: true }).then(m => m || r);
+  }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(m => m || (e.request.mode === 'navigate' ? caches.match('./index.html') : undefined))));
 });
