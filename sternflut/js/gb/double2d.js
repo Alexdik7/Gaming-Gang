@@ -10,7 +10,8 @@ import { sfx, cry, setMusic } from '../core/audio.js';
 import { monSprite, trainerSprite } from './sprites.js';
 import { choose, party, evoScene, typeTag, say, ask, waitMsg } from './gbui.js';
 import { ITEMS } from './maps.js';
-import { itemFilter, tinted } from './battle2d.js';
+import { itemFilter, tinted, effMark } from './battle2d.js';
+import { effectiveness } from '../data/types.js';
 import { crystalIcon } from './pixel.js';
 const backOut = t => 1 + 2.2 * Math.pow(t - 1, 3) + 1.2 * Math.pow(t - 1, 2);
 
@@ -23,6 +24,8 @@ const POS = { f0: { x: 116, y: 0, s: 0.85 }, f1: { x: 168, y: 12, s: 0.85 }, p0:
 const BOSS = { x: 132, y: -6, s: 1.15 };
 // Raid: vier eigene Kreaturen in einer Reihe
 const RPOS = { p0: { x: 0, y: 66, s: 0.72 }, p1: { x: 44, y: 70, s: 0.72 }, p2: { x: 88, y: 66, s: 0.72 }, p3: { x: 132, y: 70, s: 0.72 } };
+const EFFW = e => e === 0 ? ['Keine Wirkung', '#808080'] : e > 1 ? ['Sehr effektiv', '#209040'] : e < 1 ? ['Wenig effektiv', '#d05020'] : ['Normal', COL.inkSoft];
+const EFFS = e => { const [w, c] = EFFW(e); return [{ 'Sehr effektiv': 'Sehr eff.', 'Wenig effektiv': 'Wenig eff.', 'Keine Wirkung': 'Keine' }[w] || w, c]; };
 const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
 class DoubleScene {
@@ -30,8 +33,8 @@ class DoubleScene {
   constructor(game, o, res) {
     this.g = game; this.o = o; this.res = res; this.s = game.state; this.b = o.b;
     this.bgKey = BG[o.bg] ? o.bg : 'gras'; this.bg = BG[this.bgKey]; this.msg = ''; this.chars = 0; this.mode = 'msg'; this.cur = 0; this.mcur = 0; this.tcur = 0;
-    this.off = {}; this.hpD = {};
-    for (const id of this.b.ids()) { this.off[id] = { x: 0, y: 0, s: 0, vis: false }; const m = this.b.mon(id); this.hpD[id] = m ? m.hp : 0; }
+    this.off = {}; this.hpD = {}; this.dm = {}; // dm: angezeigte Kreatur pro Platz (folgt den Ereignissen, nicht dem fertig berechneten Zug)
+    for (const id of this.b.ids()) { this.off[id] = { x: 0, y: 0, s: 0, vis: false }; const m = this.b.mon(id); this.dm[id] = m; this.hpD[id] = m ? m.hp : 0; }
     this.raid = !!this.b.slots.p2;
     this.parts = []; this.tweens = []; this.bolts = []; this.showBoxes = false; this.trainersVis = true; this.ownTrainers = true;
   }
@@ -63,6 +66,7 @@ class DoubleScene {
       while (!b.over && b.need.some(id => o.mine.includes(id))) {
         for (const id of b.need.filter(x => o.mine.includes(x))) {
           const pool = b.slots[id].pool; let k = null;
+          if (b.nextFor && b.nextFor(id) < 0) { await this.play(await this.remote(() => b.forcedSwitch(id, -1))); continue; }
           while (k === null) k = await party({ ...this.s, team: pool }, { select: true, prompt: 'Wer soll kämpfen?', filter: m => b.canSwitchTo(id, pool.indexOf(m)) });
           await this.play(await this.remote(() => b.forcedSwitch(id, k)));
         }
@@ -141,7 +145,7 @@ class DoubleScene {
     for (let i = 0; i < 40; i++) { const a = i / 40 * 6.28; this.emit(mx + Math.cos(a) * 30, my + Math.sin(a) * 16, -Math.cos(a) * 60, -Math.sin(a) * 30, i % 2 ? ca : cb, 0.5, 2.5); }
     this.flashCol = '#ffffff'; this.flashT = 0.5; sfx('super');
     await wait(450);
-    for (const f of FOES(e.slot).filter(f => this.b.slots[f] && this.b.alive(f))) { const t = this.center(f); for (let i = 0; i < 26; i++) { const k = i / 26; this.emit(mx + (t.x - mx) * k, my + (t.y - my) * k, (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40, i % 2 ? ca : cb, 0.6, 3); } }
+    for (const f of FOES(e.slot).filter(f => this.dm[f] && this.hpD[f] > 0)) { const t = this.center(f); for (let i = 0; i < 26; i++) { const k = i / 26; this.emit(mx + (t.x - mx) * k, my + (t.y - my) * k, (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40, i % 2 ? ca : cb, 0.6, 3); } }
     G.shake = 1; await wait(350);
   }
   pickMove() {
@@ -170,10 +174,10 @@ class DoubleScene {
           break;
         case 'stat': this.burst(id, e.up ? '#ffb24a' : '#6aa8ff', 18, 40); sfx(e.up ? 'buff' : 'debuff'); await wait(400); break;
         case 'status': this.burst(id, { brand: '#ff6a2b', gift: '#b45ce0', starre: '#ffd23a' }[e.status], 20); await wait(300); break;
-        case 'faint': { const o = this.off[id]; { const fm = this.b.mon(id); if (fm && SPECIES[fm.sp]) cry(SPECIES[fm.sp].cry); } sfx('faint'); await this.tween(0.5, k => (o.y = k * 64)); o.vis = false; o.y = 0; break; }
-        case 'send': await this.say(e.text, 600); this.hpD[id] = this.b.mon(id).hp; await this.appear(id); if (SIDE(id) === 'f') this.g.markDex(this.b.mon(id).sp); break;
+        case 'faint': { const o = this.off[id], fm = this.dm[id]; if (fm && SPECIES[fm.sp]) cry(SPECIES[fm.sp].cry); sfx('faint'); this.hpD[id] = 0; await this.tween(0.5, k => (o.y = k * 64)); o.vis = false; o.y = 0; this.dm[id] = null; break; }
+        case 'send': { const nm = this.b.apply ? this.b.mon(id) : e.mon || this.b.mon(id); this.off[id].vis = false; this.dm[id] = nm; this.hpD[id] = e.hp ?? nm.hp; await this.say(e.text, 600); await this.appear(id); if (SIDE(id) === 'f') this.g.markDex(nm.sp); break; }
         case 'recall': { const o = this.off[id]; await this.say(e.text, 500); await this.tween(0.25, k => (o.s = 1 - k)); o.vis = false; break; }
-        case 'lvl': sfx('lvl'); this.hpD[id] = this.b.mon(id)?.hp ?? this.hpD[id]; await this.say(e.text); break;
+        case 'lvl': sfx('lvl'); this.hpD[id] = this.dm[id]?.hp ?? this.hpD[id]; await this.say(e.text); break;
         case 'learn': await this.learn(this.s.team.find(m => m.uid === e.uid), e.id); break;
       }
     }
@@ -200,7 +204,7 @@ class DoubleScene {
     G.shake = big ? 0.9 : 0.35; sfx(big ? 'super' : e.eff < 1 ? 'weak' : 'hit');
   }
   async appear(id) {
-    const o = this.off[id], c = this.center(id), m = this.b.mon(id); if (!m) return;
+    const o = this.off[id], c = this.center(id), m = this.dm[id]; if (!m) return;
     // Bindball vom Bildrand im Bogen werfen (Bosse erscheinen direkt)
     if (!(this.o.boss && SIDE(id) === 'f')) {
       const from = SIDE(id) === 'f' ? { x: W + 10, y: 10 } : { x: -10, y: 100 }, land = { x: c.x, y: c.y + 14 };
@@ -238,7 +242,7 @@ class DoubleScene {
         for (let i = 0; i < 26; i++) this.emit(t.x + (Math.random() - 0.5) * 36, t.y + (Math.random() - 0.5) * 26, (Math.random() - .5) * 10, -8, col, 0.9, 4);
         await wait(400); break;
       case 'roar':
-        cry(SPECIES[this.b.mon(id).sp].cry); await this.tween(0.4, k => (o.s = 1 + Math.sin(k * Math.PI) * 0.15)); o.s = 1; break;
+        cry(SPECIES[this.dm[id].sp].cry); await this.tween(0.4, k => (o.s = 1 + Math.sin(k * Math.PI) * 0.15)); o.s = 1; break;
       case 'heal':
         for (let i = 0; i < 16; i++) this.emit(a.x + (Math.random() - 0.5) * 30, a.y + 16, 0, -40 - Math.random() * 30, '#7dffb0', 0.7, 2.5);
         sfx('heal'); await wait(350); break;
@@ -291,7 +295,7 @@ class DoubleScene {
     for (const [cx, cy, rx, ry] of this.raid ? [[178, 64, 58, 11], [92, 112, 98, 9]] : [[178, 64, 58, 11], [62, 112, 64, 12]]) { const pa = platArt(this.bgKey, this.bg, rx, ry); ctx.drawImage(pa, Math.round(cx - pa.width / 2), Math.round(cy - ry - 2)); }
     if (this.trainersVis && this.o.trainers) this.o.trainers.forEach((t, k) => ctx.drawImage(trainerSprite(t.look), 124 + k * 50 - (this.o.trainers.length === 1 ? -20 : 0), 2));
     for (const id of ['f1', 'f0', 'p3', 'p2', 'p1', 'p0']) {
-      const m = b.mon(id), o = this.off[id]; if (!m || !o?.vis) continue;
+      const m = this.dm[id], o = this.off[id]; if (!m || !o?.vis) continue;
       const p = this.pos(id), img = monSprite(m.sp, SIDE(id) === 'f' ? 'front' : 'back', m.shiny, m.mut), w = 64 * p.s * o.s;
       ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, 114); ctx.clip();
       const dx = p.x + o.x + 32 * p.s - w / 2, dy = p.y + o.y + 64 * p.s - w;
@@ -307,10 +311,11 @@ class DoubleScene {
     for (const p of this.parts) { ctx.globalAlpha = Math.min(1, p.l / p.ml * 1.5); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.sz / 2, p.y - p.sz / 2, p.sz, p.sz); }
     ctx.globalAlpha = 1;
     if (this.showBoxes) {
-      ['f0', 'f1'].forEach((id, k) => b.mon(id) && this.infoBox(id, 3, 3 + k * 23, false));
-      if (this.raid) ['p0', 'p1', 'p2', 'p3'].forEach((id, k) => b.mon(id) && this.miniBox(id, 3 + (k % 2) * 66, 26 + Math.floor(k / 2) * 19));
-      else ['p0', 'p1'].forEach((id, k) => b.mon(id) && this.infoBox(id, 133, 67 + k * 23, true));
+      ['f0', 'f1'].forEach((id, k) => this.dm[id] && this.infoBox(id, 3, 3 + k * 23, false));
+      if (this.raid) ['p0', 'p1', 'p2', 'p3'].forEach((id, k) => this.dm[id] && this.miniBox(id, 3 + (k % 2) * 66, 26 + Math.floor(k / 2) * 19));
+      else ['p0', 'p1'].forEach((id, k) => this.dm[id] && this.infoBox(id, 133, 67 + k * 23, true));
     }
+    if (this.mode === 'target') this.drawTargetEff(ctx);
     box(0, 113, W, 47, 'dark');
     if (this.mode === 'moves' || this.mode === 'target') return this.drawMoves();
     const lines = wrap(this.msg, this.mode === 'menu' ? 108 : 220, 8.5);
@@ -322,14 +327,14 @@ class DoubleScene {
     }
   }
   miniBox(id, x, y) {
-    const m = this.b.mon(id); if (!m) return;
+    const m = this.dm[id]; if (!m) return;
     box(x, y, 64, 18, this.actor === id && (this.mode === 'menu' || this.mode === 'moves') ? 'gold' : this.o.mine.includes(id) ? 'default' : 'dark');
     text(monName(m).slice(0, 8), x + 5, y + 2.5, this.o.mine.includes(id) ? COL.ink : '#fff', 6, 'left', null, true);
     text(String(m.lvl), x + 60, y + 2.5, this.o.mine.includes(id) ? COL.ink : '#fff', 5.5, 'right');
     bar(x + 5, y + 12, 54, 3, (this.hpD[id] ?? m.hp) / maxHp(m));
   }
   infoBox(id, x, y, own) {
-    const m = this.b.mon(id); if (!m) return;
+    const m = this.dm[id]; if (!m) return;
     box(x, y, 104, 21, this.actor === id && (this.mode === 'menu' || this.mode === 'moves') ? 'gold' : 'default');
     text(monName(m).slice(0, 11), x + 6, y + 3, COL.ink, 7, 'left', COL.shadow, true);
     text('Lv' + m.lvl, x + 99, y + 3, COL.ink, 6.5, 'right');
@@ -338,14 +343,37 @@ class DoubleScene {
     bar(x + 24, y + 14, own ? 46 : 74, 3, hp / maxHp(m));
     if (own) text(`${Math.round(hp)}/${maxHp(m)}`, x + 99, y + 11.5, COL.ink, 6, 'right', null);
   }
+  // Wirkung einer Attacke auf einen Platz (null = Status-Attacke oder kein Ziel)
+  effOn(M, id) { const m = this.dm[id]; return !m || this.hpD[id] <= 0 || M.cat === 'status' ? null : effectiveness(M.type, SPECIES[m.sp].types); }
+  foesShown() { return FOES(this.actor).filter(f => this.b.slots[f] && this.dm[f] && this.hpD[f] > 0); }
   drawMoves() {
-    const ms = this.b.mon(this.actor).moves;
+    const ctx = G.ctx, ms = this.b.mon(this.actor).moves, foes = this.foesShown();
     box(0, 113, 160, 47);
-    if (this.mode === 'target') { text('Welches Ziel? (A)', 10, 121, COL.ink, 8, 'left', COL.shadow, true); text(monName(this.b.mon(this.tlist[this.tcur])), 10, 137, COL.frame, 8, 'left', null, true); }
-    else ms.forEach((mv, i) => { const x = 14 + (i % 2) * 74, y = 121 + Math.floor(i / 2) * 16; if (this.mcur === i) cursor(x - 9, y + 1); text(MOVES[mv.id].name, x, y, mv.pp ? COL.ink : COL.inkSoft, 7.8, 'left', COL.shadow, true); });
+    const mv = ms[this.mcur], M = mv && MOVES[mv.id];
+    if (this.mode === 'target') {
+      const tg = this.tlist[this.tcur], e = M ? this.effOn(M, tg) : null;
+      text('Welches Ziel? (A)', 10, 121, COL.ink, 8, 'left', COL.shadow, true); text(monName(this.dm[tg] || this.b.mon(tg)), 10, 137, COL.frame, 8, 'left', null, true);
+      if (e !== null) { const [w, c] = EFFW(e); text(w, 150, 138, c, 6.5, 'right', null, true); }
+    } else ms.forEach((mv, i) => {
+      const x = 14 + (i % 2) * 74, y = 121 + Math.floor(i / 2) * 16; if (this.mcur === i) cursor(x - 9, y + 1);
+      text(MOVES[mv.id].name, x, y, mv.pp ? COL.ink : COL.inkSoft, 7.8, 'left', COL.shadow, true);
+      // je Gegner ein Zeichen, in derselben Reihenfolge wie die Gegner oben stehen (links, rechts)
+      foes.forEach((f, k) => { const e = this.effOn(MOVES[mv.id], f); if (e !== null && e !== 1) effMark(ctx, x + 63 - (foes.length - 1 - k) * 6, y + 3, e); });
+    });
     box(160, 113, 80, 47);
-    const mv = ms[this.mcur];
-    if (mv) { const M = MOVES[mv.id]; text(`AP ${mv.pp}/${M.pp}`, 200, 120, COL.ink, 8, 'center', COL.shadow, true); typeTag(M.type, 183, 133); text(M.cat === 'status' ? 'Status' : `Stärke ${M.pow}`, 200, 146, COL.inkSoft, 6.5, 'center', null); }
+    if (!M) return;
+    text(`AP ${mv.pp}/${M.pp}`, 166, 119, COL.ink, 6.8, 'left', COL.shadow, true); typeTag(M.type, 201, 118);
+    if (M.cat === 'status') { text('Status-Attacke', 200, 138, COL.inkSoft, 6.5, 'center', null); return; }
+    foes.forEach((f, k) => {
+      const y = 131 + k * 12, e = this.effOn(M, f), [w, c] = EFFS(e), sel = this.mode === 'target' && this.tlist[this.tcur] === f;
+      text(monName(this.dm[f]).slice(0, 7), 166, y, sel ? COL.frame : COL.ink, 6.2, 'left', null, true);
+      text(w, 235, y, c, 6.2, 'right', null, true);
+    });
+  }
+  // Wirkungs-Hinweis über den Gegnern während der Zielwahl
+  drawTargetEff(ctx) {
+    const mv = this.b.mon(this.actor).moves[this.mcur], M = mv && MOVES[mv.id]; if (!M) return;
+    for (const f of this.tlist) { const e = this.effOn(M, f); if (e === null) continue; const p = this.pos(f), [w, c] = EFFW(e); text(w, p.x + 32 * p.s, p.y + 64 * p.s - 11, c, 6.5, 'center', '#000', true); }
   }
 }
 

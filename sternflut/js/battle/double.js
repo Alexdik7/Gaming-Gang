@@ -105,7 +105,7 @@ export class DoubleBattle {
     const s = this.slots[id];
     ev.push({ t: 'recall', slot: id, text: `${s.owner}: ${monName(this.mon(id))}, zurück!` });
     s.i = i; s.st = freshStages();
-    ev.push({ t: 'send', slot: id, mon: this.mon(id), text: `${s.owner} schickt ${monName(this.mon(id))}!` });
+    ev.push({ t: 'send', slot: id, mon: this.mon(id), hp: this.mon(id).hp, text: `${s.owner} schickt ${monName(this.mon(id))}!` });
   }
 
   resolveTarget(id, a, M) {
@@ -220,7 +220,7 @@ export class DoubleBattle {
       if (this.alive(id)) continue;
       const s = this.slots[id], k = this.nextFor(id);
       if (k < 0) { s.i = -1; continue; }
-      if (s.ai) { s.i = k; s.st = freshStages(); ev.push({ t: 'send', slot: id, mon: this.mon(id), text: `${s.owner} schickt ${monName(this.mon(id))}!` }); }
+      if (s.ai) { s.i = k; s.st = freshStages(); ev.push({ t: 'send', slot: id, mon: this.mon(id), hp: this.mon(id).hp, text: `${s.owner} schickt ${monName(this.mon(id))}!` }); }
       else this.need.push(id);
     }
     for (const id of this.need) ev.push({ t: 'needSwitch', slot: id });
@@ -229,9 +229,10 @@ export class DoubleBattle {
     const ev = [];
     if (!this.need.includes(id)) return ev;
     if (!this.canSwitchTo(id, k)) k = this.nextFor(id);
-    const s = this.slots[id]; s.i = k; s.st = freshStages();
-    this.need = this.need.filter(x => x !== id);
-    ev.push({ t: 'send', slot: id, mon: this.mon(id), text: `${s.owner} schickt ${monName(this.mon(id))}!` });
+    const s = this.slots[id]; this.need = this.need.filter(x => x !== id);
+    if (k < 0) { s.i = -1; return ev; } // keine freie Kreatur mehr für diesen Platz
+    s.i = k; s.st = freshStages();
+    ev.push({ t: 'send', slot: id, mon: this.mon(id), hp: this.mon(id).hp, text: `${s.owner} schickt ${monName(this.mon(id))}!` });
     return ev;
   }
 

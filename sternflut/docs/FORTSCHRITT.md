@@ -90,3 +90,8 @@
 ## v1.5.3 – Fehlerbehebungen
 - Gift/Verbrennung nach einem Wechsel: Bei der Wechsel-Frage („… wird X einsetzen. Auswechseln?“) wurde sofort mitten in der Runde gewechselt. Der Schaden der alten Kreatur am Rundenende erschien dann bei der neuen. Jetzt merkt sich `battle2d.play` den Wechsel in `pendingShift` und führt ihn erst nach allen Ereignissen der Runde aus.
 - Alle Menschen und Trainer drehen sich beim Ansprechen zum Spieler (vorher nicht bei ungeschlagenen Trainern). Ausnahme: Grabstellen (`n.dig`).
+
+## v1.5.4 – Doppelkämpfe sauberer
+- Effektivität im Doppelkampf: Zeichen je Gegner hinter jeder Attacke (Reihenfolge wie oben links/rechts), rechts im Feld „Name – Sehr eff./Wenig eff./Keine/Normal“ für beide Gegner, bei der Zielwahl zusätzlich Hinweis über den Gegnern. `effMark` aus battle2d exportiert, `effOn`/`drawTargetEff` in double2d.
+- Anzeige folgt jetzt den Ereignissen (`this.dm[slot]`) statt dem schon fertig berechneten Zug: Beim Zurückrufen sieht man die alte Kreatur, beim Umfallen die besiegte (nicht schon die nachrückende), Statusbox verschwindet nach dem Besiegen. `send`-Ereignisse tragen `hp`.
+- Hänger behoben: Fallen beide eigenen Kreaturen und es gibt nur noch eine Reserve, wird der zweite Platz leer gelassen (`forcedSwitch(id, -1)`), statt endlos eine Auswahl zu verlangen.

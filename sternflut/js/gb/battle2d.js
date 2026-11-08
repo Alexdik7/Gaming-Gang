@@ -36,7 +36,7 @@ export function tinted(img, col) {
 const resoCache = new WeakMap();
 export function resoColor(sp) { const M = SPECIES[sp]; return M?.model?.glow || TYPES[M?.types?.[0]]?.color || '#ffd23a'; }
 // kleines Zeichen hinter dem Attackennamen: grüne Pfeile = sehr effektiv, rote = wenig, graues X = keine Wirkung
-function effMark(ctx, x, y, e) {
+export function effMark(ctx, x, y, e) {
   if (e === 0) { ctx.fillStyle = '#808080'; for (let i = 0; i < 5; i++) { ctx.fillRect(x + i, y + i, 1.5, 1.5); ctx.fillRect(x + 4 - i, y + i, 1.5, 1.5); } return; }
   const up = e > 1, n = e >= 4 || e <= 0.25 ? 2 : 1; ctx.fillStyle = up ? '#28a048' : '#d84830';
   for (let k = 0; k < n; k++) for (let r = 0; r < 3; r++) { const yy = up ? y + r + k * 3 : y + 2 - r + k * 3; ctx.fillRect(x + 2 - r, yy, 1 + r * 2, 1); }
