@@ -86,3 +86,7 @@
 - `vato.js` (Akt-Modul): Dr. Vato (blonder Zopf, `LOOK_VATO`) leitet das Labor in Muschelbucht („Labor von Dr. Vato“). **Prof. Kehl forscht dort als Gast.**
 - Erstes Gespräch: Vorstellung, Erfinder des EP-Teilers, Geschenk (5 Fangkugeln, 3 Heiltränke), danach Kontakt im PAGER (`CALLS.vato`).
 - Nach dem Champion-Titel (`flags.champion`): Kampf gegen Dr. Vato (6 Kreaturen, Lv 66–70). Belohnung: 9000 ◈ und das **Glanzamulett** (neu in `ITEMS`, mehr schillernde Kreaturen).
+
+## v1.5.3 – Fehlerbehebungen
+- Gift/Verbrennung nach einem Wechsel: Bei der Wechsel-Frage („… wird X einsetzen. Auswechseln?“) wurde sofort mitten in der Runde gewechselt. Der Schaden der alten Kreatur am Rundenende erschien dann bei der neuen. Jetzt merkt sich `battle2d.play` den Wechsel in `pendingShift` und führt ihn erst nach allen Ereignissen der Runde aus.
+- Alle Menschen und Trainer drehen sich beim Ansprechen zum Spieler (vorher nicht bei ungeschlagenen Trainern). Ausnahme: Grabstellen (`n.dig`).

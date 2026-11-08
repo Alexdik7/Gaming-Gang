@@ -212,6 +212,13 @@ class BattleScene {
 
   // ---------------------------------------------------------- Ereignisse
   async play(events) {
+    await this.playList(events);
+    if (this.pendingShift != null) {
+      const k = this.pendingShift; this.pendingShift = null;
+      if (!this.b.over && !this.b.awaitSwitch && this.b.p.hp > 0 && this.b.team[k]?.hp > 0) await this.playList([{ t: 'recall', side: 'p', text: `${monName(this.b.p)}, komm zurück!` }, ...this.b.forcedSwitch(k)]);
+    }
+  }
+  async playList(events) {
     for (const e of events) {
       this.b.apply?.(e);
       switch (e.t) {
@@ -236,7 +243,8 @@ class BattleScene {
           this.note(e.text);
           if (e.side === 'p') { this.dP = e.mon || this.b.p; this.xpD = this.dP.xp; this.hpD.p = this.dP.hp; this.dLvl[this.dP.uid] = this.dP.lvl; } else { this.dF = e.mon || this.b.f; this.hpD.f = this.dF.hp; }
           await this.throwCrystal(e.side); if (e.side === 'f') this.g.markDex(this.dF.sp); await this.showBox(e.side); await wait(250);
-          if (shift !== null) await this.play([{ t: 'recall', side: 'p', text: `${monName(this.b.p)}, komm zurück!` }, ...this.b.forcedSwitch(shift)]);
+          // Wechsel erst nach allen restlichen Ereignissen der Runde (z. B. Giftschaden der alten Kreatur), sonst trifft er die neue
+          if (shift !== null) this.pendingShift = shift;
           break;
         }
         case 'recall': await this.recall(e.side, e.text); break;

@@ -404,7 +404,7 @@ export class Overworld {
     this.busy = true;
     try {
       if (rp) { await this.g.online.interact(rp); return; }
-      if (n) { if (!n.trainer || this.g.state.flags[n.id]) n.dir = OPP[p.dir]; await this.g.talk(n); return; }
+      if (n) { if (!n.dig) n.dir = OPP[p.dir]; await this.g.talk(n); return; } // alle Menschen und Trainer drehen sich zum Spieler
       const it = this.items.find(i => i.x === fx && i.y === fy);
       if (it) { await this.g.pickup(it); this.items = this.items.filter(i => i !== it); return; }
       if (this.f?.vis && this.f.x === fx && this.f.y === fy && !this.p.moving) { await this.g.talkFollower(); return; }
