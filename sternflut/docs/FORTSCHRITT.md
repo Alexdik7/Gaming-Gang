@@ -107,3 +107,6 @@
 - Ursache des Wand-Bugs: Die Kraftwerk-Tür in Funkenhafen führt per `enterDoor` hinein, das Kraftwerk hat aber keine Fußmatte `m` → Start bei 0,0 in der Wand. `enterDoor` nimmt jetzt ohne Matte das Feld über dem Warp zurück zur Ausgangskarte (Kraftwerk: 6,10).
 - Rettung beim Laden wählt nur Felder, von denen ein Ausgang erreichbar ist (`canLeave`), also nie hinter geschlossene Tore.
 - `checkmaps` meldet Türen in Innenkarten ohne Matte und ohne Rückweg.
+
+## v1.5.8 – Updates kommen sofort an
+- `sw.js`: Installation lädt alle Dateien mit `cache: 'reload'`, Abrufe mit `cache: 'no-cache'` → kein bis zu 10 Minuten alter Browser-Zwischenspeicher von GitHub Pages mehr (Nutzer bekam nach dem Push weiter die alte Kraftwerk-Tür).
