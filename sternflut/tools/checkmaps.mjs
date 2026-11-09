@@ -25,6 +25,7 @@ function grid(id) {
 }
 
 for (const id of Object.keys(MAPS)) {
+  for (const b of MAPS[id].buildings || []) if (b.to && MAPS[b.to] && !MAPS[b.to].rows.some(r => r.includes('m')) && !(MAPS[b.to].warps || []).some(w => w.to === id)) err(id, `Tür → ${b.to}: weder Fußmatte noch Ausgang zurück`);
   const { M, w, h, walk } = grid(id);
   if (new Set(M.rows.map(r => r.length)).size !== 1) err(id, 'Zeilen unterschiedlich lang');
   // Startpunkte für die Erreichbarkeit: Kanten, Warps, Ausgang

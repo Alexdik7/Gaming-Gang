@@ -52,12 +52,14 @@ export class Overworld {
     // Steckt die Figur in einer Wand (alter Fehler, umgebaute Karte o. Ä.), auf das nächste freie Feld setzen
     this.cleared = new Map();
     if (this.wallAt(x, y)) {
-      const seen = new Set([x + ',' + y]), q = [[x, y]];
+      const seen = new Set([x + ',' + y]), q = [[x, y]]; let first = null;
       while (q.length) {
         const [cx, cy] = q.shift();
-        if (!this.wallAt(cx, cy) && !(M.warps || []).some(w => w.x === cx && w.y === cy)) { x = cx; y = cy; break; }
+        if (!first && !this.wallAt(cx, cy)) first = [cx, cy];
+        if (!this.wallAt(cx, cy) && !(M.warps || []).some(w => w.x === cx && w.y === cy) && this.canLeave(cx, cy)) { x = cx; y = cy; break; }
         for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) { const nx = cx + dx, ny = cy + dy, k = nx + ',' + ny; if (nx < 0 || ny < 0 || nx >= this.w || ny >= this.h || seen.has(k)) continue; seen.add(k); q.push([nx, ny]); }
       }
+      if (this.wallAt(x, y) && first) [x, y] = first;
       Object.assign(this.p, { x, y, px: x * 16, py: y * 16 });
     }
     this.trail = null;
@@ -116,6 +118,18 @@ export class Overworld {
   boulderAt(x, y) { return this.boulders?.find(b => b.x === x && b.y === y); }
   holeOpen(x, y) { return this.ch(x, y) === '@' && !this.g.state.flags[`hole:${this.id}:${x},${y}`]; }
   npcAt(x, y) { return this.npcs.find(n => (n.x === x && n.y === y) || (n.moving && n.tx === x && n.ty === y)); }
+  // Kommt man von (x,y) zu einem Ausgang (Warp, Fußmatte, Tür, Kartenrand)? Verhindert, dass die Rettung hinter ein Tor setzt.
+  canLeave(x, y) {
+    const M = this.M, seen = new Set([x + ',' + y]), q = [[x, y]];
+    if (!M.warps?.length && !M.indoor && !this.blds.length && !Object.keys(M.edges || {}).length) return true;
+    while (q.length) {
+      const [cx, cy] = q.shift(), c = this.ch(cx, cy);
+      if ((M.warps || []).some(w => Math.abs(w.x - cx) + Math.abs(w.y - cy) <= 1) || (M.indoor && c === 'm') || this.bldAt(cx, cy) && !this.wallAt(cx, cy)) return true;
+      if (M.edges && (cx === 0 || cy === 0 || cx === this.w - 1 || cy === this.h - 1)) return true;
+      for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) { const nx = cx + dx, ny = cy + dy, k = nx + ',' + ny; if (seen.has(k) || this.wallAt(nx, ny)) continue; seen.add(k); q.push([nx, ny]); }
+    }
+    return false;
+  }
   // nur feste Umgebung (Wände, Gebäude, Tore, Felsen) – ohne Personen und Gegenstände
   wallAt(x, y) {
     const c = this.ch(x, y); if (c === null) return true;
@@ -359,7 +373,9 @@ export class Overworld {
     const s = this.g.state; s.ret = { map: this.id, x: b.x + b.door, y: b.y + b.h, heal: !!b.heal };
     if (b.heal) s.healPoint = { map: this.id, x: b.x + b.door, y: b.y + b.h };
     const I = MAPS[b.to]; let mx = 0, my = 0;
-    I.rows.forEach((r, yy) => { const k = r.indexOf('m'); if (k >= 0 && !mx) { mx = k; my = yy; } });
+    let mat = false; I.rows.forEach((r, yy) => { const k = r.indexOf('m'); if (k >= 0 && !mat) { mx = k; my = yy; mat = true; } });
+    // ohne Fußmatte: ein Feld über dem Ausgang, der zurück auf diese Karte führt (z. B. Kraftwerk)
+    if (!mat) { const w = (I.warps || []).find(q => q.to === this.id) || I.warps?.[0]; if (w) { mx = w.x; my = Math.max(0, w.y - 1); } }
     sfx('open'); this.busy = true; this.door = { x: b.x + b.door, y: b.y + b.h - 1 };
     await wait(260); this.door = null;
     await this.warp(b.to, mx, my, 'up');

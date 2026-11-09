@@ -102,3 +102,8 @@
 ## v1.5.6 – Nie mehr in der Wand stecken
 - `overworld.load()`: Steht die Figur beim Laden auf einem festen Feld (`wallAt`: Wand, Gebäude, geschlossenes Tor, Felsen, Deko), wird sie per Breitensuche auf das nächste freie Feld gesetzt (nicht auf einen Warp). Greift bei jedem Kartenwechsel und beim Fortsetzen eines Spielstands.
 - Rettung eines bestehenden Spielstands ohne Update: Sicherungs-Code (LUS1-… = gzip+base64 JSON) mit `map/x/y` lesen, Position korrigieren, neu packen → im Titel „CODE LADEN“.
+
+## v1.5.7 – Kraftwerk-Tür
+- Ursache des Wand-Bugs: Die Kraftwerk-Tür in Funkenhafen führt per `enterDoor` hinein, das Kraftwerk hat aber keine Fußmatte `m` → Start bei 0,0 in der Wand. `enterDoor` nimmt jetzt ohne Matte das Feld über dem Warp zurück zur Ausgangskarte (Kraftwerk: 6,10).
+- Rettung beim Laden wählt nur Felder, von denen ein Ausgang erreichbar ist (`canLeave`), also nie hinter geschlossene Tore.
+- `checkmaps` meldet Türen in Innenkarten ohne Matte und ohne Rückweg.
