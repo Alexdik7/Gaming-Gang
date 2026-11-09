@@ -98,3 +98,7 @@
 
 ## v1.5.5 – Offline-Schutz
 - `sw.js`: Netz zuerst, aber nur `r.ok`-Antworten werden gespeichert. Bei 404/Fehlerseite (z. B. Seite offline/gesperrt) liefert der Service Worker die gespeicherte Fassung, bei Navigation notfalls `index.html`. Vorher hat eine 404-Seite den Speicher überschrieben → Spiel startete gar nicht mehr. Getestet mit Server, der auf 404 umschaltet (alt: „Error response“, neu: Spiel startet).
+
+## v1.5.6 – Nie mehr in der Wand stecken
+- `overworld.load()`: Steht die Figur beim Laden auf einem festen Feld (`wallAt`: Wand, Gebäude, geschlossenes Tor, Felsen, Deko), wird sie per Breitensuche auf das nächste freie Feld gesetzt (nicht auf einen Warp). Greift bei jedem Kartenwechsel und beim Fortsetzen eines Spielstands.
+- Rettung eines bestehenden Spielstands ohne Update: Sicherungs-Code (LUS1-… = gzip+base64 JSON) mit `map/x/y` lesen, Position korrigieren, neu packen → im Titel „CODE LADEN“.

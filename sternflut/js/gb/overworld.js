@@ -49,6 +49,17 @@ export class Overworld {
     s.bpos ||= {};
     this.boulders = (s.bpos[id] || (M.boulders || []).map(b => [...b])).filter(Boolean).map(([bx, by]) => ({ x: bx, y: by }));
     this.blds = M.buildings || [];
+    // Steckt die Figur in einer Wand (alter Fehler, umgebaute Karte o. Ä.), auf das nächste freie Feld setzen
+    this.cleared = new Map();
+    if (this.wallAt(x, y)) {
+      const seen = new Set([x + ',' + y]), q = [[x, y]];
+      while (q.length) {
+        const [cx, cy] = q.shift();
+        if (!this.wallAt(cx, cy) && !(M.warps || []).some(w => w.x === cx && w.y === cy)) { x = cx; y = cy; break; }
+        for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) { const nx = cx + dx, ny = cy + dy, k = nx + ',' + ny; if (nx < 0 || ny < 0 || nx >= this.w || ny >= this.h || seen.has(k)) continue; seen.add(k); q.push([nx, ny]); }
+      }
+      Object.assign(this.p, { x, y, px: x * 16, py: y * 16 });
+    }
     this.trail = null;
     this.cleared = new Map(); this.revealed = false; this.flashLit = 0; this.springUsed = false; this.fTalked = false;
     this.f = { x, y, px: x * 16, py: y * 16, fx: x, fy: y, tx: x, ty: y, dir: this.p.dir, vis: false };
@@ -105,6 +116,16 @@ export class Overworld {
   boulderAt(x, y) { return this.boulders?.find(b => b.x === x && b.y === y); }
   holeOpen(x, y) { return this.ch(x, y) === '@' && !this.g.state.flags[`hole:${this.id}:${x},${y}`]; }
   npcAt(x, y) { return this.npcs.find(n => (n.x === x && n.y === y) || (n.moving && n.tx === x && n.ty === y)); }
+  // nur feste Umgebung (Wände, Gebäude, Tore, Felsen) – ohne Personen und Gegenstände
+  wallAt(x, y) {
+    const c = this.ch(x, y); if (c === null) return true;
+    if (c === '~') return !this.p?.surf;
+    if (SOLID.has(c) || c === 'L' || this.boulderAt(x, y)) return true;
+    if (c === 'E' && !this.g.state.flags[this.M.gates?.[x + ',' + y]]) return true;
+    if (this.M.decor) { const d = decorAt(this.M.decor, x, y); if (d && DECOR[d.d].solid) return true; }
+    if (this.M.props?.some(q => y === q.y && x >= q.x && x <= q.x + 1)) return true;
+    const b = this.bldAt(x, y); return !!b && !(x === b.x + b.door && y === b.y + b.h - 1);
+  }
   solid(x, y, forNpc = false) {
     const c = this.ch(x, y); if (c === null) return true;
     if (SOLID.has(c)) return true;
