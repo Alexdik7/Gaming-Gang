@@ -36,11 +36,19 @@ export function polish(cnv, small) {
   return cnv;
 }
 // view: 'front' | 'back' | 'icon'
+// Stufe in der Entwicklungskette (1 = Basis) und Länge der Kette – damit Entwicklungen sichtbar wachsen
+let PRE = null;
+function evoTier(sp) {
+  if (!PRE) { PRE = {}; for (const [id, v] of Object.entries(SPECIES)) if (v.evo?.to) PRE[v.evo.to] = id; }
+  let tier = 1, x = sp; while (PRE[x] && tier < 4) { x = PRE[x]; tier++; }
+  let len = tier; x = SPECIES[sp]; while (x?.evo?.to && SPECIES[x.evo.to] && len < 4) { x = SPECIES[x.evo.to]; len++; }
+  return { tier, chainLen: len };
+}
 export function monSprite(sp, view = 'front', shiny = false, mut = false) {
   const k = sp + view + shiny + mut;
   if (cache.has(k)) return cache.get(k);
   const S = SPECIES[sp] || ensureSpecies(sp);
-  let spec = S.model;
+  let spec = { ...S.model, ...evoTier(sp), type: S.types?.[0] };
   if (mut) spec = { ...spec, main: shiftHue(spec.main, -0.12), extras: [...new Set([...(spec.extras || []), 'gem'])] };
   const small = view === 'icon' || view === 'iconback'; // 'iconback': kleine Rückansicht für Mitläufer und Surfen
   const img = polish(small ? paintCreature(spec, view === 'iconback' ? 'back' : 'front', shiny, 32) : paintCreature(spec, view, shiny), small);

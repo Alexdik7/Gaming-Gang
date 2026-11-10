@@ -110,3 +110,9 @@
 
 ## v1.5.8 – Updates kommen sofort an
 - `sw.js`: Installation lädt alle Dateien mit `cache: 'reload'`, Abrufe mit `cache: 'no-cache'` → kein bis zu 10 Minuten alter Browser-Zwischenspeicher von GitHub Pages mehr (Nutzer bekam nach dem Push weiter die alte Kraftwerk-Tür).
+
+## v1.6.0 – Eigene Attacken-Animationen + eindrucksvollere Entwicklungen
+- Neues Modul `js/gb/anim.js`: **jede der 172 Attacken** hat eine eigene Signatur-Animation (`A[id]`), gebaut aus Bausteinen: `charge`, `orb`, `pillar`, `rain`, `spikes`, `wave`, `vines`, `claws`, `fangs`, `rings`, `tornado`, `lightning`, `shield`, `runeCircle`, `soundArcs`, `moon`, `hands`, `blackhole`, `nova`, `rainbow`, `aurora`, `meteor`, Farbschleier `tint`/`flash`, Bewegungen `lunge`/`hop`/`ram`/`strike`. Bühnen-Objekte in `sc.ov` (`tickOv`/`drawOv`).
+- Eingehängt in `battle2d.animMove` und `double2d.animMove` (`signature(sc, id, {a,t,o,to,dir,hit})`); Doppelkampf nutzt jetzt auch `updateParts/drawParts/drawBeam` aus fx.js. Typ `astral` hat eigene Partikel-Palette.
+- Entwicklungen: `sprites.js` berechnet Stufe in der Kette (`evoTier` → `tier`, `chainLen`), `monart.js` `evoInfo`: Basis kleiner und heller mit großen Augen, Endform deutlich größer (bis ×1.12), kräftigere Farben, Augenbrauen, typ-eigene Merkmale (`TYPE_EVO`: z. B. Feuer Flammenschweif + Mähne, Erde Hörner + Panzer), Endform einer 3er-Kette funkelt. Neue Merkmale `mane`, `armor`, `thorns`.
+- Test: alle 172 Attacken im Kampf abgespielt (keine Fehler, 0,55–1,7 s je Attacke), Doppelkampf, e2e, Karten.

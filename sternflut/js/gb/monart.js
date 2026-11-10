@@ -304,6 +304,9 @@ function extras(list, M, C, front) {
     if (e === 'wings') for (const s of [-1, 1]) back.push(E(b.x + s * (b.rx * 0.7 + 4), b.y - b.ry * 0.7, 9, 5, C.accent, { a: s * -0.6 }));
     if (e === 'spikes') for (let i = 0; i < 4; i++) { const x = b.x - b.rx * 0.5 + i * b.rx * 0.38, y = b.y - b.ry * (0.82 + (i === 1 || i === 2 ? 0.12 : 0)); back.push(tri(C.accent, x - 2.5, y + 2, x, y - 6, x + 2.5, y + 2)); }
     if (e === 'fins') for (const s of [-1, 1]) back.push(tri(C.accent, b.x + s * b.rx * 0.6, b.y - 3, b.x + s * (b.rx + 9), b.y - 9, b.x + s * (b.rx + 4), b.y + 4));
+    if (e === 'mane') for (let i = 0; i < 5; i++) { const an = -2.6 + i * 0.55, r = h.r * 1.05; back.push(tri(i % 2 ? C.glow : C.accent, h.x + Math.cos(an) * r * 0.55 - 2.5, h.y + Math.sin(an) * r * 0.55, h.x + Math.cos(an) * (r + 7), h.y + Math.sin(an) * (r + 7), h.x + Math.cos(an) * r * 0.55 + 2.5, h.y + Math.sin(an) * r * 0.55 + 1)); }
+    if (e === 'armor') for (let i = 0; i < 3; i++) fr.push(E(b.x - b.rx * 0.45 + i * b.rx * 0.45, b.y - b.ry * 0.55 + (i === 1 ? -1.5 : 0), b.rx * 0.24, b.ry * 0.3, tone(C.main, -0.14, 0.05)));
+    if (e === 'thorns') for (let i = 0; i < 3; i++) { const x = b.x - b.rx * 0.4 + i * b.rx * 0.4, y = b.y - b.ry * 0.9; back.push(tri(C.glow === '#ffffff' ? C.accent : C.glow, x - 2, y + 2, x + 1, y - 7, x + 2.5, y + 2)); }
     if (e === 'tailflame') fr.push(P('#f87830', [[t.x - 4, t.y + 3], [t.x - 3, t.y - 5], [t.x, t.y - 2], [t.x + 2, t.y - 10], [t.x + 4, t.y - 2], [t.x + 5, t.y + 3]], { glowLine: true }), E(t.x + 0.5, t.y + 1, 2.5, 3, '#f8e050', { line: false }));
   }
   return { back, fr };
@@ -422,14 +425,30 @@ function scaleMeta(M, k, ox = 32, oy = 61) {
 
 // ---------------------------------------------------------------- Öffentliche Funktionen
 // spec: {kind, main, accent, glow, stage, size, extras}; view: 'front' | 'back'
+// Entwicklungen: je Stufe größer, kräftigere Farben und typ-eigene Merkmale (Flammenmähne, Panzer, Hörner …)
+const TYPE_EVO = { feuer: ['tailflame', 'mane'], wasser: ['fins', 'gem'], pflanze: ['leaf', 'thorns'], elektro: ['spikes', 'mane'], eis: ['thorns', 'gem'], drache: ['horns', 'wings'],
+  schatten: ['horns', 'mane'], licht: ['crown', 'wings'], erde: ['horns', 'armor'], luft: ['wings', 'crest'], gift: ['thorns', 'gem'], metall: ['armor', 'horns'], geist: ['mane', 'gem'],
+  magie: ['gem', 'crown'], astral: ['gem', 'wings'], normal: ['ears', 'mane'] };
+function tone(hex, dl, ds = 0) { const [h, s, l] = rgb2hsl(hex2rgb(hex)); const [r, g, b] = hsl2rgb([h, Math.max(0, Math.min(1, s + ds)), Math.max(0.05, Math.min(0.95, l + dl))]); return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join(''); }
+function evoInfo(spec) {
+  const tier = spec.tier || 1, len = spec.chainLen || 1;
+  if (len < 2) return null;
+  const final = tier === len, base = len === 2 ? [0.84, 1.05][tier - 1] : [0.8, 0.95, 1.1, 1.12][tier - 1];
+  const k = Math.max(0.72, Math.min(1.12, base + ((spec.size || 1) - 1) * 0.08));
+  const feats = TYPE_EVO[spec.type] || TYPE_EVO.normal, add = tier === 1 ? [] : final ? feats : feats.slice(0, 1);
+  return { tier, final, k, add, dl: tier === 1 ? 0.05 : final ? -0.06 : 0, ds: final ? 0.1 : 0 };
+}
 export function paintCreature(spec, view = 'front', shiny = false, n = 64) {
+  const EV = evoInfo(spec);
   const C = { main: spec.main, accent: spec.accent, glow: spec.glow || '#ffffff' };
+  if (EV) { C.main = tone(C.main, EV.dl, EV.ds); if (EV.final) C.accent = tone(C.accent, 0, 0.08); }
   if (shiny) { C.main = shiftHue(C.main, 0.45); C.accent = shiftHue(C.accent, 0.3); }
   const tpl = KIND[spec.kind] || KIND.blob;
-  const M0 = tpl(C, spec.stage || 1);
-  const size = spec.size || 1, k = Math.max(0.74, Math.min(1.06, 0.6 + size * 0.33));
+  const M0 = tpl(C, EV ? (EV.tier > 1 ? 2 : 1) : spec.stage || 1);
+  const size = spec.size || 1, k = EV ? EV.k : Math.max(0.74, Math.min(1.06, 0.6 + size * 0.33));
   const back = view === 'back';
   const V0 = variant(spec), exl = (spec.size || 1) < 1.45 ? [...new Set((spec.extras || []).map(e => e === 'crown' ? V0.head : e))] : spec.extras;
+  if (EV) for (const e of EV.add) if (!exl.includes(e) && !(e === 'wings' && M0.wing)) exl.push(e);
   const ex = extras(exl, M0, C);
   let parts = [...ex.back, ...M0.parts, ...ex.fr];
   // Rückansicht: Dinge hinter dem Körper (Schweif, Flügel) kommen nach vorn
@@ -448,9 +467,9 @@ export function paintCreature(spec, view = 'front', shiny = false, n = 64) {
   const M = scaleMeta(scaleMeta(MV, k), q, 0, 0);
   if (n >= 64) pattern(cv, M, C, V);
   if (n < 64) { if (!back) for (const [x, y] of M.eyes) { cv.px(x, y, [32, 24, 40]); cv.px(x, y - 1, [32, 24, 40]); } return cv.toCanvas(back); }
-  if (!back) { face(cv, { ...M, eye: M.eye || V.eye, iris: V.iris }, C, (spec.stage || 1) === 1 && size < 0.8); if (V.brow && (spec.stage || 1) > 1) brows(cv, M, C); if (V.blush && (spec.stage || 1) === 1) blush(cv, M); marks(cv, M, C); }
+  if (!back) { const st0 = EV ? EV.tier : spec.stage || 1; face(cv, { ...M, eye: M.eye || V.eye, iris: V.iris || EV?.final }, C, EV ? EV.tier === 1 : (spec.stage || 1) === 1 && size < 0.8); if ((V.brow || EV?.final) && st0 > 1) brows(cv, M, C); if ((V.blush || EV?.tier === 1) && st0 === 1) blush(cv, M); marks(cv, M, C); }
   else if (M.shell || M.shellLine) marks(cv, M, C);
-  if (spec.extras?.includes('aura')) sparkleAura(cv, C, (spec.main.charCodeAt(1) * 977) | 1);
+  if (spec.extras?.includes('aura') || (EV?.final && EV.tier >= 3)) sparkleAura(cv, C, (spec.main.charCodeAt(1) * 977) | 1);
   return cv.toCanvas(back);
 }
 

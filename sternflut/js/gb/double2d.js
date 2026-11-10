@@ -12,6 +12,8 @@ import { choose, party, evoScene, typeTag, say, ask, waitMsg } from './gbui.js';
 import { ITEMS } from './maps.js';
 import { itemFilter, tinted, effMark } from './battle2d.js';
 import { effectiveness } from '../data/types.js';
+import { signature, tickOv, drawOv } from './anim.js';
+import { updateParts, drawParts, drawBeam } from './fx.js';
 import { crystalIcon } from './pixel.js';
 const backOut = t => 1 + 2.2 * Math.pow(t - 1, 3) + 1.2 * Math.pow(t - 1, 2);
 
@@ -222,6 +224,7 @@ class DoubleScene {
   async animMove(id, tg, mv, hit) {
     const M = MOVES[mv], col = TYPES[M.type].color, o = this.off[id], dir = SIDE(id) === 'p' ? 1 : -1;
     const a = this.center(id), t = this.center(tg || id), foeHit = tg && tg !== id && M.cat !== 'status';
+    if (await signature(this, mv, { a, t, o, to: tg && tg !== id ? this.off[tg] : null, dir, hit })) return;
     switch (foeHit ? M.fx : M.cat === 'status' ? (M.fx === 'heal' ? 'heal' : M.fx === 'roar' ? 'roar' : 'buff') : M.fx) {
       case 'dash': case 'slash': case 'bite':
         sfx('whoosh'); await this.tween(0.15, k => (o.x = dir * 16 * k));
@@ -260,7 +263,7 @@ class DoubleScene {
   // ---------------------------------------------------------- Update & Zeichnen
   update(dt) {
     for (let i = this.tweens.length - 1; i >= 0; i--) { const tw = this.tweens[i]; tw.t += dt; const k = Math.min(1, tw.t / tw.dur); tw.fn(k); if (k >= 1) { this.tweens.splice(i, 1); tw.res(); } }
-    for (const p of this.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.l -= dt; } this.parts = this.parts.filter(p => p.l > 0);
+    tickOv(this, dt); updateParts(this.parts, dt); this.parts = this.parts.filter(p => p.l > 0); if (this.parts.length > 300) this.parts.splice(0, this.parts.length - 300);
     if (this.flashT > 0) this.flashT -= dt;
     for (const bo of this.bolts) bo.l -= dt; this.bolts = this.bolts.filter(bo => bo.l > 0);
     const tp = input.tap;
@@ -308,7 +311,7 @@ class DoubleScene {
     if (this.ownTrainers && this.o.ownLooks) this.o.ownLooks.forEach((l, k) => ctx.drawImage(trainerSprite(l, true), 6 + k * 56, 50));
     if (this.mode === 'target') { const p = this.pos(this.tlist[this.tcur]); const x = p.x + 32 * p.s, y = p.y + 2 + Math.sin(G.t * 8) * 2; ctx.fillStyle = '#e84a5f'; ctx.beginPath(); ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y); ctx.lineTo(x, y + 6); ctx.fill(); }
     for (const bo of this.bolts) { ctx.strokeStyle = bo.c; ctx.lineWidth = 2; ctx.beginPath(); let x = bo.a.x, y = bo.a.y; ctx.moveTo(x, y); for (let i = 1; i <= 6; i++) { x = bo.a.x + (bo.t.x - bo.a.x) * i / 6 + (i < 6 ? (Math.random() - 0.5) * 14 : 0); y = bo.a.y + (bo.t.y - bo.a.y) * i / 6 + (i < 6 ? (Math.random() - 0.5) * 14 : 0); ctx.lineTo(x, y); } ctx.stroke(); }
-    for (const p of this.parts) { ctx.globalAlpha = Math.min(1, p.l / p.ml * 1.5); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.sz / 2, p.y - p.sz / 2, p.sz, p.sz); }
+    drawBeam(ctx, this.beamFx); drawParts(ctx, this.parts); drawOv(ctx, this);
     ctx.globalAlpha = 1;
     if (this.showBoxes) {
       ['f0', 'f1'].forEach((id, k) => this.dm[id] && this.infoBox(id, 3, 3 + k * 23, false));

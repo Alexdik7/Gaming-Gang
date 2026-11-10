@@ -20,6 +20,7 @@ export const TS = {
   metall: { pal: ['#ffffff', '#dce4ec', '#9fb0bf', '#5a6878'], shape: 'shard' },
   geist: { pal: ['#e8e0ff', '#b0a4f0', '#8a7dd6', '#4a3a8a'], shape: 'wisp', add: true },
   magie: { pal: ['#ffffff', '#ffd0f0', '#ff7ad9', '#c83aa8'], shape: 'star', add: true },
+  astral: { pal: ['#ffffff', '#d8c8ff', '#8a6aff', '#3a2a8a', '#140c3a'], shape: 'star', add: true },
 };
 const st = t => TS[t] || TS.normal;
 const R = (a, b) => a + Math.random() * (b - a);
@@ -75,7 +76,7 @@ export function impactFx(sc, type, x, y, big) {
 
 const lerp = (a, b, k) => a + (b - a) * k;
 // Geschoss: Kern fliegt im Bogen, Typ-Partikel als Spur
-async function projectile(sc, type, a, t, dur = 0.42, arc = 16, size = 4) {
+export async function projectile(sc, type, a, t, dur = 0.42, arc = 16, size = 4) {
   const S = st(type);
   await sc.tween(dur, k => {
     const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2, x = lerp(a.x, t.x, e), y = lerp(a.y, t.y, e) - Math.sin(k * Math.PI) * arc;
@@ -84,7 +85,7 @@ async function projectile(sc, type, a, t, dur = 0.42, arc = 16, size = 4) {
   });
 }
 // Mehrere Geschosse (Blätter, Splitter, Tropfen, Felsen) hintereinander
-async function volley(sc, type, a, t, n = 6, arc = 22) {
+export async function volley(sc, type, a, t, n = 6, arc = 22) {
   const L = [];
   for (let i = 0; i < n; i++) {
     const off = R(-10, 10), delay = i * 0.06, rot = R(0, 6);
@@ -97,7 +98,7 @@ async function volley(sc, type, a, t, n = 6, arc = 22) {
   await Promise.all(L);
 }
 // Strahl: leuchtender Balken mit pulsierender Breite
-async function beam(sc, type, a, t, dur = 0.55) {
+export async function beam(sc, type, a, t, dur = 0.55) {
   const S = st(type);
   sc.beamFx = { a, t, pal: S.pal, w: 0 };
   await sc.tween(dur, k => { sc.beamFx.w = Math.sin(Math.min(1, k * 1.4) * Math.PI) * 8 + 1.5; for (let i = 0; i < 2; i++) { const q = Math.random(); spawn(sc, type, lerp(a.x, t.x, q), lerp(a.y, t.y, q), R(-20, 20), R(-20, 20), { sz: R(1.5, 3), life: 0.3 }); } });
