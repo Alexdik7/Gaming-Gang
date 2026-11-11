@@ -31,6 +31,7 @@
     <p class="tcar"><b id="tCar">Kestrel GT</b> · <span id="tCash">$ 0</span></p>
     <button id="startBtn" class="btn primary">▶ Losfahren</button>
     <button id="garageBtn" class="btn">🔧 Garage</button>
+    <p id="tStory" class="small story-line">★ Story</p>
     <p id="tMissions" class="small missions-line">Tagesmissionen 0/3</p>
     <p class="small">Lenken ◀ ▶ · Gas · Bremse/Rückwärts · Drift · Nitro<br>Tastatur: Pfeile/WASD · Leertaste = Drift · Shift = Nitro · P = Pause</p>
     <p class="small">Drifte, fahre knapp an Autos vorbei oder rase über 190 km/h – Punkte werden zu Geld für Tuning. Leuchtring in der Stadt = Garage.</p>
@@ -42,6 +43,7 @@
 <div id="hud">
   <div id="topLeft">
     <canvas id="mini" width="260" height="260"></canvas>
+    <p id="storyGoal"></p>
   </div>
   <div id="chain"><small id="chainLbl">DRIFT</small><b id="chainPts">0</b></div>
   <div id="pops"></div>
@@ -84,6 +86,7 @@
     <h2>Pause</h2>
     <button id="resumeBtn" class="btn primary">Weiterfahren</button>
     <button id="abortBtn" class="btn danger" hidden>🏳 Rennen abbrechen</button>
+    <p id="pStory" class="small story-line"></p>
     <p class="label">Tagesmissionen</p>
     <ul id="missionList" class="mlist"></ul>
     <p class="label">Schnellreise</p>
@@ -100,6 +103,12 @@
     <button id="muteBtn" class="btn">Ton: an</button>
     <button id="titleBtn" class="btn">Zum Titel</button>
   </div>
+</section>
+
+<!-- Story-Dialog -->
+<section id="dialog">
+  <img id="dlgFace" alt="">
+  <div class="dlg-body"><b id="dlgName"></b><p id="dlgText"></p><small>Tippen ▶</small></div>
 </section>
 
 <!-- Polizei -->

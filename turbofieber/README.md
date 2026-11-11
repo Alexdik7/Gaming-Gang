@@ -18,6 +18,7 @@ Technik: three.js r160 (lokal in `lib/`, MIT-Lizenz) mit Bloom-Nachbearbeitung, 
 - `js/races.js`: Rennen – `RACES` (Downtown-Rundkurs, Zickzack-Sprint, Hafen-Sprint, Bergkönig, Highway-Zeitrennen, Drift-Arena) mit Start, Checkpoints `cps`, Radius `r`, Medaillen. Startpunkte als Leuchtsäulen mit Namensschild; langsam hineinfahren → Rennkarte. KI-Rivalen (`RIVALS`) fahren mit derselben Physik über eine dichte Fahrlinie, bremsen vor Kurven (Blick 28/52/88 m voraus), leichtes Gummiband. Countdown, Platzierung, Preisgeld (Platz 1/2/3/4 = 100/50/30/15 %), Bestleistungen in `profile.races`
 - `js/missions.js`: Tagesmissionen – 3 pro Tag aus 10 (fest nach Datum ausgelost), Zähler `add`/`max`, Belohnung sofort
 - `js/police.js`: Polizei – 4 Streifenwagen (`policeCfg`, Blaulicht `cfg.police`) fahren Streife von Kreuzung zu Kreuzung. Auslöser: Raser über 120 km/h im Umkreis von 75 m, Unfallflucht (Verkehr gerammt nahe einer Streife), Polizeiauto gerammt. Fahndung ★1–5 (alle 35 s oder durch Rammen höher), Verfolger je Stufe 2/3/4/5/6, Verfolgung über das Straßenraster (`chaseTarget`) mit Vorhersage, festgefahrene Verfolger werden außer Sicht neu gesetzt. Ab ★3 Straßensperren alle 22 s, ab ★4 mit Nagelband (`car.flat` = 12 s platte Reifen). Abhängen: 150 m Abstand, Balken füllt sich → Kopfgeld (7 $/s × Stufe + 250 je Rammen). Gestellt: unter 4 km/h neben einer Streife für 2,5 s → Strafe 400 $ × Stufe. Polizei im Pausemenü abschaltbar
+- `js/story.js`: Hauptstory – `STEPS` (Einführung durch Juno, Kapitel 1 Neon Kings/Kaito, 2 Hafenratten/Rhea, 3 Gipfelstürmer/Moss, Finale Phantom um Mitternacht auf dem Highway-Ring, `path: 'ring'`). Schritt = violetter Marker → Dialog → Story-Rennen mit eigener `rivalList`; Erfolg = Sieg bzw. Medaille ≤ `medal`. Dialog erscheint nach dem Ergebnisfenster (`pending`). Nebenquests `QUESTS` (grüne Marker, einmalig): deliver (Ziel + Zeit), speedtrap (3 Blitzer ≥ 200 km/h), drift (Punkte in Zeit), escape (Fahndung ★N, dann abhängen), night (Ziel bei Nacht). Fortschritt in `profile.story.step` und `profile.quests`. Porträts als Canvas (Crew-Farbe + Initiale)
 - `js/main.js`: Renderer, Qualitätsstufen (hoch/mittel/niedrig, automatisch je nach Bildrate), Kamera, Touch-Steuerung, HUD, Minikarte
 
 ## Fahrphysik (Arcade)
@@ -30,7 +31,7 @@ Technik: three.js r160 (lokal in `lib/`, MIT-Lizenz) mit Bloom-Nachbearbeitung, 
 Touch: ◀ ▶, GAS, BREMSE (rückwärts), DRIFT (Handbremse), NITRO. Tastatur: Pfeile/WASD, Leertaste, Shift, P.
 
 ## Test
-`window.TF`: state, car, world, touch, bloom, tod, start(), spawn(), step(dt, input), teleport('stadt'|'highway'|'hafen'|'berg'), traffic, weather, mountain, profile, garage, score, enterGarage(), GARAGE, races (start/clear/state), missions, placeCar(x, z, h), police (startPursuit/level/units/spawnBlock).
+`window.TF`: state, car, world, touch, bloom, tod, start(), spawn(), step(dt, input), teleport('stadt'|'highway'|'hafen'|'berg'), traffic, weather, mountain, profile, garage, score, enterGarage(), GARAGE, races (start/clear/state), missions, placeCar(x, z, h), police (startPursuit/level/units/spawnBlock), story (step/say/startQuest).
 Rennen ohne Grafik testen: `races.start(race)`, dann in einer Schleife `TF.step` + `races.update(dt)` mit Autopilot.
 Im Headless-Browser rendert SwiftShader sehr langsam. Physik deshalb mit `TF.car.update` in Schleifen messen, nicht in Echtzeit.
 
@@ -40,4 +41,10 @@ Im Headless-Browser rendert SwiftShader sehr langsam. Physik deshalb mit `TF.car
 3. ✔ Garage und Tuning (3 Autos, 10 Optik-Kategorien, 5 Upgrades), Street-Punkte als Geldquelle
 4. ✔ 6 Rennen (Rundkurs, Sprints, Zeitrennen, Drift-Arena) mit KI-Rivalen, Tagesmissionen
 5. ✔ Polizei: Streife, Fahndungsstufen, Verfolgung, Straßensperren, Nagelbänder, Kopfgeld/Strafe
-6. Hauptstory mit Crews und Bossrennen, Nebenquests
+6. ✔ Hauptstory (4 Kapitel, 4 Bosse, Dialoge mit Porträts) und 6 Nebenquests
+
+## KI-Fahrer (Rivalen, Bosse)
+- Fahrlinie mit Blick 3 + v·0,11 Punkte voraus; Tempo aus Bremsweg: jede Kurve bis 240 m voraus (Winkel über ±3 Punkte) → erlaubtes Tempo √(vc² + 2·13·d)
+- weicht Verkehr seitlich aus (`dodge`), setzt bei Stillstand 1,3 s zurück
+- Gummiband: vorn bis −0,12 Können, hinten bis +0,1
+- Balance (Startauto, 95 % Können): normale Rennen knapp gewinnbar, Bosse brauchen Tuning, Phantom einen getunten Nyx S

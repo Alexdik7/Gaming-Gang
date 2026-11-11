@@ -15,6 +15,7 @@ import { softCircle } from './world.js';
 import { Races } from './races.js';
 import { Missions } from './missions.js';
 import { Police } from './police.js';
+import { Story } from './story.js';
 import { Car } from './car.js';
 import { Effects } from './fx.js';
 import { CarAudio } from './audio.js';
@@ -111,6 +112,7 @@ function teleport(where) {
 }
 document.querySelectorAll('[data-tp]').forEach(b => b.addEventListener('click', () => {
   races.abort();
+  story.abortQuest();
   if (b.dataset.tp === 'garage') { if (police.wanted) { resume(); score.popup('Erst die Polizei abhängen!', 'red'); return; } car.place(GARAGE.x, GARAGE.z, 0); enterGarage('drive'); return; }
   teleport(b.dataset.tp); resume();
 }));
@@ -163,9 +165,10 @@ function setState(s) {
 function start() {
   audio.unlock();
   setState('drive');
+  setTimeout(() => story.onDriveStart(), 600);
   camPos.set(car.pos.x - Math.sin(car.heading) * 7, 2.6, car.pos.z - Math.cos(car.heading) * 7);
 }
-function pause() { renderMissions(); $('abortBtn').hidden = !races.race; setState('pause'); audio.suspend(); }
+function pause() { renderMissions(); $('pStory').textContent = story.summary(); $('abortBtn').hidden = !races.race && !story.quest; $('abortBtn').textContent = races.race ? '🏳 Rennen abbrechen' : '🏳 Auftrag abbrechen'; setState('pause'); audio.suspend(); }
 function resume() { setState('drive'); audio.unlock(); }
 
 $('startBtn').addEventListener('click', start);
@@ -255,6 +258,7 @@ function refreshCash() {
 const garage = new Garage(renderer, profile, { save: () => { saveP(); refreshCash(); }, exit: exitGarage, sound: k => audio.ui(k) });
 const score = new StreetScore((cash, pts, mult) => {
   races.addDrift(pts);
+  story.addDrift(pts);
   missions.add('pts', pts);
   missions.max('mult', mult);
   profile.cash += cash;
@@ -274,12 +278,12 @@ function placeCar(x, z, h) {
   camPos.set(x - Math.sin(h) * 7, car.pos.y + 2.6, z - Math.cos(h) * 7);
 }
 const races = new Races({
-  scene, world, car, profile, score, audio,
+  scene, world, car, profile, score, audio, traffic,
   save: () => { saveP(); refreshCash(); },
   makeCar: (id, cfg, perf) => { const c = new Car(scene, id, cfg, perf); c.npc = true; return c; },
   dropCar: c => c.dispose(),
   teleport: placeCar,
-  onFinish: res => { missions.add('races', 1); if (res.win) missions.add('wins', 1); refreshCash(); }
+  onFinish: res => { missions.add('races', 1); if (res.win) missions.add('wins', 1); refreshCash(); story.raceFinished(res); }
 });
 // Tagesmissionen
 const missions = new Missions(profile, m => {
@@ -295,7 +299,7 @@ function renderMissions() {
   $('missionList').innerHTML = list.map(m => `<li class="${m.done ? 'done' : ''}"><span>${m.done ? '✔ ' : ''}${m.text}</span><small>${m.done ? 'erledigt' : fmt(m.prog) + ' / ' + fmt(m.goal)} · $${fmt(m.reward)}</small><i style="width:${Math.round(m.prog / m.goal * 100)}%"></i></li>`).join('');
   $('tMissions').textContent = `Tagesmissionen ${list.filter(m => m.done).length}/3`;
 }
-$('abortBtn').addEventListener('click', () => { races.abort(); resume(); });
+$('abortBtn').addEventListener('click', () => { races.abort(); story.abortQuest(); resume(); });
 
 // Polizei
 const police = new Police({
@@ -309,6 +313,7 @@ const police = new Police({
     score.popup('ENTKOMMEN! +$' + fmt(bounty), 'green');
     audio.ui('buy');
     missions.add('escapes', 1); missions.add('bounty', bounty);
+    story.escaped();
   },
   onBusted: fine => {
     profile.cash -= fine; saveP(); refreshCash();
@@ -320,6 +325,15 @@ const police = new Police({
 });
 police.setEnabled(settings.police);
 $('bustOk').addEventListener('click', () => { $('busted').classList.remove('show'); spawn(); });
+
+// Story und Nebenquests
+const story = new Story({
+  scene, world, car, profile, races, police, score, audio,
+  save: () => { saveP(); refreshCash(); },
+  popup: (t, cls) => score.popup(t, cls),
+  setNight: () => { tod = 23.8; if (settings.time !== 'auto') { settings.time = 'nacht'; saveSettings(); updateTimeLabel(); } }
+});
+$('tStory').textContent = story.goal();
 $('policeBtn').addEventListener('click', () => {
   settings.police = !settings.police; saveSettings();
   police.setEnabled(settings.police);
@@ -370,6 +384,10 @@ function drawMini() {
     const dx = t.x - car.pos.x, dz = t.z - car.pos.z;
     if (dx * dx + dz * dz > view * view * 1.2) continue;
     mctx.beginPath(); mctx.arc(mx(t.x), mz(t.z), rr, 0, Math.PI * 2); mctx.fill();
+  }
+  for (const m of story.mapMarks()) {
+    mctx.fillStyle = m.c;
+    mctx.beginPath(); mctx.arc(mx(m.x), mz(m.z), m.r / k, 0, Math.PI * 2); mctx.fill();
   }
   const blink = Math.floor(performance.now() / 250) % 2;
   for (const u of police.mapDots()) {
@@ -564,12 +582,13 @@ function frame(now) {
   }
 
   if (state === 'drive') {
-    const inp = races.frozen ? NO_INPUT : input();
+    const inp = races.frozen || story.talking ? NO_INPUT : input();
     const steps = Math.ceil(dt / (1 / 120)), h = dt / steps;
     for (let i = 0; i < steps; i++) physics(h, inp);
     fx.tires(car, dt, weather.wet);
     score.update(dt, car, traffic);
-    races.update(dt, car.speed < 8 && !police.wanted);
+    story.update(dt);                       // Story zuerst: Story-Marker haben Vorrang vor Rennkarten
+    races.update(dt, car.speed < 8 && !police.wanted && !story.busy);
     police.update(dt, !races.race && !$('busted').classList.contains('show'));
     for (const u of police.units) u.car.syncMesh(world.night);
     audio.siren = police.sirenLevel();
@@ -647,6 +666,6 @@ window.TF = {
   get state() { return state; }, car, world, touch, bloom,
   get quality() { return quality; },
   get tod() { return tod; }, set tod(v) { tod = v; },
-  start, pause, resume, spawn, step: physics, teleport, traffic, weather, profile, garage, score, enterGarage, GARAGE, races, missions, placeCar, police, mountain: MOUNTAIN,
+  start, pause, resume, spawn, step: physics, teleport, traffic, weather, profile, garage, score, enterGarage, GARAGE, races, missions, placeCar, police, story, mountain: MOUNTAIN,
   stats: () => ({ distance, topSpeed, fps: 0 })
 };

@@ -36,9 +36,9 @@ export const RACES = [
 ];
 
 const RIVALS = [
-  { name: 'Kaito', car: 'nyx', paint: '#22e8ff', skill: 0.9, perf: 1 },
-  { name: 'Rhea', car: 'vandal', paint: '#9a3cff', skill: 0.86, perf: 1 },
-  { name: 'Moss', car: 'kestrel', paint: '#2aff8a', skill: 0.84, perf: 2 }
+  { name: 'Kaito', car: 'nyx', paint: '#22e8ff', skill: 0.8, perf: 0 },
+  { name: 'Rhea', car: 'vandal', paint: '#9a3cff', skill: 0.82, perf: 0 },
+  { name: 'Moss', car: 'kestrel', paint: '#2aff8a', skill: 0.84, perf: 1 }
 ];
 
 // Fahrlinie als dichte Punktkette (alle ~4 m)
@@ -56,12 +56,12 @@ function densify(pts, step = 4) {
 function racePath(race) {
   if (!race.cps) return [];                          // Drift-Arena: freie Fläche, keine Strecke
   if (race.path === 'mountain') return MOUNTAIN.slice(3).map(p => ({ x: p.x, z: p.z }));
-  if (race.type === 'time') { const o = {}, out = []; for (let s = 0; s <= RING_LEN; s += 4) { ringAt(RING_S0 + s, -3.5, o); out.push({ x: o.x, z: o.z }); } return out; }
+  if (race.type === 'time' || race.path === 'ring') { const o = {}, out = []; for (let s = 0; s <= RING_LEN; s += 4) { ringAt(RING_S0 + s, -3.5, o); out.push({ x: o.x, z: o.z }); } return out; }
   return densify([race.start, ...race.cps]);
 }
 
 // Leuchtsäule + Bodenring
-function beacon(color, radius, height) {
+export function beacon(color, radius, height) {
   const c = document.createElement('canvas'); c.width = 4; c.height = 64;
   const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 64);
   gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,0.75)');
@@ -77,7 +77,7 @@ function beacon(color, radius, height) {
   grp.userData = { mat, ringMat };
   return grp;
 }
-function label(text, color) {
+export function label(text, color) {
   const c = document.createElement('canvas'); c.width = 512; c.height = 128;
   const g = c.getContext('2d');
   g.fillStyle = 'rgba(8,10,20,0.75)';
@@ -88,7 +88,7 @@ function label(text, color) {
   let fs = 50;
   do { g.font = `italic 900 ${fs}px system-ui, sans-serif`; fs -= 2; } while (g.measureText('🏁 ' + text).width > 460 && fs > 20);
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = '#fff'; g.fillText('🏁 ' + text, 256, 66);
+  g.fillStyle = '#fff'; g.fillText((text[0] === '!' || text[0] === '★' ? '' : '🏁 ') + text, 256, 66);
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, toneMapped: false, fog: false }));
   s.scale.set(16, 4, 1);
   return s;
@@ -162,7 +162,7 @@ export class Races {
     const fx = Math.sin(h), fz = Math.cos(h), rx = -fz, rz = fx;
     const grid = [[-4, -8], [4, -8], [0, -16]];
     for (let i = 0; i < race.rivals; i++) {
-      const d = RIVALS[i], cfg = defaultCfg(d.paint);
+      const d = (race.rivalList || RIVALS)[i], cfg = Object.assign(defaultCfg(d.paint), d.cfg || {});
       const p = { motor: d.perf, turbo: d.perf, tires: d.perf, chassis: d.perf, nitro: 1 };
       const rcar = c.makeCar(d.car, cfg, p);
       const [lat, back] = grid[i];
@@ -228,7 +228,18 @@ export class Races {
     r.pi = bi;
     const look = Math.round(3 + c.speed * 0.11);
     const tp = P[idx(bi + look)];
-    const diff = wrap(Math.atan2(tp.x - c.pos.x, tp.z - c.pos.z) - c.heading);
+    // Verkehr voraus: auf die freie Seite ausweichen
+    const fx = Math.sin(c.heading), fz = Math.cos(c.heading);
+    let dodge = r.dodge || 0, blocked = false;
+    for (const t of (this.ctx.traffic ? this.ctx.traffic.cars : [])) {
+      const rx = t.x - c.pos.x, rz = t.z - c.pos.z, ahead = rx * fx + rz * fz;
+      if (ahead < 3 || ahead > 38) continue;
+      const lat = rx * fz - rz * fx;                    // > 0: Verkehr links von der Fahrlinie
+      if (Math.abs(lat - dodge) < 2.6) { blocked = true; dodge = lat > 0 ? lat - 4.2 : lat + 4.2; }
+    }
+    r.dodge = blocked ? Math.max(-6, Math.min(6, dodge)) : (r.dodge || 0) * 0.97;
+    const ox = fz * r.dodge, oz = -fx * r.dodge;       // seitlich versetzen (links = (cos, −sin), passend zu lat > 0)
+    const diff = wrap(Math.atan2(tp.x + ox - c.pos.x, tp.z + oz - c.pos.z) - c.heading);
     let corner = 0;
     for (const [ahead, w] of [[7, 1], [13, 0.85], [22, 0.6]]) {
       const q = P[idx(bi + ahead)];
@@ -236,8 +247,25 @@ export class Races {
     }
     const lead = this.progress(r, c) - playerProg;          // > 0: Rivale vorn
     r.skill = Math.max(r.base - 0.12, Math.min(r.base + 0.1, r.base - lead * 0.00002));
-    const vT = c.st.vmax * r.skill * Math.max(0.22, 1 - corner * 0.9);
+    // Tempo: nah ausgerichtet bleiben und jede Kurve bis 240 m voraus mit Bremsweg einplanen
+    let vT = c.st.vmax * r.skill * Math.max(0.22, 1 - corner * 0.9);
+    for (let k = 4; k < 60; k += 2) {
+      const i0 = idx(bi + k - 3), i1 = idx(bi + k), i2 = idx(bi + k + 3);
+      const th = Math.abs(wrap(Math.atan2(P[i2].x - P[i1].x, P[i2].z - P[i1].z) - Math.atan2(P[i1].x - P[i0].x, P[i1].z - P[i0].z)));
+      if (th < 0.15) continue;
+      const vc = c.st.vmax * r.skill * Math.max(0.2, 1 - th * 0.75);
+      vT = Math.min(vT, Math.sqrt(vc * vc + 2 * 13 * Math.max(0, k * 4 - 8)));
+    }
     const inp = r.inp;
+    // festgefahren (z. B. an einer Hauswand)? → kurz zurücksetzen und gegenlenken
+    r.stuck = c.speed < 1.5 ? (r.stuck || 0) + 1 / 60 : 0;
+    if (r.stuck > 1.5) { r.reverse = 1.3; r.stuck = 0; }
+    if (r.reverse > 0) {
+      r.reverse -= 1 / 60;
+      inp.steer = diff > 0 ? 1 : -1;
+      inp.gas = false; inp.brake = true; inp.nitro = false; inp.drift = false;
+      return;
+    }
     inp.steer = Math.max(-1, Math.min(1, -diff * 2.4));
     inp.gas = c.speed < vT;
     inp.brake = c.speed > vT + 4;
@@ -258,7 +286,8 @@ export class Races {
   update(dt, speedOk) {
     const c = this.ctx, car = c.car;
     const pulse = 0.4 + 0.25 * Math.sin(performance.now() / 250);
-    for (const m of this.markers) m.userData.mat.opacity = pulse;
+    // Säule blendet aus, wenn man direkt darin steht (sonst ist der ganze Bildschirm eingefärbt)
+    for (const m of this.markers) m.userData.mat.opacity = pulse * Math.max(0.06, Math.min(1, (Math.hypot(m.position.x - car.pos.x, m.position.z - car.pos.z) - 4) / 18));
     if (this.state === 'idle' || this.state === 'card') {
       // Startpunkt anfahren → Rennkarte
       for (let i = 0; i < RACES.length; i++) {

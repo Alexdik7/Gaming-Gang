@@ -356,3 +356,26 @@ body:has(#wanted.show) #pops { top: calc(env(safe-area-inset-top) + 142px); }
 .rpanel.cop { border-color: rgba(255, 60, 80, .7); }
 .rpanel.cop h2 { color: #ff4a5a; }
 .bigmoney.red { color: #ff6a7a; text-shadow: 0 0 16px rgba(255, 60, 80, .5); }
+
+/* ---------- Story ---------- */
+.story-line { color: #c79bff; font-weight: 800; }
+#storyGoal {
+  width: 150px; margin-top: 6px; padding: 4px 8px; border-radius: 10px; background: rgba(10, 12, 24, .6);
+  font-size: 10.5px; font-weight: 800; line-height: 1.3; color: #d9bcff; text-shadow: 0 1px 4px #000;
+}
+body.racing #storyGoal { display: none; }
+#dialog {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 14px); transform: translate(-50%, 20px);
+  width: min(calc(100% - 24px), 620px); display: flex; gap: 12px; align-items: center;
+  padding: 12px 16px; border-radius: 20px; background: rgba(10, 12, 26, .92); border: 1px solid rgba(166, 74, 255, .6);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, .6), 0 0 24px rgba(166, 74, 255, .25);
+  opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 20;
+}
+#dialog.show { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+#dlgFace { width: 72px; height: 72px; flex: none; border-radius: 50%; }
+.dlg-body { flex: 1; }
+.dlg-body b { font-size: 15px; font-style: italic; font-weight: 900; }
+.dlg-body p { margin-top: 3px; font-size: 15px; line-height: 1.4; }
+.dlg-body small { display: block; text-align: right; color: var(--muted); font-size: 11px; animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: .4; } }
+body:has(#dialog.show) #controls { opacity: .25; }
