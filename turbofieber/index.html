@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#07080f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Turbofieber">
+<title>Turbofieber</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
+</script>
+</head>
+<body data-state="title">
+<canvas id="game"></canvas>
+
+<!-- Titel -->
+<section id="title" class="overlay">
+  <div class="brand">
+    <h1>TURBO<span>FIEBER</span></h1>
+    <p>Straßenrennen in Velara</p>
+  </div>
+  <div class="title-card">
+    <p class="mode">Freie Fahrt · Schritt 1</p>
+    <div id="paints" class="paints" aria-label="Lackfarbe"></div>
+    <button id="startBtn" class="btn primary">▶ Losfahren</button>
+    <p class="small">Lenken ◀ ▶ · Gas · Bremse/Rückwärts · Drift · Nitro<br>Tastatur: Pfeile/WASD · Leertaste = Drift · Shift = Nitro · P = Pause</p>
+    <p class="small dim">Garage, Rennen, Missionen und Story folgen in den nächsten Schritten. · <a href="../">← Gaming Gang</a></p>
+  </div>
+</section>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="topLeft">
+    <canvas id="mini" width="260" height="260"></canvas>
+  </div>
+  <div id="topRight">
+    <button id="timeBtn" class="chip"><span id="clock">18:00</span> · <span id="timeMode">Auto</span></button>
+    <button id="pauseBtn" class="chip icon" aria-label="Pause">❚❚</button>
+  </div>
+  <div id="gauge">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <path class="track" pathLength="100" d="M 20 95 A 50 50 0 1 1 100 95" />
+      <path id="rpmArc" class="rpm" pathLength="100" d="M 20 95 A 50 50 0 1 1 100 95" />
+    </svg>
+    <div class="readout"><b id="speed">0</b><small>km/h</small><i id="gear">1</i></div>
+    <div class="nitro"><div id="nitroFill"></div></div>
+  </div>
+</div>
+
+<!-- Touch-Steuerung -->
+<div id="controls">
+  <div class="pad left">
+    <button class="ctl steer" data-ctl="left" aria-label="Links">◀</button>
+    <button class="ctl steer" data-ctl="right" aria-label="Rechts">▶</button>
+  </div>
+  <div class="pad right">
+    <div class="col">
+      <button class="ctl small nitro" data-ctl="nitro">NITRO</button>
+      <button class="ctl brake" data-ctl="brake">BREMSE</button>
+    </div>
+    <div class="col">
+      <button class="ctl small drift" data-ctl="drift">DRIFT</button>
+      <button class="ctl gas" data-ctl="gas">GAS</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pause -->
+<section id="pauseMenu" class="overlay">
+  <div class="title-card">
+    <h2>Pause</h2>
+    <button id="resumeBtn" class="btn primary">Weiterfahren</button>
+    <button id="respawnBtn" class="btn">Zurück zum Start</button>
+    <button id="qualityBtn" class="btn">Grafik: Auto</button>
+    <button id="muteBtn" class="btn">Ton: an</button>
+    <button id="titleBtn" class="btn">Zum Titel</button>
+  </div>
+</section>
+
+<div id="lost" class="overlay show" hidden><div class="title-card"><h2>Grafik verloren</h2><button class="btn primary" onclick="location.reload()">Neu laden</button></div></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
