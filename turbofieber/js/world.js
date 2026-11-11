@@ -46,8 +46,23 @@ export function softCircle(size = 64, inner = 0) {
   return t;
 }
 
+// Wiese: grünes Rauschen mit hellen und dunklen Flecken
+function grassTexture() {
+  const sz = 128, c = document.createElement('canvas');
+  c.width = c.height = sz;
+  const g = c.getContext('2d');
+  g.fillStyle = '#3b5e30'; g.fillRect(0, 0, sz, sz);
+  const img = g.getImageData(0, 0, sz, sz), d = img.data;
+  for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - 0.5) * 30; d[i] += n * 0.6; d[i + 1] += n; d[i + 2] += n * 0.4; }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 // Asphalt mit feinem Rauschen und Flecken
-function asphaltTexture() {
+export function asphaltTexture() {
   const s = 256, c = document.createElement('canvas');
   c.width = c.height = s;
   const g = c.getContext('2d');
@@ -199,21 +214,29 @@ export class World {
       this.blocks.push({ i, j, type, rect: blockRect(i, j), center });
     }
 
-    // --- Boden
-    const tex = asphaltTexture();
-    tex.repeat.set(SIZE / 12, SIZE / 12);
-    this.groundMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8, metalness: 0.0, color: 0xffffff });
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(SIZE + 1600, SIZE + 1600), this.groundMat);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    tex.repeat.set((SIZE + 1600) / 12, (SIZE + 1600) / 12);
-    s.add(ground);
+    // --- Boden: Asphalt in der Stadt, Wiese drumherum (Texturkoordinaten aus der Weltposition)
+    this.groundMat = new THREE.MeshStandardMaterial({ map: asphaltTexture(), roughness: 0.82, metalness: 0.0 });
+    this.wetMats = [{ m: this.groundMat, r: 0.82 }];   // Materialien, die bei Nacht/Regen glänzen
+    s.add(this.flat(OFF, -OFF, OFF, -OFF, 0, this.groundMat));
+    this.grassMat = new THREE.MeshStandardMaterial({ map: grassTexture(), roughness: 0.95 });
+    s.add(this.flat(-2200, 2200, -775, 1800, -0.06, this.grassMat, 9));
 
     this.buildBlocks();
     this.buildMarkings();
     this.buildLamps();
     this.buildSkyline();
     this.buildSky();
+  }
+
+  // Flaches Rechteck auf Höhe y; Textur wiederholt sich alle uvScale Meter (nahtlos über mehrere Flächen)
+  flat(x0, x1, z0, z1, y, mat, uvScale = 12) {
+    const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-Math.PI / 2);
+    g.translate((x0 + x1) / 2, y, (z0 + z1) / 2);
+    const p = g.attributes.position, uv = g.attributes.uv;
+    for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / uvScale, p.getZ(i) / uvScale);
+    const m = new THREE.Mesh(g, mat);
+    m.receiveShadow = true;
+    return m;
   }
 
   // Gehwege, Parks, Gebäude, Leuchtreklamen, Bäume
@@ -343,14 +366,17 @@ export class World {
     trunk.castShadow = crown.castShadow = true;
     s.add(trunk, crown);
 
-    // Leitplanken am Stadtrand
+    // Betonmauer am Stadtrand mit Lücken an den Ausfahrten (Straße k = 4)
     const wallMat = new THREE.MeshStandardMaterial({ color: '#9a9a96', roughness: 0.8 });
-    const L = SIZE + 2;
-    for (const [x, z, w, d] of [[0, OFF - 0.6, L, 1.2], [0, -OFF + 0.6, L, 1.2], [OFF - 0.6, 0, 1.2, L], [-OFF + 0.6, 0, 1.2, L]]) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(w, 1.1, d), wallMat);
-      m.position.set(x, 0.55, z);
-      m.receiveShadow = true;
-      s.add(m);
+    const ex = roadCenter(4), g0 = ex - ROAD / 2, g1 = ex + ROAD / 2, E = -OFF + 0.6, L0 = OFF - 1.2, L1 = -OFF + 1.2;
+    const parts = [[L0, g0], [g1, L1]];
+    for (const [a, b] of parts) {
+      for (const [x, z, w, d] of [[(a + b) / 2, -E, b - a, 1.2], [(a + b) / 2, E, b - a, 1.2], [-E, (a + b) / 2, 1.2, b - a], [E, (a + b) / 2, 1.2, b - a]]) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, 1.1, d), wallMat);
+        m.position.set(x, 0.55, z);
+        m.receiveShadow = true;
+        s.add(m);
+      }
     }
   }
 
@@ -398,19 +424,27 @@ export class World {
         spots.push([x1 - 1.2, z0 + BLOCK * f, 1, 0]);
       }
     }
-    const poleGeo = new THREE.CylinderGeometry(0.09, 0.13, 7, 6).translate(0, 3.5, 0);
-    const poles = new THREE.InstancedMesh(poleGeo, new THREE.MeshStandardMaterial({ color: '#3a3d42', metalness: 0.6, roughness: 0.4 }), spots.length);
-    this.lampMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd9a0'), toneMapped: false });
+    this.addLamps(spots, 7, 0.2);
+  }
+
+  // Laternen an beliebigen Stellen: [x, z, Richtung x, Richtung z], Masthöhe h, Fußhöhe y0
+  addLamps(spots, h = 7, y0 = 0) {
+    if (!this.lampMat) {
+      this.lampMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd9a0'), toneMapped: false });
+      this.poolMat = new THREE.MeshBasicMaterial({ map: softCircle(64), color: '#ffc880', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+      this.poleMat = new THREE.MeshStandardMaterial({ color: '#3a3d42', metalness: 0.6, roughness: 0.4 });
+    }
+    const poleGeo = new THREE.CylinderGeometry(0.09, 0.13, h, 6).translate(0, h / 2, 0);
+    const poles = new THREE.InstancedMesh(poleGeo, this.poleMat, spots.length);
     const heads = new THREE.InstancedMesh(new THREE.BoxGeometry(1.4, 0.18, 0.5), this.lampMat, spots.length);
-    this.poolMat = new THREE.MeshBasicMaterial({ map: softCircle(64), color: '#ffc880', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
     const pools = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), this.poolMat, spots.length);
-    const dummy = new THREE.Object3D();
+    const dummy = new THREE.Object3D(), r = h * 1.6;
     spots.forEach(([x, z, dx, dz], k) => {
-      dummy.position.set(x, 0.2, z); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix();
+      dummy.position.set(x, y0, z); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix();
       poles.setMatrixAt(k, dummy.matrix);
-      dummy.position.set(x + dx * 0.9, 7.1, z + dz * 0.9); dummy.rotation.set(0, dx ? Math.PI / 2 : 0, 0); dummy.updateMatrix();
+      dummy.position.set(x + dx * 0.9, y0 + h + 0.1, z + dz * 0.9); dummy.rotation.set(0, dx ? Math.PI / 2 : 0, 0); dummy.updateMatrix();
       heads.setMatrixAt(k, dummy.matrix);
-      dummy.position.set(x + dx * 3.2, 0.03, z + dz * 3.2); dummy.rotation.set(0, 0, 0); dummy.scale.set(11, 1, 11); dummy.updateMatrix();
+      dummy.position.set(x + dx * h * 0.45, y0 + 0.05, z + dz * h * 0.45); dummy.rotation.set(0, 0, 0); dummy.scale.set(r, 1, r); dummy.updateMatrix();
       pools.setMatrixAt(k, dummy.matrix);
     });
     poles.castShadow = true;
@@ -421,10 +455,10 @@ export class World {
   buildSkyline() {
     const r = this.rng, dummy = new THREE.Object3D(), col = new THREE.Color();
     for (let k = 0; k < 140; k++) {
-      const a = (k / 140) * Math.PI * 2 + r() * 0.03;
-      const dist = SIZE / 2 + 160 + r() * 380;
+      // Nachbarstädte im Osten und Westen, hinter dem Highway
+      const side = k % 2 ? 1 : -1;
       const h = 30 + r() * 120;
-      dummy.position.set(Math.cos(a) * dist, 0, Math.sin(a) * dist);
+      dummy.position.set(side * (900 + r() * 500), 0, -650 + r() * 1500);
       dummy.scale.set(20 + r() * 30, h, 20 + r() * 30);
       dummy.rotation.set(0, r() * 3, 0);
       dummy.updateMatrix();
@@ -455,7 +489,9 @@ export class World {
     this.scene.add(this.sun, this.sun.target);
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x333333, 0.8);
     this.scene.add(this.hemi);
-    this.scene.fog = new THREE.Fog(0x000000, 140, 720);
+    this.scene.fog = new THREE.Fog(0x000000, 160, 1500);
+    this.wet = 0;
+    this.envWet = 0;
   }
 
   // Tageszeit anwenden. tod in Stunden (0–24)
@@ -487,7 +523,21 @@ export class World {
     this.signMat.color.setScalar(0.8 + night * 1.8);
     this.lampMat.color.set('#ffd9a0').multiplyScalar(night > 0.3 ? 3 : 0.6);
     this.poolMat.opacity = night * 0.5;
-    this.groundMat.roughness = 0.82 - night * 0.42;      // nachts wirkt der Asphalt feucht und spiegelt
+    // Nachts und bei Regen glänzt der Asphalt (spiegelt Himmel und Lichter)
+    const wet = this.wet;
+    for (const w of this.wetMats) w.m.roughness = Math.max(0.05, w.r - night * 0.35 - wet * 0.55);
+    this.grassMat.color.setScalar(1 - wet * 0.3);
+    if (wet > 0.001) {                                   // Regen: grauer Himmel, schwache Sonne, kurze Sicht
+      const grey = tmpB.set(night > 0.5 ? '#07090e' : '#59606b');
+      sk.uTop.value.lerp(grey, wet * 0.8);
+      sk.uHorizon.value.lerp(grey, wet * 0.65);
+      this.scene.fog.color.lerp(grey, wet * 0.7);
+      sk.uSunCol.value.multiplyScalar(1 - wet * 0.9);
+      this.sun.intensity *= 1 - wet * 0.65;
+      this.hemi.intensity *= 1 - wet * 0.25;
+    }
+    this.scene.fog.near = 160 - wet * 120;
+    this.scene.fog.far = 1500 - wet * 1100;
 
     // Schatten folgen dem Auto
     if (focus) {
@@ -495,8 +545,9 @@ export class World {
       this.sun.position.copy(focus).addScaledVector(lightDir, 160);
     }
     // Umgebungs-Map nur bei spürbarer Änderung neu berechnen (teuer)
-    if (Math.abs(tod - this.envTime) > 0.2) {
+    if (Math.abs(tod - this.envTime) > 0.2 || Math.abs(wet - this.envWet) > 0.12) {
       this.envTime = tod;
+      this.envWet = wet;
       const rt = this.pmrem.fromScene(this.envScene, 0, 1, 1000);
       if (this.envRT) this.envRT.dispose();
       this.envRT = rt;
@@ -506,11 +557,7 @@ export class World {
 
   // Kreis gegen Häuserblöcke und Stadtrand. Gibt Aufprallnormale und Tiefe zurück (oder null).
   collide(x, z, rad) {
-    const lim = -OFF - rad;
-    if (x < -lim) return { nx: 1, nz: 0, depth: -lim - x };
-    if (x > lim) return { nx: -1, nz: 0, depth: x - lim };
-    if (z < -lim) return { nx: 0, nz: 1, depth: -lim - z };
-    if (z > lim) return { nx: 0, nz: -1, depth: z - lim };
+    if (Math.abs(x) > -OFF + 3 || Math.abs(z) > -OFF + 3) return this.out ? this.out.collide(x, z, rad) : null;
     const ci = Math.floor((x - OFF - ROAD / 2) / CELL), cj = Math.floor((z - OFF - ROAD / 2) / CELL);
     for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
       if (i < 0 || j < 0 || i >= N || j >= N) continue;
@@ -524,6 +571,8 @@ export class World {
         return { nx: opts[0][1], nz: opts[0][2], depth: opts[0][0] + rad };
       }
     }
-    return null;
+    return this.out ? this.out.collide(x, z, rad) : null;   // Stadtrand / Ausfahrten
   }
+
+  heightAt(x, z) { return this.out ? this.out.heightAt(x, z) : 0; }
 }

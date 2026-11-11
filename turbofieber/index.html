@@ -27,7 +27,7 @@
     <p>Straßenrennen in Velara</p>
   </div>
   <div class="title-card">
-    <p class="mode">Freie Fahrt · Schritt 1</p>
+    <p class="mode">Freie Fahrt · Stadt, Highway, Hafen &amp; Berg</p>
     <div id="paints" class="paints" aria-label="Lackfarbe"></div>
     <button id="startBtn" class="btn primary">▶ Losfahren</button>
     <p class="small">Lenken ◀ ▶ · Gas · Bremse/Rückwärts · Drift · Nitro<br>Tastatur: Pfeile/WASD · Leertaste = Drift · Shift = Nitro · P = Pause</p>
@@ -41,7 +41,7 @@
     <canvas id="mini" width="260" height="260"></canvas>
   </div>
   <div id="topRight">
-    <button id="timeBtn" class="chip"><span id="clock">18:00</span> · <span id="timeMode">Auto</span></button>
+    <button id="timeBtn" class="chip"><span id="wx">☀️</span> <span id="clock">18:00</span> · <span id="timeMode">Auto</span></button>
     <button id="pauseBtn" class="chip icon" aria-label="Pause">❚❚</button>
   </div>
   <div id="gauge">
@@ -77,7 +77,14 @@
   <div class="title-card">
     <h2>Pause</h2>
     <button id="resumeBtn" class="btn primary">Weiterfahren</button>
-    <button id="respawnBtn" class="btn">Zurück zum Start</button>
+    <p class="label">Schnellreise</p>
+    <div class="tp">
+      <button class="btn" data-tp="stadt">🏙 Stadt</button>
+      <button class="btn" data-tp="highway">🛣 Highway</button>
+      <button class="btn" data-tp="hafen">⚓ Hafen</button>
+      <button class="btn" data-tp="berg">⛰ Berg</button>
+    </div>
+    <button id="weatherBtn" class="btn">Wetter: Auto</button>
     <button id="qualityBtn" class="btn">Grafik: Auto</button>
     <button id="muteBtn" class="btn">Ton: an</button>
     <button id="titleBtn" class="btn">Zum Titel</button>

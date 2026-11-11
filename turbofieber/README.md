@@ -8,6 +8,9 @@ Technik: three.js r160 (lokal in `lib/`, MIT-Lizenz) mit Bloom-Nachbearbeitung, 
 - `js/car.js`: Sportwagen aus extrudiertem Seitenprofil (Klarlack-Material), Räder, Scheinwerfer (SpotLight), Nitro-Flammen. Physik in `Car.update(dt, input)`
 - `js/fx.js`: Reifenqualm und Funken als Punktwolken, Bremsspuren als Ringpuffer
 - `js/audio.js`: Motor (Oszillatoren über Tiefpass), Reifen, Nitro, Wind, Aufprall
+- `js/outskirts.js`: Umland – Highway-Ring (`HW_IN`/`HW_OUT`, Verkehrsbahn `ringAt`), Ausfahrten an Straße k = 4, Hafen (Container, Kräne, Lagerhallen, Wasser), Bergstraße (`MOUNTAIN`, Catmull-Rom, 321 Punkte) mit eingeschnittenem Gelände, Wald und Gipfelplateau. Kollision: Hindernisse + befahrbare Bereiche (Rechtecke und Kapseln), `heightAt` für die Bergstraße
+- `js/traffic.js`: Verkehr – Stadtautos von Kreuzung zu Kreuzung (Rechtsverkehr, Abbiegen), Highway-Autos auf dem Ring; je Typ ein InstancedMesh (Limousine, Transporter, Taxi), Abstandhalten, Anfahren mit `knock`
+- `js/weather.js`: Regen (1500 Striche um die Kamera), Nässe `wet`, Blitze mit Donner
 - `js/main.js`: Renderer, Qualitätsstufen (hoch/mittel/niedrig, automatisch je nach Bildrate), Kamera, Touch-Steuerung, HUD, Minikarte
 
 ## Fahrphysik (Arcade)
@@ -20,12 +23,12 @@ Technik: three.js r160 (lokal in `lib/`, MIT-Lizenz) mit Bloom-Nachbearbeitung, 
 Touch: ◀ ▶, GAS, BREMSE (rückwärts), DRIFT (Handbremse), NITRO. Tastatur: Pfeile/WASD, Leertaste, Shift, P.
 
 ## Test
-`window.TF`: state, car, world, touch, bloom, tod, start(), spawn(), step(dt, input).
+`window.TF`: state, car, world, touch, bloom, tod, start(), spawn(), step(dt, input), teleport('stadt'|'highway'|'hafen'|'berg'), traffic, weather, mountain.
 Im Headless-Browser rendert SwiftShader sehr langsam. Physik deshalb mit `TF.car.update` in Schleifen messen, nicht in Echtzeit.
 
 ## Roadmap
 1. ✔ Fahrgefühl, Stadt, Tageszeiten, Touch-Steuerung
-2. Verkehr, Regen, größere Stadt (Highway, Hafen, Bergstraße)
+2. ✔ Verkehr, Regen, größere Welt (Highway, Hafen, Bergstraße), Schnellreise
 3. Garage und Tuning (Lack, Felgen, Spoiler, Motor, Turbo, Reifen, Nitro)
 4. Rennen (Sprint, Rundkurs, Drift, Zeitrennen) und Tagesmissionen
 5. Polizei und Verfolgungsjagden

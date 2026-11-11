@@ -79,8 +79,9 @@ export class Effects {
   }
 
   // Reifenqualm und Spuren an den Hinterrädern, solange das Auto rutscht
-  tires(car, dt) {
+  tires(car, dt, wet = 0) {
     const sl = car.slip + (car.braking && car.speed > 8 ? 6 : 0);
+    const y0 = car.pos.y;
     const sh = Math.sin(car.heading), ch = Math.cos(car.heading);
     const wheels = [[0.9, -1.36], [-0.9, -1.36]];
     for (let w = 0; w < 2; w++) {
@@ -88,14 +89,14 @@ export class Effects {
       const x = car.pos.x + lx * ch + lz * sh, z = car.pos.z - lx * sh + lz * ch;
       if (sl > 3.2) {
         if (Math.random() < Math.min(1, sl * dt * 3)) {
-          this.smoke.emit(x, 0.3, z, -car.vx * 0.15 + (Math.random() - 0.5) * 2, 0.6 + Math.random(), -car.vz * 0.15 + (Math.random() - 0.5) * 2, 1.4 + Math.random() * 0.8, 1.1 + Math.random());
+          this.smoke.emit(x, y0 + 0.3, z, -car.vx * 0.15 + (Math.random() - 0.5) * 2, 0.6 + Math.random(), -car.vz * 0.15 + (Math.random() - 0.5) * 2, 1.4 + Math.random() * 0.8, 1.1 + Math.random());
         }
         const last = this.lastMarks[w];
         if (last) {
           const dx = x - last.x, dz = z - last.z, len = Math.hypot(dx, dz);
           if (len > 0.35) {
             const d = this.dummy;
-            d.position.set((x + last.x) / 2, 0.02, (z + last.z) / 2);
+            d.position.set((x + last.x) / 2, y0 + 0.025, (z + last.z) / 2);
             d.rotation.set(0, Math.atan2(dx, dz), 0);
             d.scale.set(1, 1, len + 0.05);
             d.updateMatrix();
@@ -106,6 +107,10 @@ export class Effects {
           }
         } else this.lastMarks[w] = { x, z };
       } else this.lastMarks[w] = null;
+      // Sprühnebel bei nasser Straße
+      if (wet > 0.25 && car.speed > 8 && Math.random() < wet * car.speed * dt * 0.35) {
+        this.smoke.emit(x, y0 + 0.25, z, -car.vx * 0.3 + (Math.random() - 0.5) * 2, 0.8 + Math.random(), -car.vz * 0.3 + (Math.random() - 0.5) * 2, 0.5 + Math.random() * 0.3, 0.7);
+      }
     }
   }
 

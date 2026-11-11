@@ -152,6 +152,8 @@ export class Car {
     this.wheelRot = 0;
     this.roll = 0; this.pitch = 0;
     this.prevSpeed = 0;
+    this.grade = 0;             // Steigung (Höhe pro Meter, + = bergauf)
+    this.grip = 1;              // Haftung (Regen < 1)
   }
 
   get speed() { return Math.hypot(this.vx, this.vz); }
@@ -194,6 +196,7 @@ export class Car {
       vF -= Math.sign(vF) * Math.min(Math.abs(vF), (1.6 + 0.0007 * vF * vF) * dt);   // ausrollen
     }
     if (vF > vmax) vF -= (vF - vmax) * 2 * dt;
+    vF -= 9.81 * this.grade * dt;                     // Hangabtrieb
     if (inp.drift) vF -= Math.sign(vF) * Math.min(Math.abs(vF), 2.5 * dt);           // Handbremse
     this.vx = vF * sh - vR * ch;
     this.vz = vF * ch + vR * sh;
@@ -206,7 +209,7 @@ export class Car {
     // Gierrate: Einspurmodell, begrenzt durch die Reifenhaftung (Querbeschleunigung)
     const maxA = 0.62 / (1 + spd / 30);
     let yawT = -vF * Math.tan(this.steer * maxA) / 2.6;
-    const gripLimit = 17 / Math.max(spd, 1);
+    const gripLimit = 17 * this.grip / Math.max(spd, 1);
     yawT = Math.max(-gripLimit, Math.min(gripLimit, yawT));
     if (this.drifting) yawT = -this.steer * 1.75 * Math.min(1, spd / 14) + yawT * 0.3;   // Heck schwenkt aus
     this.yaw += (yawT - this.yaw) * Math.min(1, dt * (this.drifting ? 5 : 10));
@@ -226,7 +229,7 @@ export class Car {
       const back = !this.drifting && vF < -0.5;
       const target = back ? this.heading + Math.PI : this.heading;
       const diff = Math.atan2(Math.sin(target - phi), Math.cos(target - phi));
-      const rate = this.drifting ? (inp.drift ? 1.3 : 2.4) : 12;
+      const rate = this.drifting ? (inp.drift ? 1.3 : 2.4) : 12 * this.grip;
       phi += diff * (1 - Math.exp(-rate * dt));
       let mag = sp;
       if (this.drifting) mag *= 1 - 0.18 * dt;                  // etwas Reibung im Drift
@@ -276,7 +279,9 @@ export class Car {
   syncMesh(night) {
     const m = this.mesh, u = m.userData;
     m.position.copy(this.pos);
+    m.rotation.order = 'YXZ';
     m.rotation.y = this.heading;
+    m.rotation.x = -Math.atan(this.grade);
     u.body.rotation.z = this.roll;
     u.body.rotation.x = this.pitch;
     for (const w of u.wheels) {

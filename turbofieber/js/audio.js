@@ -3,6 +3,7 @@ export class CarAudio {
   constructor() {
     this.ac = null;
     this.muted = false;
+    this.rain = 0;
     try { this.muted = localStorage.getItem('tf.mute') === '1'; } catch (e) { /* ignorieren */ }
   }
 
@@ -53,6 +54,7 @@ export class CarAudio {
     this.tireGain = loop('bandpass', 1300, 6);
     this.nitroGain = loop('highpass', 2500, 0.7);
     this.windGain = loop('lowpass', 500, 0.5);
+    this.rainGain = loop('bandpass', 2600, 0.4);
   }
 
   setMuted(m) {
@@ -73,6 +75,7 @@ export class CarAudio {
     this.tireGain.gain.setTargetAtTime(on * Math.min(0.5, skid * 0.45), t, 0.05);
     this.nitroGain.gain.setTargetAtTime(on * (car.nitroOn ? 0.22 : 0), t, 0.08);
     this.windGain.gain.setTargetAtTime(on * Math.min(0.25, car.speed / 300), t, 0.2);
+    this.rainGain.gain.setTargetAtTime(on * this.rain * 0.16, t, 0.3);
   }
 
   // Kurzer Ton beim Hochschalten und dumpfer Schlag bei Aufprall
@@ -92,6 +95,19 @@ export class CarAudio {
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
     s.connect(f); f.connect(g); g.connect(this.master);
     s.start(t); s.stop(t + 0.45);
+  }
+  // Donner: tiefes, langes Grollen
+  thunder() {
+    if (!this.ac || this.muted) return;
+    const ac = this.ac, t = ac.currentTime;
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = this.noiseBuf;
+    f.type = 'lowpass'; f.frequency.value = 140;
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.exponentialRampToValueAtTime(0.9, t + 0.15);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 2.6);
+    s.connect(f); f.connect(g); g.connect(this.master);
+    s.start(t); s.stop(t + 2.7);
   }
   suspend() { if (this.ac && this.ac.state === 'running') this.ac.suspend(); }
 }

@@ -183,3 +183,16 @@ body[data-state="drive"] #controls, body[data-state="drive"] #topRight { pointer
   .readout b { font-size: 32px; }
   #mini { width: 96px; height: 96px; }
 }
+
+/* Pausemenü: Schnellreise */
+.label { margin-top: 12px; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.tp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tp .btn { margin-top: 6px; padding: 11px 6px; font-size: 14px; }
+#pauseMenu .title-card { max-height: calc(100% - 24px); overflow-y: auto; }
+#pauseMenu .title-card { touch-action: pan-y; overscroll-behavior: contain; }
+@media (orientation: landscape) and (max-height: 500px) {
+  #pauseMenu .title-card { width: min(100%, 640px); display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; align-items: start; }
+  #pauseMenu .title-card h2, #pauseMenu .title-card .label, #pauseMenu .title-card .tp { grid-column: 1 / -1; }
+  #pauseMenu .tp { grid-template-columns: repeat(4, 1fr); }
+  #pauseMenu .btn { padding: 11px; }
+}
