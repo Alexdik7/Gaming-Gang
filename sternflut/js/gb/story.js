@@ -5,7 +5,8 @@ import { fade, wait } from './engine.js';
 import { sfx, cry, setMusic } from '../core/audio.js';
 import { SPECIES } from '../data/creatures.js';
 import { createMon, healMon, monName } from '../data/mon.js';
-import { LOOK, ITEMS } from './maps.js';
+import { LOOK, ITEMS, MAPS } from './maps.js';
+import { TYPES, effectiveness } from '../data/types.js';
 import * as A3 from './akt3.js';
 import * as A4 from './akt4.js';
 import * as A5 from './akt5.js';
@@ -25,6 +26,27 @@ const COUNTER = { zundrak: 'tidolin', tidolin: 'moospip', moospip: 'zundrak' };
 export const counterOf = s => COUNTER[s.flags.starter] || 'tidolin';
 
 // ---------------------------------------------------------------- Arenen, Liga, Such-Aufträge
+// Arena-Berater: liest Leiter und Team der Arena, in der er steht, und gibt passende Tipps
+const tn = t => TYPES[t]?.name || t, list = a => a.length > 1 ? a.slice(0, -1).map(x => x + '-').join(', ') + ' und ' + a[a.length - 1] : a[0]; // „Feuer-, Eis- und Luft-Attacken“
+export function guideTips(g) {
+  const s = g.state, npcs = MAPS[g.ow.id]?.npcs || [], L = npcs.find(n => GYMS[n.id]), G = L && GYMS[L.id];
+  if (!G) return ['Hey, zukünftiger Champion! Der Arenaleiter wartet ganz oben. Viel Erfolg!'];
+  const mons = G.team.map(([sp]) => SPECIES[sp]).filter(Boolean), cnt = {};
+  for (const m of mons) m.types.forEach((t, i) => (cnt[t] = (cnt[t] || 0) + (i ? 0.6 : 1)));
+  const main = Object.entries(cnt).sort((a, b) => b[1] - a[1]), top = main.filter(([, v]) => v >= Math.max(1, main[0][1] * 0.5)).slice(0, 2).map(([t]) => t);
+  // Angriffstypen nach durchschnittlicher Wirkung gegen das ganze Team
+  const score = Object.keys(TYPES).map(t => [t, mons.reduce((a, m) => a + effectiveness(t, m.types), 0) / mons.length]).filter(([, v]) => v > 1.05).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t]) => tn(t));
+  const bad = Object.keys(TYPES).filter(d => d !== 'normal' && top.some(t => effectiveness(t, [d]) > 1)).slice(0, 3).map(tn);
+  const mono = top.length === 1 && main[0][1] >= mons.length * 0.8, lvl = Math.max(...G.team.map(x => x[1]));
+  const done = s.badges?.[G.badge];
+  const out = [done ? `Den ${G.badgeName} hast du schon! ${L.name} trainiert trotzdem jeden Tag weiter.` : `Hey, zukünftiger Champion! ${L.name} wartet ganz oben auf dich.`,
+    mono ? `In dieser Arena dreht sich alles um ${tn(top[0])}-Kreaturen.` : `${L.name} kämpft vor allem mit ${list(top.map(tn))}-Kreaturen – aber nicht nur!`];
+  if (score.length) out.push(`Am besten wirken ${list(score)}-Attacken. Damit triffst du hier richtig hart!`);
+  else out.push('Kein Typ hat hier einen klaren Vorteil – setz auf deine stärksten Kreaturen.');
+  if (bad.length) out.push(`Vorsicht mit ${list(bad)}-Kreaturen: Gegen die hat ${L.name} leichtes Spiel.`);
+  if (!done) { out.push(`Die stärkste Kreatur ist auf Level ${lvl}${G.double ? ', und gekämpft wird hier zu zweit – zwei gegen zwei!' : '.'}`); out.push('Und denk dran: Heil dein Team vor dem Kampf vollständig auf!'); }
+  return out;
+}
 export const GYMS = {
   rhea: {
     badge: 0, badgeName: 'ANKERORDEN', team: [['kneifling', 12], ['quallux', 12], ['perlschild', 14]], reward: 1600, bg: 'wasser',
@@ -166,7 +188,7 @@ export async function talkStory(g, n) {
       if (!f.heardBeacon) { f.heardBeacon = true; g.save(true); return say(['Du kommst aus Muschelbucht? Dann hast du den Sturm auch gesehen.', 'Heute Nacht sind Leute in grauen Kutten in den Leuchtfeuer-Turm eingebrochen und haben die Feuerlinse gestohlen!', 'Ohne Leuchtfeuer finden die Fischer nicht zurück – und Kapitänin Rhea ist mit ihrem Boot noch draußen.', 'Die Kutten-Leute sind in die Alte Werft im Süden gelaufen. „Orden der Stillen See“ nennen die sich.'], N); }
       return say(f.beaconLit ? ['Das Leuchtfeuer brennt wieder! Alle Boote sind zurück. Danke dir!'] : ['Die Alte Werft liegt im Süden des Hafens. Pass auf dich auf!'], N);
     case 'ab_frau': return say(f.beaconLit ? ['Mein Mann ist wieder da! Das Leuchtfeuer hat ihn heimgebracht.'] : ['Mein Mann ist noch draußen auf See … Ohne Leuchtfeuer …'], N);
-    case 'guide': return say(['Hey, zukünftiger Champion! Kapitänin Rhea wartet ganz oben.', 'Ihre Kreaturen sind Wasser-Typen. Pflanzen- und Elektro-Attacken treffen sie hart!'], N);
+    case 'guide': return say(guideTips(g), N);
     case 'rhea': case 'okko': case 'mira': return g.gym(n);
     case 'nebel': return nebel(g, n);
     case 'jaro_ank': return jaroAnker(g, n);

@@ -116,3 +116,6 @@
 - Eingehängt in `battle2d.animMove` und `double2d.animMove` (`signature(sc, id, {a,t,o,to,dir,hit})`); Doppelkampf nutzt jetzt auch `updateParts/drawParts/drawBeam` aus fx.js. Typ `astral` hat eigene Partikel-Palette.
 - Entwicklungen: `sprites.js` berechnet Stufe in der Kette (`evoTier` → `tier`, `chainLen`), `monart.js` `evoInfo`: Basis kleiner und heller mit großen Augen, Endform deutlich größer (bis ×1.12), kräftigere Farben, Augenbrauen, typ-eigene Merkmale (`TYPE_EVO`: z. B. Feuer Flammenschweif + Mähne, Erde Hörner + Panzer), Endform einer 3er-Kette funkelt. Neue Merkmale `mane`, `armor`, `thorns`.
 - Test: alle 172 Attacken im Kampf abgespielt (keine Fehler, 0,55–1,7 s je Attacke), Doppelkampf, e2e, Karten.
+
+## v1.6.1 – Arena-Berater mit echten Tipps
+- `guideTips(g)` in story.js: liest Leiter (NPC mit Eintrag in `GYMS`) und Team der aktuellen Arena, nennt Haupttyp(en), die drei wirksamsten Angriffstypen (Durchschnitt `effectiveness` gegen das Team), gefährdete eigene Typen, höchstes Level und Doppelkampf-Hinweis; nach dem Orden eigener Text. Gilt automatisch für alle 16 Arenen.
