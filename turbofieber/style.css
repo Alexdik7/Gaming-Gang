@@ -196,3 +196,90 @@ body[data-state="drive"] #controls, body[data-state="drive"] #topRight { pointer
   #pauseMenu .tp { grid-template-columns: repeat(4, 1fr); }
   #pauseMenu .btn { padding: 11px; }
 }
+
+/* ---------- Titel: Auto und Geld ---------- */
+.tcar { margin: 12px 0 2px; font-weight: 800; }
+.tcar span { color: #5dff9a; }
+.tp .wide { grid-column: 1 / -1; }
+.chip.cash { display: inline-flex; align-items: center; color: #5dff9a; }
+
+/* ---------- Street-Punkte ---------- */
+#chain {
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 12px);
+  transform: translate(-50%, -8px) scale(.9); opacity: 0; transition: opacity .2s, transform .2s;
+  text-align: center; pointer-events: none;
+}
+#chain.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
+#chain small { display: block; font-weight: 900; font-style: italic; letter-spacing: 2px; color: var(--yellow); font-size: 13px; text-shadow: 0 2px 6px #000; }
+#chain b { font-size: 34px; font-weight: 900; font-style: italic; text-shadow: 0 0 14px rgba(255, 42, 138, .8), 0 3px 0 #0a0c18; font-variant-numeric: tabular-nums; }
+#pops { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 74px); transform: translateX(-50%); pointer-events: none; text-align: center; }
+.pop { font-weight: 900; font-style: italic; font-size: 20px; text-shadow: 0 2px 8px #000; animation: pop 1.4s ease-out forwards; }
+.pop.green { color: #5dff9a; font-size: 26px; }
+.pop.cyan { color: var(--cyan); }
+.pop.yellow { color: var(--yellow); }
+.pop.red { color: #ff4a5a; }
+@keyframes pop { 0% { transform: scale(.6); opacity: 0; } 15% { transform: scale(1.15); opacity: 1; } 30% { transform: scale(1); } 100% { transform: translateY(-36px); opacity: 0; } }
+
+/* ---------- Garage ---------- */
+#garage { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s; }
+#garage.show { opacity: 1; }
+#garage.show > * { pointer-events: auto; }
+.g-top { position: absolute; top: calc(env(safe-area-inset-top) + 10px); left: calc(env(safe-area-inset-left) + 10px); right: calc(env(safe-area-inset-right) + 10px); display: flex; justify-content: space-between; }
+.g-side {
+  position: absolute; top: calc(env(safe-area-inset-top) + 60px); right: calc(env(safe-area-inset-right) + 10px);
+  width: 210px; padding: 10px 12px; border-radius: 16px; background: var(--panel); border: 1px solid var(--edge);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.g-side h2 { font-size: 18px; font-style: italic; font-weight: 900; color: var(--yellow); }
+.g-side p { font-size: 11px; color: var(--muted); margin: 2px 0 6px; }
+.g-side .gsmall { margin: 4px 0 0; }
+.bar { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; margin: 3px 0; }
+.bar i { height: 7px; border-radius: 4px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+.bar b { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--cyan), var(--pink)); transition: width .4s; }
+.g-bottom {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 8px calc(env(safe-area-inset-right) + 10px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 10px);
+  background: linear-gradient(0deg, rgba(6, 7, 12, .95), rgba(6, 7, 12, .75) 70%, transparent);
+}
+.g-tabs { display: flex; gap: 6px; margin-bottom: 6px; }
+.g-tabs button { flex: 1; max-width: 140px; padding: 8px; border-radius: 12px; border: 1px solid var(--edge); background: rgba(255, 255, 255, .06); color: var(--muted); font-weight: 900; font-style: italic; font-size: 14px; }
+.g-tabs button.on { background: linear-gradient(100deg, var(--pink), #ff5a3a); color: #fff; border-color: transparent; }
+.g-cats, .g-items { display: flex; gap: 6px; overflow-x: auto; touch-action: pan-x; scrollbar-width: none; padding-bottom: 2px; }
+.g-cats::-webkit-scrollbar, .g-items::-webkit-scrollbar { display: none; }
+.g-cats { margin-bottom: 6px; }
+.gcat { flex: none; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--edge); background: rgba(255, 255, 255, .05); color: var(--muted); font-weight: 800; font-size: 12px; }
+.gcat.on { color: #111; background: var(--cyan); border-color: transparent; }
+.gcard {
+  flex: none; min-width: 92px; padding: 8px 10px; border-radius: 14px; border: 2px solid var(--edge);
+  background: rgba(14, 16, 28, .85); color: var(--ink); display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.gcard b { font-size: 13px; white-space: nowrap; }
+.gcard small { font-size: 11px; color: #5dff9a; font-weight: 800; }
+.gcard.on { border-color: var(--yellow); box-shadow: 0 0 14px rgba(255, 207, 58, .35); }
+.gcard.poor small { color: #ff6a7a; }
+.gcard.done small { color: var(--muted); }
+.gcard.wide { min-width: 220px; }
+.gcard .sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3); box-shadow: inset 0 -5px 8px rgba(0, 0, 0, .35), inset 0 3px 6px rgba(255, 255, 255, .35); }
+.gcard .pips { color: var(--cyan); letter-spacing: 2px; font-size: 13px; }
+.g-buy { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px 8px 6px 14px; border-radius: 14px; background: rgba(255, 207, 58, .12); border: 1px solid rgba(255, 207, 58, .5); font-weight: 800; font-size: 14px; }
+.g-buy span { flex: 1; }
+.chip.buy { background: linear-gradient(100deg, #2ad48a, #1aa86a); color: #fff; border: none; }
+#gFlash { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 900; font-style: italic; color: #5dff9a; text-shadow: 0 2px 12px #000; opacity: 0; pointer-events: none; }
+#gFlash.show { animation: pop 1.6s ease-out forwards; }
+@media (orientation: portrait) {
+  .g-side { top: auto; bottom: calc(env(safe-area-inset-bottom) + 190px); right: 10px; left: 10px; width: auto; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .g-side { top: calc(env(safe-area-inset-top) + 54px); width: 196px; padding: 6px 10px; }
+  .g-side h2 { font-size: 15px; }
+  .g-side p, .g-side .gsmall { display: none; }
+  .bar { margin: 1px 0; font-size: 10px; grid-template-columns: 84px 1fr; }
+  .g-tabs { margin-bottom: 4px; }
+  .g-tabs button { padding: 5px; font-size: 13px; }
+  .g-cats { margin-bottom: 4px; }
+  .gcat { padding: 4px 10px; font-size: 11px; }
+  .gcard { padding: 5px 8px; gap: 1px; min-width: 84px; }
+  .gcard .sw { width: 20px; height: 20px; }
+  .g-buy { margin-bottom: 4px; padding: 3px 6px 3px 12px; font-size: 13px; }
+  #gFlash { top: 30%; }
+}

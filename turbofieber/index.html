@@ -28,10 +28,12 @@
   </div>
   <div class="title-card">
     <p class="mode">Freie Fahrt · Stadt, Highway, Hafen &amp; Berg</p>
-    <div id="paints" class="paints" aria-label="Lackfarbe"></div>
+    <p class="tcar"><b id="tCar">Kestrel GT</b> · <span id="tCash">$ 0</span></p>
     <button id="startBtn" class="btn primary">▶ Losfahren</button>
+    <button id="garageBtn" class="btn">🔧 Garage</button>
     <p class="small">Lenken ◀ ▶ · Gas · Bremse/Rückwärts · Drift · Nitro<br>Tastatur: Pfeile/WASD · Leertaste = Drift · Shift = Nitro · P = Pause</p>
-    <p class="small dim">Garage, Rennen, Missionen und Story folgen in den nächsten Schritten. · <a href="../">← Gaming Gang</a></p>
+    <p class="small">Drifte, fahre knapp an Autos vorbei oder rase über 190 km/h – Punkte werden zu Geld für Tuning. Leuchtring in der Stadt = Garage.</p>
+    <p class="small dim">Rennen, Missionen und Story folgen. · <a href="../">← Gaming Gang</a></p>
   </div>
 </section>
 
@@ -40,7 +42,10 @@
   <div id="topLeft">
     <canvas id="mini" width="260" height="260"></canvas>
   </div>
+  <div id="chain"><small id="chainLbl">DRIFT</small><b id="chainPts">0</b></div>
+  <div id="pops"></div>
   <div id="topRight">
+    <span id="cashChip" class="chip cash">$ 0</span>
     <button id="timeBtn" class="chip"><span id="wx">☀️</span> <span id="clock">18:00</span> · <span id="timeMode">Auto</span></button>
     <button id="pauseBtn" class="chip icon" aria-label="Pause">❚❚</button>
   </div>
@@ -83,11 +88,32 @@
       <button class="btn" data-tp="highway">🛣 Highway</button>
       <button class="btn" data-tp="hafen">⚓ Hafen</button>
       <button class="btn" data-tp="berg">⛰ Berg</button>
+      <button class="btn wide" data-tp="garage">🔧 Garage</button>
     </div>
     <button id="weatherBtn" class="btn">Wetter: Auto</button>
     <button id="qualityBtn" class="btn">Grafik: Auto</button>
     <button id="muteBtn" class="btn">Ton: an</button>
     <button id="titleBtn" class="btn">Zum Titel</button>
+  </div>
+</section>
+
+<!-- Garage -->
+<section id="garage">
+  <div class="g-top">
+    <button id="gBack" class="chip">← Zur Straße</button>
+    <span class="chip cash">$ <b id="gCash">0</b></span>
+  </div>
+  <div class="g-side">
+    <h2 id="gCar">Kestrel GT</h2>
+    <p id="gDesc"></p>
+    <div id="gStats"></div>
+  </div>
+  <div id="gFlash"></div>
+  <div class="g-bottom">
+    <div id="gBuy" class="g-buy" hidden><span id="gBuyTxt"></span><button id="gReset" class="chip">Zurücksetzen</button><button id="gBuyBtn" class="chip buy">Kaufen</button></div>
+    <div class="g-tabs"><button data-gtab="autos">Autos</button><button data-gtab="optik" class="on">Optik</button><button data-gtab="leistung">Leistung</button></div>
+    <div id="gCats" class="g-cats"></div>
+    <div id="gItems" class="g-items"></div>
   </div>
 </section>
 

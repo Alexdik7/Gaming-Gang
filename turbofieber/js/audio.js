@@ -96,6 +96,22 @@ export class CarAudio {
     s.connect(f); f.connect(g); g.connect(this.master);
     s.start(t); s.stop(t + 0.45);
   }
+  // Menü-Töne: tick, buy, no
+  ui(kind) {
+    if (!this.ac || this.muted) return;
+    const ac = this.ac, t = ac.currentTime;
+    const notes = kind === 'buy' ? [880, 1320] : kind === 'no' ? [180, 140] : [1500];
+    notes.forEach((f, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = kind === 'no' ? 'square' : 'sine';
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t + i * 0.08);
+      g.gain.exponentialRampToValueAtTime(kind === 'tick' ? 0.06 : 0.14, t + i * 0.08 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.08 + 0.14);
+      o.connect(g); g.connect(this.master);
+      o.start(t + i * 0.08); o.stop(t + i * 0.08 + 0.16);
+    });
+  }
   // Donner: tiefes, langes Grollen
   thunder() {
     if (!this.ac || this.muted) return;

@@ -8,6 +8,10 @@ import { World, roadCenter, blockRect, OFF } from './world.js';
 import { Outskirts, MOUNTAIN, SUMMIT, HW_MID, EXIT, HARBOR, ROAD_W } from './outskirts.js';
 import { Traffic } from './traffic.js';
 import { Weather } from './weather.js';
+import { loadProfile, saveProfile } from './save.js';
+import { StreetScore } from './score.js';
+import { Garage } from './garage.js';
+import { softCircle } from './world.js';
 import { Car } from './car.js';
 import { Effects } from './fx.js';
 import { CarAudio } from './audio.js';
@@ -18,7 +22,6 @@ const $ = id => document.getElementById(id);
 const settings = { quality: 'auto', time: 'auto', weather: 'auto', paint: '#e0262f' };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('tf.settings') || '{}')); } catch (e) { /* ignorieren */ }
 const saveSettings = () => { try { localStorage.setItem('tf.settings', JSON.stringify(settings)); } catch (e) { /* ignorieren */ } };
-const PAINTS = ['#e0262f', '#f2f2f0', '#1c1d22', '#1f6fe0', '#ffb51e', '#2ad4a0', '#9a3cff'];
 const QUALITY = {                       // Pixeldichte, Schatten, Glühen
   hoch: { pr: 1.6, shadow: 1024, bloom: true },
   mittel: { pr: 1.25, shadow: 512, bloom: true },
@@ -41,12 +44,16 @@ const world = new World(scene, renderer);
 world.out = new Outskirts(world);
 const traffic = new Traffic(scene);
 const weather = new Weather(scene);
-const car = new Car(scene, settings.paint);
+const profile = loadProfile(settings.paint);
+const saveP = () => saveProfile(profile);
+const fmt = n => Math.round(n).toLocaleString('de-DE');
+const car = new Car(scene, profile.car, profile.cars[profile.car].cfg, profile.cars[profile.car].perf);
 const fx = new Effects(scene);
 const audio = new CarAudio();
 
 const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
 const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.4, 0.35, 1.05);   // nur echte HDR-Lichter glühen
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
@@ -99,7 +106,10 @@ function teleport(where) {
   camYaw = car.heading;
   camPos.set(car.pos.x - Math.sin(car.heading) * 7, car.pos.y + 2.6, car.pos.z - Math.cos(car.heading) * 7);
 }
-document.querySelectorAll('[data-tp]').forEach(b => b.addEventListener('click', () => { teleport(b.dataset.tp); resume(); }));
+document.querySelectorAll('[data-tp]').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.tp === 'garage') { car.place(GARAGE.x, GARAGE.z, 0); enterGarage('drive'); return; }
+  teleport(b.dataset.tp); resume();
+}));
 
 /* ---------- Eingabe: Touch-Knöpfe und Tastatur ---------- */
 const touch = { left: false, right: false, gas: false, brake: false, nitro: false, drift: false };
@@ -133,7 +143,7 @@ function input() {
   };
 }
 const NO_INPUT = { steer: 0, gas: false, brake: false, drift: false, nitro: false };
-document.addEventListener('touchmove', e => { if (!(e.target.closest && e.target.closest('#pauseMenu .title-card'))) e.preventDefault(); }, { passive: false });
+document.addEventListener('touchmove', e => { if (!(e.target.closest && e.target.closest('#pauseMenu .title-card, .g-items, .g-cats'))) e.preventDefault(); }, { passive: false });
 document.addEventListener('gesturestart', e => e.preventDefault());
 
 /* ---------- Spielzustand ---------- */
@@ -185,20 +195,69 @@ $('weatherBtn').addEventListener('click', () => {
 $('weatherBtn').textContent = 'Wetter: ' + (WEATHERS.find(w => w[0] === settings.weather) || WEATHERS[0])[1];
 let autoRain = false, wxTimer = 70 + Math.random() * 80;   // automatisches Wetter wechselt alle 1–2,5 Minuten
 
-// Lackfarben auf dem Titelbildschirm
-const sw = $('paints');
-for (const p of PAINTS) {
-  const b = document.createElement('button');
-  b.className = 'swatch' + (p === settings.paint ? ' on' : '');
-  b.style.background = p;
-  b.setAttribute('aria-label', 'Lackfarbe');
-  b.addEventListener('click', () => {
-    settings.paint = p; saveSettings();
-    car.mesh.userData.paintMat.color.set(p);
-    sw.querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x === b));
-  });
-  sw.append(b);
+// Garage: Einfahrt in der Stadt (Leuchtring auf der Straße, Rolltor, Neon-Schild)
+const GARAGE = { x: -49, z: -66 };
+let garageArmed = false, garageFrom = 'drive';
+const garageMarker = (() => {
+  const g = new THREE.Group();
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+  const x = c.getContext('2d');
+  x.font = 'italic 900 92px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.shadowColor = '#ff2a8a'; x.shadowBlur = 24; x.fillStyle = '#ff7ab8'; x.fillText('GARAGE', 256, 66); x.shadowBlur = 0; x.fillStyle = '#fff0f7'; x.fillText('GARAGE', 256, 66);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(9, 2.25), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, toneMapped: false, color: new THREE.Color(2, 2, 2) }));
+  sign.position.set(-57.6, 7, GARAGE.z); sign.rotation.y = Math.PI / 2;
+  const d = document.createElement('canvas'); d.width = 64; d.height = 64;
+  const y = d.getContext('2d'); y.fillStyle = '#5a5f66'; y.fillRect(0, 0, 64, 64); y.fillStyle = '#3c4046';
+  for (let k = 0; k < 64; k += 6) y.fillRect(0, k, 64, 2);
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(9, 5), new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(d), metalness: 0.6, roughness: 0.5 }));
+  door.position.set(-57.65, 2.5, GARAGE.z); door.rotation.y = Math.PI / 2;
+  const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#22e8ff').multiplyScalar(2), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(3.4, 3.9, 48).rotateX(-Math.PI / 2), ringMat);
+  ring.position.set(GARAGE.x, 0.05, GARAGE.z);
+  const disk = new THREE.Mesh(new THREE.PlaneGeometry(8, 8).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: softCircle(64), color: '#22e8ff', transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
+  disk.position.set(GARAGE.x, 0.04, GARAGE.z);
+  const b = document.createElement('canvas'); b.width = 4; b.height = 64;
+  const z = b.getContext('2d'), gr = z.createLinearGradient(0, 0, 0, 64); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,0.7)');
+  z.fillStyle = gr; z.fillRect(0, 0, 4, 64);
+  const beamMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(b), color: '#22e8ff', transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(3.7, 3.7, 7, 40, 1, true), beamMat);
+  beam.position.set(GARAGE.x, 3.5, GARAGE.z);
+  g.add(sign, door, ring, disk, beam);
+  scene.add(g);
+  return { ringMat, beamMat };
+})();
+function enterGarage(from) {
+  garageFrom = from;
+  audio.unlock();
+  score.bank();
+  setState('garage');
+  garage.open();
 }
+function exitGarage() {
+  const c = profile.cars[profile.car];
+  car.setConfig(profile.car, c.cfg, c.perf);
+  car.place(GARAGE.x, GARAGE.z + 9, 0);
+  garageArmed = false;
+  camYaw = 0;
+  camPos.set(car.pos.x, 2.6, car.pos.z - 7);
+  refreshCash();
+  setState(garageFrom === 'title' ? 'title' : 'drive');
+}
+function refreshCash() {
+  $('cashChip').textContent = '$ ' + fmt(profile.cash);
+  $('tCash').textContent = '$ ' + fmt(profile.cash);
+  $('tCar').textContent = { kestrel: 'Kestrel GT', vandal: 'Vandal R', nyx: 'Nyx S' }[profile.car];
+}
+const garage = new Garage(renderer, profile, { save: () => { saveP(); refreshCash(); }, exit: exitGarage, sound: k => audio.ui(k) });
+const score = new StreetScore((cash, pts) => {
+  profile.cash += cash;
+  profile.best.chain = Math.max(profile.best.chain, Math.round(pts));
+  profile.best.earned += cash;
+  saveP();
+  refreshCash();
+  audio.ui('buy');
+});
+$('garageBtn').addEventListener('click', () => enterGarage('title'));
 
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'drive') pause(); });
 canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); $('lost').hidden = false; });
@@ -221,6 +280,8 @@ mapImg.width = mapImg.height = MAP_PX;
   g.strokeStyle = '#5a6070'; g.lineWidth = ROAD_W * 2 * MS; g.lineJoin = g.lineCap = 'round';
   g.beginPath(); MOUNTAIN.forEach((p, i) => (i ? g.lineTo(mx(p.x), mz(p.z)) : g.moveTo(mx(p.x), mz(p.z)))); g.stroke();
   g.fillStyle = '#5a6070'; g.beginPath(); g.arc(mx(SUMMIT.x), mz(SUMMIT.z), 25 * MS, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#22e8ff'; g.beginPath(); g.arc(mx(-49), mz(-66), 9, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#06222a'; g.font = 'bold 12px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('G', mx(-49), mz(-66) + 1);
 })();
 function drawMini() {
   const W = mini.width, R = W / 2, view = 260;           // Radius in Metern
@@ -313,7 +374,7 @@ function updateCamera(dt) {
 
 /* ---------- Physik-Schritt ---------- */
 function physics(dt, inp) {
-  car.grip = 1 - 0.2 * weather.wet;
+  car.grip = 1 - 0.2 * weather.wet * car.st.rainGrip;
   car.update(dt, inp);
   // zwei Kollisionskreise (vorn / hinten)
   const sh = Math.sin(car.heading), ch = Math.cos(car.heading);
@@ -327,6 +388,7 @@ function physics(dt, inp) {
     if (hit) {
       const power = car.bounce(hit.nx, hit.nz, hit.depth);
       if (power > 3) {
+        if (power > 6) score.crash();
         audio.hit(power);
         fx.crash(cx - hit.nx * 1.0, 0.6, cz - hit.nz * 1.0, power);
         shake = Math.min(0.6, power * 0.03);
@@ -346,6 +408,7 @@ function physics(dt, inp) {
       const power = car.bounce(nx, nz, 2.1 - d);
       if (power > 1.5) {
         traffic.knock(t, -nx * power * 0.5, -nz * power * 0.5);
+        if (power > 4) score.crash();
         audio.hit(power);
         fx.crash(car.pos.x - nx * 1.2, car.pos.y + 0.7, car.pos.z - nz * 1.2, power);
         shake = Math.min(0.6, power * 0.03);
@@ -381,6 +444,11 @@ function frame(now) {
     const steps = Math.ceil(dt / (1 / 120)), h = dt / steps;
     for (let i = 0; i < steps; i++) physics(h, inp);
     fx.tires(car, dt, weather.wet);
+    score.update(dt, car, traffic);
+    // Garage: langsam in den Leuchtring fahren
+    const gd = Math.hypot(car.pos.x - GARAGE.x, car.pos.z - GARAGE.z);
+    if (gd > 9) garageArmed = true;
+    if (garageArmed && gd < 4.2 && car.speed < 6) { garageArmed = false; car.vx = car.vz = 0; enterGarage('drive'); }
   } else if (state === 'title') {
     car.update(0, NO_INPUT);
   }
@@ -408,14 +476,26 @@ function frame(now) {
   renderer.toneMappingExposure = world.exposure;
   if (weather.flash > 0) world.hemi.intensity += weather.flash * 3;   // Blitz
   bloom.strength = 0.18 + world.night * 0.32;
+  const pulse = 0.5 + 0.5 * Math.sin(now / 300);
+  garageMarker.beamMat.opacity = 0.25 + pulse * 0.25;
 
+  // Garage hat eine eigene Szene und Kamera
+  const inGarage = state === 'garage';
+  if (inGarage) {
+    garage.update(dt, camera.aspect);
+    renderer.toneMappingExposure = 1;
+    bloom.strength = 0.35;
+  }
+  const rs = inGarage ? garage.scene : scene, rc = inGarage ? garage.camera : camera;
+  renderPass.scene = rs; renderPass.camera = rc;
   if (QUALITY[quality].bloom) composer.render();
-  else renderer.render(scene, camera);
+  else renderer.render(rs, rc);
 
   if (state === 'drive') { updateHud(); drawMini(); }
 }
 
 /* ---------- Start ---------- */
+refreshCash();
 spawn();
 resize();
 applyQuality();
@@ -429,6 +509,6 @@ window.TF = {
   get state() { return state; }, car, world, touch, bloom,
   get quality() { return quality; },
   get tod() { return tod; }, set tod(v) { tod = v; },
-  start, pause, resume, spawn, step: physics, teleport, traffic, weather, mountain: MOUNTAIN,
+  start, pause, resume, spawn, step: physics, teleport, traffic, weather, profile, garage, score, enterGarage, GARAGE, mountain: MOUNTAIN,
   stats: () => ({ distance, topSpeed, fps: 0 })
 };
