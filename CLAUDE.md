@@ -67,4 +67,4 @@ Spiele: `sternflut/` (NEU, Nachfolger von Legends: eigenes Kreaturen-RPG, 3 Welt
   - Sammeln: Chronik-Seite beim Erstfang, Belohnungen von Prof. Linde, Massenausbruch pro Tag, Glanzamulett
 - Details in `legends/docs/FORTSCHRITT.md` und `ROADMAP.md`.
 - **Wolkenpfad v2.0:** WebGL/three.js, Dschungel-Tempelpfad, 3D-Läuferin, Neigen-Steuerung, Kreuzungen, 6 Hindernisarten, 4 Kräfte, 5 Läufer, Missionen, Tageszeiten, Offline-PWA. `sw.js`-CACHE bei Änderungen erhöhen.
-- **Funkenflug v1.0:** Arcade-Flieger (Pip zwischen Kristallsäulen), Canvas 2D, WebAudio-Sounds, Rekord in localStorage, Pause, Offline-PWA. `sw.js`-CACHE bei Änderungen erhöhen. Nächste Ideen: siehe README.
+- **Funkenflug v1.1:** Arcade-Flieger (Pip zwischen Kristallsäulen), Canvas 2D, WebAudio. Combo/PERFEKT, Power-Ups (Schild/Zeitlupe/Magnet), Splitter, 4 Welten alle 25 Punkte, 6 Figuren, Tagesmissionen + Tagesrekord. Inhalte in `data.js`, Spielstand `funkenflug.save`, Test-Cheats `FF.cheat`. `sw.js`-CACHE bei Änderungen erhöhen.

@@ -55,7 +55,61 @@ canvas { display: block; width: 100%; height: 100%; }
   35% { transform: scale(1.3); color: var(--amber); }
   100% { transform: scale(1); }
 }
-#stage[data-state="title"] #hud { opacity: 0; }
+#stage[data-state="title"] #hud, #stage[data-state="menu"] #hud,
+#stage[data-state="title"] #hudLeft, #stage[data-state="menu"] #hudLeft { opacity: 0; }
+#combo {
+  height: 24px;
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--amber);
+  -webkit-text-stroke: 2px #2b1d55;
+  paint-order: stroke fill;
+}
+
+/* ---------- Splitter & Power-Ups oben links ---------- */
+#hudLeft {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 14px);
+  left: calc(env(safe-area-inset-left) + 12px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+#powers { display: flex; gap: 6px; }
+.chip {
+  padding: 5px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--edge);
+  background: rgba(27, 20, 64, .6);
+  color: var(--amber);
+  font-weight: 800;
+  font-size: 15px;
+}
+#powers .chip { color: var(--ink); }
+
+/* ---------- Meldungen ---------- */
+#toast {
+  position: absolute;
+  left: 50%;
+  top: calc(env(safe-area-inset-top) + 140px);
+  max-width: calc(100% - 32px);
+  padding: 9px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--edge);
+  background: var(--panel);
+  font-weight: 800;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -10px);
+  transition: opacity .3s, transform .3s;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+#toast.big { font-size: 22px; color: var(--amber); padding: 12px 20px; }
 
 /* ---------- Knöpfe oben rechts ---------- */
 #topbar {
@@ -133,6 +187,37 @@ kbd {
   box-shadow: 0 2px 0 #8d7fc0;
 }
 .best { margin-top: 14px; color: var(--muted); }
+.howto small { color: var(--mint); font-size: 13px; }
+.row { display: flex; gap: 8px; }
+.btn.small { font-size: 15px; padding: 11px 8px; }
+.pill { display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 99px; background: var(--mint); color: #2b1d55; font-size: 12px; }
+.wallet { color: var(--muted); }
+.wallet b { color: var(--amber); }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 4px; }
+.skin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px 8px;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, .07);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.skin img { width: 64px; height: 64px; }
+.skin b { font-size: 14px; }
+.skin small { color: var(--muted); font-size: 12px; }
+.skin.sel { border-color: var(--amber); background: rgba(255, 181, 61, .12); }
+.skin.locked img { filter: grayscale(.8) brightness(.55); }
+#missionList { list-style: none; text-align: left; display: flex; flex-direction: column; gap: 10px; }
+#missionList li { padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, .07); }
+#missionList small { color: var(--muted); font-size: 12px; }
+.mtext { font-weight: 700; font-size: 15px; }
+li.done .mtext { color: var(--mint); }
+.bar { height: 8px; margin: 6px 0 4px; border-radius: 4px; overflow: hidden; background: rgba(255, 255, 255, .12); }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--mint), var(--amber)); }
 .best b { color: var(--amber); font-size: 20px; }
 .keys { margin-top: 8px; font-size: 12px; color: var(--muted); opacity: .8; }
 .keys a { color: var(--mint); text-decoration: none; }
@@ -170,6 +255,8 @@ kbd {
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, -40%) scale(.92);
+  max-height: calc(100% - 24px);
+  overflow: auto;
   transition: opacity .3s, transform .4s cubic-bezier(.2, 1.4, .4, 1);
 }
 .panel.show { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
@@ -189,7 +276,7 @@ kbd {
   background: rgba(255, 255, 255, .07);
 }
 .stats small { display: block; color: var(--muted); font-size: 13px; }
-.stats b { font-size: 36px; font-weight: 900; }
+.stats b { font-size: 32px; font-weight: 900; }
 #overBest { color: var(--amber); }
 .badge {
   display: none;

@@ -19,7 +19,9 @@
   <canvas id="game" aria-label="Spielfeld"></canvas>
 
   <!-- Punktestand während des Spiels -->
-  <div id="hud"><div id="score" aria-live="polite">0</div></div>
+  <div id="hud"><div id="score" aria-live="polite">0</div><div id="combo"></div></div>
+  <div id="hudLeft"><div id="runShards" class="chip">✦ 0</div><div id="powers"></div></div>
+  <div id="toast"></div>
 
   <!-- Pause- und Ton-Knopf -->
   <div id="topbar">
@@ -34,9 +36,13 @@
       <p class="tagline">Ein kleines Leuchtwesen. Tausend schwebende Kristalle.</p>
     </header>
     <div class="card">
-      <p class="howto">Klicke, tippe oder drücke <kbd>SPACE</kbd>, um zu fliegen.</p>
+      <p class="howto">Klicke, tippe oder drücke <kbd>SPACE</kbd>, um zu fliegen.<br><small>Fliege genau durch die Mitte für PERFEKT-Combos!</small></p>
       <button id="btnStart" class="btn primary">Los geht's</button>
-      <p class="best">Rekord: <b id="titleBest">0</b></p>
+      <div class="row">
+        <button id="btnSkins" class="btn small">🎨 Figuren</button>
+        <button id="btnMissions" class="btn small">📜 Missionen <span id="missionBadge" class="pill">0/3</span></button>
+      </div>
+      <p class="best">Rekord <b id="titleBest">0</b> · Heute <b id="titleToday">0</b> · Splitter <b id="titleShards">0</b> ✦</p>
       <p class="keys">P = Pause · M = Ton · <a href="../">← Gaming Gang</a></p>
     </div>
   </section>
@@ -54,13 +60,31 @@
     <div class="stats">
       <div><small>Punkte</small><b id="overScore">0</b></div>
       <div><small>Rekord</small><b id="overBest">0</b></div>
+      <div><small>Heute</small><b id="overToday">0</b></div>
     </div>
     <div id="newBest" class="badge">★ Neuer Rekord! ★</div>
-    <p id="rank" class="rank"></p>
+    <p id="overInfo" class="rank"></p>
     <button id="btnRetry" class="btn primary">Nochmal spielen</button>
     <button id="btnHome" class="btn">Zum Titel</button>
   </section>
+
+  <!-- Figuren -->
+  <section id="skinScreen" class="panel">
+    <h2>Figuren</h2>
+    <p class="wallet">Deine Splitter: <b id="skinShards">0</b> ✦</p>
+    <div id="skinGrid" class="grid"></div>
+    <button id="btnSkinsBack" class="btn">Zurück</button>
+  </section>
+
+  <!-- Tagesmissionen -->
+  <section id="missionScreen" class="panel">
+    <h2>Tagesmissionen</h2>
+    <ul id="missionList"></ul>
+    <p class="rank">Tagesrekord: <b id="missionToday">0</b><br><small>Neue Missionen um Mitternacht</small></p>
+    <button id="btnMissionsBack" class="btn">Zurück</button>
+  </section>
 </div>
+<script src="data.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
