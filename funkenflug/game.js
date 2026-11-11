@@ -19,20 +19,17 @@
   'use strict';
 
   /* ================= 1. Konstanten & Hilfsfunktionen ================= */
-  const { WORLDS, SKINS, MISSIONS, POWERS } = window.FUNKENFLUG_DATA;
+  const { DIFFS, WORLDS, RARITY, SKINS, HATS, MISSIONS, POWERS, BONUS } = window.FUNKENFLUG_DATA;
   const H = 640;                 // logische Welthöhe – alles wird darauf skaliert
   const MIN_W = 320;             // schmaler als das wird nicht gezeigt (dann mehr Himmel oben)
   const GROUND_H = 84;
   const GROUND_Y = H - GROUND_H; // Oberkante des Bodens
-  const GRAVITY = 1550;          // Einheiten / s²
-  const FLAP_V = -440;           // Auftrieb pro Flügelschlag
   const MAX_FALL = 720;          // maximale Fallgeschwindigkeit
   const BIRD_R = 12;             // Kollisionsradius (etwas kleiner als die Figur = fair)
   const PILLAR_W = 72;
   const CAP_H = 26;              // Höhe des Kristallkopfs an der Lücke
   const SPACING = 250;           // Abstand zwischen zwei Säulenpaaren
   const MAX_STEP = 1 / 120;      // größter Physik-Teilschritt
-  const PERFECT = 0.3;           // Perfekt = nie weiter als 30 % der Lücke von der Mitte entfernt
   const WORLD_EVERY = 25;        // Punkte pro Welt
   const SLOW_FACTOR = 0.6;
   const MAGNET_R = 170;
@@ -41,6 +38,7 @@
   const KEY_MUTE = 'funkenflug.mute';
   const RANKS = [[0, 'Funke'], [10, 'Glühwürmchen'], [25, 'Sternschnuppe'], [50, 'Komet'], [100, 'Polarlicht']];
   const POWER_KINDS = Object.keys(POWERS);
+  const POWER_COOLDOWN = 6;      // mindestens so viele Säulen zwischen zwei Power-Ups
   const TAU = Math.PI * 2;
   const INK = '#2b1d55';
 
@@ -108,7 +106,7 @@
   }
   function newDay() {
     const date = today();
-    return { date, best: 0, stats: { shards: 0, perfect: 0, powers: 0, runs: 0 }, missions: pickMissions(date).map(m => ({ id: m.id, prog: 0, done: false })) };
+    return { date, best: 0, stats: { shards: 0, perfect: 0, powers: 0, runs: 0, bonus: 0 }, missions: pickMissions(date).map(m => ({ id: m.id, prog: 0, done: false })) };
   }
 
   function loadSave() {
@@ -121,10 +119,18 @@
       shards: Math.max(0, Number(s.shards) || 0),
       skin: typeof s.skin === 'string' ? s.skin : 'pip',
       owned: Array.isArray(s.owned) ? s.owned.filter(id => SKINS.some(k => k.id === id)) : [],
-      day: s.day && typeof s.day === 'object' ? s.day : null
+      day: s.day && typeof s.day === 'object' ? s.day : null,
+      bests: Object.assign({ easy: 0, normal: 0, hard: 0, hardcore: 0 }, s.bests && typeof s.bests === 'object' ? s.bests : {}),
+      diff: typeof s.diff === 'string' ? s.diff : 'normal',
+      hats: Array.isArray(s.hats) ? s.hats.filter(id => HATS.some(h => h.id === id)) : [],
+      hat: typeof s.hat === 'string' ? s.hat : null,
+      shopSeen: typeof s.shopSeen === 'string' ? s.shopSeen : ''
     };
     if (!out.owned.includes('pip')) out.owned.unshift('pip');
     if (!out.owned.includes(out.skin)) out.skin = 'pip';
+    if (!s.bests) out.bests.normal = Math.max(out.bests.normal, out.best);   // Rekord aus v1.x
+    if (!DIFFS.some(d => d.id === out.diff)) out.diff = 'normal';
+    if (out.hat && !out.hats.includes(out.hat)) out.hat = null;
     return out;
   }
   const save = loadSave();
@@ -140,6 +146,10 @@
   }
   ensureDay();
   let skin = SKINS.find(k => k.id === save.skin) || SKINS[0];
+  let hat = save.hat;
+  let diff = DIFFS.find(d => d.id === save.diff) || DIFFS[1];
+  // Tageszähler robust erhöhen (ältere Spielstände kennen manche Felder noch nicht)
+  function addDay(stat, n) { const st = ensureDay().stats; st[stat] = (st[stat] || 0) + n; }
 
   /* ================= 3. DOM & Ansicht ================= */
   const $ = id => document.getElementById(id);
@@ -148,11 +158,15 @@
   const ctx = canvas.getContext('2d', { alpha: false });
   const ui = {
     score: $('score'), combo: $('combo'), runShards: $('runShards'), powers: $('powers'), toast: $('toast'),
-    titleBest: $('titleBest'), titleToday: $('titleToday'), titleShards: $('titleShards'), missionBadge: $('missionBadge'),
-    overScore: $('overScore'), overBest: $('overBest'), overToday: $('overToday'), newBest: $('newBest'), overInfo: $('overInfo'),
-    skinGrid: $('skinGrid'), skinShards: $('skinShards'), missionList: $('missionList'), missionToday: $('missionToday'),
+    wallet: $('walletAmount'), diffSeg: $('diffSeg'), diffInfo: $('diffInfo'), titleBest: $('titleBest'), titleToday: $('titleToday'),
+    missionBadge: $('missionBadge'), shopBadge: $('shopBadge'),
+    overDiff: $('overDiff'), overScore: $('overScore'), overBest: $('overBest'), overToday: $('overToday'),
+    newBest: $('newBest'), overRewards: $('overRewards'), overMissions: $('overMissions'),
+    shopShards: $('shopShards'), shopTimer: $('shopTimer'), shopSkins: $('shopSkins'), shopHats: $('shopHats'),
+    wardPreview: $('wardPreview'), wardName: $('wardName'), wardGrid: $('wardGrid'),
+    missionList: $('missionList'), missionToday: $('missionToday'),
     btnMute: $('btnMute'), btnPause: $('btnPause'),
-    screens: { title: $('titleScreen'), pause: $('pauseScreen'), over: $('overScreen'), skins: $('skinScreen'), missions: $('missionScreen') }
+    screens: { title: $('titleScreen'), pause: $('pauseScreen'), over: $('overScreen'), shop: $('shopScreen'), wardrobe: $('wardScreen'), missions: $('missionScreen') }
   };
 
   // W = sichtbare Weltbreite, oy = zusätzlicher Himmel oben bei sehr schmalen Bildschirmen
@@ -299,12 +313,13 @@
     items: [],        // Splitter und Power-Ups
     bird: { x: 100, y: H * 0.45, vy: 0, rot: 0, wing: 0, flapT: 0 },
     shield: false, slowT: 0, magnetT: 0, invT: 0,
+    bonusT: 0, bonusSpawn: 0, bonusPhase: 0, sincePower: 0, sinceBonus: 0,
     world: 0, worldFrom: 0, worldT: 1,
     run: null,        // Statistik der Runde (für Missionen)
     shake: 0, flash: 0,
     deadT: 0, landed: false, overAt: 0, newBest: false
   };
-  const newRun = () => ({ score: 0, combo: 0, perfect: 0, shards: 0, powers: 0 });
+  const newRun = () => ({ score: 0, combo: 0, perfect: 0, shards: 0, powers: 0, bonus: 0, hardScore: 0 });
   game.run = newRun();
 
   function setState(s) {
@@ -323,8 +338,9 @@
     game.pillars.length = 0;
     game.items.length = 0;
     game.score = 0; game.passed = 0; game.combo = 0; game.t = 0;
-    game.speed = 155;
+    game.speed = diff.speed[0];
     game.shield = false; game.slowT = 0; game.magnetT = 0; game.invT = 0;
+    game.bonusT = 0; game.bonusSpawn = 0; game.bonusPhase = 0; game.sincePower = 0; game.sinceBonus = 0;
     game.world = 0; game.worldFrom = 0; game.worldT = 1;
     game.shake = 0; game.flash = 0;
     game.deadT = 0; game.landed = false; game.newBest = false;
@@ -340,35 +356,70 @@
 
   function spawnPillar(x) {
     const d = difficulty();
-    const gap = lerp(182, 140, d) + rand(-12, 12);       // Lücke wird kleiner, schwankt leicht
+    const gap = lerp(diff.gap[0], diff.gap[1], d) + rand(-12, 12);       // Lücke wird kleiner, schwankt leicht
     const margin = 58;
     const minC = margin + gap / 2, maxC = GROUND_Y - margin - gap / 2;
     const prev = game.pillars[game.pillars.length - 1];
     const prevY = prev ? prev.gapY : (minC + maxC) / 2;
-    const maxShift = lerp(120, 210, d);                  // Höhenwechsel werden größer
+    const maxShift = lerp(diff.shift[0], diff.shift[1], d);                  // Höhenwechsel werden größer
     const gapY = clamp(prevY + rand(-maxShift, maxShift), minC, maxC);
     game.pillars.push({ x, gapY, gap, w: game.world, pal: Math.floor(Math.random() * 3), seed: Math.random() * 10, scored: false, broken: false, dev: 0 });
     spawnItems(x, gapY, prev);
   }
 
-  // Splitter in der Lückenmitte (belohnt Perfekt-Flüge), Bögen und Power-Ups zwischen den Säulen
+  // Splitter in der Lückenmitte (belohnt Perfekt-Flüge), Bögen, seltene Power-Ups und Bonus-Portale zwischen den Säulen
   function spawnItems(x, gapY, prev) {
     const items = game.items, seed = () => Math.random() * 10;
-    if (Math.random() < 0.75) items.push({ kind: 'shard', x: x + PILLAR_W / 2, y: gapY, seed: seed() });
+    if (Math.random() < 0.7) items.push({ kind: 'shard', x: x + PILLAR_W / 2, y: gapY, seed: seed() });
     if (!prev) return;
+    game.sincePower++;
+    game.sinceBonus++;
     const mx = x - SPACING / 2 + PILLAR_W / 2, my = (prev.gapY + gapY) / 2;
-    if (game.passed >= 2 && Math.random() < 0.16) {
-      const kinds = POWER_KINDS.filter(k => !(k === 'shield' && game.shield));
-      items.push({ kind: kinds[Math.floor(Math.random() * kinds.length)], x: mx, y: my, seed: seed() });
-    } else if (Math.random() < 0.4) {
+    const powerBusy = game.shield || game.slowT > 0 || game.magnetT > 0 || items.some(i => i.kind in POWERS);
+    if (game.passed >= BONUS.minPassed && game.sinceBonus >= BONUS.cooldown && Math.random() < BONUS.chance) {
+      game.sinceBonus = 0;
+      items.push({ kind: 'portal', x: mx, y: my, seed: seed() });
+    } else if (game.passed >= 3 && game.sincePower >= POWER_COOLDOWN && !powerBusy && Math.random() < diff.power) {
+      game.sincePower = 0;
+      items.push({ kind: POWER_KINDS[Math.floor(Math.random() * POWER_KINDS.length)], x: mx, y: my, seed: seed() });
+    } else if (Math.random() < 0.35) {
       for (let i = -1; i <= 1; i++) items.push({ kind: 'shard', x: mx + i * 34, y: my - (1 - i * i) * 16, seed: seed() });
+    }
+  }
+
+  // Bonus-Level: Säulen vor Pip zerspringen, dann fliegen Splitter-Wellen mit dreifachem Wert heran
+  function startBonus() {
+    const b = game.bird;
+    game.bonusT = BONUS.dur;
+    game.bonusSpawn = 80;
+    game.bonusPhase = 0;
+    game.run.bonus++;
+    addDay('bonus', 1);
+    for (const p of game.pillars) {
+      if (p.broken || p.x < b.x - 10) continue;
+      p.broken = true; p.scored = true;
+      const pal = WORLDS[p.w].pillars[p.pal];
+      burst(p.x + PILLAR_W / 2, p.gapY, 14, [pal[0], pal[1], '#ffe28a'], 320, 0.8, 400);
+    }
+    for (const it of game.items) if (it.x > b.x + 10) it.gone = true;
+    game.flash = 0.5;
+    sfx.world();
+    toast(`BONUS-LEVEL · Splitter ×${BONUS.mult}`, true);
+  }
+  function updateBonus(dx) {
+    game.bonusSpawn -= dx;
+    while (game.bonusSpawn <= 0) {
+      game.bonusSpawn += 30;
+      game.bonusPhase += 0.3;
+      const y = GROUND_Y * 0.45 + Math.sin(game.bonusPhase) * 140;
+      game.items.push({ kind: 'shard', x: view.W + 30, y, seed: game.bonusPhase });
     }
   }
 
   function startGame() {
     sfx.unlock();
     reset();
-    ensureDay().stats.runs++;
+    addDay('runs', 1);
     setState('play');
     showScreen(null);
     // Erste Säule mit etwas Vorlauf, damit man sich orientieren kann
@@ -380,7 +431,7 @@
   function flap() {
     if (game.state !== 'play') return;
     const b = game.bird;
-    b.vy = FLAP_V;
+    b.vy = diff.flap;
     b.flapT = 1;
     sfx.flap();
     for (let i = 0; i < 4; i++) {
@@ -398,13 +449,13 @@
   // Säulenpaar geschafft: Punkte, Combo, Effekte, Weltwechsel, Missionen
   function passPillar(p) {
     game.passed++;
-    const perfect = p.dev <= p.gap * PERFECT;
+    const perfect = p.dev <= p.gap * diff.perfect;
     let pts = 1;
     if (perfect) {
       game.combo++;
       pts += Math.min(game.combo, 3);           // Bonus: +1, +2, ab ×3 immer +3
       game.run.perfect++;
-      save.day.stats.perfect++;
+      addDay('perfect', 1);
       game.run.combo = Math.max(game.run.combo, game.combo);
     } else {
       game.combo = 0;
@@ -412,6 +463,7 @@
     const before = game.score;
     game.score += pts;
     game.run.score = game.score;
+    if (diff.mult >= 2) game.run.hardScore = game.score;
     bumpScore();
     ui.combo.textContent = game.combo >= 2 ? `Combo ×${game.combo}` : '';
 
@@ -441,12 +493,18 @@
   function collect(it) {
     const b = game.bird;
     if (it.kind === 'shard') {
-      game.run.shards++; save.day.stats.shards++; save.shards++;
+      const v = diff.mult * (game.bonusT > 0 ? BONUS.mult : 1);   // Schwierigkeit und Bonus-Level vervielfachen
+      game.run.shards += v; save.shards += v;
+      addDay('shards', v);
       sfx.shard();
       burst(it.x, it.y, 5, ['#ffd27a', '#ffffff'], 110, 0.35);
+      if (v > 1) emit(it.x, it.y - 14, { kind: P_TEXT, vy: -70, life: 0.5, text: '+' + v, color: '#ffd27a' });
       hudShards();
+    } else if (it.kind === 'portal') {
+      startBonus();
     } else {
-      game.run.powers++; save.day.stats.powers++;
+      game.run.powers++;
+      addDay('powers', 1);
       const pw = POWERS[it.kind];
       if (it.kind === 'shield') game.shield = true;
       else if (it.kind === 'slow') game.slowT = pw.dur;
@@ -477,7 +535,7 @@
     game.deadT = 0;
     game.shake = 12;
     game.flash = 0.9;
-    game.slowT = 0; game.magnetT = 0;
+    game.slowT = 0; game.magnetT = 0; game.bonusT = 0;
     const b = game.bird;
     game.landed = cause === 'ground';
     if (!game.landed) b.vy = -260;      // kleiner Abpraller vom Kristall
@@ -492,22 +550,42 @@
     setState('over');
     game.overAt = performance.now();
     const day = ensureDay();
-    if (game.score > save.best) {
-      save.best = game.score;
-      game.newBest = true;
-      sfx.best();
-    }
+    game.newBest = game.score > (save.bests[diff.id] || 0);
+    if (game.newBest) { save.bests[diff.id] = game.score; sfx.best(); }
+    save.best = Math.max(save.best, game.score);
     day.best = Math.max(day.best, game.score);
     persist();
-    ui.overScore.textContent = String(game.score);
-    ui.overBest.textContent = String(save.best);
+    ui.overDiff.textContent = diff.name;
+    ui.overDiff.style.background = diff.color;
+    countUp(ui.overScore, game.score);
+    ui.overBest.textContent = String(save.bests[diff.id]);
     ui.overToday.textContent = String(day.best);
     ui.newBest.classList.toggle('show', game.newBest);
     let rank = RANKS[0][1];
     for (const [min, name] of RANKS) if (game.score >= min) rank = name;
-    const done = day.missions.filter(m => m.done).length;
-    ui.overInfo.innerHTML = `Rang: <b>${rank}</b> · ✦ +${game.run.shards} · Combo ×${game.run.combo}<br>Missionen heute: <b>${done}/3</b>`;
+    const r = game.run;
+    ui.overRewards.innerHTML =
+      `<div><span>Rang</span><b class="mint">${rank}</b></div>` +
+      `<div><span>Splitter</span><b class="amber">+${r.shards} ✦</b></div>` +
+      `<div><span>Perfekt</span><b>${r.perfect}</b></div>` +
+      `<div><span>Beste Combo</span><b>×${r.combo}</b></div>` +
+      (r.bonus ? `<div><span>Bonus-Level</span><b class="amber">${r.bonus}</b></div>` : '') +
+      (diff.mult > 1 ? `<div><span>${diff.name}</span><b class="amber">✦ ×${diff.mult}</b></div>` : '');
+    ui.overMissions.innerHTML = missionRows(day);
     showScreen('over');
+  }
+
+  // Punktzahl hochzählen lassen
+  let countRaf = 0;
+  function countUp(el, to) {
+    cancelAnimationFrame(countRaf);
+    const t0 = performance.now(), dur = Math.min(900, 250 + to * 25);
+    const step = now => {
+      const k = Math.min(1, (now - t0) / dur);
+      el.textContent = String(Math.round(to * smooth(k)));
+      if (k < 1) countRaf = requestAnimationFrame(step);
+    };
+    countRaf = requestAnimationFrame(step);
   }
 
   function toTitle() {
@@ -593,12 +671,13 @@
     const b = game.bird, items = game.items;
     for (let i = items.length - 1; i >= 0; i--) {
       const it = items[i];
+      if (it.gone) { items.splice(i, 1); continue; }
       it.x -= dx;
       if (game.magnetT > 0 && it.kind === 'shard') {
         const mx = b.x - it.x, my = b.y - it.y, d = Math.hypot(mx, my);
         if (d < MAGNET_R && d > 1) { const s = Math.min(d, 560 * dt) / d; it.x += mx * s; it.y += my * s; }
       }
-      const r = (it.kind === 'shard' ? 14 : 20) + BIRD_R;
+      const r = (it.kind === 'shard' ? 14 : it.kind === 'portal' ? 26 : 20) + BIRD_R;
       const cx = b.x - it.x, cy = b.y - it.y;
       if (cx * cx + cy * cy < r * r) { items.splice(i, 1); collect(it); continue; }
       if (it.x < -40) items.splice(i, 1);
@@ -607,11 +686,11 @@
 
   function updatePlay(dt) {
     game.t += dt;
-    game.speed = lerp(155, 270, difficulty());
+    game.speed = lerp(diff.speed[0], diff.speed[1], difficulty());
     const b = game.bird;
 
     // Physik der Figur
-    b.vy = Math.min(b.vy + GRAVITY * dt, MAX_FALL);
+    b.vy = Math.min(b.vy + diff.gravity * dt, MAX_FALL);
     b.y += b.vy * dt;
     if (b.y < -view.oy - 40) { b.y = -view.oy - 40; b.vy = Math.max(b.vy, 0); } // weiche Decke
     const target = clamp(b.vy / 520, -0.5, 1.25);   // nach oben neigen beim Steigen, nach unten beim Fallen
@@ -631,11 +710,16 @@
         else { die('pillar'); return; }
       }
     }
-    // Nachschub rechts, Aufräumen links
-    let last = ps[ps.length - 1];
-    while (!last || last.x <= view.W + 40 - SPACING) {
-      spawnPillar(last ? last.x + SPACING : view.W + 40);
-      last = ps[ps.length - 1];
+    // Nachschub rechts (im Bonus-Level Splitter-Wellen statt Säulen), Aufräumen links
+    if (game.bonusT > 0) {
+      if (game.bonusT > 1.6) updateBonus(dx);    // am Ende kurze Pause vor den nächsten Säulen
+    } else {
+      let last = ps[ps.length - 1];
+      while (!last || last.x <= view.W + 40 - SPACING) {
+        // nie mitten im Bild auftauchen (z. B. direkt nach dem Bonus-Level)
+        spawnPillar(last ? Math.max(last.x + SPACING, view.W + 40) : view.W + 40);
+        last = ps[ps.length - 1];
+      }
     }
     while (ps.length && ps[0].x + PILLAR_W < -40) ps.shift();
 
@@ -646,7 +730,7 @@
     if (b.y + BIRD_R >= GROUND_Y) {
       if (game.shield) {
         game.shield = false; game.invT = 0.8; game.shake = 6;
-        b.y = GROUND_Y - BIRD_R - 1; b.vy = FLAP_V * 1.1;
+        b.y = GROUND_Y - BIRD_R - 1; b.vy = diff.flap * 1.1;
         sfx.shatter();
         burst(b.x, GROUND_Y, 16, [POWERS.shield.color, '#ffffff'], 260, 0.6, 500);
         hudPowers();
@@ -661,7 +745,7 @@
     game.deadT += dt;
     const b = game.bird;
     if (!game.landed) {
-      b.vy = Math.min(b.vy + GRAVITY * dt, MAX_FALL);
+      b.vy = Math.min(b.vy + diff.gravity * dt, MAX_FALL);
       b.y += b.vy * dt;
       b.rot += dt * 9;                   // Trudeln
       if (b.y + BIRD_R >= GROUND_Y) {
@@ -681,6 +765,7 @@
       game.slowT = Math.max(0, game.slowT - dt);
       game.magnetT = Math.max(0, game.magnetT - dt);
       game.invT = Math.max(0, game.invT - dt);
+      game.bonusT = Math.max(0, game.bonusT - dt);
     }
     if (game.state === 'play' && game.slowT > 0) dt *= SLOW_FACTOR;
     game.time += dt;
@@ -952,7 +1037,9 @@
       const y = it.y + Math.sin(game.time * 3 + it.seed) * 4;
       ctx.save();
       ctx.translate(it.x, y);
-      if (it.kind === 'shard') {
+      if (it.kind === 'portal') {
+        drawPortal(it);
+      } else if (it.kind === 'shard') {
         const sx = Math.cos(game.time * 3 + it.seed);   // dreht sich um die Hochachse
         ctx.scale(Math.max(0.15, Math.abs(sx)), 1);
         ctx.fillStyle = sx > 0 ? '#ffd27a' : '#ffb53d';
@@ -973,6 +1060,29 @@
       ctx.restore();
     }
     ctx.textBaseline = 'alphabetic';
+  }
+
+  // Goldenes Bonus-Portal: drehender Ring mit Funken
+  function drawPortal(it) {
+    const t = game.time;
+    const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 40);
+    g.addColorStop(0, 'rgba(255,240,180,0.9)'); g.addColorStop(0.5, 'rgba(255,190,60,0.35)'); g.addColorStop(1, 'rgba(255,190,60,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, 40, 0, TAU); ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#ffd27a';
+    ctx.beginPath(); ctx.ellipse(0, 0, 18 + Math.sin(t * 4) * 1.5, 28, 0, 0, TAU); ctx.stroke();
+    ctx.lineWidth = 2; ctx.strokeStyle = INK;
+    ctx.beginPath(); ctx.ellipse(0, 0, 21 + Math.sin(t * 4) * 1.5, 31, 0, 0, TAU); ctx.stroke();
+    ctx.fillStyle = '#fff7e8';
+    for (let i = 0; i < 6; i++) {
+      const a = t * 2.5 + i * TAU / 6;
+      ctx.beginPath(); ctx.arc(Math.cos(a) * 20, Math.sin(a) * 30, 2.2, 0, TAU); ctx.fill();
+    }
+    ctx.font = '900 15px system-ui, sans-serif';
+    ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.fillStyle = '#ffd27a';
+    ctx.strokeText('×' + BONUS.mult, 0, 1); ctx.fillText('×' + BONUS.mult, 0, 1);
+    ctx.font = '18px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", system-ui, sans-serif';
   }
 
   function drawGroundTile(tile, alpha, sx, sy) {
@@ -1011,10 +1121,10 @@
   }
 
   // Pip und seine Varianten: rundes Wesen mit Leuchtlaterne als Schwanz, Visier-Auge und Glasflügeln.
-  function drawPip(c, wingA, glow, sk) {
+  function drawPip(c, wingA, glow, sk, hatId) {
     const hg = c.createRadialGradient(-15, 3, 0, -15, 3, 36);
     hg.addColorStop(0, `rgba(${sk.glow},${0.55 * glow})`); hg.addColorStop(1, `rgba(${sk.glow},0)`);
-    c.fillStyle = hg; c.beginPath(); c.arc(-15, 3, 36, 0, TAU); c.fill();
+    if (glow > 0) { c.fillStyle = hg; c.beginPath(); c.arc(-15, 3, 36, 0, TAU); c.fill(); }   // ohne Leuchten in Vorschaubildern
 
     wing(c, -3, -9, wingA + 0.35, `rgba(${sk.wing},0.45)`);           // hinterer Flügel
 
@@ -1027,13 +1137,18 @@
     c.globalAlpha = 1;
 
     const bg = c.createLinearGradient(0, -16, 0, 16);                  // Körper
-    bg.addColorStop(0, sk.body[0]); bg.addColorStop(1, sk.body[1]);
+    if (sk.rainbow) {                                                  // Prisma schillert in allen Farben
+      const h = (game.time * 60) % 360;
+      bg.addColorStop(0, `hsl(${h},90%,78%)`); bg.addColorStop(0.5, `hsl(${(h + 60) % 360},85%,62%)`); bg.addColorStop(1, `hsl(${(h + 120) % 360},80%,50%)`);
+    } else {
+      bg.addColorStop(0, sk.body[0]); bg.addColorStop(1, sk.body[1]);
+    }
     c.fillStyle = bg; c.beginPath(); c.arc(2, 0, 15, 0, TAU); c.fill(); c.stroke();
     c.fillStyle = 'rgba(255,255,255,0.35)';
     c.beginPath(); c.ellipse(4, 8, 8, 4, 0, 0, TAU); c.fill();
 
     // Zubehör je Figur
-    if (sk.acc === 'horns') {
+    if (sk.acc === 'horns' && !hatId) {
       c.fillStyle = '#ffd040';
       c.beginPath(); c.moveTo(-6, -11); c.lineTo(-9, -22); c.lineTo(0, -14); c.closePath(); c.fill(); c.stroke();
       c.beginPath(); c.moveTo(6, -14); c.lineTo(10, -24); c.lineTo(13, -10); c.closePath(); c.fill(); c.stroke();
@@ -1042,12 +1157,12 @@
       c.beginPath(); c.arc(2, 0, 13, 0.6, 2.4); c.stroke();
       c.lineWidth = 4; c.beginPath(); c.moveTo(-6, 11); c.quadraticCurveTo(-14, 18 + Math.sin(game.time * 12) * 3, -22, 16); c.stroke();
       c.strokeStyle = INK; c.lineWidth = 2;
-    } else if (sk.acc === 'crown') {
+    } else if (sk.acc === 'crown' && !hatId) {
       c.fillStyle = '#ffe14a';
       c.beginPath(); c.moveTo(-6, -12); c.lineTo(-7, -23); c.lineTo(-2, -17); c.lineTo(2, -25); c.lineTo(6, -17); c.lineTo(11, -23); c.lineTo(10, -12); c.closePath(); c.fill(); c.stroke();
     }
 
-    if (sk.acc !== 'crown' && sk.acc !== 'horns') {                     // Antenne
+    if (!hatId && sk.acc !== 'crown' && sk.acc !== 'horns') {                     // Antenne
       c.beginPath(); c.moveTo(1, -14); c.quadraticCurveTo(0, -25, -7, -27); c.stroke();
       c.fillStyle = sk.acc === 'star' ? '#ffe14a' : '#ffd27a';
       if (sk.acc === 'star') { star(c, -7, -28, 6); c.fill(); c.stroke(); }
@@ -1069,6 +1184,105 @@
     c.beginPath(); c.moveTo(15, 2); c.lineTo(23, 5); c.lineTo(15, 9); c.closePath(); c.fill(); c.stroke();
 
     wing(c, -1, -8, wingA, `rgba(${sk.wing},0.8)`);                   // vorderer Flügel
+    if (hatId) drawHat(c, hatId, sk);
+  }
+
+  // Kopfschmuck. Ursprung = Kopfoberseite, y nach oben negativ.
+  function drawHat(c, id, sk) {
+    const t = game.time;
+    c.save();
+    c.translate(3, -12);
+    c.rotate(-0.12);
+    c.lineWidth = 2; c.strokeStyle = INK;
+    const shape = (fill, fn) => { c.fillStyle = fill; c.beginPath(); fn(); c.fill(); c.stroke(); };
+    switch (id) {
+      case 'party':
+        shape('#ff8ac4', () => { c.moveTo(-9, 1); c.lineTo(9, 1); c.lineTo(1, -22); c.closePath(); });
+        c.strokeStyle = '#ffe14a'; c.lineWidth = 2.5;
+        c.beginPath(); c.moveTo(-6, -6); c.lineTo(6, -9); c.moveTo(-3, -14); c.lineTo(4, -16); c.stroke();
+        c.strokeStyle = INK; c.lineWidth = 2;
+        shape('#5ef2d6', () => c.arc(1, -23, 3.5, 0, TAU));
+        break;
+      case 'flower':
+        c.translate(-8, -1);
+        for (let i = 0; i < 5; i++) { const a = i * TAU / 5 + t; shape('#ffd0ea', () => c.arc(Math.cos(a) * 4.5, Math.sin(a) * 4.5, 3.6, 0, TAU)); }
+        shape('#ffe14a', () => c.arc(0, 0, 3, 0, TAU));
+        break;
+      case 'beanie':
+        shape('#ff6a5a', () => c.ellipse(0, 2, 13, 13, 0, Math.PI, TAU));
+        shape('#fff0e0', () => c.rect(-13.5, -2, 27, 5));
+        shape('#ffffff', () => c.arc(0, -13, 4.5, 0, TAU));
+        break;
+      case 'cap':
+        shape('#2a5ad0', () => c.ellipse(11, 0, 10, 3, 0, 0, TAU));
+        shape('#4a8aff', () => c.ellipse(0, 1, 12, 10, 0, Math.PI, TAU));
+        shape('#ffe14a', () => c.arc(0, -9, 2, 0, TAU));
+        break;
+      case 'catears':
+        for (const [x0, x1, x2] of [[-12, -9, -2], [3, 9, 12]]) {
+          shape(sk.body[1], () => { c.moveTo(x0, 3); c.lineTo(x1, -12); c.lineTo(x2, 1); c.closePath(); });
+          c.fillStyle = '#ff9ac0'; c.beginPath(); c.moveTo(x0 + 3, 1); c.lineTo(x1, -7); c.lineTo(x2 - 2, 0); c.closePath(); c.fill();
+        }
+        break;
+      case 'chef':
+        shape('#ffffff', () => { c.arc(-7, -11, 7, 0, TAU); c.arc(7, -11, 7, 0, TAU); c.arc(0, -15, 8, 0, TAU); });
+        shape('#ffffff', () => c.rect(-9, -9, 18, 10));
+        break;
+      case 'headphones':
+        c.lineWidth = 3.5; c.strokeStyle = '#3a3050';
+        c.beginPath(); c.arc(-1, 7, 13, Math.PI * 1.02, Math.PI * 1.95); c.stroke();
+        c.lineWidth = 2; c.strokeStyle = INK;
+        shape('#ff4a6a', () => { c.ellipse(-10, 8, 5, 7, 0, 0, TAU); });
+        shape('#ffd0dc', () => c.ellipse(-10, 8, 2, 3.5, 0, 0, TAU));
+        break;
+      case 'propeller':
+        shape('#ff4a6a', () => c.ellipse(0, 1, 12, 10, 0, Math.PI, Math.PI * 1.5));
+        shape('#4a8aff', () => { c.moveTo(0, 1); c.ellipse(0, 1, 12, 10, 0, Math.PI * 1.5, TAU); c.closePath(); });
+        c.beginPath(); c.moveTo(0, -9); c.lineTo(0, -14); c.stroke();
+        shape('#ffe14a', () => c.ellipse(0, -15, Math.max(1, Math.abs(Math.cos(t * 18)) * 13), 2.5, 0, 0, TAU));
+        break;
+      case 'tophat':
+        shape('#22183a', () => c.ellipse(0, 0, 15, 3.5, 0, 0, TAU));
+        shape('#22183a', () => c.rect(-9, -21, 18, 21));
+        shape('#ff4a6a', () => c.rect(-9, -6, 18, 4));
+        c.fillStyle = 'rgba(255,255,255,0.25)'; c.fillRect(-6, -19, 3, 12);
+        break;
+      case 'pirate':
+        shape('#22183a', () => { c.moveTo(-17, 1); c.quadraticCurveTo(-8, -6, 0, -17); c.quadraticCurveTo(8, -6, 17, 1); c.quadraticCurveTo(0, -3, -17, 1); });
+        shape('#ffffff', () => c.arc(0, -7, 3, 0, TAU));
+        c.fillStyle = INK; c.fillRect(-1.5, -7.5, 1, 1); c.fillRect(0.5, -7.5, 1, 1);
+        break;
+      case 'viking':
+        for (const s of [-1, 1]) shape('#fff0d0', () => { c.moveTo(s * 10, -3); c.quadraticCurveTo(s * 20, -6, s * 18, -17); c.quadraticCurveTo(s * 15, -8, s * 6, -6); c.closePath(); });
+        shape('#b8c0d0', () => c.ellipse(0, 2, 13, 12, 0, Math.PI, TAU));
+        shape('#8a6a3a', () => c.rect(-13, -2, 26, 4));
+        break;
+      case 'wizard':
+        shape('#4a3ab0', () => { c.moveTo(-11, 0); c.lineTo(11, 0); c.lineTo(4, -16); c.quadraticCurveTo(8, -24, 16, -24); c.quadraticCurveTo(4, -28, -2, -18); c.closePath(); });
+        shape('#4a3ab0', () => c.ellipse(0, 0, 16, 3.5, 0, 0, TAU));
+        c.fillStyle = '#ffe14a';
+        star(c, -2, -8, 3); c.fill(); star(c, 5, -15, 2); c.fill();
+        break;
+      case 'halo': {
+        const y = -9 + Math.sin(t * 3) * 1.5;
+        c.shadowColor = '#ffe14a'; c.shadowBlur = 8;
+        c.strokeStyle = '#ffe14a'; c.lineWidth = 3.5;
+        c.beginPath(); c.ellipse(0, y, 11, 3.5, 0, 0, TAU); c.stroke();
+        c.shadowBlur = 0;
+        break;
+      }
+      case 'diadem':
+        c.strokeStyle = '#ffd27a'; c.lineWidth = 3;
+        c.beginPath(); c.arc(0, 8, 12, Math.PI * 1.15, Math.PI * 1.85); c.stroke();
+        c.lineWidth = 2; c.strokeStyle = INK;
+        c.fillStyle = '#5ef2d6'; c.shadowColor = '#5ef2d6'; c.shadowBlur = 6 + Math.sin(t * 4) * 3;
+        star(c, 0, -6, 6); c.fill(); c.stroke();
+        c.shadowBlur = 0;
+        c.fillStyle = '#ff8ac4'; c.beginPath(); c.arc(-8, -1, 2, 0, TAU); c.arc(8, -1, 2, 0, TAU); c.fill();
+        break;
+      default: break;
+    }
+    c.restore();
   }
 
   function drawParticles() {
@@ -1103,7 +1317,7 @@
     ctx.save();
     ctx.translate(b.x, b.y);
     ctx.rotate(b.rot);
-    drawPip(ctx, Math.sin(b.wing) * 0.8, 0.8 + Math.sin(game.time * 6) * 0.2, skin);
+    drawPip(ctx, Math.sin(b.wing) * 0.8, 0.8 + Math.sin(game.time * 6) * 0.2, skin, hat);
     ctx.restore();
     if (game.shield) {
       const r = 25 + Math.sin(game.time * 6) * 1.5;
@@ -1150,6 +1364,10 @@
       ctx.fillStyle = `rgba(120,160,255,${Math.min(0.12, game.slowT * 0.06)})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
+    if (game.state === 'play' && game.bonusT > 0) {
+      ctx.fillStyle = `rgba(255,200,80,${Math.min(0.14, game.bonusT * 0.07)})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
     if (game.flash > 0) {
       ctx.fillStyle = `rgba(255,245,230,${Math.min(1, game.flash) * 0.8})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1162,13 +1380,14 @@
   let lastPowers = null;
   function hudPowers() {
     const parts = [];
+    if (game.bonusT > 0) parts.push('⭐ BONUS ×' + BONUS.mult + ' · ' + Math.ceil(game.bonusT));
     if (game.shield) parts.push(POWERS.shield.icon);
     if (game.slowT > 0) parts.push(POWERS.slow.icon + ' ' + Math.ceil(game.slowT));
     if (game.magnetT > 0) parts.push(POWERS.magnet.icon + ' ' + Math.ceil(game.magnetT));
     const key = parts.join('|');
     if (key === lastPowers) return;          // DOM nur bei Änderung anfassen
     lastPowers = key;
-    ui.powers.innerHTML = parts.map(p => `<span class="chip">${p}</span>`).join('');
+    ui.powers.innerHTML = parts.map(p => `<span class="chip${p[0] === '⭐' ? ' gold' : ''}">${p}</span>`).join('');
   }
 
   // Meldungen nacheinander zeigen (Missionen, Weltwechsel, Freischaltungen)
@@ -1189,10 +1408,13 @@
 
   function refreshTitle() {
     const day = ensureDay();
-    ui.titleBest.textContent = String(save.best);
+    ui.wallet.textContent = String(save.shards);
+    for (const b of ui.diffSeg.children) b.classList.toggle('on', b.dataset.diff === diff.id);
+    ui.diffInfo.innerHTML = `${diff.desc} · Splitter <b>×${diff.mult}</b>` + (diff.power ? '' : ' · keine Power-Ups');
+    ui.titleBest.textContent = String(save.bests[diff.id] || 0);
     ui.titleToday.textContent = String(day.best);
-    ui.titleShards.textContent = String(save.shards);
     ui.missionBadge.textContent = `${day.missions.filter(m => m.done).length}/3`;
+    ui.shopBadge.hidden = save.shopSeen === today();
   }
 
   function backToTitle() {
@@ -1201,76 +1423,176 @@
     showScreen('title');
   }
 
-  // Figuren-Vorschau als Bild (einmal je Figur)
+  // Schwierigkeit wählen (Knöpfe werden aus DIFFS erzeugt)
+  function setDiff(id) {
+    const d = DIFFS.find(x => x.id === id);
+    if (!d) return;
+    diff = d;
+    save.diff = id;
+    persist();
+    refreshTitle();
+  }
+  for (const d of DIFFS) {
+    const b = document.createElement('button');
+    b.textContent = d.name;
+    b.dataset.diff = d.id;
+    b.style.setProperty('--c', d.color);
+    b.setAttribute('role', 'radio');
+    b.addEventListener('pointerdown', e => e.stopPropagation());
+    b.addEventListener('click', () => { b.blur(); sfx.unlock(); sfx.shard(); setDiff(d.id); });
+    ui.diffSeg.append(b);
+  }
+
+  // Vorschaubilder von Figur + Kopfschmuck (einmal je Kombination)
   const thumbs = new Map();
-  function skinThumb(sk) {
-    let url = thumbs.get(sk.id);
+  function thumb(sk, hatId) {
+    const key = sk.id + '|' + (hatId || '');
+    let url = thumbs.get(key);
     if (url) return url;
     const c = document.createElement('canvas');
     c.width = c.height = 128;
     const g = c.getContext('2d');
-    g.setTransform(2.4, 0, 0, 2.4, 68, 70);
-    drawPip(g, 0.5, 1, sk);
+    g.setTransform(2.2, 0, 0, 2.2, 66, hatId ? 80 : 72);
+    drawPip(g, 0.5, 0, sk, hatId);
     url = c.toDataURL('image/png');
-    thumbs.set(sk.id, url);
+    thumbs.set(key, url);
     return url;
   }
-
-  function openSkins() {
-    setState('menu');
-    renderSkins();
-    showScreen('skins');
-  }
-  function renderSkins() {
-    ui.skinShards.textContent = String(save.shards);
-    ui.skinGrid.textContent = '';
-    for (const sk of SKINS) {
-      const owned = save.owned.includes(sk.id), active = save.skin === sk.id;
-      const btn = document.createElement('button');
-      btn.className = 'skin' + (active ? ' sel' : '') + (owned ? '' : ' locked');
-      const img = new Image();
-      img.src = skinThumb(sk); img.alt = '';
-      const name = document.createElement('b');
-      name.textContent = sk.name;
-      const tag = document.createElement('small');
-      tag.textContent = active ? 'Aktiv' : owned ? 'Wählen' : `✦ ${sk.price}`;
-      btn.append(img, name, tag);
-      btn.addEventListener('pointerdown', e => e.stopPropagation());
-      btn.addEventListener('click', () => pickSkin(sk));
-      ui.skinGrid.append(btn);
-    }
-  }
-  function pickSkin(sk) {
-    sfx.unlock();
-    if (save.owned.includes(sk.id)) {
-      save.skin = sk.id;
-      sfx.point();
-    } else if (save.shards >= sk.price) {
-      save.shards -= sk.price;
-      save.owned.push(sk.id);
-      save.skin = sk.id;
-      sfx.best();
-      toast(`${sk.name} freigeschaltet!`);
-    } else {
-      sfx.thud();
-      toast(`Noch ${sk.price - save.shards} ✦ nötig`);
-    }
+  const rarityOf = it => RARITY[it.rarity] || RARITY.common;
+  const hatName = id => (HATS.find(h => h.id === id) || { name: '' }).name;
+  function applyLook() {
     skin = SKINS.find(k => k.id === save.skin) || SKINS[0];
+    hat = save.hat;
+  }
+  // Dynamisch erzeugte Knöpfe dürfen keinen Flügelschlag auslösen
+  function tapButton(el, fn) {
+    el.addEventListener('pointerdown', e => e.stopPropagation());
+    el.addEventListener('click', e => { e.currentTarget.blur(); fn(); });
+  }
+
+  // ---- Shop: jeden Tag 3 Figuren + 3 Kopfschmuck, eins davon 30 % günstiger ----
+  function shopToday() {
+    const r = mulberry(strSeed('shop-' + today()));
+    const pick = (list, n) => {
+      const pool = list.filter(x => x.price > 0), out = [];
+      while (out.length < n && pool.length) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+      return out;
+    };
+    const offers = [...pick(SKINS, 3).map(item => ({ type: 'skin', item })), ...pick(HATS, 3).map(item => ({ type: 'hat', item }))];
+    const deal = Math.floor(r() * offers.length);
+    offers.forEach((o, i) => { o.deal = i === deal; o.price = o.deal ? Math.round(o.item.price * 0.7) : o.item.price; });
+    return offers;
+  }
+  const isOwned = o => (o.type === 'skin' ? save.owned : save.hats).includes(o.item.id);
+
+  function untilMidnight() {
+    const now = new Date(), mid = new Date(now);
+    mid.setHours(24, 0, 0, 0);
+    const sec = Math.max(0, Math.floor((mid - now) / 1000));
+    return [Math.floor(sec / 3600), Math.floor(sec / 60) % 60, sec % 60].map(v => String(v).padStart(2, '0')).join(':');
+  }
+
+  let shopTimer = 0, shopDate = '';
+  function openShop() {
+    setState('menu');
+    renderShop();
+    showScreen('shop');
+    clearInterval(shopTimer);
+    shopTimer = setInterval(() => {
+      if (!ui.screens.shop.classList.contains('show')) { clearInterval(shopTimer); return; }
+      ui.shopTimer.textContent = untilMidnight();
+      if (shopDate !== today()) renderShop();     // Mitternacht erlebt: neue Auswahl
+    }, 1000);
+  }
+  function renderShop() {
+    shopDate = today();
+    ui.shopShards.textContent = String(save.shards);
+    ui.shopTimer.textContent = untilMidnight();
+    ui.shopSkins.textContent = '';
+    ui.shopHats.textContent = '';
+    for (const o of shopToday()) {
+      const owned = isOwned(o), rar = rarityOf(o.item);
+      const el = document.createElement('div');
+      el.className = 'offer' + (o.deal ? ' deal' : '');
+      el.style.setProperty('--rar', rar.color);
+      const src = o.type === 'skin' ? thumb(o.item, hat) : thumb(skin, o.item.id);
+      const price = owned ? 'Im Besitz' : (o.deal ? `<s>${o.item.price}</s> ` : '') + `✦ ${o.price}`;
+      el.innerHTML = (o.deal ? '<span class="ribbon">Angebot −30 %</span>' : '') +
+        `<img alt="" src="${src}"><b>${o.item.name}</b><small class="rar">${rar.name}</small>` +
+        `<button class="buy${!owned && save.shards < o.price ? ' poor' : ''}"${owned ? ' disabled' : ''}>${price}</button>`;
+      if (!owned) tapButton(el.querySelector('.buy'), () => buy(o));
+      (o.type === 'skin' ? ui.shopSkins : ui.shopHats).append(el);
+    }
+    if (save.shopSeen !== shopDate) { save.shopSeen = shopDate; persist(); }
+  }
+  function buy(o) {
+    sfx.unlock();
+    if (isOwned(o)) return;
+    if (save.shards < o.price) {
+      sfx.thud();
+      toast(`Dir fehlen noch ${o.price - save.shards} ✦`);
+      return;
+    }
+    save.shards -= o.price;
+    if (o.type === 'skin') { save.owned.push(o.item.id); save.skin = o.item.id; }
+    else { save.hats.push(o.item.id); save.hat = o.item.id; }
+    applyLook();
     persist();
-    renderSkins();
+    sfx.best();
+    toast(`${o.item.name} gekauft und angelegt!`);
+    renderShop();
     refreshTitle();
   }
 
-  function openMissions() {
-    const day = ensureDay();
+  // ---- Garderobe: gekaufte Figuren und Kopfschmuck anlegen ----
+  let wardTab = 'skins';
+  function openWardrobe() {
     setState('menu');
-    ui.missionList.innerHTML = day.missions.map(m => {
+    renderWardrobe();
+    showScreen('wardrobe');
+  }
+  function renderWardrobe() {
+    ui.wardPreview.src = thumb(skin, hat);
+    ui.wardName.textContent = skin.name + (hat ? ' · ' + hatName(hat) : '');
+    document.querySelectorAll('[data-wtab]').forEach(b => b.classList.toggle('on', b.dataset.wtab === wardTab));
+    ui.wardGrid.textContent = '';
+    const isSkins = wardTab === 'skins';
+    const list = isSkins ? SKINS : [{ id: null, name: 'Ohne', rarity: 'common' }, ...HATS];
+    for (const it of list) {
+      const owned = isSkins ? save.owned.includes(it.id) : (it.id === null || save.hats.includes(it.id));
+      const active = isSkins ? save.skin === it.id : save.hat === it.id;
+      const b = document.createElement('button');
+      b.className = 'tile' + (active ? ' sel' : '') + (owned ? '' : ' locked');
+      b.style.setProperty('--rar', rarityOf(it).color);
+      const src = isSkins ? thumb(it, null) : thumb(skin, it.id);
+      b.innerHTML = `<img alt="" src="${src}"><b>${it.name}</b><small>${active ? 'Angelegt' : owned ? 'Anlegen' : '🔒 Shop'}</small>`;
+      tapButton(b, () => {
+        sfx.unlock();
+        if (!owned) { sfx.thud(); toast('Gibt es im Shop – schau jeden Tag rein!'); return; }
+        if (isSkins) save.skin = it.id; else save.hat = it.id;
+        applyLook();
+        persist();
+        sfx.shard();
+        renderWardrobe();
+      });
+      ui.wardGrid.append(b);
+    }
+  }
+
+  // ---- Missionen ----
+  function missionRows(day) {
+    return day.missions.map(m => {
       const d = missionDef(m.id);
       const prog = Math.min(m.prog, d.goal);
       const pct = Math.round(prog / d.goal * 100);
-      return `<li class="${m.done ? 'done' : ''}"><div class="mtext">${m.done ? '✔ ' : ''}${d.text}</div>` +
-        `<div class="bar"><i style="width:${pct}%"></i></div><small>${prog} / ${d.goal} · Belohnung ✦ ${d.reward}</small></li>`;
+      return `<li class="${m.done ? 'done' : ''}"><div class="mtop"><span class="mtext">${m.done ? '✔ ' : ''}${d.text}</span>` +
+        `<span class="mrew">✦ ${d.reward}</span></div><div class="bar"><i style="width:${pct}%"></i></div><small>${prog} / ${d.goal}</small></li>`;
     }).join('');
+  }
+  function openMissions() {
+    const day = ensureDay();
+    setState('menu');
+    ui.missionList.innerHTML = missionRows(day);
     ui.missionToday.textContent = String(day.best);
     showScreen('missions');
   }
@@ -1306,10 +1628,11 @@
   onClick('btnQuit', toTitle);
   onClick('btnPause', () => (game.state === 'paused' ? resume() : pause()));
   onClick('btnMute', toggleMute);
-  onClick('btnSkins', openSkins);
+  onClick('btnShop', openShop);
+  onClick('btnWardrobe', openWardrobe);
   onClick('btnMissions', openMissions);
-  onClick('btnSkinsBack', backToTitle);
-  onClick('btnMissionsBack', backToTitle);
+  document.querySelectorAll('[data-close]').forEach(el => tapButton(el, backToTitle));
+  document.querySelectorAll('[data-wtab]').forEach(el => tapButton(el, () => { wardTab = el.dataset.wtab; renderWardrobe(); }));
 
   window.addEventListener('keydown', e => {
     const k = e.code;
@@ -1327,7 +1650,7 @@
   });
 
   // Kein Scrollen, Zoomen oder Kontextmenü während des Spiels (vor allem iOS Safari)
-  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  document.addEventListener('touchmove', e => { if (!(e.target.closest && e.target.closest('.scroll'))) e.preventDefault(); }, { passive: false });
   document.addEventListener('gesturestart', e => e.preventDefault());
   document.addEventListener('dblclick', e => e.preventDefault());
   stage.addEventListener('contextmenu', e => e.preventDefault());
@@ -1378,10 +1701,15 @@
     get combo() { return game.combo; },
     get shield() { return game.shield; },
     get save() { return save; },
+    get diff() { return diff.id; },
+    get bonusT() { return game.bonusT; },
+    setDiff,
     start: startGame, flap, pause, resume,
     cheat: {
       score(n) { game.score = n; game.run.score = n; bumpScore(); worldCheck(); checkMissions(); },
       give(kind) { collect({ kind, x: game.bird.x, y: game.bird.y }); },
+      hat(id) { save.hats.push(id); save.hat = id; applyLook(); },
+      skin(id) { save.owned.push(id); save.skin = id; applyLook(); },
       shards(n) { save.shards += n; persist(); refreshTitle(); }
     },
     icon(size) {
@@ -1393,7 +1721,7 @@
       g.fillStyle = gr; g.fillRect(0, 0, size, size);
       g.setTransform(size / 70, 0, 0, size / 70, size * 0.54, size * 0.52);
       g.rotate(-0.2);
-      drawPip(g, 0.5, 1, SKINS[0]);
+      drawPip(g, 0.5, 1, SKINS[0], null);
       return c.toDataURL('image/png');
     }
   };

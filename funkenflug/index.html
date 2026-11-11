@@ -18,10 +18,12 @@
 <div id="stage" data-state="title">
   <canvas id="game" aria-label="Spielfeld"></canvas>
 
-  <!-- Punktestand während des Spiels -->
+  <!-- HUD während des Spiels -->
   <div id="hud"><div id="score" aria-live="polite">0</div><div id="combo"></div></div>
   <div id="hudLeft"><div id="runShards" class="chip">✦ 0</div><div id="powers"></div></div>
-  <div id="toast"></div>
+
+  <!-- Splitter-Konto (Titel & Menüs) -->
+  <div id="wallet" class="chip big">✦ <b id="walletAmount">0</b></div>
 
   <!-- Pause- und Ton-Knopf -->
   <div id="topbar">
@@ -29,20 +31,23 @@
     <button id="btnMute" class="icon-btn" aria-label="Ton an/aus">🔊</button>
   </div>
 
-  <!-- Startbildschirm: Logo oben, Figur in der Mitte, Karte unten -->
+  <!-- Startbildschirm: Logo oben, Figur in der Mitte, Menü unten -->
   <section id="titleScreen" class="screen show">
     <header class="title-top">
       <h1 class="logo">Funken<span>flug</span></h1>
       <p class="tagline">Ein kleines Leuchtwesen. Tausend schwebende Kristalle.</p>
     </header>
-    <div class="card">
-      <p class="howto">Klicke, tippe oder drücke <kbd>SPACE</kbd>, um zu fliegen.<br><small>Fliege genau durch die Mitte für PERFEKT-Combos!</small></p>
-      <button id="btnStart" class="btn primary">Los geht's</button>
-      <div class="row">
-        <button id="btnSkins" class="btn small">🎨 Figuren</button>
-        <button id="btnMissions" class="btn small">📜 Missionen <span id="missionBadge" class="pill">0/3</span></button>
-      </div>
-      <p class="best">Rekord <b id="titleBest">0</b> · Heute <b id="titleToday">0</b> · Splitter <b id="titleShards">0</b> ✦</p>
+    <div class="card menu">
+      <p class="howto">Klicke, tippe oder drücke <kbd>SPACE</kbd>, um zu fliegen.<br><small>Mitte = PERFEKT-Combo · Goldenes Portal = Bonus-Level</small></p>
+      <div id="diffSeg" class="seg" role="radiogroup" aria-label="Schwierigkeit"></div>
+      <p id="diffInfo" class="diff-info"></p>
+      <button id="btnStart" class="btn primary play">▶ Spielen</button>
+      <div class="stats-line"><span>Rekord <b id="titleBest">0</b></span><span>Heute <b id="titleToday">0</b></span></div>
+      <nav class="nav">
+        <button id="btnShop" class="nav-btn"><span class="ico">🛒</span>Shop<span id="shopBadge" class="dot">NEU</span></button>
+        <button id="btnWardrobe" class="nav-btn"><span class="ico">👕</span>Garderobe</button>
+        <button id="btnMissions" class="nav-btn"><span class="ico">📜</span>Missionen<span id="missionBadge" class="dot mint">0/3</span></button>
+      </nav>
       <p class="keys">P = Pause · M = Ton · <a href="../">← Gaming Gang</a></p>
     </div>
   </section>
@@ -51,38 +56,53 @@
   <section id="pauseScreen" class="panel">
     <h2>Pause</h2>
     <button id="btnResume" class="btn primary">Weiter</button>
-    <button id="btnQuit" class="btn">Zum Titel</button>
+    <button id="btnQuit" class="btn">Zum Menü</button>
   </section>
 
   <!-- Game Over -->
-  <section id="overScreen" class="panel">
-    <h2 class="wobble">Abgestürzt!</h2>
+  <section id="overScreen" class="panel scroll">
+    <div class="ohead"><h2 class="wobble">Abgestürzt!</h2><span id="overDiff" class="tag">Mittel</span></div>
+    <div class="big-score"><small>Punkte</small><b id="overScore">0</b></div>
+    <div id="newBest" class="badge">★ Neuer Rekord! ★</div>
     <div class="stats">
-      <div><small>Punkte</small><b id="overScore">0</b></div>
       <div><small>Rekord</small><b id="overBest">0</b></div>
       <div><small>Heute</small><b id="overToday">0</b></div>
     </div>
-    <div id="newBest" class="badge">★ Neuer Rekord! ★</div>
-    <p id="overInfo" class="rank"></p>
-    <button id="btnRetry" class="btn primary">Nochmal spielen</button>
-    <button id="btnHome" class="btn">Zum Titel</button>
+    <div id="overRewards" class="rewards"></div>
+    <ul id="overMissions" class="missions compact"></ul>
+    <div class="row">
+      <button id="btnHome" class="btn">Menü</button>
+      <button id="btnRetry" class="btn primary">Nochmal spielen</button>
+    </div>
   </section>
 
-  <!-- Figuren -->
-  <section id="skinScreen" class="panel">
-    <h2>Figuren</h2>
-    <p class="wallet">Deine Splitter: <b id="skinShards">0</b> ✦</p>
-    <div id="skinGrid" class="grid"></div>
-    <button id="btnSkinsBack" class="btn">Zurück</button>
+  <!-- Shop mit täglicher Rotation -->
+  <section id="shopScreen" class="panel wide scroll">
+    <header class="phead"><h2>🛒 Shop</h2><button class="x" data-close aria-label="Schließen">✕</button></header>
+    <div class="shop-bar"><span class="chip">✦ <b id="shopShards">0</b></span><span class="timer">Neu in <b id="shopTimer">00:00:00</b></span></div>
+    <h3>Figuren</h3>
+    <div id="shopSkins" class="offers"></div>
+    <h3>Kopfschmuck</h3>
+    <div id="shopHats" class="offers"></div>
+    <p class="hint">Jeden Tag um Mitternacht kommt eine neue Auswahl – mit einem Tagesangebot.</p>
+  </section>
+
+  <!-- Garderobe -->
+  <section id="wardScreen" class="panel wide scroll">
+    <header class="phead"><h2>👕 Garderobe</h2><button class="x" data-close aria-label="Schließen">✕</button></header>
+    <div class="preview"><img id="wardPreview" alt=""><b id="wardName"></b></div>
+    <div class="tabs"><button data-wtab="skins" class="on">Figuren</button><button data-wtab="hats">Kopfschmuck</button></div>
+    <div id="wardGrid" class="grid"></div>
   </section>
 
   <!-- Tagesmissionen -->
-  <section id="missionScreen" class="panel">
-    <h2>Tagesmissionen</h2>
-    <ul id="missionList"></ul>
-    <p class="rank">Tagesrekord: <b id="missionToday">0</b><br><small>Neue Missionen um Mitternacht</small></p>
-    <button id="btnMissionsBack" class="btn">Zurück</button>
+  <section id="missionScreen" class="panel scroll">
+    <header class="phead"><h2>📜 Missionen</h2><button class="x" data-close aria-label="Schließen">✕</button></header>
+    <ul id="missionList" class="missions"></ul>
+    <p class="hint">Tagesrekord: <b id="missionToday">0</b> · Neue Missionen um Mitternacht</p>
   </section>
+
+  <div id="toast"></div>
 </div>
 <script src="data.js"></script>
 <script src="game.js"></script>
