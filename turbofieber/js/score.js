@@ -52,6 +52,7 @@ export class StreetScore {
           this.near.set(t, this.time + 2.5);
           this.add(300, 'KNAPP VORBEI');
           this.popup('KNAPP! +300', 'cyan');
+          if (this.onNear) this.onNear();
           active = true;
         }
       }
@@ -66,8 +67,8 @@ export class StreetScore {
 
   bank() {
     const total = this.points * this.mult;
-    const cash = Math.round(total / 20);   // 20 Punkte = 1 $
-    if (cash > 0) { this.onBank(cash, total); this.popup('+$' + fmt(cash), 'green'); }
+    const cash = Math.round(total / 25);   // 25 Punkte = 1 $
+    if (cash > 0) { this.onBank(cash, total, this.mult); this.popup('+$' + fmt(cash), 'green'); }
     this.points = 0; this.mult = 1; this.idle = 0;
   }
 

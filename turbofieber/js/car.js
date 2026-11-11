@@ -266,6 +266,9 @@ export class Car {
     this.st = statsFor(carId, perf);
   }
 
+  // Auto aus der Szene nehmen und Speicher freigeben
+  dispose() { this.scene.remove(this.mesh); disposeTree(this.mesh); }
+
   get speed() { return Math.hypot(this.vx, this.vz); }
   get forwardSpeed() { return this.vx * Math.sin(this.heading) + this.vz * Math.cos(this.heading); }
 
@@ -401,7 +404,7 @@ export class Car {
     }
     u.tailMat.color.set('#ff1830').multiplyScalar(this.braking ? 4 : 1.2 + night);
     u.headMat.color.set('#dff4ff').multiplyScalar(1 + night * 2.5);
-    u.head.intensity = night * 1800;
+    u.head.intensity = this.npc ? 0 : night * 1800;   // Rivalen ohne Lichtkegel (blenden sonst)
     const fl = this.nitroOn;
     for (const f of u.flames) {
       f.visible = fl;

@@ -15,6 +15,8 @@ Technik: three.js r160 (lokal in `lib/`, MIT-Lizenz) mit Bloom-Nachbearbeitung, 
 - `js/save.js`: Spielstand `tf.save` (Geld, Autos mit `cfg` + `perf`, Bestwerte), wird beim Laden bereinigt
 - `js/score.js`: Street-Punkte – Drift (Schlupf × Tempo), knapp vorbei (+300), Highspeed über 190 km/h; Multiplikator bis ×5; nach 1,8 s Pause gebankt (20 Punkte = 1 $), Crash löscht die Kette
 - `js/garage.js`: Garage – eigene Szene (Neon-Showroom, Drehteller, eigene Spiegelungen), Reiter Autos/Optik/Leistung, Optik als Vorschau mit Sammelkauf, Upgrades sofort
+- `js/races.js`: Rennen – `RACES` (Downtown-Rundkurs, Zickzack-Sprint, Hafen-Sprint, Bergkönig, Highway-Zeitrennen, Drift-Arena) mit Start, Checkpoints `cps`, Radius `r`, Medaillen. Startpunkte als Leuchtsäulen mit Namensschild; langsam hineinfahren → Rennkarte. KI-Rivalen (`RIVALS`) fahren mit derselben Physik über eine dichte Fahrlinie, bremsen vor Kurven (Blick 28/52/88 m voraus), leichtes Gummiband. Countdown, Platzierung, Preisgeld (Platz 1/2/3/4 = 100/50/30/15 %), Bestleistungen in `profile.races`
+- `js/missions.js`: Tagesmissionen – 3 pro Tag aus 10 (fest nach Datum ausgelost), Zähler `add`/`max`, Belohnung sofort
 - `js/main.js`: Renderer, Qualitätsstufen (hoch/mittel/niedrig, automatisch je nach Bildrate), Kamera, Touch-Steuerung, HUD, Minikarte
 
 ## Fahrphysik (Arcade)
@@ -27,13 +29,14 @@ Technik: three.js r160 (lokal in `lib/`, MIT-Lizenz) mit Bloom-Nachbearbeitung, 
 Touch: ◀ ▶, GAS, BREMSE (rückwärts), DRIFT (Handbremse), NITRO. Tastatur: Pfeile/WASD, Leertaste, Shift, P.
 
 ## Test
-`window.TF`: state, car, world, touch, bloom, tod, start(), spawn(), step(dt, input), teleport('stadt'|'highway'|'hafen'|'berg'), traffic, weather, mountain, profile, garage, score, enterGarage(), GARAGE.
+`window.TF`: state, car, world, touch, bloom, tod, start(), spawn(), step(dt, input), teleport('stadt'|'highway'|'hafen'|'berg'), traffic, weather, mountain, profile, garage, score, enterGarage(), GARAGE, races (start/clear/state), missions, placeCar(x, z, h).
+Rennen ohne Grafik testen: `races.start(race)`, dann in einer Schleife `TF.step` + `races.update(dt)` mit Autopilot.
 Im Headless-Browser rendert SwiftShader sehr langsam. Physik deshalb mit `TF.car.update` in Schleifen messen, nicht in Echtzeit.
 
 ## Roadmap
 1. ✔ Fahrgefühl, Stadt, Tageszeiten, Touch-Steuerung
 2. ✔ Verkehr, Regen, größere Welt (Highway, Hafen, Bergstraße), Schnellreise
 3. ✔ Garage und Tuning (3 Autos, 10 Optik-Kategorien, 5 Upgrades), Street-Punkte als Geldquelle
-4. Rennen (Sprint, Rundkurs, Drift, Zeitrennen) und Tagesmissionen
+4. ✔ 6 Rennen (Rundkurs, Sprints, Zeitrennen, Drift-Arena) mit KI-Rivalen, Tagesmissionen
 5. Polizei und Verfolgungsjagden
 6. Hauptstory mit Crews und Bossrennen, Nebenquests

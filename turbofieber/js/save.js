@@ -26,7 +26,9 @@ export function loadProfile(paint) {
     cash: Number.isFinite(s.cash) ? Math.max(0, Math.round(s.cash)) : 3000,
     car: CARS[s.car] ? s.car : 'kestrel',
     cars: {},
-    best: { chain: 0, earned: 0, ...(s.best && typeof s.best === 'object' ? s.best : {}) }
+    best: { chain: 0, earned: 0, ...(s.best && typeof s.best === 'object' ? s.best : {}) },
+    races: s.races && typeof s.races === 'object' ? s.races : {},
+    daily: s.daily && typeof s.daily === 'object' ? s.daily : null
   };
   const src = s.cars && typeof s.cars === 'object' ? s.cars : {};
   for (const id of Object.keys(CARS)) {

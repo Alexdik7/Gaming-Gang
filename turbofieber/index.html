@@ -31,6 +31,7 @@
     <p class="tcar"><b id="tCar">Kestrel GT</b> · <span id="tCash">$ 0</span></p>
     <button id="startBtn" class="btn primary">▶ Losfahren</button>
     <button id="garageBtn" class="btn">🔧 Garage</button>
+    <p id="tMissions" class="small missions-line">Tagesmissionen 0/3</p>
     <p class="small">Lenken ◀ ▶ · Gas · Bremse/Rückwärts · Drift · Nitro<br>Tastatur: Pfeile/WASD · Leertaste = Drift · Shift = Nitro · P = Pause</p>
     <p class="small">Drifte, fahre knapp an Autos vorbei oder rase über 190 km/h – Punkte werden zu Geld für Tuning. Leuchtring in der Stadt = Garage.</p>
     <p class="small dim">Rennen, Missionen und Story folgen. · <a href="../">← Gaming Gang</a></p>
@@ -82,6 +83,9 @@
   <div class="title-card">
     <h2>Pause</h2>
     <button id="resumeBtn" class="btn primary">Weiterfahren</button>
+    <button id="abortBtn" class="btn danger" hidden>🏳 Rennen abbrechen</button>
+    <p class="label">Tagesmissionen</p>
+    <ul id="missionList" class="mlist"></ul>
     <p class="label">Schnellreise</p>
     <div class="tp">
       <button class="btn" data-tp="stadt">🏙 Stadt</button>
@@ -95,6 +99,24 @@
     <button id="muteBtn" class="btn">Ton: an</button>
     <button id="titleBtn" class="btn">Zum Titel</button>
   </div>
+</section>
+
+<!-- Rennen -->
+<div id="raceHud"><b id="rhMain"></b><small id="rhSub"></small></div>
+<div id="countdown"></div>
+<section id="raceCard" class="rpanel">
+  <p class="rtype" id="rcType">Sprint</p>
+  <h2 id="rcName">Rennen</h2>
+  <p id="rcDesc" class="small"></p>
+  <div class="rrow"><span>Preisgeld</span><b id="rcReward" class="money">$ 0</b></div>
+  <div class="rrow"><span>Bestleistung</span><b id="rcBest">–</b></div>
+  <div class="rbtns"><button id="rcCancel" class="btn">Später</button><button id="rcStart" class="btn primary">🏁 Starten</button></div>
+</section>
+<section id="raceResult" class="rpanel">
+  <h2 id="rrTitle">1. Platz!</h2>
+  <p id="rrLine" class="small"></p>
+  <p id="rrCash" class="bigmoney">+$ 0</p>
+  <div class="rbtns"><button id="rrAgain" class="btn">↻ Nochmal</button><button id="rrGo" class="btn primary">Weiterfahren</button></div>
 </section>
 
 <!-- Garage -->

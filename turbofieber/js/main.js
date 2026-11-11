@@ -12,6 +12,8 @@ import { loadProfile, saveProfile } from './save.js';
 import { StreetScore } from './score.js';
 import { Garage } from './garage.js';
 import { softCircle } from './world.js';
+import { Races } from './races.js';
+import { Missions } from './missions.js';
 import { Car } from './car.js';
 import { Effects } from './fx.js';
 import { CarAudio } from './audio.js';
@@ -107,6 +109,7 @@ function teleport(where) {
   camPos.set(car.pos.x - Math.sin(car.heading) * 7, car.pos.y + 2.6, car.pos.z - Math.cos(car.heading) * 7);
 }
 document.querySelectorAll('[data-tp]').forEach(b => b.addEventListener('click', () => {
+  races.abort();
   if (b.dataset.tp === 'garage') { car.place(GARAGE.x, GARAGE.z, 0); enterGarage('drive'); return; }
   teleport(b.dataset.tp); resume();
 }));
@@ -161,7 +164,7 @@ function start() {
   setState('drive');
   camPos.set(car.pos.x - Math.sin(car.heading) * 7, 2.6, car.pos.z - Math.cos(car.heading) * 7);
 }
-function pause() { setState('pause'); audio.suspend(); }
+function pause() { renderMissions(); $('abortBtn').hidden = !races.race; setState('pause'); audio.suspend(); }
 function resume() { setState('drive'); audio.unlock(); }
 
 $('startBtn').addEventListener('click', start);
@@ -249,7 +252,10 @@ function refreshCash() {
   $('tCar').textContent = { kestrel: 'Kestrel GT', vandal: 'Vandal R', nyx: 'Nyx S' }[profile.car];
 }
 const garage = new Garage(renderer, profile, { save: () => { saveP(); refreshCash(); }, exit: exitGarage, sound: k => audio.ui(k) });
-const score = new StreetScore((cash, pts) => {
+const score = new StreetScore((cash, pts, mult) => {
+  races.addDrift(pts);
+  missions.add('pts', pts);
+  missions.max('mult', mult);
   profile.cash += cash;
   profile.best.chain = Math.max(profile.best.chain, Math.round(pts));
   profile.best.earned += cash;
@@ -258,6 +264,38 @@ const score = new StreetScore((cash, pts) => {
   audio.ui('buy');
 });
 $('garageBtn').addEventListener('click', () => enterGarage('title'));
+
+// Rennen
+function placeCar(x, z, h) {
+  car.place(x, z, h);
+  car.pos.y = world.heightAt(x, z);
+  camYaw = h;
+  camPos.set(x - Math.sin(h) * 7, car.pos.y + 2.6, z - Math.cos(h) * 7);
+}
+const races = new Races({
+  scene, world, car, profile, score, audio,
+  save: () => { saveP(); refreshCash(); },
+  makeCar: (id, cfg, perf) => { const c = new Car(scene, id, cfg, perf); c.npc = true; return c; },
+  dropCar: c => c.dispose(),
+  teleport: placeCar,
+  onFinish: res => { missions.add('races', 1); if (res.win) missions.add('wins', 1); refreshCash(); }
+});
+// Tagesmissionen
+const missions = new Missions(profile, m => {
+  profile.cash += m.reward;
+  saveP();
+  refreshCash();
+  score.popup('MISSION ✔ +$' + fmt(m.reward), 'green');
+  audio.ui('buy');
+});
+score.onNear = () => missions.add('near', 1);
+function renderMissions() {
+  const list = missions.list();
+  $('missionList').innerHTML = list.map(m => `<li class="${m.done ? 'done' : ''}"><span>${m.done ? '✔ ' : ''}${m.text}</span><small>${m.done ? 'erledigt' : fmt(m.prog) + ' / ' + fmt(m.goal)} · $${fmt(m.reward)}</small><i style="width:${Math.round(m.prog / m.goal * 100)}%"></i></li>`).join('');
+  $('tMissions').textContent = `Tagesmissionen ${list.filter(m => m.done).length}/3`;
+}
+$('abortBtn').addEventListener('click', () => { races.abort(); resume(); });
+
 
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'drive') pause(); });
 canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); $('lost').hidden = false; });
@@ -301,6 +339,14 @@ function drawMini() {
     const dx = t.x - car.pos.x, dz = t.z - car.pos.z;
     if (dx * dx + dz * dz > view * view * 1.2) continue;
     mctx.beginPath(); mctx.arc(mx(t.x), mz(t.z), rr, 0, Math.PI * 2); mctx.fill();
+  }
+  const ri = races.mapInfo();
+  if (ri) {
+    mctx.strokeStyle = 'rgba(255,207,58,0.85)'; mctx.lineWidth = 4 / k; mctx.lineJoin = 'round';
+    mctx.beginPath(); ri.path.forEach((p, i) => (i ? mctx.lineTo(mx(p.x), mz(p.z)) : mctx.moveTo(mx(p.x), mz(p.z)))); mctx.stroke();
+    if (ri.next) { mctx.fillStyle = '#ffe14a'; mctx.beginPath(); mctx.arc(mx(ri.next[0]), mz(ri.next[1]), 6 / k, 0, Math.PI * 2); mctx.fill(); }
+    mctx.fillStyle = '#ff8a1a';
+    for (const p of ri.rivals) { mctx.beginPath(); mctx.arc(mx(p.x), mz(p.z), 4 / k, 0, Math.PI * 2); mctx.fill(); }
   }
   mctx.restore();
   // eigenes Auto
@@ -373,47 +419,79 @@ function updateCamera(dt) {
 }
 
 /* ---------- Physik-Schritt ---------- */
-function physics(dt, inp) {
-  car.grip = 1 - 0.2 * weather.wet * car.st.rainGrip;
-  car.update(dt, inp);
-  // zwei Kollisionskreise (vorn / hinten)
-  const sh = Math.sin(car.heading), ch = Math.cos(car.heading);
+// Ein Auto (Spieler oder Rivale) einen Teilschritt bewegen: Fahrphysik, Höhe, Wände, Verkehr
+function stepCar(c, dt, inp, player) {
+  c.grip = 1 - 0.2 * weather.wet * c.st.rainGrip;
+  c.update(dt, inp);
+  const sh = Math.sin(c.heading), ch = Math.cos(c.heading);
   // Höhe und Steigung (Bergstraße)
-  const hF = world.heightAt(car.pos.x + sh * 1.5, car.pos.z + ch * 1.5), hB = world.heightAt(car.pos.x - sh * 1.5, car.pos.z - ch * 1.5);
-  car.pos.y = (hF + hB) / 2;
-  car.grade = (hF - hB) / 3;
+  const hF = world.heightAt(c.pos.x + sh * 1.5, c.pos.z + ch * 1.5), hB = world.heightAt(c.pos.x - sh * 1.5, c.pos.z - ch * 1.5);
+  c.pos.y = (hF + hB) / 2;
+  c.grade = (hF - hB) / 3;
+  // zwei Kollisionskreise (vorn / hinten)
   for (const o of [1.3, -1.3]) {
-    const cx = car.pos.x + sh * o, cz = car.pos.z + ch * o;
+    const cx = c.pos.x + sh * o, cz = c.pos.z + ch * o;
     const hit = world.collide(cx, cz, 1.05);
     if (hit) {
-      const power = car.bounce(hit.nx, hit.nz, hit.depth);
-      if (power > 3) {
+      const power = c.bounce(hit.nx, hit.nz, hit.depth);
+      if (player && power > 3) {
         if (power > 6) score.crash();
         audio.hit(power);
-        fx.crash(cx - hit.nx * 1.0, 0.6, cz - hit.nz * 1.0, power);
+        fx.crash(cx - hit.nx * 1.0, c.pos.y + 0.6, cz - hit.nz * 1.0, power);
         shake = Math.min(0.6, power * 0.03);
       }
     }
   }
   // Zusammenstöße mit dem Verkehr (je zwei Kreise pro Auto)
   for (const t of traffic.cars) {
-    const dx = car.pos.x - t.x, dz = car.pos.z - t.z;
+    const dx = c.pos.x - t.x, dz = c.pos.z - t.z;
     if (dx * dx + dz * dz > 49) continue;
     const ts = Math.sin(t.heading), tc = Math.cos(t.heading);
     for (const o of [1.3, -1.3]) for (const q of [1.3, -1.3]) {
-      const ex = car.pos.x + Math.sin(car.heading) * o - (t.x + ts * q), ez = car.pos.z + Math.cos(car.heading) * o - (t.z + tc * q);
+      const ex = c.pos.x + Math.sin(c.heading) * o - (t.x + ts * q), ez = c.pos.z + Math.cos(c.heading) * o - (t.z + tc * q);
       const d = Math.hypot(ex, ez);
       if (d >= 2.1 || d < 1e-4) continue;
       const nx = ex / d, nz = ez / d;
-      const power = car.bounce(nx, nz, 2.1 - d);
+      const power = c.bounce(nx, nz, 2.1 - d);
       if (power > 1.5) {
         traffic.knock(t, -nx * power * 0.5, -nz * power * 0.5);
+        if (!player) continue;
         if (power > 4) score.crash();
         audio.hit(power);
-        fx.crash(car.pos.x - nx * 1.2, car.pos.y + 0.7, car.pos.z - nz * 1.2, power);
+        fx.crash(c.pos.x - nx * 1.2, c.pos.y + 0.7, c.pos.z - nz * 1.2, power);
         shake = Math.min(0.6, power * 0.03);
       }
     }
+  }
+}
+
+// Autos untereinander (Spieler und Rivalen): auseinanderschieben, Schwung austauschen
+function carsCollide(a, b, player) {
+  const dx = a.pos.x - b.pos.x, dz = a.pos.z - b.pos.z;
+  if (dx * dx + dz * dz > 49) return;
+  for (const o of [1.3, -1.3]) for (const q of [1.3, -1.3]) {
+    const ex = a.pos.x + Math.sin(a.heading) * o - (b.pos.x + Math.sin(b.heading) * q);
+    const ez = a.pos.z + Math.cos(a.heading) * o - (b.pos.z + Math.cos(b.heading) * q);
+    const d = Math.hypot(ex, ez);
+    if (d >= 2.1 || d < 1e-4) continue;
+    const nx = ex / d, nz = ez / d, push = (2.1 - d) / 2;
+    a.pos.x += nx * push; a.pos.z += nz * push; b.pos.x -= nx * push; b.pos.z -= nz * push;
+    const rel = (a.vx - b.vx) * nx + (a.vz - b.vz) * nz;
+    if (rel < 0) {
+      const j = -rel * 0.6;
+      a.vx += nx * j; a.vz += nz * j; b.vx -= nx * j; b.vz -= nz * j;
+      if (player && -rel > 3) { audio.hit(-rel); fx.crash(a.pos.x - nx * 1.1, a.pos.y + 0.7, a.pos.z - nz * 1.1, -rel); shake = Math.min(0.5, -rel * 0.03); }
+    }
+  }
+}
+
+function physics(dt, inp) {
+  stepCar(car, dt, inp, true);
+  const rv = races.rivals;
+  for (const r of rv) stepCar(r.car, dt, races.frozen ? NO_INPUT : r.inp, false);
+  for (let i = 0; i < rv.length; i++) {
+    carsCollide(car, rv[i].car, true);
+    for (let k = i + 1; k < rv.length; k++) carsCollide(rv[i].car, rv[k].car, false);
   }
   if (car.shifted) { car.shifted = false; audio.shift(); }
   distance += car.speed * dt;
@@ -440,15 +518,24 @@ function frame(now) {
   }
 
   if (state === 'drive') {
-    const inp = input();
+    const inp = races.frozen ? NO_INPUT : input();
     const steps = Math.ceil(dt / (1 / 120)), h = dt / steps;
     for (let i = 0; i < steps; i++) physics(h, inp);
     fx.tires(car, dt, weather.wet);
     score.update(dt, car, traffic);
+    races.update(dt, car.speed < 8);
+    for (const r of races.rivals) r.car.syncMesh(world.night);
+    // Tagesmissionen: Strecke, Tempo, Orte, Regen
+    const km = car.speed * dt / 1000;
+    missions.add('km', km);
+    if (weather.rain > 0.5) missions.add('rainKm', km);
+    missions.max('top', car.speed * 3.6);
+    if (Math.hypot(car.pos.x - SUMMIT.x, car.pos.z - SUMMIT.z) < 26) missions.max('summit', 1);
+    if (car.pos.z < HARBOR.z1) missions.max('harbor', 1);
     // Garage: langsam in den Leuchtring fahren
     const gd = Math.hypot(car.pos.x - GARAGE.x, car.pos.z - GARAGE.z);
     if (gd > 9) garageArmed = true;
-    if (garageArmed && gd < 4.2 && car.speed < 6) { garageArmed = false; car.vx = car.vz = 0; enterGarage('drive'); }
+    if (garageArmed && gd < 4.2 && car.speed < 6 && !races.race) { garageArmed = false; car.vx = car.vz = 0; enterGarage('drive'); }
   } else if (state === 'title') {
     car.update(0, NO_INPUT);
   }
@@ -496,6 +583,7 @@ function frame(now) {
 
 /* ---------- Start ---------- */
 refreshCash();
+renderMissions();
 spawn();
 resize();
 applyQuality();
@@ -509,6 +597,6 @@ window.TF = {
   get state() { return state; }, car, world, touch, bloom,
   get quality() { return quality; },
   get tod() { return tod; }, set tod(v) { tod = v; },
-  start, pause, resume, spawn, step: physics, teleport, traffic, weather, profile, garage, score, enterGarage, GARAGE, mountain: MOUNTAIN,
+  start, pause, resume, spawn, step: physics, teleport, traffic, weather, profile, garage, score, enterGarage, GARAGE, races, missions, placeCar, mountain: MOUNTAIN,
   stats: () => ({ distance, topSpeed, fps: 0 })
 };
