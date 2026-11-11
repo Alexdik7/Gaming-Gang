@@ -155,6 +155,17 @@ export function buildCar(carId = 'kestrel', cfg = defaultCfg()) {
   } else if (cfg.spoiler === 'lip') {
     box(W * 0.92, 0.04, 0.22, paintMat, 0, dy + 0.03, m.rear + 0.2).rotation.x = -0.35;
   }
+  // Blaulicht-Balken (Polizei)
+  let bar = null;
+  if (cfg.police) {
+    const roofY = Math.max(...m.cabin.map(p => p[1])) + 0.03, roofZ = (m.cabin[2][0] + m.cabin[m.cabin.length - 3][0]) / 2;
+    box(1.1, 0.08, 0.28, blackMat, 0, roofY, roofZ);
+    const red = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff1830'), toneMapped: false });
+    const blue = new THREE.MeshBasicMaterial({ color: new THREE.Color('#1860ff'), toneMapped: false });
+    box(0.56, 0.17, 0.3, red, -0.29, roofY + 0.11, roofZ);
+    box(0.56, 0.17, 0.3, blue, 0.29, roofY + 0.11, roofZ);
+    bar = { red, blue };
+  }
   // Auspuffrohre
   for (const x of [-0.42, 0.42]) {
     const ex = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.2, 10).rotateX(Math.PI / 2), chromeMat);
@@ -211,7 +222,7 @@ export function buildCar(carId = 'kestrel', cfg = defaultCfg()) {
     return f;
   });
 
-  car.userData = { body, wheels, paintMat, headMat, tailMat, head, flames, glowMat, wheelR: r };
+  car.userData = { body, wheels, paintMat, headMat, tailMat, head, flames, glowMat, bar, wheelR: r };
   return car;
 }
 
@@ -253,6 +264,7 @@ export class Car {
     this.prevSpeed = 0;
     this.grade = 0;             // Steigung (Höhe pro Meter, + = bergauf)
     this.grip = 1;              // Haftung (Regen < 1)
+    this.flat = 0;              // Sekunden mit platten Reifen (Nagelband)
   }
 
   // Modell, Optik und Upgrades übernehmen (baut das Modell neu)
@@ -295,7 +307,8 @@ export class Car {
     this.nitroOn = inp.nitro && this.nitro > 0.01 && inp.gas && vF > 2;
     if (this.nitroOn) this.nitro = Math.max(0, this.nitro - dt * st.nitroDrain);
     else this.nitro = Math.min(1, this.nitro + dt * (0.015 + (this.drifting ? 0.16 : 0)) * st.nitroRegen);
-    const vmax = this.nitroOn ? st.vmax + 18 : st.vmax;
+    let vmax = this.nitroOn ? st.vmax + 18 : st.vmax;
+    if (this.flat > 0) { this.flat -= dt; vmax = Math.min(vmax, 30); }
 
     // Antrieb / Bremse (wirken entlang der Fahrzeugnase)
     this.throttle = inp.gas ? 1 : 0;
@@ -323,7 +336,7 @@ export class Car {
     // Gierrate: Einspurmodell, begrenzt durch die Reifenhaftung (Querbeschleunigung)
     const maxA = 0.62 * (0.85 + 0.15 * st.steer) / (1 + spd / 30);
     let yawT = -vF * Math.tan(this.steer * maxA) / 2.6;
-    const gripLimit = st.grip * this.grip / Math.max(spd, 1);
+    const gripLimit = st.grip * this.grip * (this.flat > 0 ? 0.6 : 1) / Math.max(spd, 1);
     yawT = Math.max(-gripLimit, Math.min(gripLimit, yawT));
     if (this.drifting) yawT = -this.steer * 1.75 * Math.sqrt(st.drift) * Math.min(1, spd / 14) + yawT * 0.3;   // Heck schwenkt aus
     this.yaw += (yawT - this.yaw) * Math.min(1, dt * (this.drifting ? 5 : 10));
@@ -405,6 +418,11 @@ export class Car {
     u.tailMat.color.set('#ff1830').multiplyScalar(this.braking ? 4 : 1.2 + night);
     u.headMat.color.set('#dff4ff').multiplyScalar(1 + night * 2.5);
     u.head.intensity = this.npc ? 0 : night * 1800;   // Rivalen ohne Lichtkegel (blenden sonst)
+    if (u.bar) {
+      const t = performance.now() / 1000, on = this.siren ? (Math.floor(t * 6) % 2) : -1;
+      u.bar.red.color.set('#ff1830').multiplyScalar(on === 0 ? 10 : on === 1 ? 0.3 : 1);
+      u.bar.blue.color.set('#1860ff').multiplyScalar(on === 1 ? 10 : on === 0 ? 0.3 : 1);
+    }
     const fl = this.nitroOn;
     for (const f of u.flames) {
       f.visible = fl;

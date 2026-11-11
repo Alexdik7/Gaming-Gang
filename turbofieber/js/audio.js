@@ -4,6 +4,7 @@ export class CarAudio {
     this.ac = null;
     this.muted = false;
     this.rain = 0;
+    this.siren = 0;
     try { this.muted = localStorage.getItem('tf.mute') === '1'; } catch (e) { /* ignorieren */ }
   }
 
@@ -55,6 +56,12 @@ export class CarAudio {
     this.nitroGain = loop('highpass', 2500, 0.7);
     this.windGain = loop('lowpass', 500, 0.5);
     this.rainGain = loop('bandpass', 2600, 0.4);
+    this.sirenOsc = ac.createOscillator();
+    this.sirenOsc.type = 'triangle';
+    this.sirenGain = ac.createGain();
+    this.sirenGain.gain.value = 0;
+    this.sirenOsc.connect(this.sirenGain); this.sirenGain.connect(master);
+    this.sirenOsc.start();
   }
 
   setMuted(m) {
@@ -76,6 +83,8 @@ export class CarAudio {
     this.nitroGain.gain.setTargetAtTime(on * (car.nitroOn ? 0.22 : 0), t, 0.08);
     this.windGain.gain.setTargetAtTime(on * Math.min(0.25, car.speed / 300), t, 0.2);
     this.rainGain.gain.setTargetAtTime(on * this.rain * 0.16, t, 0.3);
+    this.sirenOsc.frequency.setTargetAtTime(760 + 280 * Math.sin(t * Math.PI * 1.6), t, 0.02);
+    this.sirenGain.gain.setTargetAtTime(on * this.siren * 0.09, t, 0.1);
   }
 
   // Kurzer Ton beim Hochschalten und dumpfer Schlag bei Aufprall

@@ -334,3 +334,25 @@ body:not([data-state="drive"]) #raceHud { opacity: 0; }
   #countdown { font-size: 72px; }
 }
 body.racing #cashChip { display: none; }
+
+/* ---------- Polizei ---------- */
+#wanted {
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 10px); transform: translateX(-50%);
+  min-width: 200px; padding: 6px 16px 8px; border-radius: 14px; text-align: center; pointer-events: none;
+  background: rgba(10, 12, 30, .78); border: 1px solid rgba(255, 60, 80, .7);
+  box-shadow: 0 0 18px rgba(255, 32, 64, .35), 0 0 18px rgba(48, 112, 255, .3);
+  opacity: 0; transition: opacity .3s; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+#wanted.show { opacity: 1; animation: copglow 1s steps(2) infinite; }
+body:not([data-state="drive"]) #wanted { opacity: 0; }
+@keyframes copglow { 50% { border-color: rgba(48, 112, 255, .8); } }
+#wanted b { display: block; font-size: 22px; letter-spacing: 3px; color: #ffd23a; text-shadow: 0 0 10px rgba(255, 210, 58, .6); }
+#wanted small { display: block; font-size: 12px; font-weight: 800; color: var(--ink); }
+#wanted i { display: block; height: 5px; margin-top: 4px; border-radius: 3px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+#wanted i span { display: block; height: 100%; width: 0; background: var(--cyan); transition: width .2s; }
+#wanted i span.red { background: #ff3050; }
+body:has(#wanted.show) #chain { top: calc(env(safe-area-inset-top) + 82px); }
+body:has(#wanted.show) #pops { top: calc(env(safe-area-inset-top) + 142px); }
+.rpanel.cop { border-color: rgba(255, 60, 80, .7); }
+.rpanel.cop h2 { color: #ff4a5a; }
+.bigmoney.red { color: #ff6a7a; text-shadow: 0 0 16px rgba(255, 60, 80, .5); }

@@ -9,7 +9,9 @@ const POOL = [
   { id: 'summit', text: 'Fahre auf den Berggipfel', stat: 'summit', goal: 1, reward: 400, max: true },
   { id: 'mult', text: 'Drift-Kette mit ×4', stat: 'mult', goal: 4, reward: 700, max: true },
   { id: 'harbor', text: 'Besuche den Hafen', stat: 'harbor', goal: 1, reward: 300, max: true },
-  { id: 'rain', text: 'Fahre 3 km im Regen', stat: 'rainKm', goal: 3, reward: 600 }
+  { id: 'rain', text: 'Fahre 3 km im Regen', stat: 'rainKm', goal: 3, reward: 600 },
+  { id: 'escape', text: 'Hänge die Polizei ab', stat: 'escapes', goal: 1, reward: 800 },
+  { id: 'bounty', text: 'Kassiere 2.000 $ Kopfgeld', stat: 'bounty', goal: 2000, reward: 700 }
 ];
 
 function today() {

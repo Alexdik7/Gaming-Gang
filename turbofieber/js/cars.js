@@ -63,6 +63,8 @@ export function defaultCfg(paint = '#e0262f') {
   return { paint, finish: 'metallic', rims: 'speichen5', rimColor: '#2a2c30', spoiler: 'gt', kit: 0, glow: 'off', stripes: 'off', tint: 1, lower: 0 };
 }
 export const defaultPerf = () => ({ motor: 0, turbo: 0, tires: 0, chassis: 0, nitro: 0 });
+// Streifenwagen: weiß mit schwarzen Streifen und Blaulicht
+export const policeCfg = () => ({ ...defaultCfg('#f2f2f0'), finish: 'glanz', stripes: '#111214', spoiler: 'none', rims: 'mono', rimColor: '#0c0c0e', police: true });
 
 // Fahrwerte aus Grundwerten + Upgrades
 export function statsFor(carId, perf) {

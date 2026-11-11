@@ -14,6 +14,7 @@ import { Garage } from './garage.js';
 import { softCircle } from './world.js';
 import { Races } from './races.js';
 import { Missions } from './missions.js';
+import { Police } from './police.js';
 import { Car } from './car.js';
 import { Effects } from './fx.js';
 import { CarAudio } from './audio.js';
@@ -21,7 +22,7 @@ import { CarAudio } from './audio.js';
 const $ = id => document.getElementById(id);
 
 /* ---------- Einstellungen ---------- */
-const settings = { quality: 'auto', time: 'auto', weather: 'auto', paint: '#e0262f' };
+const settings = { quality: 'auto', time: 'auto', weather: 'auto', paint: '#e0262f', police: true };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('tf.settings') || '{}')); } catch (e) { /* ignorieren */ }
 const saveSettings = () => { try { localStorage.setItem('tf.settings', JSON.stringify(settings)); } catch (e) { /* ignorieren */ } };
 const QUALITY = {                       // Pixeldichte, Schatten, Glühen
@@ -110,7 +111,7 @@ function teleport(where) {
 }
 document.querySelectorAll('[data-tp]').forEach(b => b.addEventListener('click', () => {
   races.abort();
-  if (b.dataset.tp === 'garage') { car.place(GARAGE.x, GARAGE.z, 0); enterGarage('drive'); return; }
+  if (b.dataset.tp === 'garage') { if (police.wanted) { resume(); score.popup('Erst die Polizei abhängen!', 'red'); return; } car.place(GARAGE.x, GARAGE.z, 0); enterGarage('drive'); return; }
   teleport(b.dataset.tp); resume();
 }));
 
@@ -296,6 +297,36 @@ function renderMissions() {
 }
 $('abortBtn').addEventListener('click', () => { races.abort(); resume(); });
 
+// Polizei
+const police = new Police({
+  scene, world, car, profile, audio,
+  makeCar: (id, cfg, perf) => { const c = new Car(scene, id, cfg, perf); c.npc = true; return c; },
+  dropCar: c => c.dispose(),
+  popup: (t, cls) => score.popup(t, cls),
+  save: () => { saveP(); refreshCash(); },
+  onEscaped: bounty => {
+    profile.cash += bounty; saveP(); refreshCash();
+    score.popup('ENTKOMMEN! +$' + fmt(bounty), 'green');
+    audio.ui('buy');
+    missions.add('escapes', 1); missions.add('bounty', bounty);
+  },
+  onBusted: fine => {
+    profile.cash -= fine; saveP(); refreshCash();
+    $('bustFine').textContent = fine ? 'Strafe: $ ' + fmt(fine) : 'Diesmal ohne Strafe';
+    $('busted').classList.add('show');
+    score.crash();
+    audio.ui('no');
+  }
+});
+police.setEnabled(settings.police);
+$('bustOk').addEventListener('click', () => { $('busted').classList.remove('show'); spawn(); });
+$('policeBtn').addEventListener('click', () => {
+  settings.police = !settings.police; saveSettings();
+  police.setEnabled(settings.police);
+  $('policeBtn').textContent = 'Polizei: ' + (settings.police ? 'an' : 'aus');
+});
+$('policeBtn').textContent = 'Polizei: ' + (settings.police ? 'an' : 'aus');
+
 
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'drive') pause(); });
 canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); $('lost').hidden = false; });
@@ -339,6 +370,11 @@ function drawMini() {
     const dx = t.x - car.pos.x, dz = t.z - car.pos.z;
     if (dx * dx + dz * dz > view * view * 1.2) continue;
     mctx.beginPath(); mctx.arc(mx(t.x), mz(t.z), rr, 0, Math.PI * 2); mctx.fill();
+  }
+  const blink = Math.floor(performance.now() / 250) % 2;
+  for (const u of police.mapDots()) {
+    mctx.fillStyle = u.chase ? (blink ? '#ff2040' : '#3070ff') : '#9ab8ff';
+    mctx.beginPath(); mctx.arc(mx(u.x), mz(u.z), (u.chase ? 4.5 : 3.2) / k, 0, Math.PI * 2); mctx.fill();
   }
   const ri = races.mapInfo();
   if (ri) {
@@ -456,7 +492,7 @@ function stepCar(c, dt, inp, player) {
       if (power > 1.5) {
         traffic.knock(t, -nx * power * 0.5, -nz * power * 0.5);
         if (!player) continue;
-        if (power > 4) score.crash();
+        if (power > 4) { score.crash(); police.crime(c.pos.x, c.pos.z); }
         audio.hit(power);
         fx.crash(c.pos.x - nx * 1.2, c.pos.y + 0.7, c.pos.z - nz * 1.2, power);
         shake = Math.min(0.6, power * 0.03);
@@ -468,7 +504,8 @@ function stepCar(c, dt, inp, player) {
 // Autos untereinander (Spieler und Rivalen): auseinanderschieben, Schwung austauschen
 function carsCollide(a, b, player) {
   const dx = a.pos.x - b.pos.x, dz = a.pos.z - b.pos.z;
-  if (dx * dx + dz * dz > 49) return;
+  if (dx * dx + dz * dz > 49) return 0;
+  let impact = 0;
   for (const o of [1.3, -1.3]) for (const q of [1.3, -1.3]) {
     const ex = a.pos.x + Math.sin(a.heading) * o - (b.pos.x + Math.sin(b.heading) * q);
     const ez = a.pos.z + Math.cos(a.heading) * o - (b.pos.z + Math.cos(b.heading) * q);
@@ -480,15 +517,24 @@ function carsCollide(a, b, player) {
     if (rel < 0) {
       const j = -rel * 0.6;
       a.vx += nx * j; a.vz += nz * j; b.vx -= nx * j; b.vz -= nz * j;
+      impact = Math.max(impact, -rel);
       if (player && -rel > 3) { audio.hit(-rel); fx.crash(a.pos.x - nx * 1.1, a.pos.y + 0.7, a.pos.z - nz * 1.1, -rel); shake = Math.min(0.5, -rel * 0.03); }
     }
   }
+  return impact;
 }
 
 function physics(dt, inp) {
   stepCar(car, dt, inp, true);
   const rv = races.rivals;
   for (const r of rv) stepCar(r.car, dt, races.frozen ? NO_INPUT : r.inp, false);
+  const pu = police.units;
+  for (const u of pu) stepCar(u.car, dt, u.inp, false);
+  for (let i = 0; i < pu.length; i++) {
+    const hit = carsCollide(car, pu[i].car, true);
+    if (hit > 5) police.rammed(hit);
+    if (pu[i].mode === 'chase') for (let k = i + 1; k < pu.length; k++) carsCollide(pu[i].car, pu[k].car, false);
+  }
   for (let i = 0; i < rv.length; i++) {
     carsCollide(car, rv[i].car, true);
     for (let k = i + 1; k < rv.length; k++) carsCollide(rv[i].car, rv[k].car, false);
@@ -523,7 +569,10 @@ function frame(now) {
     for (let i = 0; i < steps; i++) physics(h, inp);
     fx.tires(car, dt, weather.wet);
     score.update(dt, car, traffic);
-    races.update(dt, car.speed < 8);
+    races.update(dt, car.speed < 8 && !police.wanted);
+    police.update(dt, !races.race && !$('busted').classList.contains('show'));
+    for (const u of police.units) u.car.syncMesh(world.night);
+    audio.siren = police.sirenLevel();
     for (const r of races.rivals) r.car.syncMesh(world.night);
     // Tagesmissionen: Strecke, Tempo, Orte, Regen
     const km = car.speed * dt / 1000;
@@ -535,7 +584,8 @@ function frame(now) {
     // Garage: langsam in den Leuchtring fahren
     const gd = Math.hypot(car.pos.x - GARAGE.x, car.pos.z - GARAGE.z);
     if (gd > 9) garageArmed = true;
-    if (garageArmed && gd < 4.2 && car.speed < 6 && !races.race) { garageArmed = false; car.vx = car.vz = 0; enterGarage('drive'); }
+    if (garageArmed && gd < 4.2 && car.speed < 6 && police.wanted) { garageArmed = false; score.popup('Erst die Polizei abhängen!', 'red'); }
+    if (garageArmed && gd < 4.2 && car.speed < 6 && !races.race && !police.wanted) { garageArmed = false; car.vx = car.vz = 0; enterGarage('drive'); }
   } else if (state === 'title') {
     car.update(0, NO_INPUT);
   }
@@ -597,6 +647,6 @@ window.TF = {
   get state() { return state; }, car, world, touch, bloom,
   get quality() { return quality; },
   get tod() { return tod; }, set tod(v) { tod = v; },
-  start, pause, resume, spawn, step: physics, teleport, traffic, weather, profile, garage, score, enterGarage, GARAGE, races, missions, placeCar, mountain: MOUNTAIN,
+  start, pause, resume, spawn, step: physics, teleport, traffic, weather, profile, garage, score, enterGarage, GARAGE, races, missions, placeCar, police, mountain: MOUNTAIN,
   stats: () => ({ distance, topSpeed, fps: 0 })
 };
