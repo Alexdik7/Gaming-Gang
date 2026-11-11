@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b1440">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Funkenflug">
+<title>Funkenflug</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage" data-state="title">
+  <canvas id="game" aria-label="Spielfeld"></canvas>
+
+  <!-- Punktestand während des Spiels -->
+  <div id="hud"><div id="score" aria-live="polite">0</div></div>
+
+  <!-- Pause- und Ton-Knopf -->
+  <div id="topbar">
+    <button id="btnPause" class="icon-btn" aria-label="Pause">❚❚</button>
+    <button id="btnMute" class="icon-btn" aria-label="Ton an/aus">🔊</button>
+  </div>
+
+  <!-- Startbildschirm: Logo oben, Figur in der Mitte, Karte unten -->
+  <section id="titleScreen" class="screen show">
+    <header class="title-top">
+      <h1 class="logo">Funken<span>flug</span></h1>
+      <p class="tagline">Ein kleines Leuchtwesen. Tausend schwebende Kristalle.</p>
+    </header>
+    <div class="card">
+      <p class="howto">Klicke, tippe oder drücke <kbd>SPACE</kbd>, um zu fliegen.</p>
+      <button id="btnStart" class="btn primary">Los geht's</button>
+      <p class="best">Rekord: <b id="titleBest">0</b></p>
+      <p class="keys">P = Pause · M = Ton · <a href="../">← Gaming Gang</a></p>
+    </div>
+  </section>
+
+  <!-- Pause -->
+  <section id="pauseScreen" class="panel">
+    <h2>Pause</h2>
+    <button id="btnResume" class="btn primary">Weiter</button>
+    <button id="btnQuit" class="btn">Zum Titel</button>
+  </section>
+
+  <!-- Game Over -->
+  <section id="overScreen" class="panel">
+    <h2 class="wobble">Abgestürzt!</h2>
+    <div class="stats">
+      <div><small>Punkte</small><b id="overScore">0</b></div>
+      <div><small>Rekord</small><b id="overBest">0</b></div>
+    </div>
+    <div id="newBest" class="badge">★ Neuer Rekord! ★</div>
+    <p id="rank" class="rank"></p>
+    <button id="btnRetry" class="btn primary">Nochmal spielen</button>
+    <button id="btnHome" class="btn">Zum Titel</button>
+  </section>
+</div>
+<script src="game.js"></script>
+</body>
+</html>

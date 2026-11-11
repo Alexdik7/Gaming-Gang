@@ -1,7 +1,7 @@
 # Gaming Gang – Projektgedächtnis
 
 Repo `Alexdik7/Gaming-Gang`, Branch `main`. GitHub Pages ist live: https://alexdik7.github.io/Gaming-Gang/
-Spiele: `sternflut/` (NEU, Nachfolger von Legends: eigenes Kreaturen-RPG, 3 Welten – Bauplan `sternflut/docs/KONZEPT.md`), `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legends United“, Hauptprojekt), `wolkenpfad/` (3D-Endlos-Läufer à la Temple Run, eigene Welt; three.js lokal in `lib/`, Logik in `game.js`, Doku in `wolkenpfad/README.md`, Test über `window.WP` + Autopilot).
+Spiele: `sternflut/` (NEU, Nachfolger von Legends: eigenes Kreaturen-RPG, 3 Welten – Bauplan `sternflut/docs/KONZEPT.md`), `plug52/` (Tycoon, eine HTML-Datei), `legends/` (Kreaturen-RPG „Legends United“, Hauptprojekt), `funkenflug/` (Tap-to-Fly-Arcade, Vanilla-Canvas, Doku `funkenflug/README.md`, Test über `window.FF`), `wolkenpfad/` (3D-Endlos-Läufer à la Temple Run, eigene Welt; three.js lokal in `lib/`, Logik in `game.js`, Doku in `wolkenpfad/README.md`, Test über `window.WP` + Autopilot).
 
 ## Nutzer
 - Deutsch, spielt auf dem **iPhone**: Web-App über „Zum Home-Bildschirm“, Updates kommen über GitHub Pages und `sw.js`. Android interessiert ihn nicht.
@@ -67,3 +67,4 @@ Spiele: `sternflut/` (NEU, Nachfolger von Legends: eigenes Kreaturen-RPG, 3 Welt
   - Sammeln: Chronik-Seite beim Erstfang, Belohnungen von Prof. Linde, Massenausbruch pro Tag, Glanzamulett
 - Details in `legends/docs/FORTSCHRITT.md` und `ROADMAP.md`.
 - **Wolkenpfad v2.0:** WebGL/three.js, Dschungel-Tempelpfad, 3D-Läuferin, Neigen-Steuerung, Kreuzungen, 6 Hindernisarten, 4 Kräfte, 5 Läufer, Missionen, Tageszeiten, Offline-PWA. `sw.js`-CACHE bei Änderungen erhöhen.
+- **Funkenflug v1.0:** Arcade-Flieger (Pip zwischen Kristallsäulen), Canvas 2D, WebAudio-Sounds, Rekord in localStorage, Pause, Offline-PWA. `sw.js`-CACHE bei Änderungen erhöhen. Nächste Ideen: siehe README.
