@@ -144,3 +144,9 @@
 - **Bibliothek** (Glimmdorf, Bibliothekar Theo): deutet jede gefundene Strophe (`MEANING`, Flag `deut_songN`), Deutung erscheint im Pager unter LIED; Belohnung bei 4 und 8 Strophen.
 - **Fossilien-Museum** (Dünenhain, Kuratorin Amalie): stellt erweckte Urzeit-Arten aus, Belohnung bei 1 und 3.
 - **Gasthof „Zur Ankerkette“** (Muschelbucht – in Kronfels war kein Platz, Wirtin Marthe): jeden Tag ein anderes Gerücht (Massenausbruch, Alphas, Rätsel-Tipps, Hinweise auf andere Systeme).
+
+## v1.11.0 – Alle 8 Arenen von Welt 2 sind Rätsel-Dungeons
+- Helfer `dgym(name, rows, lid, look, lname, npcs, extra)` in maps2.js/maps3.js (Leiter 6,1, Berater 4,15, 13×17).
+- Arena 9 Nami: Strudel-Inseln (Runen-Warps, manche spülen zurück), Schleusenplatte auf der obersten Insel. Arena 10 Thalia (unter Wasser): drei Perlenschalen (Loch füllen / Mut-Trainer / schwerer Brocken) → mehrteiliges Riff-Tor. Arena 11 Ingrid: Eis-Rutschrätsel (per Löser erzeugt), zwei Frostsiegel. Arena 12 Bjarne: Grube mit zwei Schacht-Reihen (Brocken in Löcher) und Weichenplatte. Arena 13 Seraphine: Wolkenwände, nur der linke Luftstrom führt hoch, der rechte zu einem Fund. Arena 14 Orion (Nacht): vier Sternenkammern über Runen, vier Sterne öffnen die Kuppel. Arena 15 Mortis (Nacht+Nebel): Gruft-Irrgarten, zwei Grablichter. Arena 16 Selene (Nacht+Nebel): Schattenwand, zwei Mondsiegel mit Brocken.
+- `bReset` akzeptiert Flag-Listen. Jede Arena: dritter Trainer, zwei Funde, Rätsel-Tipp, Person nach dem Sieg (`arena_fan9..16`).
+- Test: alle 8 im echten Spiel bis zum Leiter gelöst (Eis über checkmaps-Simulation), Karten, e2e.
