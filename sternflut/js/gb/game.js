@@ -1,6 +1,9 @@
 // LEGENDS UNITED – Handheld-Edition: Spielablauf, Story, Brutstätte, Speichern
 import { G, W, H, COL, push, pop, input, text, box, cursor, wait, fade, wipe, iris, initEngine, bindPad, frame, wrap } from './engine.js';
 import { MAPS, LOOK, ENC, SHOP, ITEMS } from './maps.js';
+import { SPAWNS } from '../data/welt_extra.js';
+// Neue Arten in die Begegnungstabellen einhängen (Level wie die übrigen Kreaturen der Tabelle)
+for (const [enc, sp, w, cond] of SPAWNS) { const L = ENC[enc]?.list; if (!L || L.some(e => e[0] === sp)) continue; const lo = Math.min(...L.map(e => e[2])), hi = Math.max(...L.map(e => e[3])); L.push(cond ? [sp, w, lo, hi, cond] : [sp, w, lo, hi]); }
 import { Overworld } from './overworld.js';
 import { battle } from './battle2d.js';
 import { say, ask, choose, party, summary, dex, card, inputName, hatchScene, settings, typeTag, dexEntry, healAnim, evoScene } from './gbui.js';
@@ -69,6 +72,13 @@ class Game {
   hour() { return ((this.state?.time ?? DAY / 3) / DAY * 24) % 24; }
   // Ebbe in den Spielstunden 0–3, 6–9, 12–15, 18–21 (eine Spielstunde = eine echte Minute)
   tideLow() { return Math.floor(this.hour() / 3) % 2 === 0; }
+  // Begegnung möglich? Bedingung im 5. Feld: Tageszeit, Wetter oder Gezeiten
+  encOk(e) {
+    const c = e[4]; if (!c) return true;
+    if (c === 'rain' || c === 'snow') return this.ow?.weather?.() === c;
+    if (c === 'ebbe') return this.tideLow();
+    return (c === 'night') === this.isNight();
+  }
   isNight() { if (this.ow?.M?.night && this.started) return true; const h = this.hour(); return h >= 20 || h < 6; }
   dusk() { const h = this.hour(); return h >= 17 && h < 20 ? (h - 17) / 3 : h >= 6 && h < 7.5 ? 1 - (h - 6) / 1.5 : 0; }
   worldFlags() { return this.state?.flags || {}; }
@@ -519,7 +529,7 @@ class Game {
     if (this._sw?.day === day) return this._sw;
     const maps = Object.values(MAPS).filter(m => m.enc && m.outdoor && ENC[m.enc]?.list?.length > 1);
     const encs = [...new Set(maps.map(m => m.enc))], enc = encs[(day * 7) % encs.length];
-    const e = ENC[enc].list.filter(x => !SPECIES[x[0]]?.legendary).reduce((a, b) => (b[1] < a[1] ? b : a));
+    const e = ENC[enc].list.filter(x => !SPECIES[x[0]]?.legendary && !x[4]).reduce((a, b) => (b[1] < a[1] ? b : a));
     return (this._sw = { day, enc, sp: e[0], lv: [e[2], e[3]], name: maps.find(m => m.enc === enc).name });
   }
   // Alpha-Kreaturen: an manchen Tagen streift auf einer Route ein riesiges, starkes Exemplar sichtbar umher
@@ -530,7 +540,7 @@ class Game {
     let h = day * 2654435761 >>> 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     const r = () => ((h = (h * 1103515245 + 12345) >>> 0) / 4294967296);
     if (r() > 0.45) return null; // knapp jede zweite Route
-    const list = E.list.filter(e => !SPECIES[e[0]]?.legendary);
+    const list = E.list.filter(e => !SPECIES[e[0]]?.legendary && !e[4]);
     if (!list.length) return null;
     const pool = [...list].sort((a, b) => a[1] - b[1]).slice(0, Math.max(2, Math.ceil(list.length / 2)));
     const e = pool[Math.floor(r() * pool.length)], top = Math.max(...list.map(x => x[3]));
@@ -616,7 +626,7 @@ class Game {
   pickWild(encId, sneak) {
     const sw = this.swarm();
     if (encId === sw.enc && Math.random() < 0.4) return this.shinyRoll(createMon(sw.sp, sw.lv[0] + Math.floor(Math.random() * (sw.lv[1] - sw.lv[0] + 1))));
-    const night = this.isNight(), list = ENC[encId].list.filter(e => !e[4] || (e[4] === 'night') === night);
+    const list = ENC[encId].list.filter(e => this.encOk(e));
     const wt = e => (sneak ? Math.sqrt(e[1]) * 3 : e[1]); // geduckt: seltene Arten häufiger
     let r = Math.random() * list.reduce((a, e) => a + wt(e), 0);
     for (const e of list) { r -= wt(e); if (r <= 0) return this.shinyRoll(createMon(e[0], e[2] + Math.floor(Math.random() * (e[3] - e[2] + 1)))); }
@@ -640,7 +650,7 @@ class Game {
   // Kreaturen-Spur: seltene, kräftige Kreatur – bei Funkeln oft schimmernd
   async trailBattle(T, bg) {
     const encId = this.ow.M.enc; if (!encId) return;
-    const night = this.isNight(), list = ENC[encId].list.filter(e => (!e[4] || (e[4] === 'night') === night) && !SPECIES[e[0]]?.legendary);
+    const list = ENC[encId].list.filter(e => this.encOk(e) && !SPECIES[e[0]]?.legendary);
     const rare = [...list].sort((a, b) => a[1] - b[1]).slice(0, Math.max(1, Math.ceil(list.length / 3)));
     const e = rare[Math.floor(Math.random() * rare.length)];
     const m = createMon(e[0], Math.min(100, e[3] + 1 + Math.floor(Math.random() * 3)));

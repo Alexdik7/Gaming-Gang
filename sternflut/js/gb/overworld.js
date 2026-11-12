@@ -493,7 +493,9 @@ export class Overworld {
     if (!this.M.outdoor) return null;
     const wx = this.g.state.wx; if (wx && wx.until > Date.now()) return wx.w === 'sun' ? null : wx.w;
     if (this.M.fog) return 'fog';
-    const W0 = { route3: 'ash', ignis: 'ash', kraterherz: 'ash', route5: 'snow', frostheim: 'snow', frostgipfel: 'snow' };
+    const W0 = { route3: 'ash', ignis: 'ash', kraterherz: 'ash', route5: 'snow', frostheim: 'snow', frostgipfel: 'snow', eisgipfel: 'snow' };
+    // Frostpfad: an manchen Tagen Schneefall (dann zeigt sich der Firnkauz)
+    if (this.id === 'frostpfad' && Math.floor(Date.now() / 864e5) % 2 === 0) return 'snow';
     if (W0[this.id]) return W0[this.id];
     const day = Math.floor(Date.now() / 864e5), R = ['duenenpfad', 'ankerbrueck', 'muschelbucht'], i = R.indexOf(this.id);
     return i >= 0 && (day + i) % 3 === 0 ? 'rain' : null;

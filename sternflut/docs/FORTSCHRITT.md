@@ -155,3 +155,8 @@
 - `game.tideLow()`: Ebbe in den Spielstunden 0–3, 6–9, 12–15, 18–21 (Wechsel alle 3 echten Minuten). `M.tide` = Liste von Feldern, die bei Ebbe zu Sand werden (`ow.ch` liefert dann `s`). Wechsel wird gemeldet; wer bei Flut auf einem Gezeitenfeld steht, wird an Land gesetzt; `M.tideRefuge`/`M.tideSafe`: auf der Gezeiteninsel bringt ein Fischerboot zurück an den Strand.
 - Muschelstrand: Gezeitenstein (Schild), Sandbank nach Südosten zur Gezeiteninsel mit Fund und Eingang zur neuen **Gezeitengrotte** (Begegnungen `gezeiten` mit seltenem Perlmu, zwei Funde, Inschrift von Liv). Gerücht im Gasthof.
 - checkmaps nimmt Ebbe an (Gezeitenfelder begehbar).
+
+## v1.13.0 – 15 neue Kreaturen mit besonderem Auftreten (276 Arten)
+- `js/data/welt_extra.js` (in creatures2.js importiert): Nr. 262–276 – Pfützling→Regenunke (nur bei Regen), Nebelmotte→Schleierfalter (nachts im Nebel), Ebbkrebs→Gezeitenpanzer (nur bei Ebbe, Gezeitengrotte), Glühwurmling→Lampyra (nachts im Glimmwald), Zuckfuchs→Donnerfähe (tagsüber Ostweide), Firnkauz (nur bei Schnee), Wolkenhüpfer→Himmelshase (Wolkengärten), Sternschnuppling→Kometenwächter (nachts auf Nyxara).
+- `SPAWNS` hängt sie in die Begegnungstabellen (Level automatisch wie die Tabelle). Neue Bedingungen im 5. Feld: `rain`, `snow`, `ebbe` neben `night`/`day` → `game.encOk(e)`. Massenausbruch/Alpha nehmen keine bedingten Arten.
+- Frostpfad hat an jedem zweiten Tag Schneefall, Eisgipfel immer.
