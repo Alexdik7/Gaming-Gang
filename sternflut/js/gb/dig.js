@@ -233,6 +233,7 @@ async function fossa(g, n) {
     const m = createMon(sp, 25); sfx('caught'); cry(SPECIES[sp].cry);
     g.markDex(sp, true);
     await say(`${SPECIES[sp].name} ist erwacht!`);
+    if (!s.flags.log39) { await say(['Dr. Fossa: Moment, im Gestein steckte noch etwas – ein gefaltetes Blatt, ganz trocken!'], N); await HE.addLog(g, 39); }
     if (s.team.length < 6) s.team.push(m); else { s.box.push(m); await say(`${SPECIES[sp].name} wurde in die Box geschickt.`); }
     g.save?.(true);
   }

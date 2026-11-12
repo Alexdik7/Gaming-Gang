@@ -117,7 +117,9 @@ export async function talk(g, n) {
       I.built[k] = true;
       await say('Baumeisterin Tilda: Ran an die Arbeit! * Hämmern * * Sägen * …', N);
       sfx('caught'); await reload(g);
-      await say(`${P.name} ist fertig!`); g.save?.(true); return;
+      await say(`${P.name} ist fertig!`);
+      if (k === 'feuer' && !s.flags.log40) { await say(['Als das Leuchtfeuer zum ersten Mal brennt, fällt dir der Pager aus der Tasche.', 'Aus seinem Futter rutscht ein Blatt, das du noch nie gesehen hast …']); await HE.addLog(g, 40); }
+      g.save?.(true); return;
     }
   }
   if (n.id === 'hirtin') {

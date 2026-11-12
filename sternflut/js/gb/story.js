@@ -92,11 +92,56 @@ export const LOGS = {
   6: ['Tag 70. Kurs Südost. Die Nadel zittert jetzt stärker. Wir sind nah.', 'Rhea, wenn du das liest: Kümmere dich um mein Kind. Und sag ihm, dass ich jeden Abend an es denke.'],
   3: ['Tag 33. In Ankerbrück fragte mich eine Frau in grauer Kutte nach dem Kompass. Sie nannte sich „die Stille“.', 'Ich habe ihr nichts gesagt. Aber sie wusste von dem Tor. Woher?'],
 };
+// ---- Seiten 20–40: die „zweite Geschichte“ – Livs Reise aus ihrer Sicht (Botengänge, Arenen, Fossilien, Leuchtfeuer der Insel)
+Object.assign(LOGS, {
+  20: ['Tag 3. Ein Junge aus Muschelbucht stand am Kai und wollte unbedingt mit. Bent heißt er, Ines’ Sohn.', 'Ich habe ihm gesagt: Lern ein Handwerk, das Feuer kennt. Wer Feuer versteht, versteht auch Sterne.'],
+  21: ['Tag 78. Ein Lehrmädchen in Funkenhafen hat unseren Mast neu verkabelt. Pia. Sie redet mit Strom wie andere mit Katzen.', 'Sie fragte, warum der Kompass summt. Ich wusste keine Antwort. Sie schrieb trotzdem alles auf.'],
+  22: ['Tag 95. Im Archiv von Kronfels steht ein Satz, der mich nicht loslässt:', '„Das Tor wurde nicht gebaut, um etwas auszusperren. Es wurde gebaut, um etwas schlafen zu lassen.“'],
+  23: ['Tag 88. Über Sturmspitze drehen die Windräder rückwärts, wenn der Kompass in der Nähe ist.', 'Die Müller lachen darüber. Ich nicht. Etwas da draußen zieht an diesem Archipel – sanft, aber stetig.'],
+  24: ['Tag 60. Heute Nacht saß ein Junge mit goldenem Haar auf unserer Reling. Er sah aufs Meer und summte das Lied der Gezeiten.', 'Am Morgen war er fort. Niemand an Bord hat ihn gesehen. Nur ich. Und das Ei hat dabei ganz leise geleuchtet.'],
+  25: ['Tag 45. Ein Brief von Maren: Sie hat eine Formel gefunden, die die Gezeiten auf Jahre vorausberechnet.', '„Wenn man sie berechnen kann, Liv, kann man sie auch anhalten.“ Sie meint es gut. Das macht mir Angst.'],
+  26: ['Tag 120. Die Erzhändler der Weiten See tauschen nicht mit Geld, sondern mit Geschichten.', 'Für meinen Kompass boten sie mir eine Karte der Tiefe. Ich habe abgelehnt. Für die Geschichte von {name} gaben sie mir ein Licht für die Nacht.'],
+  27: ['Tag 150. Die Gärtner in den Wolken pflanzen Samen, die erst in hundert Jahren keimen.', 'Ich frage mich, ob ich auch so etwas pflanze. Etwas, dessen Blüte ich nie sehen werde.'],
+  28: ['Tag 101. Ich habe das Ei der Abendstern mitgegeben. Es soll nicht hier schlüpfen, sondern bei meinem Kind.', 'Es ist still, seit es an Bord kam. Aber ich glaube, es hört zu. Wenn die Zeit kommt, wird es sich erinnern.'],
+  29: ['Tag 2000. Morrow ist nicht zurückgekommen, um mich zu holen. Ich habe ihn darum gebeten. Er hat Wort gehalten.', 'Manchmal spreche ich mit den Fischern im Eis. Sie fragen nie, warum ich bleibe. Das tut gut.'],
+  30: ['Tag 3600. Der Junge mit dem goldenen Haar ist wieder da. Zehn Jahre – und er ist keinen Tag älter.', 'Er sagt: „Ich warte nicht auf dich, Liv. Ich warte auf dein Kind.“ Dann hat er gelacht und war verschwunden.'],
+  31: ['Tag 7. Rhea will Kapitänin werden. Sie ist siebzehn und kann schon besser segeln als ich.', 'Ich habe ihr die Schleusen von Ankerbrück gezeigt: „Jedes Tor öffnet das nächste. So ist es auch mit dem Mut.“'],
+  32: ['Tag 48. Ein Junge namens Okko hat uns durch die Sandgrotte geführt. Er kannte jeden Brocken beim Namen.', 'Er sagt, die Wüste vergisst nichts. Sie verschiebt es nur.'],
+  33: ['Tag 63. Miras Mutter hat mir den Weg zum Waldherz gezeigt. Der Wald wächst dort jede Nacht ein wenig anders.', 'Sie sagt: „Wer sich verirrt, findet manchmal genau das, was er gesucht hat.“'],
+  34: ['Tag 81. Ein junger Ingenieur hat den Kompass vermessen. Volta heißt er. Er hat drei Nächte gerechnet.', 'Ergebnis: „Das Ding misst keine Richtung. Es misst Sehnsucht.“ Er meinte es als Witz.'],
+  35: ['Tag 85. Die Seherin von Nebelklippe hat mich durch die Runenräume gehen lassen.', 'Danach sagte sie: „Dein Kind wird denselben Weg gehen. Und es wird die richtigen Runen schneller finden als du.“'],
+  36: ['Tag 90. Auf der Glutinsel hat eine Schmiedin einen Ring für die Kompassnadel geschmiedet. Hekla. Kaum älter als Rhea.', '„Damit sie nicht bricht, wenn sie zu stark zieht.“ Ich hoffe, ihr Ring hält.'],
+  37: ['Tag 93. Ein Junge hat auf Sturmspitze einen Drachen steigen lassen, der höher flog als die Wolken. Corvin.', 'Er will einmal dorthin fliegen, wo der Kompass hinzeigt. Ich habe ihm gesagt: Warte, bis jemand dich mitnimmt.'],
+  38: ['Tag 97. Kronar hat mich angesehen wie ein alter Freund. Tamas sagt, der Drache erinnert sich an das Tor.', 'Brann wird es versiegeln, wenn ich hindurch bin. Kronar wird es bewachen. Bis mein Kind kommt.'],
+  39: ['Tag 52. Unter der Sandgrotte liegen Knochen von Wesen, die das Lied der Gezeiten schon kannten, bevor es Menschen gab.', 'Wenn eines von ihnen je wieder erwacht, soll es meinem Kind erzählen, wie alt dieses Lied wirklich ist.'],
+  40: ['Die letzte Nacht vor der Abfahrt. {name} schläft. Ich sitze am Leuchtturm und schreibe diese Seite.', 'Wenn du eines Tages ein eigenes Zuhause hast, mein Kind, zünde dort ein Feuer an.', 'Ich werde es sehen. Egal, wie weit weg ich bin. Versprochen.'],
+});
+// Botengänge: nach dem Zeigen der Kreatur bittet die Person dich, etwas zu überbringen – die Empfänger erzählen von Liv
+export const QNEXT = {
+  mb_frau: { to: 'gi_schmied', where: 'Schmied Bror auf der Glutinsel', title: 'Ein Brief für Bent', ask: ['Ines: Danke … Darf ich dich noch um etwas bitten?', 'Ines: Mein Sohn Bent lernt auf der Glutinsel das Schmieden. Bring ihm diesen Brief – über Schmied Bror findest du ihn.'], thanks: ['Bror: Ein Brief von Ines? Bent wird sich freuen. Er hängt ihn bestimmt neben die Esse.', 'Bror: Warte – Bent hat das hier vor Jahren am Kai gefunden. Er sagt, es gehört dir.'], log: 20 },
+  ab_kid: { to: 'fh_ing', where: 'Ingenieurin Pia in Funkenhafen', title: 'Das knisternde Kabel', ask: ['Junge: Guck mal, das Kabelstück hat der Gecko angeknabbert und jetzt leuchtet es!', 'Junge: Kannst du das der Ingenieurin in Funkenhafen zeigen? Die weiß bestimmt, was das ist!'], thanks: ['Pia: Ein Kabel, das Strom speichert? Genial! Das muss ich untersuchen.', 'Pia: Hier, im Gegenzug. Das habe ich als Lehrling von einer Kapitänin bekommen. Sie hätte gewollt, dass du es liest.'], log: 21 },
+  dh_kind: { to: 'kf_alte', where: 'der Alten Chronistin in Kronfels', title: 'Sonnenkäfer in der Chronik', ask: ['Tarik: Glaubst du, Sonnenkäfer stehen in alten Büchern?', 'Tarik: In Kronfels gibt es eine Chronistin. Frag sie für mich! Hier, mein Bild von Skarabix – das soll sie sehen.'], thanks: ['Chronistin: Ein Sonnenkäfer! Ja, sie stehen in der Chronik – als Hüter der Mittagssonne.', 'Chronistin: Und hier … diese Seite lag in einem Buch über das Tor. Sie ist nicht von mir. Ich glaube, sie ist für dich.'], log: 22 },
+  fh_kind: { to: 'ss_mech', where: 'Mechanikerin Fee in Sturmspitze', title: 'Mias Funkmausdynamo', ask: ['Mia: Ich hab einen Dynamo gebaut, den Funkmäuse antreiben!', 'Mia: Die Mechanikerin in Sturmspitze sucht so was für ihre Windräder. Bringst du ihn hin?'], thanks: ['Fee: Ein Funkmausdynamo? Damit laufen die Räder auch bei Flaute!', 'Fee: Danke! Hier – das klemmte vor Jahren in einem Windrad, das sich rückwärts drehte.'], log: 23 },
+  nk_frau: { to: 'gd_oma', where: 'der Alten Kräuterfrau in Glimmdorf', title: 'Kerzen für den Wald', ask: ['Kerzenmacherin: Diese Kerzen brennen mit Krähwachts Licht. Sie verscheuchen keine Geister – sie laden sie ein.', 'Kerzenmacherin: Bring sie der Kräuterfrau in Glimmdorf. Sie wartet seit Jahren darauf.'], thanks: ['Kräuterfrau: Endlich! Mit diesen Kerzen kann ich die Sporen nachts sehen.', 'Kräuterfrau: Eine Kapitänin hat hier einmal übernachtet und das liegen lassen. Ich habe es aufbewahrt. Für dich.'], log: 24 },
+  gi_kind: { to: 'dh_sefa', where: 'Oma Sefa in Dünenhain', title: 'Warme Steine für Oma Sefa', ask: ['Ari: Lavaschleim hat mir warme Steine gemacht! Die halten ewig warm.', 'Ari: Oma Sefa in Dünenhain friert nachts immer. Bringst du ihr welche?'], thanks: ['Sefa: Warme Steine von der Glutinsel? Ach, wie lieb von dem Jungen.', 'Sefa: Dafür bekommst du das hier. Ein Brief, den eine Kapitänin bei mir gelassen hat. Er war nie für mich bestimmt.'], log: 25 },
+  ph_frau: { to: 'eh_alte', where: 'der Alten Erzhändlerin in Erzheim', title: 'Die Perle für Erzheim', ask: ['Perlenhändlerin: Die Erzhändler in Erzheim tauschen nur gegen Geschichten. Erzähl ihnen von dieser Perle!', 'Perlenhändlerin: Bring sie zur Alten Erzhändlerin. Was sie dir dafür gibt, darfst du behalten.'], thanks: ['Erzhändlerin: Eine Perle, die leuchtet – und eine Geschichte dazu. Ein guter Tausch.', 'Erzhändlerin: Vor vielen Jahren hat eine Fremde mir ihre Geschichte erzählt. Sie ließ das hier da.'], log: 26 },
+  fr_kind: { to: 'wh_frau', where: 'der Gärtnerin der Lüfte in Wolkenhafen', title: 'Schnee für die Wolkengärten', ask: ['Mädchen: Firnhase hat mir Schnee geschenkt, der nie schmilzt.', 'Mädchen: Die Gärtnerin in den Wolken braucht ihn für ihre Samen. Bringst du ihn rauf?'], thanks: ['Gärtnerin: Ewiger Schnee! Darin keimen die Hundertjahressamen.', 'Gärtnerin: Hier, eine Seite, die zwischen meinen Samen lag. Jemand hat sie hier gepflanzt, glaube ich.'], log: 27 },
+  wh_kind: { to: 'as_forscher', where: 'Sternforscher Elio in Astralis', title: 'Flauschfedern für Elio', ask: ['Wolkenjunge: Flauschling verliert Federn, die im Dunkeln leuchten!', 'Wolkenjunge: Sternforscher Elio sucht so was für sein Fernrohr. Bring sie ihm!'], thanks: ['Elio: Leuchtfedern! Damit sehe ich die schwachen Sterne endlich.', 'Elio: Und das hier … lag in meinem Fernrohr, als ich es gekauft habe. Es spricht von einem Ei.'], log: 28 },
+  nt_laterne: { to: 'fr_fischer', where: 'dem Eisfischer in Frosthafen', title: 'Licht für das Eis', ask: ['Laternenträgerin: Das Licht aus der Tiefe soll nicht hier bleiben. Im Eis wartet jemand darauf.', 'Laternenträgerin: Bring diese Laterne zum Eisfischer in Frosthafen.'], thanks: ['Eisfischer: Licht aus Nocthal … Jetzt sehe ich die Fische unter dem Eis.', 'Eisfischer: Eine Frau hat hier oft mit mir geschwiegen. Sie hat das zurückgelassen.'], log: 29 },
+  ly_kind: { to: 'ly_frau', where: 'der Nyxari-Händlerin in Lumara', title: 'Sternenstaub für Lumara', ask: ['Nyxari-Kind: Sternkatze hat Sternenstaub verloren!', 'Nyxari-Kind: Bring ihn der Händlerin. Sie macht daraus Lichter für die ganze Stadt.'], thanks: ['Händlerin: Sternenstaub … Davon leuchtet Lumara eine ganze Woche.', 'Händlerin: Ein Junge mit goldenem Haar hat mir das hier gegeben. „Für die, die nach mir fragt“, sagte er.'], log: 30 },
+};
 export const SONG = {
   song1: ['Strophe I – Ankerbrück', '„Wo die Flut den Mond verschluckt, / liegt ein Kompass, der nicht ruht.', 'Folg der Nadel, nicht dem Nord – / Heimat ist ein ferner Ort.“'],
   song2: ['Strophe II – Sandgrotte', '„Wo der Sand das Wasser trinkt, / wo die Quelle leise singt,', 'zähl die Sterne, sieben weit – / dort beginnt die Gezeitenzeit.“'],
   song3: ['Strophe III – Glimmdorf', '„Wo das Herz im Dunkeln glüht, / wo kein Licht die Wurzeln sieht,', 'liegt ein Splitter, kalt und klar – / Spiegel dessen, was einst war.“'],
 };
+// Arena-Personen geben nach dem Gespräch eine Logbuchseite (die Leiter kannten Liv als junge Leute)
+const FANLOG = { hinnerk: 31, sandra: 32, arena_fan3: 33, arena_fan4: 34, arena_fan5: 35, arena_fan6: 36, arena_fan7: 37, arena_fan8: 38 };
+async function fanLog(g, n) {
+  const k = FANLOG[n.id]; if (!k || g.state.flags['log' + k]) return;
+  await say(['… Ach, und noch etwas. Das hier hing jahrelang in der Arena an der Wand.', 'Der Leiter sagt, eine Kapitänin hat es dagelassen – für ihr Kind.'], { name: n.name });
+  return addLog(g, k);
+}
 export async function addLog(g, n) {
   const s = g.state; if (s.flags['log' + n]) return;
   s.flags['log' + n] = true; s.bag.logbuch = 1; sfx('dex');
@@ -129,7 +174,8 @@ export function mainGoal(s) {
 }
 export function sideTasks(s) {
   const extra = ACTS.flatMap(A => A.sideTasks?.(s) || []);
-  return [...extra, ...Object.entries(QUESTS).filter(([id]) => s.flags['qa_' + id] || s.flags['quest_' + id]).map(([id, q]) => ({ t: q.title, d: s.flags['quest_' + id] ? 'Erledigt!' : `Zeige ${SPECIES[q.want].name}.`, done: !!s.flags['quest_' + id] }))];
+  const runs = Object.entries(QUESTS).filter(([id, q]) => q.next && s.flags['qreq_' + id]).map(([id, q]) => ({ t: q.next.title, d: s.flags['qn_' + id] ? 'Erledigt!' : `Bring es zu ${q.next.where}.`, done: !!s.flags['qn_' + id] }));
+  return [...extra, ...runs, ...Object.entries(QUESTS).filter(([id]) => s.flags['qa_' + id] || s.flags['quest_' + id]).map(([id, q]) => ({ t: q.title, d: s.flags['quest_' + id] ? 'Erledigt!' : `Zeige ${SPECIES[q.want].name}.`, done: !!s.flags['quest_' + id] }))];
 }
 
 // ---------------------------------------------------------------- Telefon
@@ -191,8 +237,9 @@ export async function talkStory(g, n) {
     case 'ab_frau': return say(f.beaconLit ? ['Mein Mann ist wieder da! Das Leuchtfeuer hat ihn heimgebracht.'] : ['Mein Mann ist noch draußen auf See … Ohne Leuchtfeuer …'], N);
     case 'guide': return say(guideTips(g), N);
     case 'hinnerk':
-      if (!f.hinnerkGift) { f.hinnerkGift = true; await say(['Hinnerk: Du hast alle drei Schleusen geknackt! Das hat seit Jahren keiner so schnell geschafft.', 'Hinnerk: Die Kapitänin erzählt jedem Matrosen im Hafen von dir. Hier, von der ganzen Crew!'], N); return give(g, 'hypertrank', 2); }
-      return say(['Hinnerk: Seit deinem Sieg trainieren hier alle doppelt so hart. Die Schleusen bleiben für dich offen!'], N);
+      if (!f.hinnerkGift) { f.hinnerkGift = true; await say(['Hinnerk: Du hast alle drei Schleusen geknackt! Das hat seit Jahren keiner so schnell geschafft.', 'Hinnerk: Die Kapitänin erzählt jedem Matrosen im Hafen von dir. Hier, von der ganzen Crew!'], N); await give(g, 'hypertrank', 2); }
+      else await say(['Hinnerk: Seit deinem Sieg trainieren hier alle doppelt so hart. Die Schleusen bleiben für dich offen!'], N);
+      return fanLog(g, n);
     case 'arena_fan3': case 'arena_fan4': case 'arena_fan5': case 'arena_fan6': case 'arena_fan7': case 'arena_fan8': {
       // Nach dem Arenasieg: eine Person mit Geschichte und einem einmaligen Geschenk
       const F = { arena_fan3: [['Ilka: Du hast den Irrgarten geknackt! Mira lässt die Hecken jetzt jede Woche neu wachsen.', 'Ilka: Ich sammle hier Heilkräuter. Nimm ein paar – du hast sie dir verdient!'], 'heilbeere', 4, 'Ilka: Die Sporen hier leuchten nachts. Mira sagt, sie erinnern sich an jeden, der den Weg gefunden hat.'],
@@ -201,12 +248,14 @@ export async function talkStory(g, n) {
         arena_fan6: [['Gorm: Die Lava erstarren lassen – und dann noch Hekla besiegen. Du bist aus hartem Stahl!', 'Gorm: Hier, frisch aus der Schmiede. Geht aufs Haus.'], 'hypertrank', 2, 'Gorm: Hekla schmiedet aus deinem Kampf ein Andenken. Sie hängt es neben die Esse.'],
         arena_fan7: [['Ole: Wie du den Aufwind gefunden hast! Corvin hat gejubelt wie ein Kind.', 'Ole: Ich messe hier die Strömungen. Das hab ich für Notfälle – nimm du es.'], 'toptrank', 2, 'Ole: Wenn der Wind von Westen kommt, riecht es hier nach fernen Inseln. Eines Tages fliegst du dorthin.'],
         arena_fan8: [['Arvid: Eis, Mut und Kraft – und dann Meister Tamas. Die Drachen haben dich anerkannt.', 'Arvid: Diese Schuppe hat ein alter Drache verloren. Sie soll dir Glück bringen.'], 'sonderbonbon', 3, 'Arvid: Tamas sagt, hinter der Liga beginnt ein Meer, das auf keiner Karte steht. Bist du bereit?'] }[n.id];
-      if (!f[n.id + '_g']) { f[n.id + '_g'] = true; await say(F[0], N); return give(g, F[1], F[2]); }
-      return say(F[3], N);
+      if (!f[n.id + '_g']) { f[n.id + '_g'] = true; await say(F[0], N); await give(g, F[1], F[2]); }
+      else await say(F[3], N);
+      return fanLog(g, n);
     }
     case 'sandra':
-      if (!f.sandraGift) { f.sandraGift = true; await say(['Sandra: Okko hat erzählt, wie du die Brocken in den Treibsand gewuchtet hast. Respekt!', 'Sandra: Wir graben hier sonst nach alten Knochen. Das hier lag im Sand – du kannst es sicher brauchen.'], N); return give(g, 'sonderbonbon', 1); }
-      return say(['Sandra: Unter dem Arenaboden liegt mehr Geschichte, als man denkt. Okko gräbt jede Nacht ein Stückchen weiter …'], N);
+      if (!f.sandraGift) { f.sandraGift = true; await say(['Sandra: Okko hat erzählt, wie du die Brocken in den Treibsand gewuchtet hast. Respekt!', 'Sandra: Wir graben hier sonst nach alten Knochen. Das hier lag im Sand – du kannst es sicher brauchen.'], N); await give(g, 'sonderbonbon', 1); }
+      else await say(['Sandra: Unter dem Arenaboden liegt mehr Geschichte, als man denkt. Okko gräbt jede Nacht ein Stückchen weiter …'], N);
+      return fanLog(g, n);
     case 'rhea': case 'okko': case 'mira': return g.gym(n);
     case 'nebel': return nebel(g, n);
     case 'jaro_ank': return jaroAnker(g, n);
@@ -468,3 +517,4 @@ const g_lastMap = s => s.map || 'muschelbucht';
 export async function afterChampion(g, first) { for (const A of ACTS) if (A.afterChampion) return A.afterChampion(g, first); }
 // Akte einhängen: Arenen, Aufträge, Logbuch und Lied zusammenführen
 for (const A of ACTS) { A.init?.({ give, addLog }); Object.assign(GYMS, A.GYMS); Object.assign(QUESTS, A.QUESTS); Object.assign(LOGS, A.LOGS); Object.assign(SONG, A.SONG); }
+for (const [k, v] of Object.entries(QNEXT)) if (QUESTS[k]) QUESTS[k].next = v;

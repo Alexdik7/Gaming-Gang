@@ -1,5 +1,5 @@
 // Offline-Cache: Spieldateien werden beim ersten Start gespeichert, Updates im Hintergrund geholt
-const CACHE = 'sternflut-v1.8.0';
+const CACHE = 'sternflut-v1.9.0';
 const FILES = ['./', './index.html', './gb.css', './manifest.webmanifest', './icon-192.png', './apple-touch-icon.png', './fonts/fonts.css', './fonts/pixelify-latin.woff2', './fonts/atkinson-400.woff2', './fonts/atkinson-700.woff2', './fonts/pixelify-latin-ext.woff2',
   './js/core/noise.js', './js/core/audio.js', './js/core/music.js', './js/battle/battle.js', './js/battle/double.js', './js/data/coop.js', './js/data/combos.js', './js/data/fossil.js',
   './js/data/types.js', './js/data/moves.js', './js/data/creatures.js', './js/data/creatures2.js', './js/data/kalmara1.js', './js/data/kalmara2.js', './js/data/kalmara3.js', './js/data/kalmara4.js', './js/data/welt2a.js', './js/data/welt2b.js', './js/data/welt3.js', './js/data/mon.js', './js/data/breeding.js',

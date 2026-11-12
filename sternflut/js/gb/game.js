@@ -430,13 +430,26 @@ class Game {
   // Nebenquest „Zeig mir …“: eine bestimmte Kreatur im Team vorzeigen
   async quest(n, q) {
     const s = this.state, N = { name: n.name }, f = 'quest_' + n.id;
-    if (s.flags[f]) return say(q.after, N);
+    if (s.flags[f]) { if (q.next && !s.flags['qreq_' + n.id]) return this.questReq(n, q); return say(q.after, N); }
     const has = s.team.find(m => !m.egg && m.sp === q.want);
     if (!has) { if (!s.flags['qa_' + n.id]) { s.flags['qa_' + n.id] = true; sfx('dex'); } await say(q.ask, N); return say(`Pager: Neue Aufgabe – ${q.title || 'Suchauftrag'}.`); }
     await say(q.thanks.map(t => t.replace('{mon}', monName(has))), N);
     for (const [k, v] of Object.entries(q.reward)) { s.bag[k] = (s.bag[k] || 0) + v; sfx('caught'); await say(`${s.name} erhält ${v > 1 ? v + '× ' : ''}${ITEMS[k].name}!`); }
     if (q.log) await ST.addLog(this, q.log);
     s.flags[f] = true; this.save(true);
+    if (q.next) await this.questReq(n, q);
+  }
+  // Botengang starten: die Person bittet, etwas in eine andere Stadt zu bringen
+  async questReq(n, q) {
+    const s = this.state; s.flags['qreq_' + n.id] = true; sfx('dex');
+    await say(q.next.ask, { name: n.name }); await say(`Pager: Neue Aufgabe – ${q.next.title}. Bring es zu ${q.next.where}.`); this.save(true);
+  }
+  // Botengang abschließen beim Empfänger: Dank + Logbuchseite
+  async questRun(n, qid, q) {
+    const s = this.state; s.flags['qn_' + qid] = true;
+    await say(q.next.thanks, { name: n.name });
+    if (q.next.log) await ST.addLog(this, q.next.log);
+    this.save(true);
   }
   // Beerenbusch: einmal pro Spieltag Beeren pflücken
   async berry(x, y) {
@@ -955,6 +968,7 @@ class Game {
     if (n.trainer && n.trainer.e4) return this.ligaTrainer?.(n);
     if (n.shy) return this.feedShy(n);
     if (n.trainer) { if (s.flags[n.id]) return say(n.trainer.after || n.trainer.lose || 'Guter Kampf!', N); return this.trainerBattle(n); }
+    { const run = Object.entries(QUESTS).find(([qid, q]) => q.next?.to === n.id && s.flags['qreq_' + qid] && !s.flags['qn_' + qid]); if (run) return this.questRun(n, run[0], run[1]); }
     if (QUESTS[n.id]) return this.quest(n, QUESTS[n.id]);
     { const r = await ST.talkStory(this, n); if (r !== false) return r; }
     switch (n.id) {
