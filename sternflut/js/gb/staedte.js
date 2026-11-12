@@ -120,6 +120,7 @@ async function gasthaus(g, n) {
     'Das Hafenamt in Ankerbrück hat die Akte der Morgenstern. Dörte hilft dir, verlorene Logbuchseiten zu finden.',
     'Bei Regen sollen andere Kreaturen aus dem hohen Gras kommen als bei Sonne. Ein Wetterglas zeigt es dir.',
     'Wer im hohen Gras schleicht, kommt scheuen Kreaturen viel näher. Halte dabei den Knopf gedrückt!',
+    'Am Muschelstrand führt bei Ebbe eine Sandbank zu einer Grotte. Alle drei Stunden kommt das Wasser zurück – beeil dich!',
     'In Dünenhain gibt es jetzt ein Museum. Die Kuratorin sucht dringend Urzeit-Kreaturen.',
     'Kapitänin Wenke in Ankerbrück soll einen Kompass haben, der zu einer eigenen Insel führt!',
     'Die Bibliothek in Glimmdorf deutet das Lied der Gezeiten. Theo kann alte Verse lesen wie Wetterberichte.',

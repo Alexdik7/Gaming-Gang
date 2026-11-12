@@ -52,6 +52,9 @@ export class Overworld {
     this.blds = M.buildings || [];
     // Steckt die Figur in einer Wand (alter Fehler, umgebaute Karte o. Ä.), auf das nächste freie Feld setzen
     this.cleared = new Map();
+    this.tideLow = M.tide ? !!this.g.tideLow?.() : undefined;
+    // Bei Flut auf der Gezeiteninsel: ein Fischerboot bringt dich an den Strand
+    const TR = M.tideRefuge; if (TR && !this.tideLow && x >= TR[0] && y >= TR[1] && x <= TR[2] && y <= TR[3]) { [x, y] = M.tideSafe; this.p.x = x; this.p.y = y; this.p.px = x * 16; this.p.py = y * 16; setTimeout(() => this.notify('Flut! Ein Fischerboot hat dich zurück an den Strand gebracht.'), 400); }
     if (this.wallAt(x, y)) {
       const seen = new Set([x + ',' + y]), q = [[x, y]]; let first = null;
       while (q.length) {
@@ -100,7 +103,7 @@ export class Overworld {
     setMusic(M.music || (M.gym ? 'gym' : dungeon ? 'cave' : n && M.outdoor ? 'night' : town ? 'town' : 'route'));
   }
 
-  ch(x, y) { if (x < 0 || y < 0 || x >= this.w || y >= this.h) return null; const c = this.M.rows[y][x]; return (c === '$' || c === '&') && this.cleared?.has(x + ',' + y) ? this.cleared.get(x + ',' + y) : c; }
+  ch(x, y) { if (x < 0 || y < 0 || x >= this.w || y >= this.h) return null; const c = this.M.tide && this.tideLow && this.M.tide.includes(x + ',' + y) ? 's' : this.M.rows[y][x]; return (c === '$' || c === '&') && this.cleared?.has(x + ',' + y) ? this.cleared.get(x + ',' + y) : c; }
   // versteckte Gegenstände: je Route zwei feste, unsichtbare Fundorte (Erd-/Metall-Fähigkeit zeigt sie an)
   genHidden(id, M) {
     if (!M.outdoor || !M.enc) return [];
@@ -166,6 +169,8 @@ export class Overworld {
 
   // ---------------------------------------------------------- Update
   update(dt) {
+    // Ebbe und Flut: Sandbänke tauchen auf und verschwinden (alle 3 Spielstunden)
+    if (this.M.tide) { const low = !!this.g.tideLow?.(); if (low !== this.tideLow) { const first = this.tideLow === undefined; this.tideLow = low; if (!first) { this.notify(low ? 'Ebbe! Das Wasser zieht sich zurück.' : 'Die Flut kommt! Die Sandbank verschwindet.'); const TR = this.M.tideRefuge, onIsle = TR && this.p.x >= TR[0] && this.p.y >= TR[1] && this.p.x <= TR[2] && this.p.y <= TR[3]; if (!low && !this.p.moving && (onIsle || this.wallAt(this.p.x, this.p.y))) this.load(this.id, this.p.x, this.p.y, this.p.dir); } } }
     const p = this.p, s = this.g.state;
     if (this.banner) { this.banner.t -= dt; if (this.banner.t <= 0) this.banner = null; }
     // Mitläufer: stellt sich hinter den Rücken des Spielers und schaut ihn an

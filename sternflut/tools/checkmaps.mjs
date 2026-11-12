@@ -6,6 +6,8 @@ import { MAPS2 } from '../js/gb/maps2.js';
 import { MAPS3 } from '../js/gb/maps3.js';
 import { MAPS4 } from '../js/gb/maps4.js';
 Object.assign(MAPS, MAPS2, MAPS3, MAPS4);
+// Ebbe annehmen: Gezeiten-Felder sind begehbarer Sand
+for (const M of Object.values(MAPS)) for (const k of M.tide || []) { const [x, y] = k.split(',').map(Number); M.rows[y] = M.rows[y].slice(0, x) + 's' + M.rows[y].slice(x + 1); }
 
 let errors = 0, warns = 0;
 const err = (m, t) => { errors++; console.log(`✗ ${m}: ${t}`); };

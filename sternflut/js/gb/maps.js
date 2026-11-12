@@ -107,17 +107,22 @@ export const MAPS = {
       'Tsssssssssssssssssssss~~',
       'Tssssssssssssssssssss~~~',
       'Tsssssssssssssssss~~~~~~',
-      'Tssssssssssssss~~~~~~~~~',
+      'TsssssssssSssss~~~~~~~~~',
       'Tsssssssssss~~~~~~~~~~~~',
       'TTsssss~~~~~~~~~~~~~~~~~',
-      '~~~~~~~~~~~~~~~~~~~~~~~~',
-      '~~~~~~~~~~~~~~~~~~~~~~~~',
+      '~~~~~~~~~~~~~~~~~~~sOs~~',
+      '~~~~~~~~~~~~~~~~~~~sss~~',
     ],
+    // Ebbe: Sandbank nach Südosten zur Gezeiteninsel (Grotte nur bei Ebbe erreichbar)
+    tide: ['12,11', '13,11', '13,12', '14,12', '15,12', '16,12', '17,12', '18,12', '19,12'],
+    signs: { '10,10': 'GEZEITENSTEIN\nBei Ebbe führt ein Pfad nach Südosten. Bei Flut verschwindet er wieder.' },
+    warps: [{ x: 20, y: 13, to: 'gezeitengrotte', tx: 6, ty: 7, dir: 'up' }],
+    tideRefuge: [19, 13, 21, 14], tideSafe: [11, 10],
     npcs: [
       { id: 'pip_strand', x: 13, y: 9, dir: 'down', look: LOOK.pip, name: 'Pip', hideIf: 'prolog' },
       { id: 'strand_alt', x: 3, y: 8, dir: 'right', look: LOOK.hiker, name: 'Muschelsammler', showIf: 'prolog' },
     ],
-    items: [{ id: 'it_st1', x: 20, y: 5, item: 'trank', n: 2 }, { id: 'it_st2', x: 2, y: 10, item: 'kristall', n: 2 }],
+    items: [{ id: 'it_st1', x: 20, y: 5, item: 'trank', n: 2 }, { id: 'it_st2', x: 2, y: 10, item: 'kristall', n: 2 }, { id: 'it_st3', x: 21, y: 14, item: 'sternkristall', n: 3 }],
     edges: { n: { to: 'muschelbucht', dx: 0 } },
   },
   duenenpfad: {
@@ -1002,6 +1007,14 @@ export const MAPS = {
     rows: ['##w##w##', 'ppppAppp', 'pppppppp', 'pppppppp', 'pppmmppp'],
     npcs: [],
   },
+  gezeitengrotte: {
+    // Nur bei Ebbe erreichbar: eine Grotte voller seltener Strandkreaturen und eine Inschrift von Liv
+    name: 'Gezeitengrotte', cave: true, enc: 'gezeiten', bg: 'hoehle',
+    rows: ['WWWWWWWWWWWWWW', 'WcccccWWccccSW', 'WccWccccccWccW', 'WccWWcccWccccW', 'WcccccWcccccWW', 'WWccccccccccWW', 'WcccWWccccccWW', 'WcccccccWWcccW', 'WWWWWWcWWWWWWW'],
+    signs: { '12,1': 'Eingeritzt in den Fels:\n„L. S. – Tag 9. Bei Ebbe offen, bei Flut verborgen. Wie alles, was zählt.“' },
+    warps: [{ x: 6, y: 8, to: 'strand', tx: 20, ty: 14, dir: 'down' }],
+    items: [{ id: 'it_gz1', x: 1, y: 1, item: 'sonderbonbon', n: 2 }, { id: 'it_gz2', x: 12, y: 7, item: 'toptrank', n: 2 }],
+  },
   arena1: {
     // Schleusen-Arena: drei Becken, jede Platte öffnet ein Schleusentor zum nächsten
     name: 'Arena Ankerbrück', indoor: true, gym: true, hint: ['Rätsel-Tipp: Jede Bodenplatte öffnet ein Schleusentor zum nächsten Becken.', 'Drei Schleusen, dann bist du oben!'],
@@ -1026,6 +1039,7 @@ export const ENC = {
   kueste: { rate: 1, list: [['silberzack', 50, 4, 8], ['kneifling', 30, 4, 8], ['quallux', 12, 5, 9], ['perlschild', 8, 6, 9]] },
   hafen: { rate: 1, list: [['silberzack', 45, 6, 10], ['kneifling', 25, 6, 10], ['quallux', 15, 7, 11], ['perlschild', 12, 7, 11], ['klingenhai', 1, 18, 20]] },
   kueste2: { rate: 0.12, list: [['brisel', 20, 7, 10, 'day'], ['hoppsand', 16, 7, 10], ['fennika', 10, 8, 11], ['sandvipa', 12, 8, 11], ['stachelkeim', 14, 7, 10], ['skarabix', 10, 8, 11, 'day'], ['schwebgeier', 6, 9, 11], ['zappgecko', 8, 8, 10], ['lumoth', 14, 8, 11, 'night'], ['umbrakit', 12, 8, 11, 'night'], ['hulora', 8, 9, 11, 'night']] },
+  gezeiten: { rate: 0.1, list: [['perlschild', 30, 12, 15], ['quallux', 28, 12, 15], ['stalakmolch', 20, 13, 16], ['echolot', 16, 12, 15], ['perlmu', 6, 15, 17]] },
   grotte: { rate: 0.08, list: [['quarzel', 26, 11, 14], ['echolot', 26, 10, 13], ['kieselkopp', 20, 11, 14], ['sandvipa', 14, 11, 14], ['stalakmolch', 4, 13, 15]] },
   oase: { rate: 1, list: [['oasquak', 50, 10, 14], ['silberzack', 35, 10, 14], ['stalakmolch', 5, 13, 16], ['perlschild', 10, 11, 14]] },
   glimmpfad: { rate: 0.12, list: [['nussklau', 20, 13, 16], ['myzelchen', 14, 13, 16], ['chitrix', 10, 13, 15], ['toxquak', 12, 13, 16], ['glimmhut', 12, 14, 16], ['fennika', 8, 13, 16, 'day'], ['schwebgeier', 6, 14, 16, 'day'], ['funkelkaefer', 18, 14, 17, 'night'], ['nachtwolp', 10, 14, 17, 'night']] },

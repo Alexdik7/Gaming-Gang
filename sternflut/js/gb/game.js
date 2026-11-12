@@ -67,6 +67,8 @@ class Game {
 
   // ---------------------------------------------------------- Zeit
   hour() { return ((this.state?.time ?? DAY / 3) / DAY * 24) % 24; }
+  // Ebbe in den Spielstunden 0–3, 6–9, 12–15, 18–21 (eine Spielstunde = eine echte Minute)
+  tideLow() { return Math.floor(this.hour() / 3) % 2 === 0; }
   isNight() { if (this.ow?.M?.night && this.started) return true; const h = this.hour(); return h >= 20 || h < 6; }
   dusk() { const h = this.hour(); return h >= 17 && h < 20 ? (h - 17) / 3 : h >= 6 && h < 7.5 ? 1 - (h - 6) / 1.5 : 0; }
   worldFlags() { return this.state?.flags || {}; }

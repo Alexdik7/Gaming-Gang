@@ -150,3 +150,8 @@
 - Arena 9 Nami: Strudel-Inseln (Runen-Warps, manche spülen zurück), Schleusenplatte auf der obersten Insel. Arena 10 Thalia (unter Wasser): drei Perlenschalen (Loch füllen / Mut-Trainer / schwerer Brocken) → mehrteiliges Riff-Tor. Arena 11 Ingrid: Eis-Rutschrätsel (per Löser erzeugt), zwei Frostsiegel. Arena 12 Bjarne: Grube mit zwei Schacht-Reihen (Brocken in Löcher) und Weichenplatte. Arena 13 Seraphine: Wolkenwände, nur der linke Luftstrom führt hoch, der rechte zu einem Fund. Arena 14 Orion (Nacht): vier Sternenkammern über Runen, vier Sterne öffnen die Kuppel. Arena 15 Mortis (Nacht+Nebel): Gruft-Irrgarten, zwei Grablichter. Arena 16 Selene (Nacht+Nebel): Schattenwand, zwei Mondsiegel mit Brocken.
 - `bReset` akzeptiert Flag-Listen. Jede Arena: dritter Trainer, zwei Funde, Rätsel-Tipp, Person nach dem Sieg (`arena_fan9..16`).
 - Test: alle 8 im echten Spiel bis zum Leiter gelöst (Eis über checkmaps-Simulation), Karten, e2e.
+
+## v1.12.0 – Ebbe und Flut
+- `game.tideLow()`: Ebbe in den Spielstunden 0–3, 6–9, 12–15, 18–21 (Wechsel alle 3 echten Minuten). `M.tide` = Liste von Feldern, die bei Ebbe zu Sand werden (`ow.ch` liefert dann `s`). Wechsel wird gemeldet; wer bei Flut auf einem Gezeitenfeld steht, wird an Land gesetzt; `M.tideRefuge`/`M.tideSafe`: auf der Gezeiteninsel bringt ein Fischerboot zurück an den Strand.
+- Muschelstrand: Gezeitenstein (Schild), Sandbank nach Südosten zur Gezeiteninsel mit Fund und Eingang zur neuen **Gezeitengrotte** (Begegnungen `gezeiten` mit seltenem Perlmu, zwei Funde, Inschrift von Liv). Gerücht im Gasthof.
+- checkmaps nimmt Ebbe an (Gezeitenfelder begehbar).
