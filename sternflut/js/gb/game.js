@@ -163,6 +163,7 @@ class Game {
     const s = this.state;
     s.bag ||= {}; s.bag.epteiler ||= 1; // EP-Teiler gibt es von Anfang an
     s.flags ||= {}; s.daycare ||= { mons: [], steps: 0, egg: null }; s.badges ||= [];
+    for (const [id, G] of Object.entries(GYMS)) if (s.badges[G.badge]) { s.flags['orden_' + id] = true; const AM = Object.values(MAPS).find(M => M.gym && M.npcs?.some(n => n.id === id)); for (const f of Object.values(AM?.gates || {})) s.flags[f] = true; } // alte Spielstände: Arena-Siege nachtragen, Rätsel-Tore offen
     if (s.base) MAPS.basis = baseMap(s.base.theme, `${s.name}s Geheimbasis`, s.base.items);
     if (s.map === 'gast' || (s.map === 'basis' && !s.base)) { const r = s.ret || { map: 'muschelbucht', x: 4, y: 9 }; s.map = r.map; s.x = r.x; s.y = r.y; }
     this.ow.load(s.map, s.x, s.y, s.dir);

@@ -44,6 +44,7 @@ export function guideTips(g) {
   if (score.length) out.push(`Am besten wirken ${list(score)}-Attacken. Damit triffst du hier richtig hart!`);
   else out.push('Kein Typ hat hier einen klaren Vorteil – setz auf deine stärksten Kreaturen.');
   if (bad.length) out.push(`Vorsicht mit ${list(bad)}-Kreaturen: Gegen die hat ${L.name} leichtes Spiel.`);
+  if (!done && MAPS[g.ow.id].hint) out.push(...MAPS[g.ow.id].hint);
   if (!done) { out.push(`Die stärkste Kreatur ist auf Level ${lvl}${G.double ? ', und gekämpft wird hier zu zweit – zwei gegen zwei!' : '.'}`); out.push('Und denk dran: Heil dein Team vor dem Kampf vollständig auf!'); }
   return out;
 }
@@ -189,6 +190,12 @@ export async function talkStory(g, n) {
       return say(f.beaconLit ? ['Das Leuchtfeuer brennt wieder! Alle Boote sind zurück. Danke dir!'] : ['Die Alte Werft liegt im Süden des Hafens. Pass auf dich auf!'], N);
     case 'ab_frau': return say(f.beaconLit ? ['Mein Mann ist wieder da! Das Leuchtfeuer hat ihn heimgebracht.'] : ['Mein Mann ist noch draußen auf See … Ohne Leuchtfeuer …'], N);
     case 'guide': return say(guideTips(g), N);
+    case 'hinnerk':
+      if (!f.hinnerkGift) { f.hinnerkGift = true; await say(['Hinnerk: Du hast alle drei Schleusen geknackt! Das hat seit Jahren keiner so schnell geschafft.', 'Hinnerk: Die Kapitänin erzählt jedem Matrosen im Hafen von dir. Hier, von der ganzen Crew!'], N); return give(g, 'hypertrank', 2); }
+      return say(['Hinnerk: Seit deinem Sieg trainieren hier alle doppelt so hart. Die Schleusen bleiben für dich offen!'], N);
+    case 'sandra':
+      if (!f.sandraGift) { f.sandraGift = true; await say(['Sandra: Okko hat erzählt, wie du die Brocken in den Treibsand gewuchtet hast. Respekt!', 'Sandra: Wir graben hier sonst nach alten Knochen. Das hier lag im Sand – du kannst es sicher brauchen.'], N); return give(g, 'sonderbonbon', 1); }
+      return say(['Sandra: Unter dem Arenaboden liegt mehr Geschichte, als man denkt. Okko gräbt jede Nacht ein Stückchen weiter …'], N);
     case 'rhea': case 'okko': case 'mira': return g.gym(n);
     case 'nebel': return nebel(g, n);
     case 'jaro_ank': return jaroAnker(g, n);
@@ -372,7 +379,7 @@ export async function afterTrainer(g) {
   for (const A of ACTS) await A.afterTrainer?.(g);
 }
 
-export async function afterGym(g, id) { const f = g.state.flags; if (id === 'rhea') f.badge1Jaro = true; if (id === 'mira') f.badge3Jaro = true; for (const A of ACTS) await A.afterGym?.(g, id); }
+export async function afterGym(g, id) { const f = g.state.flags; f['orden_' + id] = true; if (id === 'rhea') f.badge1Jaro = true; if (id === 'mira') f.badge3Jaro = true; for (const A of ACTS) await A.afterGym?.(g, id); }
 
 // ---------------------------------------------------------------- Ereignisse beim Betreten
 export async function mapEvent(g, id) {

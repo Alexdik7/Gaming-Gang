@@ -47,6 +47,7 @@ export class Overworld {
     const nb = (s.badges || []).filter(Boolean).length;
     this.secret = (M.items || []).filter(i => i.item === 'ball52' && !s.flags[i.id] && (i.need === 'champion' ? s.flags.champion : nb >= (i.need || 0)));
     s.bpos ||= {};
+    if (M.bReset && !s.flags[M.bReset]) delete s.bpos[id]; // Rätsel ungelöst: Brocken beim Betreten zurück an den Start (kein Festsitzen)
     this.boulders = (s.bpos[id] || (M.boulders || []).map(b => [...b])).filter(Boolean).map(([bx, by]) => ({ x: bx, y: by }));
     this.blds = M.buildings || [];
     // Steckt die Figur in einer Wand (alter Fehler, umgebaute Karte o. Ä.), auf das nächste freie Feld setzen

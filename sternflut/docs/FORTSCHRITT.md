@@ -119,3 +119,10 @@
 
 ## v1.6.1 – Arena-Berater mit echten Tipps
 - `guideTips(g)` in story.js: liest Leiter (NPC mit Eintrag in `GYMS`) und Team der aktuellen Arena, nennt Haupttyp(en), die drei wirksamsten Angriffstypen (Durchschnitt `effectiveness` gegen das Team), gefährdete eigene Typen, höchstes Level und Doppelkampf-Hinweis; nach dem Orden eigener Text. Gilt automatisch für alle 16 Arenen.
+
+## v1.7.0 – Arenen werden Dungeons (Start: Rhea + Okko)
+- **Arena Ankerbrück (Rhea):** 13×17, drei Becken mit Wasserkanälen, Schleusentore (`gates`) über Bodenplatten (`plates`) – Reihenfolge A (unten) → B (rechts) → C (links) → Leiterin. Neue Trainerin Schleusenwärterin Gesa, Insel mit Item über Brücke, zweites Item im Nebenbecken.
+- **Arena Dünenhain (Okko):** 13×17, Sandwände, Treibsand-Löcher (`@`) mit Brocken füllen, dritter Brocken auf die Platte öffnet das Sandtor. `M.bReset`: solange das Rätsel ungelöst ist, liegen die Brocken beim Betreten wieder am Start (kein Festsitzen). Neue Trainerin Wüstenwächterin Sela.
+- Nach dem Sieg: Flag `orden_<leiter>` (in `afterGym`, alte Spielstände in `enterWorld` nachgetragen inkl. offener Rätsel-Tore) → neue NPCs Bootsmann Hinnerk / Grabungshelferin Sandra mit Geschenk.
+- Arena-Berater nennt den Rätsel-Tipp der Arena (`M.hint`).
+- Test: beide Arenen per Wegsuche + Schieben komplett gelöst (`gymwalk.cjs`), Karten, e2e.

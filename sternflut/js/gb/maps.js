@@ -433,15 +433,21 @@ export const MAPS = {
     edges: { s: { to: 'glimmwald', dx: 0 } },
   },
   arena2: {
-    name: 'Arena Dünenhain', indoor: true, gym: true,
-    rows: ['###w###w###', 'ggggggggggg', 'gbgbgbgbgbg', 'ggggggggggg', 'bbbbgggbbbb', 'ggggggggggg', 'gbbbbgbbbbg', 'ggggggggggg', 'bggggbggggb', 'ggggggggggg', 'kgggggggggk', 'ggggggggggg', 'gggggmggggg'],
+    // Treibsand-Arena: Brocken in den Treibsand schieben, dann einen Brocken auf die Platte – das Sandtor öffnet sich
+    name: 'Arena Dünenhain', indoor: true, gym: true, bReset: 'okkoB', hint: ['Rätsel-Tipp: Schieb einen Brocken in den Treibsand, dann kannst du drüber.', 'Ein Brocken auf der Platte öffnet das Sandtor.', 'Verkantet? Geh kurz raus – dann liegen die Brocken wieder am Anfang.'],
+    rows: ['###w#####w###', 'kgggggggggggk', 'ggggggggggggg', 'HHHHHHEHHHHHH', 'ggggggggggggg', 'gzggggggggNgg', 'ggggHHHHHgggg', 'ggggggggggggz', 'zgggggggggggg', 'ggggggggggggg', 'HHH@HHHHH@HHH', 'ggggggggggggg', 'ggggggggggggg', 'ggggggggggggg', 'zgggggggggggz', 'kgggggggggggk', 'ggggggmgggggg'],
+    gates: { '6,3': 'okkoB' }, plates: { '10,5': 'okkoB' }, boulders: [[3, 12], [9, 12], [10, 8]],
     npcs: [
-      { id: 'okko', x: 5, y: 1, dir: 'down', look: LOOK.okko, name: 'Sandläufer Okko' },
-      { id: 'tr_gym2a', x: 2, y: 7, dir: 'right', look: LOOK.hiker, name: 'Dünenläufer Kai', trainer: { team: [['sandvipa', 16], ['kieselkopp', 16]], reward: 640, sight: 4, lines: ['Im Sand verliert jeder den Halt!'], lose: 'Weggeweht …' } },
-      { id: 'tr_gym2b', x: 8, y: 3, dir: 'left', look: LOOK.jogger, name: 'Sandsurferin Lia', trainer: { team: [['skarabix', 17], ['stachelkeim', 17]], reward: 680, sight: 4, lines: ['Okko ist der Schnellste in der Wüste. Aber zuerst kommst du an mir nicht vorbei!'], lose: 'Sand in den Augen …' } },
-      { id: 'guide', x: 3, y: 11, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'okko', x: 6, y: 1, dir: 'down', look: LOOK.okko, name: 'Sandläufer Okko' },
+      { id: 'tr_gym2a', x: 11, y: 13, dir: 'left', look: LOOK.hiker, name: 'Dünenläufer Kai', trainer: { team: [['sandvipa', 16], ['kieselkopp', 16]], reward: 640, sight: 4, lines: ['Im Sand verliert jeder den Halt!'], lose: 'Weggeweht …' } },
+      { id: 'tr_gym2b', x: 1, y: 7, dir: 'right', look: LOOK.jogger, name: 'Sandsurferin Lia', trainer: { team: [['skarabix', 17], ['stachelkeim', 17]], reward: 680, sight: 4, lines: ['Okko ist der Schnellste in der Wüste. Aber zuerst kommst du an mir nicht vorbei!'], lose: 'Sand in den Augen …' } },
+      { id: 'tr_gym2c', x: 11, y: 2, dir: 'left', look: LOOK.okko, name: 'Wüstenwächterin Sela', trainer: { team: [['sandvipa', 18], ['skarabix', 18]], reward: 720, sight: 4, lines: ['Das Sandtor hast du bezwungen. Mich nicht!'], lose: 'Der Sand gibt nach …' } },
+      { id: 'guide', x: 4, y: 15, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'sandra', x: 2, y: 2, dir: 'down', look: LOOK.hiker, name: 'Grabungshelferin Sandra', showIf: 'orden_okko' },
     ],
+    items: [{ id: 'it_ar2a', x: 12, y: 9, item: 'trank', n: 2 }, { id: 'it_ar2b', x: 0, y: 4, item: 'sternkristall', n: 3 }],
   },
+
   arena3: {
     name: 'Arena Glimmdorf', indoor: true, gym: true,
     rows: ['###w###w###', 'ggggggggggg', 'gkkgkgkgkkg', 'ggggggggggg', 'kgkkkgkkkgk', 'ggggggggggg', 'gkggkkkggkg', 'ggggggggggg', 'kkkgggggkkk', 'ggggggggggg', 'kgggggggggk', 'ggggggggggg', 'gggggmggggg'],
@@ -961,15 +967,21 @@ export const MAPS = {
     npcs: [],
   },
   arena1: {
-    name: 'Arena Ankerbrück', indoor: true, gym: true,
-    rows: ['###w###w###', 'ggggggggggg', 'gbbbbgbbbbg', 'ggggggggggg', 'gbbgbbbgbbg', 'ggggggggggg', 'bbbgbbbgbbb', 'ggggggggggg', 'gbbbgggbbbg', 'ggggggggggg', 'kgggggggggk', 'ggggggggggg', 'gggggmggggg'],
+    // Schleusen-Arena: drei Becken, jede Platte öffnet ein Schleusentor zum nächsten
+    name: 'Arena Ankerbrück', indoor: true, gym: true, hint: ['Rätsel-Tipp: Jede Bodenplatte öffnet ein Schleusentor zum nächsten Becken.', 'Drei Schleusen, dann bist du oben!'],
+    rows: ['###w#####w###', 'kgggggggggggk', 'ggggggggggggg', 'ggggggggggggg', '~~~E~~~~~~~~~', 'gggggg~gggggg', 'gNgggg~gggggg', 'ggggggEgggggg', 'gggggg~ggggNg', 'kggggg~gggggk', '~~~~~~~~~E~~~', 'gNggggggggggg', 'gggggggg~~~gg', 'gggggggg~g~gg', 'gggggggg~B~gg', 'kgggggggggggk', 'ggggggmgggggg'],
+    gates: { '9,10': 'rheaA', '6,7': 'rheaB', '3,4': 'rheaC' }, plates: { '1,11': 'rheaA', '11,8': 'rheaB', '1,6': 'rheaC' },
     npcs: [
-      { id: 'rhea', x: 5, y: 1, dir: 'down', look: LOOK.rhea, name: 'Kapitänin Rhea' },
-      { id: 'tr_gym1a', x: 1, y: 7, dir: 'right', look: LOOK.matrose, name: 'Matrose Piet', trainer: { team: [['silberzack', 10], ['kneifling', 10]], reward: 400, sight: 4, lines: ['An Bord der Kapitänin kommt nur, wer seefest ist!'], lose: 'Mann über Bord …' } },
-      { id: 'tr_gym1b', x: 9, y: 3, dir: 'left', look: LOOK.surfer, name: 'Taucherin Marla', trainer: { team: [['quallux', 11], ['perlschild', 11]], reward: 440, sight: 4, lines: ['Ich tauche tiefer als jeder hier!'], lose: 'Luft … ich brauch Luft …' } },
-      { id: 'guide', x: 3, y: 11, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'rhea', x: 6, y: 1, dir: 'down', look: LOOK.rhea, name: 'Kapitänin Rhea' },
+      { id: 'tr_gym1a', x: 1, y: 13, dir: 'right', look: LOOK.matrose, name: 'Matrose Piet', trainer: { team: [['silberzack', 10], ['kneifling', 10]], reward: 400, sight: 4, lines: ['An Bord der Kapitänin kommt nur, wer seefest ist!'], lose: 'Mann über Bord …' } },
+      { id: 'tr_gym1b', x: 11, y: 6, dir: 'down', look: LOOK.surfer, name: 'Taucherin Marla', trainer: { team: [['quallux', 11], ['perlschild', 11]], reward: 440, sight: 4, lines: ['Ich tauche tiefer als jeder hier!'], lose: 'Luft … ich brauch Luft …' } },
+      { id: 'tr_gym1c', x: 10, y: 2, dir: 'left', look: LOOK.fischer, name: 'Schleusenwärterin Gesa', trainer: { team: [['quallux', 12], ['silberzack', 12]], reward: 480, sight: 4, lines: ['Drei Schleusen hast du geöffnet? Die vierte bin ich!'], lose: 'Wasser marsch … für dich.' } },
+      { id: 'guide', x: 4, y: 15, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'hinnerk', x: 2, y: 2, dir: 'down', look: LOOK.matrose, name: 'Bootsmann Hinnerk', showIf: 'orden_rhea' },
     ],
+    items: [{ id: 'it_ar1a', x: 9, y: 13, item: 'trank', n: 2 }, { id: 'it_ar1b', x: 4, y: 9, item: 'sternkristall', n: 3 }],
   },
+
 };
 
 // Begegnungstabellen: [Art, Gewicht, minLv, maxLv, Zeit?]
