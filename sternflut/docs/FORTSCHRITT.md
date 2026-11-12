@@ -164,3 +164,7 @@
 ## v1.14.0 – Schleichen mit Sichtkegeln
 - Revierkreaturen sehen nur in Blickrichtung (`ow.inCone`/`seesPlayer`, Reichweite `coneRange`: normal r+1, geduckt außerhalb des Grases r/2, geduckt im hohen Gras nur 1) und schauen sich alle 2–4 s in eine andere Richtung um. Sichtkegel als rötliche Felder sichtbar (kräftiger nach der Warnung).
 - Scheue Kreaturen fliehen für den Tag, wenn man in 3 Feldern Nähe rennt oder reitet (`scareShy`). Zwei neue Gasthof-Gerüchte erklären beides.
+
+## v1.15.0 – Heimatinsel: Ostinsel
+- Insel ist jetzt 36 breit; neues Projekt **Brücke zur Ostinsel** (6000 ◈) lässt eine zweite kleine Insel erscheinen (Ellipse um 29.5/8.5) mit Weg und drei Bauplätzen (Projekte mit `req: 'bruecke'`).
+- **Forschungsstation** (Forscherin Nova): Belohnungen für 25/50/100/150/200/250 gebundene Arten (`MILE`). **Inselmarkt** (Händlerin Lotte): täglich drei wechselnde Raritäten (`OFFERS`). **Gästehaus** (Gastwirt Henk): jeden Tag besucht dich ein bereits besiegter Arenaleiter (`visitorToday`), Freundschaftskampf einmal pro Tag mit Team auf deinem Level.

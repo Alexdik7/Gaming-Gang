@@ -10,13 +10,17 @@ import { placeSpot } from './dig.js';
 
 ITEMS.inselkompass = { name: 'Inselkompass', desc: 'Zeigt immer zu deiner Heimatinsel. Im Freien benutzen, um hinzusegeln.', key: true };
 const today = () => Math.floor(Date.now() / 864e5);
-const W = 24, H = 20;
+const W = 36, H = 20; // Ostteil (x ≥ 24) erst nach dem Brückenbau
 export const PROJECTS = {
   haus: { name: 'Hütte', cost: 3000, items: {}, desc: 'Ein Bett zum Ausruhen und ein PC für deine Boxen.' },
   feld: { name: 'Beerenfeld', cost: 2000, items: { goldmuschel: 1 }, desc: 'Sechs Beerensträucher. Jeden Tag reife Beeren.' },
   weide: { name: 'Weide', cost: 4000, items: { sternquarz: 1 }, desc: 'Bis zu 6 Kreaturen aus der Box grasen hier und trainieren jeden Tag.' },
   werk: { name: 'Werkstatt', cost: 5000, items: { urbernstein: 1 }, desc: 'Tüftler Bo stellt aus Schätzen und Beeren Kugeln und Tränke her.' },
   feuer: { name: 'Leuchtfeuer', cost: 8000, items: { meteorit: 1 }, desc: 'Ein Leuchtturm wie in Muschelbucht. Nachts leuchtet die ganze Insel.' },
+  bruecke: { name: 'Brücke zur Ostinsel', cost: 6000, items: {}, desc: 'Eine Holzbrücke zur kleinen Nachbarinsel. Dort ist Platz für drei weitere Gebäude.' },
+  forschung: { name: 'Forschungsstation', cost: 10000, items: { sternquarz: 2 }, req: 'bruecke', desc: 'Forscherin Nova wertet deine Chronik aus und belohnt jeden Meilenstein.' },
+  markt: { name: 'Inselmarkt', cost: 7000, items: { goldmuschel: 2 }, req: 'bruecke', desc: 'Händlerin Lotte bietet jeden Tag eine andere Rarität an.' },
+  gaeste: { name: 'Gästehaus', cost: 9000, items: { urbernstein: 1, meteorit: 1 }, req: 'bruecke', desc: 'Jeden Tag besucht dich ein anderer Arenaleiter – für einen Freundschaftskampf.' },
 };
 const RECIPES = [
   { name: '5 Sternkugeln', need: { sternquarz: 1 }, get: { sternkristall: 5 } },
@@ -31,7 +35,7 @@ const st = s => (s.island ||= { built: {}, weide: [], day: today() });
 // ---------------------------------------------------------------- Karte nach Ausbaustand erzeugen
 export function buildIsland(s) {
   const I = s ? st(s) : { built: {}, weide: [] }, B = I.built, g = [];
-  for (let y = 0; y < H; y++) { const r = []; for (let x = 0; x < W; x++) { const d = ((x - 11.5) / 11.2) ** 2 + ((y - 8) / 8.2) ** 2; r.push(d > 1 ? '~' : d > 0.8 ? 's' : d > 0.64 ? 'T' : (x * 7 + y * 3) % 11 === 0 ? ',' : '.'); } g.push(r); }
+  for (let y = 0; y < H; y++) { const r = []; for (let x = 0; x < W; x++) { const d = Math.min(((x - 11.5) / 11.2) ** 2 + ((y - 8) / 8.2) ** 2, B.bruecke ? ((x - 29.5) / 6) ** 2 + ((y - 8.5) / 7.2) ** 2 : 9); r.push(d > 1 ? '~' : d > 0.8 ? 's' : d > 0.64 ? 'T' : (x * 7 + y * 3) % 11 === 0 ? ',' : '.'); } g.push(r); }
   const set = (x, y, c) => { if (g[y]) g[y][x] = c; }, fill = (x0, y0, x1, y1, c) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) set(x, y, c); };
   fill(4, 3, 9, 7, '.'); fill(14, 3, 19, 7, '.'); fill(3, 10, 9, 14, '.'); fill(15, 10, 19, 14, '.');
   for (let y = 9; y <= 16; y++) { set(11, y, '='); set(12, y, '='); }
@@ -53,9 +57,27 @@ export function buildIsland(s) {
   if (B.feuer) buildings.push({ x: 19, y: 3, w: 3, h: 3, door: 1, tower: true, lock: 'never', lockText: ['Das Leuchtfeuer brennt hell. Von hier sieht man bis zum Horizont.'] });
   npcs.push({ id: 'tilda', x: 13, y: 7, dir: 'down', look: { skin: '#e8b892', hair: '#c86a28', outfit: '#f8a830', pants: '#4a4a6a', cap: '#f8d040', accent: '#ffffff', pony: true }, name: 'Baumeisterin Tilda' });
   npcs.push({ id: 'bootsfrau', x: 13, y: 16, dir: 'left', look: LOOK.matrose, name: 'Bootsfrau Ebbe' });
+  // Ostinsel: Brücke über den Kanal, Weg zu den drei Bauplätzen
+  if (B.bruecke) {
+    fill(18, 8, 21, 8, '='); fill(22, 8, 24, 8, 'B'); fill(25, 8, 33, 8, '='); fill(29, 4, 29, 13, '='); fill(26, 3, 32, 7, '.'); fill(25, 10, 33, 13, '.'); fill(29, 8, 29, 8, '=');
+    for (const [k, b, sx, sy] of [['forschung', { x: 27, y: 3, w: 5, h: 4, door: 2, roof: '#3a8a8a', wall: '#eef8f8', to: 'inselforschung' }, 29, 5], ['markt', { x: 25, y: 10, w: 4, h: 3, door: 2, roof: '#d8603a', wall: '#fff0d8', to: 'inselmarkt' }, 27, 11], ['gaeste', { x: 30, y: 10, w: 4, h: 3, door: 1, roof: '#8a5ab8', wall: '#f4ecff', to: 'inselgaeste' }, 31, 11]]) {
+      if (B[k]) buildings.push(b); else { set(sx, sy, 'S'); signs[sx + ',' + sy] = `BAUPLATZ: ${PROJECTS[k].name.toUpperCase()}\nFrag Baumeisterin Tilda.`; }
+    }
+    if (B.gaeste) { const V = visitorToday(s); if (V) npcs.push({ id: 'besuch', lid: V.id, x: 32, y: 14, dir: 'up', look: V.look, name: V.name }); }
+  }
   const M = MAPS.heimatinsel ||= {};
   Object.assign(M, { name: s?.name ? `Insel von ${s.name}` : 'Heimatinsel', outdoor: true, enc: null, fishing: true, fishEnc: 'wasser', bg: 'wasser', rows: g.map(r => r.join('')), signs, buildings, npcs, warps: [], edges: {}, sig: JSON.stringify(B) + I.weide.length });
   return M;
+}
+// Ostinsel: Innenräume
+MAPS.inselforschung = { name: 'Forschungsstation', indoor: true, rows: ['#MQ##QM#', 'oooooooo', 'oCCooCCo', 'oooooooo', 'ZooooooZ', 'kooooook', 'ooommooo'], npcs: [{ id: 'nova', x: 3, y: 1, dir: 'down', look: { skin: '#f0d0b8', hair: '#58c0b8', outfit: '#f4f4f4', pants: '#3a4a5a', accent: '#58c0b8', pony: true }, name: 'Forscherin Nova' }] };
+MAPS.inselmarkt = { name: 'Inselmarkt', indoor: true, rows: ['#KK##KK#', 'oooooooo', 'CCCooCCC', 'oooooooo', 'ottooott', 'kooooook', 'ooommooo'], npcs: [{ id: 'lotte', x: 3, y: 1, dir: 'down', look: LOOK.hilde, name: 'Händlerin Lotte' }] };
+MAPS.inselgaeste = { name: 'Gästehaus', indoor: true, rows: ['#K#ww#K#', 'oooooooo', 'oYoooYoo', 'oooooooo', 'ottouuoo', 'kooooook', 'ooommooo'], npcs: [{ id: 'gastwirt', x: 5, y: 3, dir: 'left', look: LOOK.mann, name: 'Gastwirt Henk' }] };
+// Besucher des Tages: ein Arenaleiter, den du schon besiegt hast
+function visitorToday(s0) {
+  const s = s0 || {}, f = s.flags || {};
+  const L = Object.values(MAPS).filter(M => M.gym).map(M => M.npcs?.find(n => !n.trainer && n.id !== 'guide' && !n.showIf && f['orden_' + n.id])).filter(Boolean);
+  return L.length ? L[today() % L.length] : null;
 }
 MAPS.inselhaus = { name: 'Deine Hütte', indoor: true, rows: ['#K#ww#Q#', 'oooooooo', 'ottooooY', 'ottooooo', 'oooouuoo', 'kooouuok', 'ooommooo'], npcs: [] };
 MAPS.inselwerk = { name: 'Werkstatt', indoor: true, rows: ['#KMwwMK#', 'oooooooo', 'oCCCCCoo', 'oooooooo', 'oooouuoo', 'kooouuok', 'ooommooo'], npcs: [{ id: 'tueftler', x: 3, y: 1, dir: 'down', look: LOOK.hiker, name: 'Tüftler Bo' }] };
@@ -64,6 +86,42 @@ buildIsland(null);
 // ---------------------------------------------------------------- Akt-Schnittstelle
 let HE; export function init(h) { HE = h; const M = MAPS.ankerbrueck; if (M) { const p = placeSpot(M, 12, 12); if (p) M.npcs.push({ id: 'wenke', x: p.x, y: p.y, dir: 'down', look: LOOK.fischer, name: 'Kapitänin Wenke' }); } }
 export const QUESTS = {}, LOGS = {}, GYMS = {};
+// Forschungsstation: Meilensteine der Chronik
+const MILE = [[25, 'sonderbonbon', 2], [50, 'toptrank', 3], [100, 'sonderbonbon', 5], [150, 'topbeleber', 3], [200, 'meteorit', 1], [250, 'sternquarz', 3]];
+async function nova(g, n) {
+  const s = g.state, N = { name: n.name }, c = Object.keys(s.dex?.caught || {}).length;
+  await say([`Nova: Deine Chronik verzeichnet ${c} gebundene Arten. Ich werte jede einzelne aus!`], N);
+  let any = false;
+  for (const [need, it, k] of MILE) if (c >= need && !s.flags['nova' + need]) { s.flags['nova' + need] = true; any = true; await HE.give(g, it, k); }
+  const next = MILE.find(([need]) => c < need);
+  if (!any) await say(next ? [`Nova: Beim nächsten Meilenstein – ${next[0]} Arten – habe ich wieder etwas für dich.`] : ['Nova: Unglaublich. Mehr kann ich aus der Chronik nicht herausholen. Du kennst diese Welt besser als jeder Forscher.'], N);
+}
+// Inselmarkt: täglich drei Angebote
+const OFFERS = [['sonderbonbon', 1, 2800], ['topbeleber', 1, 2400], ['sternkristall', 5, 1200], ['freundkristall', 3, 1500], ['hypertrank', 2, 2000], ['toptrank', 1, 1800], ['echokristall', 3, 1500], ['meteorit', 1, 6000]];
+async function lotte(g, n) {
+  const s = g.state, N = { name: n.name }, d = today(), list = [0, 1, 2].map(i => OFFERS[(d * 3 + i * 5) % OFFERS.length]).filter(([k]) => ITEMS[k]);
+  await say('Lotte: Frisch vom Schiff! Heute im Angebot:', N);
+  for (;;) {
+    const c = await choose([...list.map(([k, q, p]) => ({ label: `${q}× ${ITEMS[k].name}`, right: p + '◈', desc: ITEMS[k].desc })), 'Nichts, danke'], { title: `Geld: ${s.money}◈` });
+    if (c === null || c >= list.length) return say('Lotte: Morgen habe ich andere Sachen!', N);
+    const [k, q, p] = list[c];
+    if (s.money < p) { await say('Lotte: Dafür reicht dein Geld leider nicht.', N); continue; }
+    s.money -= p; s.bag[k] = (s.bag[k] || 0) + q; sfx('caught'); await say(`Du kaufst ${q}× ${ITEMS[k].name}.`);
+  }
+}
+// Gästehaus-Besuch: Freundschaftskampf einmal pro Tag, Team auf dein Level angehoben
+async function besuch(g, n) {
+  const s = g.state, N = { name: n.name }, key = 'besuch:' + today();
+  if (s.flags[key]) return say([`${n.name}: Guter Kampf heute! Morgen kommt jemand anderes vorbei.`], N);
+  const ST = await import('./story.js'), G = ST.GYMS[n.lid]; if (!G) return say(`${n.name}: Schöne Insel hast du!`, N);
+  const top = Math.max(...s.team.filter(m => !m.egg).map(m => m.lvl), 10);
+  if (!await ask(`${n.name}: Schön hier! Wie wär's mit einem Freundschaftskampf? Ich passe mich deinem Level an.`)) return say(`${n.name}: Dann genieße ich einfach die Aussicht.`, N);
+  const team = G.team.map(([sp, l]) => [sp, Math.max(l, top)]);
+  const won = await g.trainerFight({ name: n.name, look: n.look, team, reward: top * 60, lose: 'Deine Insel macht dich stark!', noBlackout: true, bg: 'arena' });
+  s.flags[key] = true; s.team.forEach(m => { if (!m.egg) m.hp = Math.max(m.hp, 1); });
+  return say(won ? [`${n.name}: Du bist noch stärker geworden! Bis bald.`] : [`${n.name}: Ha! Diesmal ich. Komm morgen wieder – oder trainier auf der Weide!`], N);
+}
+
 async function reload(g) { const p = g.ow.p; await fade(1, 300); buildIsland(g.state); g.ow.load('heimatinsel', p.x, p.y, p.dir); await fade(0, 300); }
 export async function mapEvent(g, id) {
   const s = g.state;
@@ -102,10 +160,14 @@ export async function talk(g, n) {
     if (!await ask(`Zurück nach ${MAPS[r.map]?.name || 'Ankerbrück'} segeln?`)) return true;
     await fade(1, 500); g.ow.load(r.map, r.x, r.y, r.dir); g.ow.music?.(); await fade(0, 500); return true;
   }
+  if (n.id === 'nova') return nova(g, n);
+  if (n.id === 'lotte') return lotte(g, n);
+  if (n.id === 'gastwirt') { const V = visitorToday(s); return say(V ? [`Henk: Heute wohnt ${V.name} bei uns! Er steht draußen am Strand.`, 'Henk: Jeden Tag kommt jemand anderes. Wer dich als Champion kennt, will sich mit dir messen!'] : ['Henk: Noch keine Gäste … Sobald du Arenaleiter besiegt hast, kommen sie dich besuchen!'], N); }
+  if (n.id === 'besuch') return besuch(g, n);
   if (n.id === 'tilda') {
     await say(Object.keys(I.built).length ? 'Baumeisterin Tilda: Was bauen wir als Nächstes?' : ['Baumeisterin Tilda: Hallo! Wenke hat mich geschickt. Ich baue dir hier alles, was du willst.', 'Baumeisterin Tilda: Du bezahlst, ich hämmere. Für manche Bauten brauche ich auch besondere Schätze – die findest du beim Graben.'], N);
     for (;;) {
-      const keys = Object.keys(PROJECTS).filter(k => !I.built[k]);
+      const keys = Object.keys(PROJECTS).filter(k => !I.built[k] && (!PROJECTS[k].req || I.built[PROJECTS[k].req]));
       if (!keys.length) return say('Baumeisterin Tilda: Alles gebaut! Die schönste Insel der Welt.', N);
       const can = k => s.money >= PROJECTS[k].cost && Object.entries(PROJECTS[k].items).every(([i, q]) => (s.bag[i] || 0) >= q);
       const c = await choose([...keys.map(k => ({ label: PROJECTS[k].name, right: PROJECTS[k].cost + '◈', desc: PROJECTS[k].desc + (Object.keys(PROJECTS[k].items).length ? ' Braucht: ' + Object.entries(PROJECTS[k].items).map(([i, q]) => `${q}× ${ITEMS[i].name}`).join(', ') : ''), disabled: !can(k) })), 'Später'], { title: `Geld: ${s.money} ◈`, w: 176 });
