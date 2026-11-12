@@ -2,6 +2,7 @@
 import { G, W, H, push, pop, input, text, wrap, rr } from './engine.js';
 import { sfx } from '../core/audio.js';
 import { mainGoal, sideTasks, LOGS, SONG } from './story.js';
+import { SONG_MEANING } from './staedte.js';
 import { MAPS } from './maps.js';
 
 const TABS = ['ZIEL', 'AUFGABEN', 'LOGBUCH', 'LIED', 'KARTE'];
@@ -81,7 +82,7 @@ class PagerScene {
       case 'ZIEL': { const g = mainGoal(s); return [['» ' + g.t, 1], ...wrap(g.d, 168, 7.5).map(l => [l]), [''], ['Orden: ' + s.badges.filter(Boolean).length + ' / 8   ·   Chronik: ' + Object.keys(s.dex.caught).length + ' gebunden']]; }
       case 'AUFGABEN': { const t = sideTasks(s); return t.length ? t.flatMap(q => [[(q.done ? '✓ ' : '• ') + q.t, 1], ...wrap(q.d, 160, 7.5).map(l => ['   ' + l])]) : wrap('Noch keine Aufgaben. Sprich mit den Leuten in den Städten – viele brauchen Hilfe.', 168, 7.5).map(l => [l]); }
       case 'LOGBUCH': { const ks = Object.keys(LOGS).filter(k => f['log' + k]); return ks.length ? [['Logbuch der Morgenstern  ' + ks.length + '/' + Object.keys(LOGS).length, 1], ...ks.flatMap(k => [['Seite ' + k, 1], ...LOGS[k].flatMap(p => wrap(p.replace('{name}', s.name), 168, 7.5)).map(l => [l])])] : wrap('Noch keine Seiten gefunden. Die Seiten aus dem Logbuch deiner Mutter sind über die Welt verstreut.', 168, 7.5).map(l => [l]); }
-      case 'LIED': { const ks = Object.keys(SONG).filter(k => f[k]); return ks.length ? [['Das Lied der Gezeiten  ' + ks.length + '/8', 1], ...ks.flatMap(k => [[SONG[k][0], 1], ...SONG[k].slice(1).flatMap(p => wrap(p, 168, 7.5)).map(l => [l])])] : wrap('Noch keine Strophe. In jeder Arenastadt steht ein alter Liedstein.', 168, 7.5).map(l => [l]); }
+      case 'LIED': { const ks = Object.keys(SONG).filter(k => f[k]); return ks.length ? [['Das Lied der Gezeiten  ' + ks.length + '/8', 1], ...ks.flatMap(k => [[SONG[k][0], 1], ...SONG[k].slice(1).flatMap(p => wrap(p, 168, 7.5)).map(l => [l]), ...(f['deut_' + k] ? wrap('Deutung: ' + SONG_MEANING[k], 168, 7.5).map(l => ['  ' + l]) : [])])] : wrap('Noch keine Strophe. In jeder Arenastadt steht ein alter Liedstein.', 168, 7.5).map(l => [l]); }
     }
     return [];
   }

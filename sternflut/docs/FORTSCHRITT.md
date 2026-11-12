@@ -137,3 +137,10 @@
 - 21 neue Logbuchseiten (20–40) in `story.js` (`Object.assign(LOGS, …)`): Livs Reise aus ihrer Sicht – Pip als Junge, der nicht altert, Marens Formel zum Anhalten der Gezeiten, das Ei auf der Abendstern, die Arenaleiter als junge Leute, Kronar/Brann und das Tor, ein letzter Brief für die eigene Insel.
 - Botengänge `QNEXT` (11 Quests): nach dem Zeigen der Kreatur bittet die Person, etwas in eine andere Stadt zu bringen (`questReq` → Flag `qreq_<id>`), der Empfänger dankt und gibt eine Logbuchseite (`questRun`, Flag `qn_<id>`). Alte Spielstände: erledigte Quest-Personen stellen den Botengang beim nächsten Gespräch. Aufgabenliste im Pager zeigt Botengänge.
 - Seiten 31–38 von den Arena-Personen nach dem Sieg (`fanLog`), Seite 39 beim ersten Fossil (Dr. Fossa), Seite 40 beim Bau des Leuchtfeuers auf der Heimatinsel.
+
+## v1.10.0 – Lebendige Städte (Welt 1)
+- Neues Modul `js/gb/staedte.js` (in `ACTS`): `placeLot` sucht zur Laufzeit einen freien Bauplatz (5×4, sonst 4×3/3×3), der keine Wege abschneidet (`freeTiles`/`reach` aus dig.js, jetzt exportiert); Innenräume werden als Karten angelegt.
+- **Hafenamt** (Ankerbrück, Hafenmeisterin Dörte): Akte der Morgenstern – zählt Logbuchseiten und gibt täglich einen Hinweis auf eine fehlende Seite (`LOGHINT`), Abschluss bei 40/40.
+- **Bibliothek** (Glimmdorf, Bibliothekar Theo): deutet jede gefundene Strophe (`MEANING`, Flag `deut_songN`), Deutung erscheint im Pager unter LIED; Belohnung bei 4 und 8 Strophen.
+- **Fossilien-Museum** (Dünenhain, Kuratorin Amalie): stellt erweckte Urzeit-Arten aus, Belohnung bei 1 und 3.
+- **Gasthof „Zur Ankerkette“** (Muschelbucht – in Kronfels war kein Platz, Wirtin Marthe): jeden Tag ein anderes Gerücht (Massenausbruch, Alphas, Rätsel-Tipps, Hinweise auf andere Systeme).

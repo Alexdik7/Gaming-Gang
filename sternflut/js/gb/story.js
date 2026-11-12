@@ -17,7 +17,8 @@ import * as DG from './dig.js';
 import * as IS from './island.js';
 import * as AR from './ari.js';
 import * as VA from './vato.js';
-const ACTS = [A3, A4, A5, A6, A7, EX, DG, IS, AR, VA];
+import * as SD from './staedte.js';
+const ACTS = [A3, A4, A5, A6, A7, EX, DG, IS, AR, VA, SD];
 export const fishGame = g => EX.fishGame(g);
 export const useItem = async (g, k) => { for (const A of ACTS) if (await A.useItem?.(g, k)) return true; return false; };
 

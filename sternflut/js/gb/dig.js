@@ -29,13 +29,13 @@ const today = () => Math.floor(Date.now() / 864e5);
 
 // ---------------------------------------------------------------- Grabstellen automatisch platzieren
 // nur auf Feldern, deren Besetzung die Karte nicht zerschneidet (Erreichbarkeit bleibt gleich)
-function freeTiles(M) {
+export function freeTiles(M) {
   const taken = new Set([...(M.npcs || []).map(n => n.x + ',' + n.y), ...(M.warps || []).flatMap(w => [w.x + ',' + w.y, w.x + ',' + (w.y - 1), w.x + ',' + (w.y + 1)]), ...Object.keys(M.signs || {}), ...Object.keys(M.runes || {}), ...(M.props || []).map(p => p.x + ',' + p.y)]);
   const inB = (x, y) => (M.buildings || []).some(b => x >= b.x - 1 && x <= b.x + b.w && y >= b.y - 1 && y <= b.y + b.h);
   const ok = (x, y) => { const c = M.rows[y]?.[x]; return c !== undefined && !SOLID.has(c) && c !== '~' && !taken.has(x + ',' + y) && !inB(x, y); };
   return { ok, taken };
 }
-function reach(M, block) {
+export function reach(M, block) {
   const walk = (x, y) => { const c = M.rows[y]?.[x]; return c !== undefined && !SOLID.has(c) && c !== '~' && !block.has(x + ',' + y); };
   let start = null; const wp = (M.warps || [])[0];
   if (wp) for (const [dx, dy] of [[0, 0], [0, -1], [0, 1], [1, 0], [-1, 0]]) if (!start && walk(wp.x + dx, wp.y + dy)) start = [wp.x + dx, wp.y + dy];
