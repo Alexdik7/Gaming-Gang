@@ -521,6 +521,15 @@ export class Overworld {
     const day = Math.floor(Date.now() / 864e5), R = ['duenenpfad', 'ankerbrueck', 'muschelbucht'], i = R.indexOf(this.id);
     return i >= 0 && (day + i) % 3 === 0 ? 'rain' : null;
   }
+  // Möwen kreisen über Küstenorten und Stränden (tagsüber)
+  drawGulls(ctx) {
+    if (!this.M.outdoor || !this.M.fishing || this.g.isNight() || this.M.underwater) return;
+    for (let i = 0; i < 3; i++) {
+      const sp = 14 + i * 5, span = W + 80, x = ((G.t * sp + i * 97) % span) - 40, y = 18 + i * 22 + Math.sin(G.t * 0.8 + i * 2) * 8, f = Math.sin(G.t * 9 + i) > 0 ? 2 : 0;
+      ctx.strokeStyle = '#3a3a48'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x - 4, y - f); ctx.lineTo(x, y + 1); ctx.lineTo(x + 4, y - f); ctx.stroke();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(x - 3.5, y - f); ctx.lineTo(x, y + 0.8); ctx.lineTo(x + 3.5, y - f); ctx.stroke();
+    }
+  }
   drawWeather(ctx, cx, cy) {
     const w = this.weather(); if (!w) return;
     const t = G.t, md = (v, m) => ((v % m) + m) % m;
@@ -596,7 +605,17 @@ export class Overworld {
     for (const [x, y] of rocks) ctx.drawImage(softShadow(16, 6), x * 16 - cx + 3, y * 16 - cy + 12);
     const night = this.g.isNight();
     for (const b of this.blds) { if (b.tower) continue; const bx = b.x * 16 - cx, by = b.y * 16 - cy; ctx.fillStyle = 'rgba(10,20,40,.2)'; ctx.fillRect(bx + b.w * 16, by + 8, 4, b.h * 16 - 6); ctx.fillRect(bx + 4, by + b.h * 16, b.w * 16, 3); }
-    for (const b of this.blds) { const im = building({ ...b, night, lit: !b.beam || !!this.g.state.flags[b.beam] }); ctx.drawImage(im, b.x * 16 - cx, (b.y + b.h) * 16 - im.height - cy); }
+    for (const b of this.blds) {
+      const im = building({ ...b, night, lit: !b.beam || !!this.g.state.flags[b.beam] }), bx = b.x * 16 - cx, by = (b.y + b.h) * 16 - im.height - cy;
+      ctx.drawImage(im, bx, by);
+      // Rauch aus dem Schornstein (Wohnhäuser): drei Wölkchen steigen auf und verblassen
+      const house = !b.tower && !b.heal && !['LADEN', 'ARENA', 'LIGA', 'LABOR'].includes(b.sign);
+      if (house && this.M.outdoor && bx > -40 && bx < W + 40) for (let i = 0; i < 3; i++) {
+        const k = (G.t * 0.35 + i / 3 + (b.x * 0.37 % 1)) % 1, sx = bx + im.width - 10 + Math.sin(k * 5 + b.x) * 3 + k * 6, sy = by - 2 - k * 22;
+        ctx.globalAlpha = (1 - k) * 0.45; ctx.fillStyle = night ? '#8a8aa0' : '#e8e8ee'; ctx.beginPath(); ctx.arc(sx, sy, 2 + k * 3.5, 0, 7); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
     for (const b of this.boulders || []) ctx.drawImage(tile('rockTop'), b.x * 16 - cx, b.y * 16 - cy);
     for (const i of this.items) ctx.drawImage(this.ball, i.x * 16 - cx, i.y * 16 - cy - Math.round(Math.sin(G.t * 3 + i.x) * 1));
     if (this.revealed) for (const h of this.hidden) { const on = Math.sin(G.t * 6 + h.x) > 0; ctx.fillStyle = on ? '#fff8c0' : '#ffd36b'; const hx = h.x * 16 - cx + 8, hy = h.y * 16 - cy + 8; ctx.fillRect(hx - 1, hy - (on ? 4 : 3), 2, on ? 8 : 6); ctx.fillRect(hx - (on ? 4 : 3), hy - 1, on ? 8 : 6, 2); }
@@ -682,7 +701,7 @@ export class Overworld {
       const cl = cloudShadow(), span = mw + 320;
       for (let i = 0; i < 3; i++) { const wx = ((i * 260 + G.t * (5 + i * 2)) % span) - 160, wy = ((i * 173) % Math.max(1, mh)) - 30; ctx.drawImage(cl, wx - cx, wy - cy); }
     }
-    this.drawWeather(ctx, cx, cy);
+    this.drawGulls(ctx); this.drawWeather(ctx, cx, cy);
     if (this.emote) {
       const n = this.emote.n, x = n.px - cx + 4, y = n.py - cy - 22;
       ctx.fillStyle = '#28202c'; ctx.fillRect(x - 1, y - 1, 10, 12); ctx.fillStyle = '#fff'; ctx.fillRect(x, y, 8, 10); text('!', x + 4, y + 0.5, '#e84a5f', 9, 'center', null, true);

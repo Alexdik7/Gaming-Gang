@@ -69,6 +69,10 @@ export class DoubleBattle {
   turn(actions = {}) {
     if (this.over) return [];
     const ev = []; let list = [];
+    this.followUp = {}; // Nachsetzen: Ziel, das in dieser Runde sehr effektiv getroffen wurde (je Seite)
+    // Gleichklang: zwei Partner mit gleichem Haupttyp kämpfen stärker – einmal zu Kampfbeginn ansagen
+    if (!this.turnNo) for (const side of ['p', 'f']) { if (this.harmony(side)) ev.push({ t: 'msg', text: side === 'p' ? `Gleichklang! Deine beiden ${this.harmonyType(side)}-Kreaturen kämpfen im Einklang (+15 %).` : `Gleichklang beim Gegner! Beide sind ${this.harmonyType(side)}-Kreaturen.` }); }
+    this.turnNo = (this.turnNo || 0) + 1;
     for (const id of this.ids()) {
       if (!this.alive(id)) continue;
       const s = this.slots[id];
@@ -101,6 +105,9 @@ export class DoubleBattle {
     return ev;
   }
 
+  // Gleichklang: beide Plätze einer Seite leben und teilen den Haupttyp
+  harmonyType(side) { const ids = this.ids().filter(x => SIDE(x) === side && this.alive(x)); if (ids.length < 2) return null; const t = ids.map(x => SPECIES[this.mon(x).sp].types[0]); return t.every(y => y === t[0]) ? t[0][0].toUpperCase() + t[0].slice(1) : null; }
+  harmony(side) { return !!this.harmonyType(side); }
   doSwitch(id, i, ev) {
     const s = this.slots[id];
     ev.push({ t: 'recall', slot: id, text: `${s.owner}: ${monName(this.mon(id))}, zurück!` });
@@ -159,7 +166,10 @@ export class DoubleBattle {
       const A = this.eff(id, phys ? 'atk' : 'spa') * (phys && user.status === 'brand' ? 0.5 : 1), D = this.eff(tg, phys ? 'def' : 'spd');
       const e = effectiveness(M.type, SPECIES[target.sp].types), stab = SPECIES[user.sp].types.includes(M.type) ? 1.5 : 1, crit = this.rnd() < 1 / 16;
       let dmg = Math.floor((((2 * user.lvl) / 5 + 2) * M.pow * (A / D)) / 50 + 2);
-      dmg = Math.max(e === 0 ? 0 : 1, Math.floor(dmg * stab * e * (crit ? 1.5 : 1) * (0.85 + this.rnd() * 0.15)));
+      const side = SIDE(id), follow = this.followUp?.[side] === tg && this.followUp[side + 'by'] !== id, syn = (this.harmony(side) ? 1.15 : 1) * (follow ? 1.25 : 1);
+      dmg = Math.max(e === 0 ? 0 : 1, Math.floor(dmg * stab * e * syn * (crit ? 1.5 : 1) * (0.85 + this.rnd() * 0.15)));
+      if (follow && e > 0) ev.push({ t: 'msg', text: `Nachsetzen! ${this.label(id)} nutzt die Lücke!` });
+      if (e > 1) { (this.followUp ||= {})[side] = tg; this.followUp[side + 'by'] = id; }
       target.hp = Math.max(0, target.hp - dmg);
       ev.push({ t: 'hp', slot: tg, hp: target.hp, max: maxHp(target), eff: e, crit, type: M.type });
       if (crit && dmg > 0) ev.push({ t: 'msg', text: 'Ein Volltreffer!' });

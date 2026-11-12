@@ -6,6 +6,22 @@ import { SONG_MEANING } from './staedte.js';
 import { MAPS } from './maps.js';
 
 const TABS = ['ZIEL', 'AUFGABEN', 'LOGBUCH', 'LIED', 'KARTE'];
+// Wegweiser: kürzester Weg über Kartenränder, Warps und Türen (Innenräume führen zurück in ihre Stadt)
+function route(from, to) {
+  if (!from || !to || from === to || !MAPS[to]) return null;
+  const nb = id => { const M = MAPS[id] || {}, out = [];
+    for (const e of Object.values(M.edges || {})) if (e?.to) out.push(e.to);
+    for (const w of M.warps || []) if (w.to !== id) out.push(w.to);
+    for (const b of M.buildings || []) if (b.to && MAPS[b.to]?.indoor) out.push(b.to);
+    if (M.indoor) for (const [k, T] of Object.entries(MAPS)) if ((T.buildings || []).some(b => b.to === id)) out.push(k);
+    return out; };
+  const prev = new Map([[from, null]]), q = [from];
+  while (q.length) { const c = q.shift(); if (c === to) break; for (const n of nb(c)) if (MAPS[n] && !prev.has(n)) { prev.set(n, c); q.push(n); } }
+  if (!prev.has(to)) return null;
+  const path = []; for (let c = to; c; c = prev.get(c)) path.unshift(c);
+  return path.filter(id => !MAPS[id].indoor || id === to).map(id => MAPS[id].name);
+}
+
 const LCD = '#9fd8b8', LCD2 = '#7cc0a0', INK = '#16362a', INK2 = '#2f5a48';
 // Weltkarte von Kalmara (Akt 1). Unbekannte Orte erscheinen als „???“
 export const WORLD = {
@@ -79,7 +95,7 @@ class PagerScene {
   lines() {
     const s = this.g.state, f = s.flags;
     switch (TABS[this.tab]) {
-      case 'ZIEL': { const g = mainGoal(s); return [['» ' + g.t, 1], ...wrap(g.d, 168, 7.5).map(l => [l]), [''], ['Orden: ' + s.badges.filter(Boolean).length + ' / 8   ·   Chronik: ' + Object.keys(s.dex.caught).length + ' gebunden']]; }
+      case 'ZIEL': { const g = mainGoal(s), R = route(s.map, g.map), way = R && R.length > 1 ? wrap('Weg: ' + (R.length > 5 ? [...R.slice(0, 4), '…', R.at(-1)] : R).join(' > '), 168, 7.5).map(l => [l]) : []; return [['» ' + g.t, 1], ...wrap(g.d, 168, 7.5).map(l => [l]), ...way, [''], ['Orden: ' + s.badges.filter(Boolean).length + ' / 8   ·   Chronik: ' + Object.keys(s.dex.caught).length + ' gebunden']]; }
       case 'AUFGABEN': { const t = sideTasks(s); return t.length ? t.flatMap(q => [[(q.done ? '✓ ' : '• ') + q.t, 1], ...wrap(q.d, 160, 7.5).map(l => ['   ' + l])]) : wrap('Noch keine Aufgaben. Sprich mit den Leuten in den Städten – viele brauchen Hilfe.', 168, 7.5).map(l => [l]); }
       case 'LOGBUCH': { const ks = Object.keys(LOGS).filter(k => f['log' + k]); return ks.length ? [['Logbuch der Morgenstern  ' + ks.length + '/' + Object.keys(LOGS).length, 1], ...ks.flatMap(k => [['Seite ' + k, 1], ...LOGS[k].flatMap(p => wrap(p.replace('{name}', s.name), 168, 7.5)).map(l => [l])])] : wrap('Noch keine Seiten gefunden. Die Seiten aus dem Logbuch deiner Mutter sind über die Welt verstreut.', 168, 7.5).map(l => [l]); }
       case 'LIED': { const ks = Object.keys(SONG).filter(k => f[k]); return ks.length ? [['Das Lied der Gezeiten  ' + ks.length + '/8', 1], ...ks.flatMap(k => [[SONG[k][0], 1], ...SONG[k].slice(1).flatMap(p => wrap(p, 168, 7.5)).map(l => [l]), ...(f['deut_' + k] ? wrap('Deutung: ' + SONG_MEANING[k], 168, 7.5).map(l => ['  ' + l]) : [])])] : wrap('Noch keine Strophe. In jeder Arenastadt steht ein alter Liedstein.', 168, 7.5).map(l => [l]); }

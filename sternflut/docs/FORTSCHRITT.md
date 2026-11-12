@@ -168,3 +168,10 @@
 ## v1.15.0 – Heimatinsel: Ostinsel
 - Insel ist jetzt 36 breit; neues Projekt **Brücke zur Ostinsel** (6000 ◈) lässt eine zweite kleine Insel erscheinen (Ellipse um 29.5/8.5) mit Weg und drei Bauplätzen (Projekte mit `req: 'bruecke'`).
 - **Forschungsstation** (Forscherin Nova): Belohnungen für 25/50/100/150/200/250 gebundene Arten (`MILE`). **Inselmarkt** (Händlerin Lotte): täglich drei wechselnde Raritäten (`OFFERS`). **Gästehaus** (Gastwirt Henk): jeden Tag besucht dich ein bereits besiegter Arenaleiter (`visitorToday`), Freundschaftskampf einmal pro Tag mit Team auf deinem Level.
+
+## v1.16.0 – Feinschliff: Synergien, Wegweiser, Stadtleben, Tippflächen, Arena-Test
+- Doppelkampf-Synergien (`battle/double.js`): **Gleichklang** (beide Partner gleicher Haupttyp → +15 % Schaden, Ansage zu Kampfbeginn), **Nachsetzen** (trifft ein Partner sehr effektiv, macht der andere auf dasselbe Ziel in derselben Runde +25 %).
+- Pager ZIEL zeigt einen **Wegweiser** (`route()` in pager.js: Breitensuche über Kartenränder, Warps und Türen) vom aktuellen Ort zum Ziel.
+- Stadtleben: Rauch aus Schornsteinen der Wohnhäuser, Möwen über Küstenorten am Tag (`drawGulls`).
+- Tippflächen: Auswahllisten mit bis zu 5 Einträgen haben höhere Zeilen (16 statt 13), Tippbereich etwas breiter.
+- Neues Testwerkzeug `tools/e2e/gyms.cjs`: löst alle Rätsel-Arenen im echten Spiel (Eis-Arena über checkmaps).

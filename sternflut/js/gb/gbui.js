@@ -71,7 +71,9 @@ class Choice {
     this.i = o.start || 0; this.scroll = 0; this.max = o.max || 6;
     const wMax = Math.max(...this.items.map(it => it.label.length * 5.4 + (it.right ? it.right.length * 5 + 14 : 0))) + 22;
     this.w = o.w || Math.min(W - 8, Math.max(64, wMax));
-    this.h = Math.min(this.items.length, this.max) * 13 + 8 + (o.title ? 13 : 0);
+    // Kurze Listen bekommen höhere Zeilen – größere Tippflächen auf dem iPhone
+    this.rh = o.rh || (this.items.length <= 5 ? 16 : 13);
+    this.h = Math.min(this.items.length, this.max) * this.rh + 8 + (o.title ? 13 : 0);
     this.x = o.x ?? W - this.w - 3; this.y = o.y ?? (o.above === false ? 4 : 113 - this.h);
   }
   update() {
@@ -82,7 +84,7 @@ class Choice {
     const t = input.tap;
     if (t) {
       const oy = this.y + 4 + (this.o.title ? 13 : 0);
-      if (inRect(t, this.x, oy, this.w, this.max * 13)) { const k = this.scroll + Math.floor((t.y - oy) / 13); if (k < n) { this.i = k; return this.pick(); } }
+      if (inRect(t, this.x - 6, oy - 2, this.w + 12, this.max * this.rh + 4)) { const k = this.scroll + Math.max(0, Math.floor((t.y - oy) / this.rh)); if (k < n) { this.i = k; return this.pick(); } }
       else if (this.o.cancel !== false) return this.close(null);
     }
     if (this.o.tabs && (input.repeat('left') || input.repeat('right'))) { sfx('open'); return this.close(input.repeat('left') ? 'L' : 'R'); }
@@ -96,14 +98,14 @@ class Choice {
     const dsc = this.items[this.i]?.desc;
     if (dsc !== undefined) { box(0, 113, W, 47, 'dark'); wrap(dsc, 224, 8).slice(0, 2).forEach((l, i) => text(l, 9, 121 + i * 14, '#fff', 8, 'left', '#50586a')); }
     box(this.x, this.y, this.w, this.h);
-    let y = this.y + 5;
+    let y = this.y + 5 + (this.rh - 13) / 2;
     if (this.o.title) { text(this.o.title, this.x + 8, y, COL.frame, 7.5, 'left', null, true); y += 13; }
     for (let k = this.scroll; k < Math.min(this.items.length, this.scroll + this.max); k++) {
       const it = this.items[k];
       if (k === this.i) cursor(this.x + 5, y + 1);
       text(it.label, this.x + 13, y, it.disabled ? COL.inkSoft : COL.ink, 8);
       if (it.right) text(it.right, this.x + this.w - 8, y, COL.inkSoft, 7.5, 'right');
-      y += 13;
+      y += this.rh;
     }
     if (this.scroll > 0) text('▲', this.x + this.w - 10, this.y + 2, COL.inkSoft, 6);
     if (this.scroll + this.max < this.items.length) text('▼', this.x + this.w - 10, this.y + this.h - 9, COL.inkSoft, 6);
