@@ -47,7 +47,7 @@ for (const id of Object.keys(MAPS)) {
   for (const wp of M.warps || []) {
     if (!MAPS[wp.to]) { err(id, `Warp → unbekannte Karte ${wp.to}`); continue; }
     if (!grid(wp.to).walk(wp.tx, wp.ty)) err(id, `Warp (${wp.x},${wp.y}) → ${wp.to} (${wp.tx},${wp.ty}) blockiert`);
-    starts.push([wp.x, wp.y]);
+    if (wp.to !== id) starts.push([wp.x, wp.y]); // Runen innerhalb der Karte sind keine Eingänge
   }
   for (const b of M.buildings || []) {
     if (b.x + b.w > w || b.y + b.h > h) err(id, `Gebäude ${b.to} ragt aus der Karte`);
@@ -63,9 +63,10 @@ for (const id of Object.keys(MAPS)) {
   // Tore öffnen sich, sobald ihre Druckplatte erreichbar ist → wiederholen bis nichts Neues aufgeht
   // Tore, deren Flag eine Figur dieser Karte ist, öffnen sich nach dem Sieg gegen sie (Liga)
   let opened = new Set(Object.values(M.gates || {}).filter(f => (M.npcs || []).some(n => n.id === f)));
+  const gOpen = f => (Array.isArray(f) ? f.every(x => opened.has(x)) : opened.has(f)); // mehrteilige Tore brauchen alle Platten
   const bfs = surf => {
     const seen = new Set([starts[0].join(',')]), q = [starts[0]];
-    const ok = (x, y) => (walk(x, y) && !(M.rows[y][x] === 'E' && !opened.has(M.gates?.[x + ',' + y]))) || (surf && M.rows[y]?.[x] === '~');
+    const ok = (x, y) => (walk(x, y) && !(M.rows[y][x] === 'E' && !gOpen(M.gates?.[x + ',' + y]))) || (surf && M.rows[y]?.[x] === '~');
     while (q.length) {
       const [x, y] = q.shift();
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -78,6 +79,8 @@ for (const id of Object.keys(MAPS)) {
         while (M.rows[sy][sx] === 'i' && ok(sx + dx, sy + dy) && !block.has((sx + dx) + ',' + (sy + dy))) { sx += dx; sy += dy; }
         const ks = sx + ',' + sy; if (seen.has(ks)) continue;
         seen.add(ks); q.push([sx, sy]);
+        // Teleport-Runen innerhalb derselben Karte
+        const tw = (M.warps || []).find(w => w.x === sx && w.y === sy && w.to === id); if (tw && !seen.has(tw.tx + ',' + tw.ty)) { seen.add(tw.tx + ',' + tw.ty); q.push([tw.tx, tw.ty]); }
       }
     }
     return seen;
@@ -85,7 +88,7 @@ for (const id of Object.keys(MAPS)) {
   const surfMap = !!M.surfEnc;
   let seen = bfs(surfMap);
   for (;;) { const nw = Object.entries(M.plates || {}).filter(([k, f]) => seen.has(k) && !opened.has(f)).map(([, f]) => f); if (!nw.length) break; nw.forEach(f => opened.add(f)); seen = bfs(surfMap); }
-  for (const [k, f] of Object.entries(M.gates || {})) if (!opened.has(f)) warn(id, `Tor ${k} (${f}) lässt sich nie öffnen`);
+  for (const [k, f] of Object.entries(M.gates || {})) if (!gOpen(f)) warn(id, `Tor ${k} (${f}) lässt sich nie öffnen`);
   const walkOnly = surfMap ? bfs(false) : seen;
   for (const it of M.items || []) if (surfMap && seen.has(it.x + ',' + it.y) && !walkOnly.has(it.x + ',' + it.y)) console.log(`· ${id}: Fundstück ${it.id} nur mit Surfen erreichbar`);
   const near = (x, y) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => seen.has((x + dx) + ',' + (y + dy)));

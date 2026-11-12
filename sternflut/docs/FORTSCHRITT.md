@@ -126,3 +126,9 @@
 - Nach dem Sieg: Flag `orden_<leiter>` (in `afterGym`, alte Spielstände in `enterWorld` nachgetragen inkl. offener Rätsel-Tore) → neue NPCs Bootsmann Hinnerk / Grabungshelferin Sandra mit Geschenk.
 - Arena-Berater nennt den Rätsel-Tipp der Arena (`M.hint`).
 - Test: beide Arenen per Wegsuche + Schieben komplett gelöst (`gymwalk.cjs`), Karten, e2e.
+
+## v1.8.0 – Alle 8 Arenen von Welt 1 sind Rätsel-Dungeons
+- Neue Bausteine in `overworld.js`: Tore mit mehreren Schaltern (`gates` mit Flag-Liste, `gateOpen`, Meldung „x von y Schaltern“ über `plateMsg`), schwere Platten nur für Brocken (`M.heavy`), Windfelder (`M.wind` {'x,y': Richtung}, tragen wie Eis, mit Streifen-Animation), Lava in Arenen unbetretbar, eigenes Aussehen für Tore (`M.gateLook` [zu, offen]), begehbare Teleport-Rune `+` (Kachel `runeOn`).
+- Arena 3 Mira: Hecken-Irrgarten (Seed-generiert), Sporenplatte im hintersten Winkel öffnet die Heckenpforte. Arena 4 Volta: drei Stromkreise, links öffnet den Mittelgang, alle drei das Tor. Arena 5 Ysolde: Nebel + Nacht, drei Räume mit je einer richtigen Rune, Trainer verraten die Richtung. Arena 6 Hekla: drei Lavaflüsse, Kühlplatten lassen Lava zu Basalt erstarren, die mittlere nur mit Brocken. Arena 7 Corvin: Windströmungen, Aufwind rechts ins Obergeschoss, Aufwind links zu Corvin. Arena 8 Tamas: drei Prüfungen (Eis-Rutschrätsel, Mut-Trainer, Kraft-Brocken) → drei Siegel am Drachentor.
+- Jede Arena: dritter Trainer, zwei Funde, Rätsel-Tipp beim Berater, nach dem Sieg neue Person mit Geschenk (`arena_fan3..8`). Okko-Platte jetzt auch „schwer“ (vorher reichte Drauftreten).
+- `checkmaps.mjs` versteht mehrteilige Tore und Runen innerhalb der Karte. Test: alle 8 Arenen im echten Spiel bis zum Leiter gelöst (`gymwalk.cjs`).

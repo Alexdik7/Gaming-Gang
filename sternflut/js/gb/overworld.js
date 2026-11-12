@@ -64,7 +64,7 @@ export class Overworld {
       Object.assign(this.p, { x, y, px: x * 16, py: y * 16 });
     }
     this.trail = null;
-    this.cleared = new Map(); this.revealed = false; this.flashLit = 0; this.springUsed = false; this.fTalked = false;
+    this.cleared = new Map(); this.heavyHint = false; this.revealed = false; this.flashLit = 0; this.springUsed = false; this.fTalked = false;
     this.f = { x, y, px: x * 16, py: y * 16, fx: x, fy: y, tx: x, ty: y, dir: this.p.dir, vis: false };
     this.hidden = this.genHidden(id, M).filter(h => !s.flags[h.id]);
     // Alpha-Kreatur des Tages auf dieser Route (im hohen Gras oder auf freier Fläche)
@@ -116,6 +116,9 @@ export class Overworld {
     return out;
   }
   bldAt(x, y) { return this.blds.find(b => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h); }
+  // Tor offen? Wert ist ein Flag oder eine Liste von Flags (dann müssen alle gesetzt sein)
+  gateOpen(x, y) { const f = this.M.gates?.[x + ',' + y], F = this.g.state.flags; return Array.isArray(f) ? f.every(k => F[k]) : !!F[f]; }
+  plateMsg(pf) { const multi = Object.values(this.M.gates || {}).find(v => Array.isArray(v) && v.includes(pf)); if (!multi) return 'Klick! Irgendwo hat sich ein Tor geöffnet.'; const n = multi.filter(k => this.g.state.flags[k]).length; return n < multi.length ? `Klick! ${n} von ${multi.length} Schaltern aktiv.` : 'Klick! Alle Schalter aktiv – das Tor öffnet sich!'; }
   boulderAt(x, y) { return this.boulders?.find(b => b.x === x && b.y === y); }
   holeOpen(x, y) { return this.ch(x, y) === '@' && !this.g.state.flags[`hole:${this.id}:${x},${y}`]; }
   npcAt(x, y) { return this.npcs.find(n => (n.x === x && n.y === y) || (n.moving && n.tx === x && n.ty === y)); }
@@ -136,7 +139,8 @@ export class Overworld {
     const c = this.ch(x, y); if (c === null) return true;
     if (c === '~') return !this.p?.surf;
     if (SOLID.has(c) || c === 'L' || this.boulderAt(x, y)) return true;
-    if (c === 'E' && !this.g.state.flags[this.M.gates?.[x + ',' + y]]) return true;
+    if (c === 'E' && !this.gateOpen(x, y)) return true;
+    if (c === 'v' && this.M.gym) return true; // Lava in Arenen ist unbetretbar
     if (this.M.decor) { const d = decorAt(this.M.decor, x, y); if (d && DECOR[d.d].solid) return true; }
     if (this.M.props?.some(q => y === q.y && x >= q.x && x <= q.x + 1)) return true;
     const b = this.bldAt(x, y); return !!b && !(x === b.x + b.door && y === b.y + b.h - 1);
@@ -148,7 +152,8 @@ export class Overworld {
     if (this.boulderAt(x, y)) return true;
     if (this.M.decor) { const d = decorAt(this.M.decor, x, y); if (d && DECOR[d.d].solid) return true; }
     if (this.M.props?.some(q => y === q.y && x >= q.x && x <= q.x + 1)) return true;
-    if (c === 'E' && !this.g.state.flags[this.M.gates?.[x + ',' + y]]) return true;
+    if (c === 'E' && !this.gateOpen(x, y)) return true;
+    if (c === 'v' && this.M.gym) return true;
     if (c === 'L') return true;
     const b = this.bldAt(x, y); if (b && !(x === b.x + b.door && y === b.y + b.h - 1)) return true;
     if (forNpc && b) return true;
@@ -251,10 +256,10 @@ export class Overworld {
     const bo = this.boulderAt(nx, ny);
     if (bo) {
       const bx = nx + dx, by = ny + dy, bc = this.ch(bx, by);
-      if (bc === null || this.boulderAt(bx, by) || this.npcAt(bx, by) || (SOLID.has(bc)) || bc === '~' || (bc === 'E' && !this.g.state.flags[this.M.gates?.[bx + ',' + by]]) || this.bldAt(bx, by)) return this.bump();
+      if (bc === null || this.boulderAt(bx, by) || this.npcAt(bx, by) || (SOLID.has(bc)) || bc === '~' || (bc === 'E' && !this.gateOpen(bx, by)) || (bc === 'v' && this.M.gym) || this.bldAt(bx, by)) return this.bump();
       const s = this.g.state;
       if (this.holeOpen(bx, by)) { s.flags[`hole:${this.id}:${bx},${by}`] = true; this.boulders = this.boulders.filter(b => b !== bo); sfx('faint'); G.shake = 0.6; this.notify('Der Brocken füllt das Loch!'); }
-      else { bo.x = bx; bo.y = by; sfx('hit'); G.shake = 0.2; const pf = bc === 'N' && this.M.plates?.[bx + ',' + by]; if (pf && !s.flags[pf]) { s.flags[pf] = true; this.notify('Klick! Irgendwo hat sich ein Tor geöffnet.'); } }
+      else { bo.x = bx; bo.y = by; sfx('hit'); G.shake = 0.2; const pf = bc === 'N' && this.M.plates?.[bx + ',' + by]; if (pf && !s.flags[pf]) { s.flags[pf] = true; this.notify(this.plateMsg(pf)); } }
       s.bpos[this.id] = this.boulders.map(b => [b.x, b.y]);
       return;
     }
@@ -303,10 +308,14 @@ export class Overworld {
       const [dx, dy] = DX[p.dir], nx = p.x + dx, ny = p.y + dy;
       if (nx >= 0 && ny >= 0 && nx < this.w && ny < this.h && !this.solid(nx, ny) && !this.bldAt(nx, ny)) { p.slide = true; this.startMove(nx, ny, false); return; }
     }
+    // Wind: trägt die Figur weiter, bis etwas im Weg ist
+    const wd = this.M.wind?.[p.x + ',' + p.y];
+    if (wd) { const [dx, dy] = DX[wd], nx = p.x + dx, ny = p.y + dy; if (!this.solid(nx, ny)) { p.slide = true; this.startMove(nx, ny, false); return; } }
     p.slide = false;
-    // Druckplatte: öffnet zugehörige Tore
+    // Druckplatte: öffnet zugehörige Tore (mehrteilige Tore brauchen alle ihre Platten)
     const pf = c === 'N' && this.M.plates?.[p.x + ',' + p.y];
-    if (pf && !s.flags[pf]) { s.flags[pf] = true; sfx('lvl'); G.shake = 0.4; this.notify('Klick! Irgendwo hat sich ein Tor geöffnet.'); }
+    if (pf && !s.flags[pf] && this.M.heavy?.includes(p.x + ',' + p.y)) { if (!this.heavyHint) { this.heavyHint = true; this.notify('Die Platte rührt sich nicht. Sie braucht etwas Schweres …'); } }
+    else if (pf && !s.flags[pf]) { s.flags[pf] = true; sfx('lvl'); G.shake = 0.4; this.notify(this.plateMsg(pf)); }
     if (p.surf && c !== '~') { p.surf = false; s.surf = false; this.music(); }
     if (await this.checkTrainers()) return;
     if (p.sneak && !this.isGrass(p.x, p.y)) { p.sneak = false; this.notify('Du stehst wieder auf.'); }
@@ -523,15 +532,16 @@ export class Overworld {
     const f2 = Math.floor(G.t * 2) % 2, f3 = Math.floor(G.t * 2.5) % 3;
     const flags = this.g.worldFlags();
     const runesOn = Object.values(this.M.runes || {}).filter(r => flags[r]).length;
-    const x0 = Math.floor(cx / 16), y0 = Math.floor(cy / 16), crowns = [], rocks = [];
+    const x0 = Math.floor(cx / 16), y0 = Math.floor(cy / 16), crowns = [], rocks = [], winds = [];
     for (let y = y0; y <= y0 + Math.ceil(VH / 16) + 1; y++) for (let x = x0; x <= x0 + 15; x++) {
       const c = this.ch(x, y); if (c === null) continue;
       let name = TILE[c] || 'void', fr = 0;
-      if (c === '~' || c === 'v') fr = f3; else if (c === ',' || c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%' || c === 'N' || c === 'e' || c === 'V' || c === 'M' || c === 'Q') fr = f2;
+      if (c === '~' || c === 'v') fr = f3; else if (c === ',' || c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%' || c === 'N' || c === '+' || c === 'e' || c === 'V' || c === 'M' || c === 'Q') fr = f2;
       if (c === 'r') { const id = this.M.runes?.[x + ',' + y]; if (flags[id]) { name = 'runeOn'; fr = f2; } }
       if (c === 'A') fr = runesOn >= 3 ? f2 : 0;
       if (c === 'R' && this.M.cave) name = 'crock';
-      if (c === 'E' && flags[this.M.gates?.[x + ',' + y]]) name = 'gateOpen';
+      if (c === 'E') { const op = this.gateOpen(x, y); name = this.M.gateLook ? this.M.gateLook[op ? 1 : 0] : op ? 'gateOpen' : 'gate'; }
+      if (this.M.wind?.[x + ',' + y]) winds.push([x, y, this.M.wind[x + ',' + y]]);
       if (c === 'N' && flags[this.M.plates?.[x + ',' + y]]) name = 'plateOn';
       if (c === '@' && flags[`hole:${this.id}:${x},${y}`]) name = 'holeFilled';
       const v = (x * 7 + y * 13) % 5;
@@ -545,6 +555,8 @@ export class Overworld {
       if (TREE_KIND[c]) crowns.push([TREE_KIND[c], x, y, v % 3]);
       else if ((c === 'R' || c === 'q') && !this.M.indoor) rocks.push([x, y]);
     }
+    // Windfelder: wandernde helle Streifen in Windrichtung
+    if (winds.length) { ctx.fillStyle = 'rgba(255,255,255,.55)'; for (const [x, y, d] of winds) { const [dx, dy] = DX[d]; for (let i = 0; i < 2; i++) { const q = ((G.t * 1.6 + i * 0.5 + (x + y) * 0.13) % 1) * 16 - 8, px = x * 16 - cx + 8 + dx * q + (dy ? (i ? 4 : -4) : 0), py = y * 16 - cy + 8 + dy * q + (dx ? (i ? 4 : -4) : 0); ctx.fillRect(px - (dx ? 3 : 0.5), py - (dy ? 3 : 0.5), dx ? 6 : 1, dy ? 6 : 1); } } }
     // Schatten: Bäume und Felsen werfen weiche Schatten nach rechts unten
     for (const [, x, y] of crowns) ctx.drawImage(softShadow(20, 8), x * 16 - cx + 4, y * 16 - cy + 11);
     for (const [x, y] of rocks) ctx.drawImage(softShadow(16, 6), x * 16 - cx + 3, y * 16 - cy + 12);

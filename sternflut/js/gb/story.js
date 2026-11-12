@@ -193,6 +193,17 @@ export async function talkStory(g, n) {
     case 'hinnerk':
       if (!f.hinnerkGift) { f.hinnerkGift = true; await say(['Hinnerk: Du hast alle drei Schleusen geknackt! Das hat seit Jahren keiner so schnell geschafft.', 'Hinnerk: Die Kapitänin erzählt jedem Matrosen im Hafen von dir. Hier, von der ganzen Crew!'], N); return give(g, 'hypertrank', 2); }
       return say(['Hinnerk: Seit deinem Sieg trainieren hier alle doppelt so hart. Die Schleusen bleiben für dich offen!'], N);
+    case 'arena_fan3': case 'arena_fan4': case 'arena_fan5': case 'arena_fan6': case 'arena_fan7': case 'arena_fan8': {
+      // Nach dem Arenasieg: eine Person mit Geschichte und einem einmaligen Geschenk
+      const F = { arena_fan3: [['Ilka: Du hast den Irrgarten geknackt! Mira lässt die Hecken jetzt jede Woche neu wachsen.', 'Ilka: Ich sammle hier Heilkräuter. Nimm ein paar – du hast sie dir verdient!'], 'heilbeere', 4, 'Ilka: Die Sporen hier leuchten nachts. Mira sagt, sie erinnern sich an jeden, der den Weg gefunden hat.'],
+        arena_fan4: [['Rasmus: Drei Stromkreise auf einmal – selbst Volta war beeindruckt!', 'Rasmus: Ich warte hier die Leitungen. Das Ersatzteil brauch ich nicht mehr.'], 'sonderbonbon', 1, 'Rasmus: Volta rechnet gerade aus, wie oft du gewinnst, wenn du wiederkommst. Er hat aufgehört bei 99 %.'],
+        arena_fan5: [['Wiebke: Du hast die richtigen Runen gefunden. Nicht viele hören den Geistern so gut zu.', 'Wiebke: Diese Laterne hat mir immer den Weg gezeigt. Jetzt soll sie dir helfen.'], 'topbeleber', 1, 'Wiebke: Ysolde sagt, die Runen hätten deine Mutter einmal genauso durchgelassen. Seltsam, oder?'],
+        arena_fan6: [['Gorm: Die Lava erstarren lassen – und dann noch Hekla besiegen. Du bist aus hartem Stahl!', 'Gorm: Hier, frisch aus der Schmiede. Geht aufs Haus.'], 'hypertrank', 2, 'Gorm: Hekla schmiedet aus deinem Kampf ein Andenken. Sie hängt es neben die Esse.'],
+        arena_fan7: [['Ole: Wie du den Aufwind gefunden hast! Corvin hat gejubelt wie ein Kind.', 'Ole: Ich messe hier die Strömungen. Das hab ich für Notfälle – nimm du es.'], 'toptrank', 2, 'Ole: Wenn der Wind von Westen kommt, riecht es hier nach fernen Inseln. Eines Tages fliegst du dorthin.'],
+        arena_fan8: [['Arvid: Eis, Mut und Kraft – und dann Meister Tamas. Die Drachen haben dich anerkannt.', 'Arvid: Diese Schuppe hat ein alter Drache verloren. Sie soll dir Glück bringen.'], 'sonderbonbon', 3, 'Arvid: Tamas sagt, hinter der Liga beginnt ein Meer, das auf keiner Karte steht. Bist du bereit?'] }[n.id];
+      if (!f[n.id + '_g']) { f[n.id + '_g'] = true; await say(F[0], N); return give(g, F[1], F[2]); }
+      return say(F[3], N);
+    }
     case 'sandra':
       if (!f.sandraGift) { f.sandraGift = true; await say(['Sandra: Okko hat erzählt, wie du die Brocken in den Treibsand gewuchtet hast. Respekt!', 'Sandra: Wir graben hier sonst nach alten Knochen. Das hier lag im Sand – du kannst es sicher brauchen.'], N); return give(g, 'sonderbonbon', 1); }
       return say(['Sandra: Unter dem Arenaboden liegt mehr Geschichte, als man denkt. Okko gräbt jede Nacht ein Stückchen weiter …'], N);

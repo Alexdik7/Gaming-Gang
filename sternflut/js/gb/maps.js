@@ -7,7 +7,7 @@ export const TILE = {
   '.': 'grass', ',': 'flowers', ':': 'tall', T: 'tree', P: 'pine', D: 'dtree', '~': 'water', '=': 'path', s: 'sand', R: 'rock', F: 'fence', L: 'ledge', S: 'sign', B: 'bridge',
   '$': 'cutbush', '&': 'crack', c: 'cave', W: 'cwall', O: 'hole', p: 'stone', I: 'pillar', A: 'altar', r: 'rune', g: 'gym', b: 'boulder',
   a: 'ash', h: 'ashtall', v: 'lava', X: 'basalt', e: 'ember', j: 'metal', J: 'mwall', n: 'snow', y: 'snowtall', i: 'ice', G: 'snowpine', q: 'snowrock', U: 'berry', d: 'dune', f: 'brush', z: 'cactus', H: 'sandwall', l: 'tfloor', E: 'gate', N: 'plate', _: 'mground', '^': 'cliff', '%': 'mgrass', '@': 'hole',
-  '!': 'sandsign', '*': 'sandrock', '°': 'cloud', o: 'floor', x: 'tilefl', '#': 'wall', w: 'window', K: 'shelf', C: 'counter', t: 'table', Y: 'bed', V: 'tv', M: 'machine', Q: 'pc', k: 'plant', u: 'rug', m: 'mat', Z: 'orbs',
+  '+': 'runeOn', '!': 'sandsign', '*': 'sandrock', '°': 'cloud', o: 'floor', x: 'tilefl', '#': 'wall', w: 'window', K: 'shelf', C: 'counter', t: 'table', Y: 'bed', V: 'tv', M: 'machine', Q: 'pc', k: 'plant', u: 'rug', m: 'mat', Z: 'orbs',
 };
 export const SOLID = new Set('°!*TPD~RFSWIArb#wKCtYVMQkZvXJGqUzH^$&'.split(''));
 
@@ -436,7 +436,7 @@ export const MAPS = {
     // Treibsand-Arena: Brocken in den Treibsand schieben, dann einen Brocken auf die Platte – das Sandtor öffnet sich
     name: 'Arena Dünenhain', indoor: true, gym: true, bReset: 'okkoB', hint: ['Rätsel-Tipp: Schieb einen Brocken in den Treibsand, dann kannst du drüber.', 'Ein Brocken auf der Platte öffnet das Sandtor.', 'Verkantet? Geh kurz raus – dann liegen die Brocken wieder am Anfang.'],
     rows: ['###w#####w###', 'kgggggggggggk', 'ggggggggggggg', 'HHHHHHEHHHHHH', 'ggggggggggggg', 'gzggggggggNgg', 'ggggHHHHHgggg', 'ggggggggggggz', 'zgggggggggggg', 'ggggggggggggg', 'HHH@HHHHH@HHH', 'ggggggggggggg', 'ggggggggggggg', 'ggggggggggggg', 'zgggggggggggz', 'kgggggggggggk', 'ggggggmgggggg'],
-    gates: { '6,3': 'okkoB' }, plates: { '10,5': 'okkoB' }, boulders: [[3, 12], [9, 12], [10, 8]],
+    gates: { '6,3': 'okkoB' }, plates: { '10,5': 'okkoB' }, heavy: ['10,5'], boulders: [[3, 12], [9, 12], [10, 8]],
     npcs: [
       { id: 'okko', x: 6, y: 1, dir: 'down', look: LOOK.okko, name: 'Sandläufer Okko' },
       { id: 'tr_gym2a', x: 11, y: 13, dir: 'left', look: LOOK.hiker, name: 'Dünenläufer Kai', trainer: { team: [['sandvipa', 16], ['kieselkopp', 16]], reward: 640, sight: 4, lines: ['Im Sand verliert jeder den Halt!'], lose: 'Weggeweht …' } },
@@ -449,15 +449,21 @@ export const MAPS = {
   },
 
   arena3: {
-    name: 'Arena Glimmdorf', indoor: true, gym: true,
-    rows: ['###w###w###', 'ggggggggggg', 'gkkgkgkgkkg', 'ggggggggggg', 'kgkkkgkkkgk', 'ggggggggggg', 'gkggkkkggkg', 'ggggggggggg', 'kkkgggggkkk', 'ggggggggggg', 'kgggggggggk', 'ggggggggggg', 'gggggmggggg'],
+    // Lebender Irrgarten: die Heckenpforte zu Mira öffnet sich erst, wenn die Sporenplatte im hintersten Winkel gedrückt ist
+    name: 'Arena Glimmdorf', indoor: true, gym: true, gateLook: ['plant', 'gym'], hint: ['Rätsel-Tipp: Die Hecke vor Mira öffnet sich über eine Sporenplatte.', 'Sie liegt im hintersten Winkel des Irrgartens – ganz oben rechts.'],
+    rows: ['###w#####w###', 'kgggggggggggk', 'ggggggggggggg', 'kkkkkkEkkkkkk', 'gggkggggggggN', 'gkkkgkkkgkkkk', 'gggggggkggggg', 'gkkkgkkkkkkkg', 'gggggkgggkggg', 'gkgkkkgkgkgkg', 'gkgggggkgggkg', 'gkgkkkkkkkkkg', 'gkgkgggggggkg', 'gkgkgkkkgkkkg', 'gkggggggggggg', 'kgggggggggggk', 'ggggggmgggggg'],
+    gates: { '6,3': 'miraG' }, plates: { '12,4': 'miraG' },
     npcs: [
-      { id: 'mira', x: 5, y: 1, dir: 'down', look: LOOK.mira, name: 'Sporenhexe Mira' },
-      { id: 'tr_gym3a', x: 1, y: 5, dir: 'right', look: LOOK.nebel, name: 'Kräuterkundige Lin', trainer: { team: [['glimmhut', 21], ['toxquak', 21]], reward: 840, sight: 4, lines: ['Atme lieber nicht zu tief ein!'], lose: 'Hatschi!' } },
-      { id: 'tr_gym3b', x: 9, y: 7, dir: 'left', look: LOOK.bug, name: 'Pilzfreund Tobi', trainer: { team: [['myzelchen', 22], ['nussklau', 22], ['moosbrock', 22]], reward: 880, sight: 4, lines: ['Mira hat mir alles über Pilze beigebracht!'], lose: 'Zerpflückt …' } },
-      { id: 'guide', x: 3, y: 11, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'mira', x: 6, y: 1, dir: 'down', look: LOOK.mira, name: 'Sporenhexe Mira' },
+      { id: 'tr_gym3a', x: 4, y: 8, dir: 'right', look: LOOK.nebel, name: 'Kräuterkundige Lin', trainer: { team: [['glimmhut', 21], ['toxquak', 21]], reward: 840, sight: 4, lines: ['Atme lieber nicht zu tief ein!'], lose: 'Hatschi!' } },
+      { id: 'tr_gym3b', x: 8, y: 12, dir: 'left', look: LOOK.bug, name: 'Pilzfreund Tobi', trainer: { team: [['myzelchen', 22], ['nussklau', 22], ['moosbrock', 22]], reward: 880, sight: 4, lines: ['Mira hat mir alles über Pilze beigebracht!'], lose: 'Zerpflückt …' } },
+      { id: 'tr_gym3c', x: 10, y: 2, dir: 'left', look: LOOK.bug, name: 'Sporensammler Fynn', trainer: { team: [['stachelkeim', 25], ['moospip', 25]], reward: 1000, sight: 4, lines: ['Du hast aus dem Irrgarten herausgefunden? Die Sporen haben dich verraten!'], lose: 'Verwelkt …' } },
+      { id: 'guide', x: 4, y: 15, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'arena_fan3', x: 2, y: 2, dir: 'down', look: LOOK.lass, name: 'Kräutersammlerin Ilka', showIf: 'orden_mira' },
     ],
+    items: [{ id: 'it_ar3a', x: 0, y: 14, item: 'trank', n: 2 }, { id: 'it_ar3b', x: 2, y: 4, item: 'sternkristall', n: 3 }],
   },
+
   haus_dh: {
     name: 'Haus von Oma Sefa', indoor: true,
     rows: ['#K#ww#K#', 'oooooooo', 'ottooooY', 'ottooooo', 'oooouuoo', 'kooouuok', 'ooommooo'],
@@ -639,25 +645,37 @@ export const MAPS = {
     items: [{ id: 'it_gw_a', x: 14, y: 3, item: 'topbeleber', n: 1 }, { id: 'it_gw_b', x: 1, y: 9, item: 'nachtkristall', n: 3 }],
   },
   arena4: {
-    name: 'Arena Funkenhafen', indoor: true, gym: true,
-    rows: ['###w###w###', 'ggggggggggg', 'gMgMgggMgMg', 'ggggggggggg', 'MMMggMggMMM', 'ggggggggggg', 'gMMMgMgMMMg', 'ggggggggggg', 'MgggMMMgggM', 'ggggggggggg', 'kgggggggggk', 'ggggggggggg', 'gggggmggggg'],
+    // Stromkreise: drei Schalter – links öffnet den Mittelgang, alle drei zusammen das Haupttor
+    name: 'Arena Funkenhafen', indoor: true, gym: true, hint: ['Rätsel-Tipp: Drei Schalter schließen den Stromkreis.', 'Der linke öffnet den Mittelgang, erst alle drei zusammen öffnen das Tor zu Volta.'],
+    rows: ['###w#####w###', 'kgggggggggggk', 'ggggggggggggg', 'MMMMMMEMMMMMM', 'gNggMgggMggNg', 'ggggMgNgMgggg', 'ggggMgggMgggg', 'ggggMMEMMgggg', 'ggggggggggggg', 'MMMgMMMMMgMMM', 'ggggggggggggg', 'gMgggggggggMg', 'ggggggggggggg', 'gMgggMgMgggMg', 'ggggggggggggg', 'kgggggggggggk', 'ggggggmgggggg'],
+    gates: { '6,3': ['voltA', 'voltB', 'voltC'], '6,7': 'voltA' }, plates: { '1,4': 'voltA', '6,5': 'voltB', '11,4': 'voltC' },
     npcs: [
-      { id: 'volta', x: 5, y: 1, dir: 'down', look: LOOK.volta, name: 'Ingenieur Volta' },
-      { id: 'tr_gym4a', x: 1, y: 5, dir: 'right', look: LOOK.clerk, name: 'Techniker Rob', trainer: { team: [['funkmaus', 29], ['zahnradling', 29]], reward: 1160, sight: 4, lines: ['Achtung, Hochspannung!'], lose: 'Sicherung durch …' } },
-      { id: 'tr_gym4b', x: 9, y: 7, dir: 'left', look: LOOK.jogger, name: 'Elektrikerin Zoe', trainer: { team: [['kabelwurm', 30], ['quallux', 30], ['zappgecko', 30]], reward: 1200, sight: 4, lines: ['Volta ist ein Genie! Und ich seine beste Schülerin!'], lose: 'Kurzschluss …' } },
-      { id: 'guide', x: 3, y: 11, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'volta', x: 6, y: 1, dir: 'down', look: LOOK.volta, name: 'Ingenieur Volta' },
+      { id: 'tr_gym4a', x: 2, y: 6, dir: 'down', look: LOOK.clerk, name: 'Techniker Rob', trainer: { team: [['funkmaus', 29], ['zahnradling', 29]], reward: 1160, sight: 4, lines: ['Achtung, Hochspannung!'], lose: 'Sicherung durch …' } },
+      { id: 'tr_gym4b', x: 10, y: 6, dir: 'down', look: LOOK.jogger, name: 'Elektrikerin Zoe', trainer: { team: [['kabelwurm', 30], ['quallux', 30], ['zappgecko', 30]], reward: 1200, sight: 4, lines: ['Volta ist ein Genie! Und ich seine beste Schülerin!'], lose: 'Kurzschluss …' } },
+      { id: 'tr_gym4c', x: 10, y: 2, dir: 'left', look: LOOK.clerk, name: 'Elektrikerin Juna', trainer: { team: [['funkmaus', 31], ['zahnradling', 31]], reward: 1240, sight: 4, lines: ['Alle drei Kreise geschlossen? Dann bekommst du jetzt die volle Spannung!'], lose: 'Kurzschluss …' } },
+      { id: 'guide', x: 4, y: 15, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'arena_fan4', x: 2, y: 2, dir: 'down', look: LOOK.hiker, name: 'Monteur Rasmus', showIf: 'orden_volta' },
     ],
+    items: [{ id: 'it_ar4a', x: 0, y: 8, item: 'trank', n: 2 }, { id: 'it_ar4b', x: 12, y: 14, item: 'sternkristall', n: 3 }],
   },
+
   arena5: {
-    name: 'Arena Nebelklippe', indoor: true, gym: true, night: true,
-    rows: ['###w###w###', 'ggggggggggg', 'gIggIgIggIg', 'ggggggggggg', 'IgIIIgIIIgI', 'ggggggggggg', 'gIgIIgIIgIg', 'ggggggggggg', 'IIIgggggIII', 'ggggggggggg', 'kgggggggggk', 'ggggggggggg', 'gggggmggggg'],
+    // Falsche Räume: in jedem Raum führt nur eine Rune weiter, die anderen schicken zurück an den Anfang
+    name: 'Arena Nebelklippe', indoor: true, gym: true, night: true, fog: true, hint: ['Rätsel-Tipp: In jedem Raum führt nur eine Rune weiter.', 'Die falschen schicken dich zurück an den Anfang. Hör gut zu, was die Geister-Trainer verraten!'],
+    rows: ['###w#####w###', 'kgggggggggggk', 'ggggggggggggg', 'IIIIIIIIIIIII', 'g+ggggggggg+g', 'ggggggggggggg', 'gggggg+gggggg', 'IIIIIIIIIIIII', 'g+ggggggggg+g', 'ggggggggggggg', 'gggggg+gggggg', 'IIIIIIIIIIIII', 'g+gggg+gggg+g', 'ggggggggggggg', 'ggggggggggggg', 'kgggggggggggk', 'ggggggmgggggg'],
+    warps: [{ x: 11, y: 12, to: 'arena5', tx: 6, ty: 9, dir: 'up' }, { x: 1, y: 12, to: 'arena5', tx: 6, ty: 14, dir: 'up' }, { x: 6, y: 12, to: 'arena5', tx: 6, ty: 14, dir: 'up' }, { x: 1, y: 8, to: 'arena5', tx: 6, ty: 5, dir: 'up' }, { x: 11, y: 8, to: 'arena5', tx: 6, ty: 14, dir: 'up' }, { x: 6, y: 10, to: 'arena5', tx: 6, ty: 14, dir: 'up' }, { x: 11, y: 4, to: 'arena5', tx: 6, ty: 2, dir: 'up' }, { x: 1, y: 4, to: 'arena5', tx: 6, ty: 14, dir: 'up' }, { x: 6, y: 6, to: 'arena5', tx: 6, ty: 14, dir: 'up' }],
     npcs: [
-      { id: 'ysolde', x: 5, y: 1, dir: 'down', look: LOOK.ysolde, name: 'Seherin Ysolde' },
-      { id: 'tr_gym5a', x: 1, y: 5, dir: 'right', look: LOOK.nebel, name: 'Medium Hella', trainer: { team: [['kraehwacht', 33], ['nebelquall', 33]], reward: 1320, sight: 4, lines: ['Ysolde sieht die Zukunft. Ich sehe deine Niederlage!'], lose: 'Das habe ich nicht kommen sehen …' } },
-      { id: 'tr_gym5b', x: 9, y: 7, dir: 'left', look: LOOK.matrose, name: 'Geisterseemann Joris', trainer: { team: [['ankerling', 34], ['seelenkrebs', 34], ['flackerl', 34]], reward: 1360, sight: 4, lines: ['Ich bin seit hundert Jahren auf See. Glaube ich.'], lose: 'Zurück ins Meer …' } },
-      { id: 'guide', x: 3, y: 11, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'ysolde', x: 6, y: 1, dir: 'down', look: LOOK.ysolde, name: 'Seherin Ysolde' },
+      { id: 'tr_gym5a', x: 3, y: 13, dir: 'right', look: LOOK.nebel, name: 'Medium Hella', trainer: { team: [['kraehwacht', 33], ['nebelquall', 33]], reward: 1320, sight: 4, lines: ['Ysolde sieht die Zukunft. Ich sehe deine Niederlage!'], lose: 'Die Toten wandern immer gen Osten … Schau dir die Rune ganz rechts an.' } },
+      { id: 'tr_gym5b', x: 9, y: 9, dir: 'left', look: LOOK.matrose, name: 'Geisterseemann Joris', trainer: { team: [['ankerling', 34], ['seelenkrebs', 34], ['flackerl', 34]], reward: 1360, sight: 4, lines: ['Ich bin seit hundert Jahren auf See. Glaube ich.'], lose: 'Im zweiten Raum ruft der Westen … die Rune ganz links.' } },
+      { id: 'tr_gym5c', x: 3, y: 5, dir: 'right', look: LOOK.ysolde, name: 'Medium Ottilie', trainer: { team: [['laternix', 36], ['nebelquall', 36]], reward: 1440, sight: 3, lines: ['Du hast zwei Räume überlebt. Der dritte prüft dein Herz!'], lose: 'Geh nach Osten, Kind. Dort wartet sie.' } },
+      { id: 'guide', x: 4, y: 15, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'arena_fan5', x: 2, y: 2, dir: 'down', look: LOOK.nebel, name: 'Laternenträgerin Wiebke', showIf: 'orden_ysolde' },
     ],
+    items: [{ id: 'it_ar5a', x: 12, y: 9, item: 'trank', n: 2 }, { id: 'it_ar5b', x: 0, y: 5, item: 'sternkristall', n: 3 }],
   },
+
   ranch: { name: 'Ranch Ostweide', indoor: true, rows: ['#K#ww#K#', 'oooooooo', 'ottooooY', 'ottooooo', 'oooouuoo', 'kooouuok', 'ooommooo'], npcs: [{ id: 'hedda', x: 5, y: 3, dir: 'left', look: LOOK.hedda, name: 'Rancherin Hedda' }] },
   haus_fh: { name: 'Haus am Kai', indoor: true, rows: ['#K#ww#K#', 'oooooooo', 'ottooooY', 'ottooooo', 'oooouuoo', 'kooouuok', 'ooommooo'], npcs: [{ id: 'fh_opa', x: 5, y: 3, dir: 'left', look: LOOK.mann, name: 'Alter Ingenieur' }] },
   haus_nk: { name: 'Kerzenhaus', indoor: true, rows: ['#K#ww#K#', 'oooooooo', 'ottooooY', 'ottooooo', 'oooouuoo', 'kooouuok', 'ooommooo'], npcs: [{ id: 'nk_kerze', x: 5, y: 3, dir: 'left', look: LOOK.oma, name: 'Alte Kerzenmacherin' }] },
@@ -880,35 +898,53 @@ export const MAPS = {
     ],
   },
   arena6: {
-    name: 'Arena Glutinsel', indoor: true, gym: true,
-    rows: ['###w###w###', 'ggggggggggg', 'gbgbgbgbgbg', 'ggggggggggg', 'bbbgggggbbb', 'ggggggggggg', 'gbbbgbgbbbg', 'ggggggggggg', 'bggbbbbbggb', 'ggggggggggg', 'kgggggggggk', 'ggggggggggg', 'gggggmggggg'],
+    // Lavaflüsse: Kühlventile (Platten) lassen die Lava zu Basalt erstarren – das mittlere nur mit einem Brocken
+    name: 'Arena Glutinsel', indoor: true, gym: true, gateLook: ['lava', 'basalt'], bReset: 'heklaB', hint: ['Rätsel-Tipp: Jede Kühlplatte lässt ein Stück Lava erstarren.', 'Die mittlere Platte braucht Gewicht – schieb den Brocken drauf!'],
+    rows: ['###w#####w###', 'kgggggggggggk', 'ggggggggggggg', 'vvvvvvEvvvvvv', 'ggggggggggggg', 'gNgggXgggXggg', 'ggggggggggggg', 'gggXggggggXgg', 'vvvvvvvvvEvvv', 'ggggggggggggg', 'ggggggggggNgg', 'ggggggggggggg', 'vvvEvvvvvvvvv', 'ggggggggggggg', 'gggggggggggNg', 'kgggggggggggk', 'ggggggmgggggg'],
+    gates: { '3,12': 'heklaA', '9,8': 'heklaB', '6,3': 'heklaC' }, plates: { '11,14': 'heklaA', '10,10': 'heklaB', '1,5': 'heklaC' }, heavy: ['10,10'], boulders: [[6, 10]],
     npcs: [
-      { id: 'hekla', x: 5, y: 1, dir: 'down', look: LOOK.hekla, name: 'Schmiedin Hekla' },
-      { id: 'tr_gym6a', x: 1, y: 5, dir: 'right', look: LOOK.hiker, name: 'Schmied Ole', trainer: { team: [['aschling', 40], ['lavaschleim', 40]], reward: 1600, sight: 4, lines: ['Hekla schmiedet Kreaturen wie Schwerter!'], lose: 'Abgekühlt …' } },
-      { id: 'tr_gym6b', x: 9, y: 7, dir: 'left', look: LOOK.lass, name: 'Feuertänzerin Ilka', trainer: { team: [['fennika', 41], ['laternix', 41], ['glutfalke', 41]], reward: 1640, sight: 4, lines: ['Tanz mit mir – im Feuer!'], lose: 'Ausgetanzt …' } },
-      { id: 'guide', x: 3, y: 11, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'hekla', x: 6, y: 1, dir: 'down', look: LOOK.hekla, name: 'Schmiedin Hekla' },
+      { id: 'tr_gym6a', x: 2, y: 14, dir: 'right', look: LOOK.hiker, name: 'Schmied Ole', trainer: { team: [['aschling', 40], ['lavaschleim', 40]], reward: 1600, sight: 4, lines: ['Hekla schmiedet Kreaturen wie Schwerter!'], lose: 'Abgekühlt …' } },
+      { id: 'tr_gym6b', x: 11, y: 9, dir: 'down', look: LOOK.lass, name: 'Feuertänzerin Ilka', trainer: { team: [['fennika', 41], ['laternix', 41], ['glutfalke', 41]], reward: 1640, sight: 4, lines: ['Tanz mit mir – im Feuer!'], lose: 'Ausgetanzt …' } },
+      { id: 'tr_gym6c', x: 10, y: 5, dir: 'left', look: LOOK.hekla, name: 'Schmiedelehrling Bent', trainer: { team: [['aschling', 42], ['glutfalke', 42]], reward: 1680, sight: 4, lines: ['Heiß genug für dich? Jetzt wird geschmiedet!'], lose: 'Das Eisen ist zu früh abgekühlt …' } },
+      { id: 'guide', x: 4, y: 15, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'arena_fan6', x: 2, y: 2, dir: 'down', look: LOOK.hiker, name: 'Erzhändler Gorm', showIf: 'orden_hekla' },
     ],
+    items: [{ id: 'it_ar6a', x: 0, y: 9, item: 'trank', n: 2 }, { id: 'it_ar6b', x: 12, y: 4, item: 'sternkristall', n: 3 }],
   },
+
   arena7: {
-    name: 'Arena Sturmspitze', indoor: true, gym: true,
-    rows: ['###w###w###', 'ggggggggggg', 'gIggIgIggIg', 'ggggggggggg', 'IgIIIgIIIgI', 'ggggggggggg', 'gIgIIgIIgIg', 'ggggggggggg', 'IIIgggggIII', 'ggggggggggg', 'kgggggggggk', 'ggggggggggg', 'gggggmggggg'],
+    // Windströmungen: Luftströme tragen dich mit – nur der richtige Strom bringt dich nach oben
+    name: 'Arena Sturmspitze', indoor: true, gym: true, hint: ['Rätsel-Tipp: Die Luftströme tragen dich, bis etwas im Weg ist.', 'Ein Aufwind rechts bringt dich ins Obergeschoss, ein zweiter ganz links bis zu Corvin.'],
+    rows: ['###w#####w###', 'kgggggggggggk', 'ggggggggggggg', 'IgIIIIIIIIIII', 'ggggggggggggg', 'ggggggggggggg', 'ggggggggggggg', 'ggggggggggggg', 'ggggggggggggg', 'IIIIIIIIIIIgI', 'ggggggggggggg', 'ggggggggggggg', 'ggggggggggggg', 'ggggggggggggg', 'ggggggggggggg', 'kgggggggggggk', 'ggggggmgggggg'],
+    wind: { '1,4': 'up', '1,5': 'up', '1,6': 'up', '1,7': 'up', '2,4': 'right', '3,4': 'right', '4,4': 'right', '5,4': 'right', '6,4': 'right', '7,4': 'right', '8,4': 'right', '9,4': 'right', '10,4': 'right', '11,4': 'right', '12,4': 'right', '2,6': 'right', '3,6': 'right', '4,6': 'right', '5,6': 'right', '6,6': 'right', '7,6': 'right', '8,6': 'right', '9,6': 'right', '10,6': 'right', '11,6': 'right', '0,8': 'right', '1,8': 'right', '2,8': 'right', '3,8': 'right', '4,8': 'right', '5,8': 'right', '6,8': 'right', '7,8': 'right', '8,8': 'right', '9,8': 'right', '10,8': 'right', '11,9': 'up', '11,10': 'up', '0,10': 'left', '1,10': 'left', '2,10': 'left', '3,10': 'left', '4,10': 'left', '5,10': 'left', '6,10': 'left', '7,10': 'left', '8,10': 'left', '9,10': 'left', '10,10': 'left', '2,12': 'right', '3,12': 'right', '4,12': 'right', '5,12': 'right', '6,12': 'right', '7,12': 'right', '8,12': 'right', '9,12': 'right' },
     npcs: [
-      { id: 'corvin', x: 5, y: 1, dir: 'down', look: LOOK.corvin, name: 'Pilot Corvin' },
-      { id: 'tr_gym7a', x: 1, y: 5, dir: 'right', look: LOOK.jogger, name: 'Flugschülerin Pia', trainer: { team: [['windfink', 44], ['wolkli', 44]], reward: 1760, sight: 4, lines: ['Ich habe schon drei Stunden Flugerfahrung!'], lose: 'Bruchlandung …' } },
-      { id: 'tr_gym7b', x: 9, y: 7, dir: 'left', look: LOOK.hiker, name: 'Ballonfahrer Gus', trainer: { team: [['nimbora', 45], ['boebrisel', 45], ['sturmross', 45]], reward: 1800, sight: 4, lines: ['Heiße Luft ist meine Spezialität!'], lose: 'Die Luft ist raus …' } },
-      { id: 'guide', x: 3, y: 11, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'corvin', x: 6, y: 1, dir: 'down', look: LOOK.corvin, name: 'Pilot Corvin' },
+      { id: 'tr_gym7a', x: 2, y: 13, dir: 'right', look: LOOK.jogger, name: 'Flugschülerin Pia', trainer: { team: [['windfink', 44], ['wolkli', 44]], reward: 1760, sight: 4, lines: ['Ich habe schon drei Stunden Flugerfahrung!'], lose: 'Bruchlandung …' } },
+      { id: 'tr_gym7b', x: 6, y: 5, dir: 'down', look: LOOK.hiker, name: 'Ballonfahrer Gus', trainer: { team: [['nimbora', 45], ['boebrisel', 45], ['sturmross', 45]], reward: 1800, sight: 4, lines: ['Heiße Luft ist meine Spezialität!'], lose: 'Die Luft ist raus …' } },
+      { id: 'tr_gym7c', x: 10, y: 2, dir: 'left', look: LOOK.corvin, name: 'Segelfliegerin Mette', trainer: { team: [['sturmross', 46], ['orkanadler', 46]], reward: 1840, sight: 4, lines: ['Den Aufwind gefunden? Dann zeig mir, wie du fliegst!'], lose: 'Bruchlandung …' } },
+      { id: 'guide', x: 4, y: 15, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'arena_fan7', x: 4, y: 2, dir: 'down', look: LOOK.jogger, name: 'Wetterbeobachter Ole', showIf: 'orden_corvin' },
     ],
+    items: [{ id: 'it_ar7a', x: 12, y: 14, item: 'trank', n: 2 }, { id: 'it_ar7b', x: 12, y: 5, item: 'sternkristall', n: 3 }],
   },
+
   arena8: {
-    name: 'Arena Kronfels', indoor: true, gym: true,
-    rows: ['###w###w###', 'ggggggggggg', 'gbbgbgbgbbg', 'ggggggggggg', 'bgbbbgbbbgb', 'ggggggggggg', 'gbgbbgbbgbg', 'ggggggggggg', 'bbbgggggbbb', 'ggggggggggg', 'kgggggggggk', 'ggggggggggg', 'gggggmggggg'],
+    // Drei Prüfungen: Eis (Geschick), Kampf (Mut), Brocken (Kraft) – jede öffnet ein Siegel am Drachentor
+    name: 'Arena Kronfels', indoor: true, gym: true, bReset: 'tamasK', hint: ['Rätsel-Tipp: Drei Prüfungen, drei Siegel: links das Eis, in der Mitte der Mut, rechts die Kraft.', 'Erst wenn alle drei Siegel leuchten, öffnet sich das Drachentor.'],
+    rows: ['###w#####w###', 'kgggggggggggk', 'ggggggggggggg', 'bbbbbbEbbbbbb', 'NiiibgNgbggNg', 'iibibgggbgggg', 'biiibgggbgggg', 'iiibbgggbgggg', 'ibiibgggbgggg', 'iiiibgggbgggg', 'ggiibgggbgggg', 'bgbbbbgbbbbgb', 'ggggggggggggg', 'ggggggggggggg', 'ggggggggggggg', 'kgggggggggggk', 'ggggggmgggggg'],
+    gates: { '6,3': ['tamasE', 'tamasM', 'tamasK'] }, plates: { '0,4': 'tamasE', '6,4': 'tamasM', '11,4': 'tamasK' }, heavy: ['11,4'], boulders: [[11, 7]],
     npcs: [
-      { id: 'tamas', x: 5, y: 1, dir: 'down', look: LOOK.tamas, name: 'Drachenhüter Tamas' },
-      { id: 'tr_gym8a', x: 1, y: 5, dir: 'right', look: LOOK.hiker, name: 'Drachenreiter Bo', trainer: { team: [['drakling', 49], ['sahrakor', 50]], reward: 2000, sight: 4, lines: ['Die Drachen von Kronfels prüfen jeden!'], lose: 'Abgeworfen …' } },
-      { id: 'tr_gym8b', x: 9, y: 7, dir: 'left', look: LOOK.lass, name: 'Drachenhüterin Eda', trainer: { team: [['schuppenwyrm', 50], ['toxicobra', 50], ['fulgurax', 51]], reward: 2040, sight: 4, lines: ['Tamas ist mein Meister. Du kommst nicht an mir vorbei!'], lose: 'Die Drachen verneigen sich …' } },
-      { id: 'guide', x: 3, y: 11, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'tamas', x: 6, y: 1, dir: 'down', look: LOOK.tamas, name: 'Drachenhüter Tamas' },
+      { id: 'tr_gym8a', x: 6, y: 6, dir: 'down', look: LOOK.hiker, name: 'Drachenreiter Bo', trainer: { team: [['drakling', 49], ['sahrakor', 50]], reward: 2000, sight: 4, lines: ['Die Drachen von Kronfels prüfen jeden!'], lose: 'Abgeworfen …' } },
+      { id: 'tr_gym8b', x: 2, y: 13, dir: 'right', look: LOOK.lass, name: 'Drachenhüterin Eda', trainer: { team: [['schuppenwyrm', 50], ['toxicobra', 50], ['fulgurax', 51]], reward: 2040, sight: 4, lines: ['Tamas ist mein Meister. Du kommst nicht an mir vorbei!'], lose: 'Die Drachen verneigen sich …' } },
+      { id: 'tr_gym8c', x: 10, y: 2, dir: 'left', look: LOOK.tamas, name: 'Drachenschülerin Runa', trainer: { team: [['schuppenwyrm', 52], ['kronwyrm', 52]], reward: 2080, sight: 4, lines: ['Drei Siegel gebrochen … Doch die letzte Prüfung bin ich!'], lose: 'Du bist würdig. Geh zu Meister Tamas.' } },
+      { id: 'guide', x: 4, y: 15, dir: 'up', look: LOOK.jogger, name: 'Arena-Berater' },
+      { id: 'arena_fan8', x: 2, y: 2, dir: 'down', look: LOOK.tamas, name: 'Drachenwächter Arvid', showIf: 'orden_tamas' },
     ],
+    items: [{ id: 'it_ar8a', x: 12, y: 10, item: 'trank', n: 2 }, { id: 'it_ar8b', x: 3, y: 4, item: 'sternkristall', n: 3 }],
   },
+
   haus_gi: { name: 'Schmiede', indoor: true, rows: ['#K#ww#K#', 'oooooooo', 'ottooooY', 'ottooooo', 'oooouuoo', 'kooouuok', 'ooommooo'], npcs: [{ id: 'gi_alte', x: 5, y: 3, dir: 'left', look: LOOK.oma, name: 'Heklas Großmutter' }] },
   haus_ss: { name: 'Hangar', indoor: true, rows: ['#K#ww#K#', 'oooooooo', 'ottooooY', 'ottooooo', 'oooouuoo', 'kooouuok', 'ooommooo'], npcs: [{ id: 'ss_mech', x: 5, y: 3, dir: 'left', look: LOOK.clerk, name: 'Mechanikerin Fee' }] },
   home: {
