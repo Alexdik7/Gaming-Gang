@@ -160,3 +160,7 @@
 - `js/data/welt_extra.js` (in creatures2.js importiert): Nr. 262–276 – Pfützling→Regenunke (nur bei Regen), Nebelmotte→Schleierfalter (nachts im Nebel), Ebbkrebs→Gezeitenpanzer (nur bei Ebbe, Gezeitengrotte), Glühwurmling→Lampyra (nachts im Glimmwald), Zuckfuchs→Donnerfähe (tagsüber Ostweide), Firnkauz (nur bei Schnee), Wolkenhüpfer→Himmelshase (Wolkengärten), Sternschnuppling→Kometenwächter (nachts auf Nyxara).
 - `SPAWNS` hängt sie in die Begegnungstabellen (Level automatisch wie die Tabelle). Neue Bedingungen im 5. Feld: `rain`, `snow`, `ebbe` neben `night`/`day` → `game.encOk(e)`. Massenausbruch/Alpha nehmen keine bedingten Arten.
 - Frostpfad hat an jedem zweiten Tag Schneefall, Eisgipfel immer.
+
+## v1.14.0 – Schleichen mit Sichtkegeln
+- Revierkreaturen sehen nur in Blickrichtung (`ow.inCone`/`seesPlayer`, Reichweite `coneRange`: normal r+1, geduckt außerhalb des Grases r/2, geduckt im hohen Gras nur 1) und schauen sich alle 2–4 s in eine andere Richtung um. Sichtkegel als rötliche Felder sichtbar (kräftiger nach der Warnung).
+- Scheue Kreaturen fliehen für den Tag, wenn man in 3 Feldern Nähe rennt oder reitet (`scareShy`). Zwei neue Gasthof-Gerüchte erklären beides.

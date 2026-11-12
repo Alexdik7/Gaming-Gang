@@ -324,6 +324,7 @@ export class Overworld {
     if (p.surf && c !== '~') { p.surf = false; s.surf = false; this.music(); }
     if (await this.checkTrainers()) return;
     if (p.sneak && !this.isGrass(p.x, p.y)) { p.sneak = false; this.notify('Du stehst wieder auf.'); }
+    this.scareShy();
     if (await this.revierCheck()) return;
     if (p.surf && this.M.surfEnc) { if (Math.random() < ENC[this.M.surfEnc].rate) await this.g.wildBattle(this.M.surfEnc, 'wasser'); return; }
     const encId = this.M.enc;
@@ -347,13 +348,32 @@ export class Overworld {
     const p = this.p;
     for (const n of this.npcs) {
       if (!n.revier) continue;
-      const R = n.revier, d = Math.abs(n.x - p.x) + Math.abs(n.y - p.y), rad = p.sneak ? 1 : R.r;
-      if (d > rad) { n.warned = false; n.lastD = d; continue; }
+      const R = n.revier, d = Math.abs(n.x - p.x) + Math.abs(n.y - p.y);
+      if (!this.seesPlayer(n)) { if (d > R.r) n.warned = false; n.lastD = d; continue; }
       if (d <= 1 || (n.warned && d < n.lastD)) { this.emote = { n, t: 0.8 }; sfx('encounter'); G.shake = 0.8; await this.g.revierBattle(n, true); return true; }
       if (!n.warned) { n.warned = true; this.emote = { n, t: 1.2 }; G.shake = 0.5; sfx('encounter'); this.notify(`${SPECIES[R.sp].name} warnt: Revier! Zurück oder duck dich.`); }
       n.lastD = d;
     }
     return false;
+  }
+  // Sichtkegel einer Revierkreatur: in Blickrichtung bis zur Reichweite, nach vorn breiter werdend.
+  // Geduckt im hohen Gras sieht sie dich erst direkt vor der Nase; geduckt außerhalb nur halb so weit.
+  coneRange(n) { const p = this.p; return p.sneak ? (this.isGrass(p.x, p.y) ? 1 : Math.ceil(n.revier.r / 2)) : n.revier.r + 1; }
+  inCone(n, x, y, r) {
+    const [dx, dy] = DX[n.dir] || [0, 1], rx = x - n.x, ry = y - n.y, f = rx * dx + ry * dy, l = Math.abs(rx * dy - ry * dx);
+    if (Math.abs(rx) + Math.abs(ry) <= 1) return true;
+    return f >= 1 && f <= r && l <= Math.ceil(f / 2);
+  }
+  seesPlayer(n) { return this.inCone(n, this.p.x, this.p.y, this.coneRange(n)); }
+  // Scheue Kreaturen: wer rennt oder reitet, verscheucht sie aus der Nähe
+  scareShy() {
+    const p = this.p, run = p.ride || input.held('b');
+    if (!run) return;
+    for (const n of [...this.npcs]) if (n.shy && Math.abs(n.x - p.x) + Math.abs(n.y - p.y) <= 3) {
+      const day = Math.floor(Date.now() / 864e5); this.g.state.flags[`shyFled:${day}:${n.shy.id}`] = true;
+      this.npcs = this.npcs.filter(x => x !== n); sfx('whoosh');
+      this.notify(`${SPECIES[n.shy.sp].name} erschrickt und flieht! Nicht rennen – leise anschleichen.`);
+    }
   }
   isGrass(x, y) { const c = this.ch(x, y); return x >= 0 && y >= 0 && x < this.w && y < this.h && (c === ':' || c === 'h' || c === 'y' || c === 'f' || c === '%'); }
   spawnTrail() {
@@ -400,6 +420,7 @@ export class Overworld {
   // ---------------------------------------------------------- NPCs
   updateNpcs(dt) {
     for (const n of this.npcs) {
+      if (n.revier && !n.moving) { n.lookT = (n.lookT ?? 1.5 + Math.random() * 2) - dt; if (n.lookT <= 0) { n.lookT = 1.8 + Math.random() * 2.2; const o = ['up', 'down', 'left', 'right'].filter(d => d !== n.dir); n.dir = o[Math.floor(Math.random() * o.length)]; } }
       if (n.moving) {
         n.t += dt / 0.3; const k = Math.min(1, n.t);
         n.px = (n.x + (n.tx - n.x) * k) * 16; n.py = (n.y + (n.ty - n.y) * k) * 16; n.frame = k < 0.55 ? (n.step % 2 ? 1 : 2) : 3;
@@ -561,6 +582,12 @@ export class Overworld {
       }
       if (TREE_KIND[c]) crowns.push([TREE_KIND[c], x, y, v % 3]);
       else if ((c === 'R' || c === 'q') && !this.M.indoor) rocks.push([x, y]);
+    }
+    // Sichtkegel der Revierkreaturen (nur in der Nähe): rötliche Felder, kräftiger, wenn sie dich gesehen hat
+    for (const n of this.npcs) {
+      if (!n.revier || Math.abs(n.x - this.p.x) + Math.abs(n.y - this.p.y) > n.revier.r + 5) continue;
+      const r = this.coneRange(n); ctx.fillStyle = n.warned ? 'rgba(230,50,40,.34)' : 'rgba(250,110,50,.24)';
+      for (let yy = n.y - r; yy <= n.y + r; yy++) for (let xx = n.x - r; xx <= n.x + r; xx++) if ((xx !== n.x || yy !== n.y) && this.inCone(n, xx, yy, r) && !this.wallAt(xx, yy)) ctx.fillRect(xx * 16 - cx, yy * 16 - cy, 16, 16);
     }
     // Windfelder: wandernde helle Streifen in Windrichtung
     if (winds.length) { ctx.fillStyle = 'rgba(255,255,255,.55)'; for (const [x, y, d] of winds) { const [dx, dy] = DX[d]; for (let i = 0; i < 2; i++) { const q = ((G.t * 1.6 + i * 0.5 + (x + y) * 0.13) % 1) * 16 - 8, px = x * 16 - cx + 8 + dx * q + (dy ? (i ? 4 : -4) : 0), py = y * 16 - cy + 8 + dy * q + (dx ? (i ? 4 : -4) : 0); ctx.fillRect(px - (dx ? 3 : 0.5), py - (dy ? 3 : 0.5), dx ? 6 : 1, dy ? 6 : 1); } } }
