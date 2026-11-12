@@ -175,3 +175,8 @@
 - Stadtleben: Rauch aus Schornsteinen der Wohnhäuser, Möwen über Küstenorten am Tag (`drawGulls`).
 - Tippflächen: Auswahllisten mit bis zu 5 Einträgen haben höhere Zeilen (16 statt 13), Tippbereich etwas breiter.
 - Neues Testwerkzeug `tools/e2e/gyms.cjs`: löst alle Rätsel-Arenen im echten Spiel (Eis-Arena über checkmaps).
+
+## v1.17.0 – Story: Vorahnungen
+- Prof. Kehl (Labor) lässt mit jedem zweiten Orden mehr von sich erkennen: Gezeitentabellen, Kindheit an der Küste und ein Sturm, der Wunsch, die Gezeiten „rein theoretisch“ anzuhalten, Verständnis für die Äbtissin, der Wunsch, beim Erwachen des Kompasses dabei zu sein (nur Welt 1, vor der Enthüllung).
+- Jaros Mutter erzählt ab dem 2. Orden, wie Jaro über dich spricht (stolz → „besser als ich“ → Angst, dich zu verlieren) – baut das Versprechen am Leuchtturm emotional auf.
+- Damit ist der Entwicklungsplan aus der Analyse vollständig umgesetzt (Arenen, Logbuch/Botengänge, Städte, Ebbe/Flut, Kreaturen, Schleichen, Heimatinsel, Synergien, Wegweiser, Stadtleben, Tippflächen, Arena-Test, Story).

@@ -222,7 +222,8 @@ export async function talkStory(g, n) {
       if (!s.bag.angel && f.promise) { await say(['Du willst los? Dann nimm meine alte Angel. Am Wasser A drücken!', 'Wer angelt, findet Kreaturen, die nie ans Ufer kommen.'], N); return give(g, 'angel'); }
       return say(['Seit zehn Jahren fahre ich jeden Morgen raus. Und jeden Morgen schaue ich, ob am Horizont ein Segel mit einem Stern auftaucht.', 'Deine Mutter war die beste Kapitänin, die Muschelbucht je hatte.'], N);
     case 'mb_frau': return false;
-    case 'jaro_mama': return say(f.promise ? ['Jaro ist schon los. Er hat nicht mal sein Frühstück aufgegessen!', 'Pass ein bisschen auf ihn auf, ja? Er ist mutiger, als gut für ihn ist.'] : ['Jaro redet seit Tagen von nichts anderem als seiner ersten Kreatur.', 'Er sagt, er wird der beste Trainer im ganzen Archipel.'], N);
+    case 'jaro_mama': if (f.promise && (s.badges || []).filter(Boolean).length >= 2) { const b = s.badges.filter(Boolean).length; return say(b >= 6 ? ['Jaro ruft kaum noch an. Er sagt, er muss stärker werden – für das Versprechen am Leuchtturm.', 'Ich glaube, er hat Angst, dich zu verlieren. So wie du deine Mutter. Sag ihm das nicht, ja?'] : b >= 4 ? ['Jaro hat angerufen. Er war ganz still, als ich nach dir gefragt habe.', `Dann hat er gesagt: „${s.name} ist besser als ich, Mama.“ Ich glaube, das hat ihn mehr Mut gekostet als jeder Kampf.`] : ['Jaro schreibt mir aus jeder Stadt. In jedem Brief steht dein Name.', 'Er tut immer so, als wäre er nur dein Rivale. Aber er ist stolz auf dich.'], N); }
+      return say(f.promise ? ['Jaro ist schon los. Er hat nicht mal sein Frühstück aufgegessen!', 'Pass ein bisschen auf ihn auf, ja? Er ist mutiger, als gut für ihn ist.'] : ['Jaro redet seit Tagen von nichts anderem als seiner ersten Kreatur.', 'Er sagt, er wird der beste Trainer im ganzen Archipel.'], N);
     case 'jaro_home': return say(['Jaro: Hast du den Sturm heute Nacht gehört? Der Leuchtturm hat gewackelt!', 'Jaro: Prof. Kehl ist am Strand Proben sammeln. Ich geh gleich auch hin!'], N);
     case 'kehl': return kehl(g, n);
     case 'lab_helfer': return say(f.gotBalls ? ['Die Professorin hat die ganze Nacht über alten Seekarten gesessen.', 'Sie sucht seit Jahren etwas, das sie „das Tor“ nennt. Fragen Sie mich nicht, was das ist.'] : ['Psst! Die Professorin ist ganz aufgeregt seit dem Sturm.'], N);
@@ -345,7 +346,18 @@ async function kehl(g, n) {
     g.save(true); return;
   }
   const c = Object.keys(s.dex.caught).length;
-  return say([`Deine Chronik: ${Object.keys(s.dex.seen).length} gesehen, ${c} gebunden.`, c < 5 ? 'Auf dem Dünenpfad leben viele Arten. Geh auf Entdeckungsreise!' : 'Großartig! Jede Kreatur erzählt ein Stück Geschichte dieses Archipels.'], N);
+  await say([`Deine Chronik: ${Object.keys(s.dex.seen).length} gesehen, ${c} gebunden.`, c < 5 ? 'Auf dem Dünenpfad leben viele Arten. Geh auf Entdeckungsreise!' : 'Großartig! Jede Kreatur erzählt ein Stück Geschichte dieses Archipels.'], N);
+  // Vorahnung: Mit jedem Orden lässt Kehl ein wenig mehr von sich erkennen (vor der Enthüllung in Welt 2)
+  if ((s.world || 1) > 1) return;
+  const b = (s.badges || []).filter(Boolean).length;
+  const H = [
+    ['(Auf ihrem Tisch liegen Gezeitentabellen – für die nächsten hundert Jahre im Voraus berechnet.)'],
+    ['Kehl: Ich bin auch an der Küste aufgewachsen, weißt du. Bis zu einem Sturm …', 'Kehl: Ach, nicht so wichtig. Erzähl mir lieber von deinen Kreaturen.'],
+    ['Kehl: Stell dir vor, man könnte die Gezeiten so genau berechnen, dass man sie anhalten kann.', 'Kehl: Niemand müsste mehr am Hafen stehen und warten, ob ein Schiff heimkehrt. … Rein theoretisch natürlich.'],
+    ['Kehl: Hast du von diesem Orden gehört? Die Äbtissin ist gar nicht so falsch, wie alle sagen.', 'Kehl: (Sie wechselt schnell das Thema und sortiert ihre Notizen.)'],
+    ['Kehl: Wenn du die Liga gewinnst, wird der Kompass erwachen. Ich habe es ausgerechnet.', 'Kehl: Und wenn es so weit ist … dann wäre ich gern dabei. Sehr gern.'],
+  ][Math.min(4, Math.floor(b / 2))];
+  return say(H, N);
 }
 
 async function lighthouse(g, n) {
