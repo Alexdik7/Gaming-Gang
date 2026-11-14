@@ -1,0 +1,195 @@
+// Ziel-Datenmodell für eine spätere Server-Version (PostgreSQL + Prisma).
+// Die aktuelle App speichert dieselben Entitäten verschlüsselt in IndexedDB (siehe js/core/db.js).
+
+model GymSettings {
+  id          String  @id @default("gym")
+  name        String
+  logo        String?
+  street      String?
+  zip         String?
+  city        String?
+  phone       String?
+  email       String?
+  website     String?
+  hours       String?
+  legalTexts  Json    // agb, datenschutz, hausordnung, sepa, werbung, kontakt, sonstiges
+  consentDefs Json    // welche Zustimmungen abgefragt werden (Pflicht/optional)
+}
+
+model MembershipPlan {
+  id            String   @id @default(uuid())
+  name          String
+  category      String?
+  termMonths    Int
+  minTermMonths Int
+  price         Decimal  @db.Decimal(10, 2)
+  interval      String   // monatlich | vierteljährlich | halbjährlich | jährlich
+  setupFee      Decimal  @db.Decimal(10, 2)
+  noticeWeeks   Int
+  autoRenew     Boolean  @default(false)
+  description   String?
+  active        Boolean  @default(true)
+  memberships   Membership[]
+}
+
+model AddOn {
+  id          String  @id @default(uuid())
+  name        String
+  price       Decimal @db.Decimal(10, 2)
+  billing     String  // monatlich | einmalig
+  description String?
+  active      Boolean @default(true)
+  contracts   ContractAddOn[]
+}
+
+model Member {
+  id             String   @id @default(uuid())
+  memberNo       String   @unique
+  salutation     String
+  firstName      String
+  lastName       String
+  birthDate      DateTime @db.Date
+  street         String
+  houseNo        String
+  zip            String
+  city           String
+  phone          String
+  email          String
+  emergencyName  String?
+  emergencyPhone String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  contracts      Contract[]
+  offerRecipients OfferRecipient[]
+  activities     ActivityLog[]
+  @@index([lastName, firstName])
+}
+
+model Contract {
+  id            String    @id @default(uuid())
+  contractNo    String    @unique
+  memberId      String
+  member        Member    @relation(fields: [memberId], references: [id])
+  membership    Membership?
+  addOns        ContractAddOn[]
+  start         DateTime  @db.Date
+  end           DateTime  @db.Date
+  monthlyFee    Decimal   @db.Decimal(10, 2)
+  oneTimeFees   Decimal   @db.Decimal(10, 2)
+  total         Decimal   @db.Decimal(10, 2)
+  paymentMethod String    // sepa | ueberweisung | bar | sonstige
+  ibanEncrypted Bytes?    // nur verschlüsselt (z. B. pgcrypto / KMS)
+  accountHolder String?
+  status        String    // entwurf | aktiv | pausiert | gekuendigt | abgelaufen
+  snapshot      Json      // unveränderliches Original-Formular
+  hash          String    // SHA-256 über Snapshot + Unterschrift
+  signature     Signature?
+  consents      Consent[]
+  createdAt     DateTime  @default(now())
+}
+
+model Membership {          // gewählter Tarif mit eingefrorenen Konditionen (1:1 zum Vertrag)
+  id          String         @id @default(uuid())
+  contractId  String         @unique
+  contract    Contract       @relation(fields: [contractId], references: [id])
+  planId      String
+  plan        MembershipPlan @relation(fields: [planId], references: [id])
+  name        String
+  termMonths  Int
+  price       Decimal        @db.Decimal(10, 2)
+  interval    String
+  noticeWeeks Int
+}
+
+model ContractAddOn {
+  contractId String
+  addOnId    String
+  priceAtSignup Decimal @db.Decimal(10, 2)
+  contract   Contract @relation(fields: [contractId], references: [id])
+  addOn      AddOn    @relation(fields: [addOnId], references: [id])
+  @@id([contractId, addOnId])
+}
+
+model Signature {
+  id         String   @id @default(uuid())
+  contractId String   @unique
+  contract   Contract @relation(fields: [contractId], references: [id])
+  image      String   // PNG als Data-URL
+  signedAt   DateTime
+}
+
+model Consent {
+  id         String    @id @default(uuid())
+  contractId String
+  contract   Contract  @relation(fields: [contractId], references: [id])
+  key        String    // agb | hausordnung | datenschutz | sepa | kontakt | werbung
+  label      String
+  textAtSignup String  // Text-Version zum Zeitpunkt der Zustimmung
+  required   Boolean
+  given      Boolean
+  givenAt    DateTime
+  revokedAt  DateTime?
+}
+
+model Offer {
+  id          String   @id @default(uuid())
+  name        String
+  subject     String
+  headline    String?
+  body        String
+  price       Decimal? @db.Decimal(10, 2)
+  discount    String?
+  validFrom   DateTime @db.Date
+  validUntil  DateTime @db.Date
+  termMonths  Int?
+  coupon      String?
+  cta         String?
+  ctaUrl      String?
+  audience    Json     // Modus + Filter (Tarif, Laufzeit, Status, Restlaufzeit, nur Einwilligung)
+  status      String   // entwurf | geplant | versendet | abgelaufen
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  recipients  OfferRecipient[]
+  campaigns   EmailCampaign[]
+}
+
+model OfferRecipient {
+  id       String @id @default(uuid())
+  offerId  String
+  memberId String
+  offer    Offer  @relation(fields: [offerId], references: [id])
+  member   Member @relation(fields: [memberId], references: [id])
+  status   String
+}
+
+model EmailCampaign {       // ein Versandlauf eines Angebots
+  id       String     @id @default(uuid())
+  offerId  String
+  offer    Offer      @relation(fields: [offerId], references: [id])
+  provider String     // mock | resend | sendgrid | ses | smtp
+  startedAt DateTime
+  logs     EmailLog[]
+}
+
+model EmailLog {
+  id         String        @id @default(uuid())
+  campaignId String
+  campaign   EmailCampaign @relation(fields: [campaignId], references: [id])
+  memberId   String
+  to         String
+  subject    String
+  status     String        // simuliert | gesendet | fehler
+  sentAt     DateTime
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  memberId   String
+  member     Member   @relation(fields: [memberId], references: [id])
+  contractId String?
+  type       String   // anmeldung | stammdaten | status | vertrag | angebot | einwilligung
+  text       String   // nie IBAN oder andere sensible Inhalte
+  at         DateTime @default(now())
+}

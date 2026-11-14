@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+<meta name="theme-color" content="#0b0d14">
+<title>GymDesk – Making-of</title>
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="film.css">
+</head>
+<body>
+<div id="viewport">
+  <div id="stage" aria-label="Animierter Film: Claude baut die App">
+    <div id="cam"></div>
+    <div id="closeup"></div>
+    <div class="bars top"></div><div class="bars bottom"></div>
+    <div id="caption"><span id="cap-chapter"></span><p id="cap-text"></p></div>
+    <div id="titlecard"></div>
+    <div id="confetti"></div>
+  </div>
+</div>
+<div id="controls">
+  <button id="b-prev" aria-label="Vorheriges Kapitel">⏮</button>
+  <button id="b-play" aria-label="Abspielen/Pause">⏸</button>
+  <button id="b-next" aria-label="Nächstes Kapitel">⏭</button>
+  <div id="timeline" role="slider" aria-label="Kapitel"></div>
+  <button id="b-act1" class="act">Akt 1 · Bauen</button>
+  <button id="b-act2" class="act">Akt 2 · Bedienen</button>
+  <button id="b-sound" aria-label="Ton an/aus">🔇</button>
+  <a id="b-app" href="../">App öffnen</a>
+</div>
+<div id="start"><div class="start-box"><div id="start-figure"></div><h1>GymDesk – Making-of</h1>
+<p>Eine kleine Claude-Figur baut an ihrem Laptop Schritt für Schritt eine Mitgliederverwaltung für ein Gym – und zeigt danach, wie sie funktioniert.</p>
+<button id="b-start">▶ Film starten</button><small>ca. 4 Minuten · Ton optional · am iPhone quer halten</small></div></div>
+<script type="module" src="film.js"></script>
+</body>
+</html>
