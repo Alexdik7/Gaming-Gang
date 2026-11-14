@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1d1b3f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cats TD">
+<title>Cats Tower Defense</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <div id="menu" class="screen"></div>
+  <div id="game" class="screen hidden">
+    <div id="hud-top"></div>
+    <div id="field-wrap"><canvas id="field"></canvas><div id="boss-bar" class="hidden"></div><div id="banner"></div><div id="coach" class="hidden"></div></div>
+    <div id="hud-bottom"></div>
+    <div id="panel" class="hidden"></div>
+  </div>
+  <div id="modal" class="hidden"></div>
+  <div id="toasts"></div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
