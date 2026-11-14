@@ -2,6 +2,9 @@
    Akt 1: Claude baut die App Phase für Phase. Akt 2: So wird die fertige App bedient. */
 const $ = (s, r = document) => r.querySelector(s);
 const stage = $('#stage'), cam = $('#cam'), closeup = $('#closeup');
+/* Aufnahmemodus (?rec): ohne Bedienleiste, Töne werden für die Videospur protokolliert. */
+const REC = new URLSearchParams(location.search).has('rec');
+if (REC) { document.body.classList.add('rec'); window.__sfx = []; }
 
 /* ---------- Claude-Figur ---------- */
 function claudeSVG(front) {
@@ -89,6 +92,7 @@ function confetti() {
 let soundOn = false, ac = null, lastKey = 0;
 const sfx = {
   beep(f, d, type = 'sine', v = .05) {
+    if (REC) window.__sfx.push({ at: Date.now() / 1000, f, d, type, v });
     if (!soundOn) return;
     ac = ac || new AudioContext();
     const o = ac.createOscillator(), g = ac.createGain();
@@ -456,13 +460,14 @@ function frame(now) {
 function setPlay(v) { playing = v; stage.classList.toggle('paused', !v); $('#b-play').textContent = v ? '⏸' : '▶'; }
 function finish() {
   setPlay(false);
+  if (REC) { window.__done = true; return; }
   const s = $('#start'); s.style.display = '';
   s.querySelector('h1').textContent = 'Ende – danke fürs Zuschauen!';
   s.querySelector('p').textContent = 'Die echte App ist fertig und wartet auf die erste Anmeldung.';
   $('#b-start').textContent = '↻ Nochmal ansehen';
 }
 function fit() {
-  const W = innerWidth, H = innerHeight - 64, k = Math.min(W / 1600, H / 900);
+  const W = innerWidth, H = innerHeight - (REC ? 0 : 64), k = Math.min(W / 1600, H / 900);
   stage.style.transform = `translate(${(W - 1600 * k) / 2}px,${(H - 900 * k) / 2}px) scale(${k})`;
 }
 
@@ -485,4 +490,4 @@ addEventListener('keydown', (e) => { if (e.key === ' ') { e.preventDefault(); se
 fit();
 startCh(0); setPlay(false);
 requestAnimationFrame(frame);
-window.FILM = { CH, startCh, setPlay, get t() { return t; }, set t(v) { t = v; }, get ci() { return ci; } };
+window.FILM = { begin() { camTo('wide', true); startCh(0); setPlay(true); }, CH, startCh, setPlay, get t() { return t; }, set t(v) { t = v; }, get ci() { return ci; } };

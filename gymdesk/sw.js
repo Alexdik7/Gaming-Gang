@@ -1,5 +1,5 @@
 /* Offline-Cache. Bei jeder Änderung CACHE erhöhen. */
-const CACHE = 'gymdesk-v1';
+const CACHE = 'gymdesk-v2';
 const FILES = ['./', 'index.html', 'styles.css', 'manifest.webmanifest', 'icon.svg', 'icon-192.png',
   'js/app.js', 'js/core/ui.js', 'js/core/db.js', 'js/core/crypto.js', 'js/core/auth.js', 'js/core/validate.js', 'js/core/pricing.js',
   'js/services/data.js', 'js/services/email.js', 'js/data/seed.js',

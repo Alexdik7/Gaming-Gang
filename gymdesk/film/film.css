@@ -240,3 +240,7 @@ html, body { margin: 0; height: 100%; background: #07080d; color: #e8ecf5; font-
 .er svg path.show { stroke-dashoffset: 0; }
 .checks { position: absolute; inset: 0; background: #0f1017; color: #d6deeb; padding: 34px 44px; font: 19px/1.75 ui-monospace, Menlo, monospace; }
 .checks div.ok { color: #9fe39f; } .checks div.hd { color: #fff; font-weight: 700; } .checks .badge { display: inline-block; margin-top: 18px; padding: 10px 16px; border-radius: 12px; background: #15803d; color: #fff; font-family: -apple-system, sans-serif; font-weight: 700; }
+
+/* Aufnahmemodus */
+body.rec #controls, body.rec #start { display: none; }
+body.rec #viewport { inset: 0; }
