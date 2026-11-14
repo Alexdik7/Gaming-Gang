@@ -32,7 +32,7 @@ export function buildMap(def) {
     const path = { segs, len, i: pi };
     paths.push(path);
     const o = {};
-    for (let d = 0; d < len; d += 0.5) { posAt(path, d, o); if (inGrid(Math.floor(o.x), Math.floor(o.y))) samples.push({ x: o.x, y: o.y }); }
+    for (let d = 0; d < len; d += 0.5) { posAt(path, d, o); if (inGrid(Math.floor(o.x), Math.floor(o.y))) samples.push({ x: o.x, y: o.y, pi }); }
   });
   for (const [x, y, w, h] of def.water || []) for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (inGrid(i, j) && !tiles[idx(i, j)]) tiles[idx(i, j)] = T_WATER;
   for (const [x, y] of def.high || []) bonus[idx(x, y)] = 1;

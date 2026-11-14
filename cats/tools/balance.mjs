@@ -11,65 +11,63 @@ export const SQUADS = {
   starter: ['scout', 'bomb'],
   early: ['scout', 'bomb', 'ice', 'gunner', 'sniper', 'fire'],
   mid: ['scout', 'bomb', 'ice', 'sniper', 'commander', 'tesla'],
-  late: ['ninja', 'rocket', 'ice', 'shadow', 'commander', 'laser'],
+  late: ['scout', 'ninja', 'rocket', 'ice', 'shadow', 'laser'],
   all: Object.keys(CATS)
 };
 
-// Bestes freies Feld: möglichst viel Weg in Reichweite
-function bestTile(W, range, near) {
+// Bestes freies Feld: möglichst viel Weg in Reichweite (bei mehreren Wegen abwechselnd je Weg)
+function bestTile(W, range, near, lane) {
   let best = null, bs = -1;
   for (let y = 0; y < GRID.rows; y++) for (let x = 0; x < GRID.cols; x++) {
     if (!canBuild(W.map, x, y) || W.towers.at(x, y)) continue;
     let s = 0;
-    for (const p of W.map.samples) if ((p.x - x - .5) ** 2 + (p.y - y - .5) ** 2 <= range * range) s++;
+    for (const p of W.map.samples) if ((p.x - x - .5) ** 2 + (p.y - y - .5) ** 2 <= range * range) s += lane === undefined || p.pi === lane ? 1 : 0.4;
     if (near) s = s > 0 ? 100 - Math.hypot(near.x - x - .5, near.y - y - .5) : -1;
     if (s > bs) { bs = s; best = { x, y }; }
   }
   return best;
 }
 
+// Einfacher, aber vernünftiger Spieler: baut breit auf, lässt kein Futter liegen, baut die beste Katze aus.
 export function botTurn(W, pi = 0, o = {}) {
-  const P = W.players[pi], mine = () => W.towers.list.filter(t => t.owner === pi);
+  const P = W.players[pi];
   const attackers = P.loadout.filter(c => !['eco', 'support'].includes(CATS[c].base.atk));
-  for (let guard = 0; guard < 60; guard++) {
-    const my = mine(), want = 2 + Math.floor(W.wave / (o.wide ? 1.5 : 2.2));
+  const price = c => placeCost(CATS[c], P.bonus);
+  for (let guard = 0; guard < 80; guard++) {
+    const my = W.towers.list.filter(t => t.owner === pi), want = 3 + Math.floor(W.wave / 3);
     const sup = P.loadout.find(c => CATS[c].base.atk === 'support' && !my.some(t => t.cat === c));
     const eco = P.loadout.find(c => CATS[c].base.atk === 'eco' && my.filter(t => t.cat === c).length < 2);
-    if (my.length < want) {
-      let cat;
-      if (sup && my.length >= 4) cat = sup; else if (eco && my.length >= 2 && W.wave < W.wavesTotal * 0.5) cat = eco;
-      else { // Katzentyp, der noch am seltensten steht (teure zählen als „mehr“)
-        const ok = attackers.filter(c => !CATS[c].limit || !my.some(t => t.cat === c));
-        const counts = ok.map(c => my.filter(t => t.cat === c).length * (0.6 + CATS[c].cost / 500));
-        cat = ok[counts.indexOf(Math.min(...counts))];
-      }
-      let def = CATS[cat];
-      if (P.fish < placeCost(def, P.bonus)) {
-        if (W.wave > 2 || my.length >= 2) break;                    // sparen
-        cat = attackers.filter(c => placeCost(CATS[c], P.bonus) <= P.fish).sort((a, b) => CATS[b].cost - CATS[a].cost)[0];
-        if (!cat) break; def = CATS[cat];
-      }
-      const anchor = def.base.atk === 'support' ? my.slice().sort((a, b) => b.dmgDone - a.dmgDone)[0] : null;
-      const tile = bestTile(W, Math.min(def.base.range, 4), anchor);
-      if (!tile || W.cmd(pi, { t: 'place', cat, x: tile.x, y: tile.y }).err) break;
-      continue;
+    const ok = attackers.filter(c => !CATS[c].limit || !my.some(t => t.cat === c));
+    const counts = ok.map(c => my.filter(t => t.cat === c).length * (0.6 + CATS[c].cost / 500));
+    let cat = sup && my.length >= 5 ? sup : eco && my.length >= 3 && W.wave < W.wavesTotal * 0.4 ? eco : ok[counts.indexOf(Math.min(...counts))];
+    const up = nextUpgrade(W, pi, my);
+    const place = c => {
+      const def = CATS[c], anchor = def.base.atk === 'support' ? my.slice().sort((a, b) => b.dmgDone - a.dmgDone)[0] : null;
+      const tile = bestTile(W, Math.min(def.base.range, 4), anchor, W.map.paths.length > 1 ? my.length % W.map.paths.length : undefined);
+      return tile && !W.cmd(pi, { t: 'place', cat: c, x: tile.x, y: tile.y }).err;
+    };
+    if (my.length < want && cat) {
+      if (P.fish >= price(cat)) { if (place(cat)) continue; }
+      else if (my.length < 3) { const alt = ok.filter(c => price(c) <= P.fish).sort((a, b) => price(b) - price(a))[0]; if (alt && place(alt)) continue; }
+      else if (!up || up.cost > P.fish || price(cat) < up.cost * 1.3) break;      // auf die gewünschte Katze sparen
     }
-    if (!tryUpgrade(W, pi, my)) break;
+    if (up && up.cost <= P.fish) { if (!W.cmd(pi, { t: 'upgrade', id: up.id, path: up.path }).err) continue; }
+    if (cat && P.fish >= price(cat) && my.length < want + 4 && (!up || up.cost > P.fish * 1.5)) { if (place(cat)) continue; }
+    break;
   }
 }
-// Upgrade-Vorliebe: die Katze mit dem meisten Schaden, ein Hauptpfad bis zur Meisterstufe, dann ein Nebenpfad
-function tryUpgrade(W, pi, my) {
+// Upgrade-Vorliebe: die Katze mit dem meisten Schaden je Futter, ein Hauptpfad bis zur Meisterstufe, dann ein Nebenpfad
+function nextUpgrade(W, pi, my) {
   const P = W.players[pi];
   const order = my.slice().sort((a, b) => (b.dmgDone / b.spent) - (a.dmgDone / a.spent));
   for (const t of order) {
-    const main = t.tiers.indexOf(Math.max(...t.tiers)), start = t.tiers[main] ? main : t.id % 2;
+    const main = t.tiers.indexOf(Math.max(...t.tiers)), start = t.tiers[main] ? main : (t.cat === 'scout' && W.wave >= 9 && t.id % 3 === 0) ? 2 : t.id % 2;
     for (const p of [start, (start + 1) % 3, (start + 2) % 3]) {
       if (canUpgrade(t.def, t.tiers, p, P.bonus)) continue;
-      if (upgradeCost(t.def, t.tiers, p, P.bonus, P.discount) > P.fish) return false;   // auf dieses Upgrade sparen
-      return !W.cmd(pi, { t: 'upgrade', id: t.id, path: p }).err;
+      return { id: t.id, path: p, cost: upgradeCost(t.def, t.tiers, p, P.bonus, P.discount) };
     }
   }
-  return false;
+  return null;
 }
 
 export function playBot(mapId, diff, squad, nPlayers = 1, o = {}) {

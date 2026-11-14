@@ -293,10 +293,12 @@ export class GameScreen {
     const m = app.modal(`<h2>${s.online ? tr('Menü', 'Menu') : tr('Pause', 'Paused')}</h2><p class="mut">${app.L(this.V.mapDef.n)} · ${tr('Welle', 'Wave')} ${this.V.wave}</p>
       <div class="field"><span>🎵 ${tr('Musik', 'Music')}</span><input type="range" min="0" max="1" step="0.05" value="${set.music}" data-s="music"></div>
       <div class="field"><span>🔊 ${tr('Effekte', 'Sound')}</span><input type="range" min="0" max="1" step="0.05" value="${set.sfx}" data-s="sfx"></div>
+      ${s.online ? `<div class="field"><span>🎁 ${tr('Futter schenken', 'Gift fish')}</span><span>${this.V.players.map((p, i) => i === s.me ? '' : `<button class="btn sm" data-gift="${i}">100 → ${p.name}</button>`).join(' ')}</span></div>` : ''}
       <div style="display:grid;gap:8px;margin-top:12px"><button class="btn go wide" data-close>${tr('Weiter', 'Resume')}</button>
       ${s.online ? '' : `<button class="btn wide" data-m="restart">${tr('Neu starten', 'Restart')}</button>`}<button class="btn bad wide" data-m="quit">${tr('Runde verlassen', 'Leave round')}</button></div>`, { mid: true, onClose: () => { if (this.s) this.s.paused = false; this.last = performance.now(); } });
     m.addEventListener('input', e => { const k = e.target.dataset.s; if (k) { set[k] = +e.target.value; app.audio.volumes(); app.changed(); } });
     m.addEventListener('click', e => {
+      const g = e.target.closest('[data-gift]'); if (g) { if (this.P.fish >= 100) { s.cmd({ t: 'gift', to: +g.dataset.gift, n: 100 }); app.toast('🎁 −100'); } else this.deny('fish'); return; }
       const a = e.target.closest('[data-m]'); if (!a) return;
       if (a.dataset.m === 'quit') { app.modalClose = null; app.closeModal(); this.quit(); }
       else { const V = this.V, o = [V.mapDef.id, V.diff, V.mode]; app.modalClose = null; app.closeModal(); this.stop(); app.startSolo(...o); }

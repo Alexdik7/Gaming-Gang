@@ -21,8 +21,8 @@ export const FIXED = {
 export const THEMES_W = [
   { id: 'mixed', w: 10, pick: 3, gap: 1, budget: 1 },
   { id: 'rush',  w: 5, pick: 2, gap: 0.55, budget: 0.85, only: d => d.speed >= 1.3 },
-  { id: 'tanks', w: 4, pick: 2, gap: 1.5, budget: 1.1, only: d => d.hp >= 50 },
-  { id: 'swarm', w: 4, pick: 1, gap: 0.4, budget: 1.0, only: d => d.cost <= 1.5 },
+  { id: 'tanks', w: 4, pick: 2, gap: 1.5, budget: 0.9, only: d => d.hp >= 50 },
+  { id: 'swarm', w: 4, pick: 1, gap: 0.4, budget: 0.75, only: d => d.cost <= 1.5 },
   { id: 'tricky', w: 4, pick: 2, gap: 1, budget: 0.95, only: d => d.stealth || d.dodge || d.shield || d.burrow || d.heal || d.aura }
 ];
 

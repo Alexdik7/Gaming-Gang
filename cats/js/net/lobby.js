@@ -13,7 +13,7 @@ export class Lobby {
     this.isHost = true;
     for (let i = 0; i < 4; i++) {          // bei belegtem Code einen neuen würfeln
       this.code = makeCode(); this.net = makeTransport();
-      try { await this.net.host(this.code); break; } catch (e) { this.net.close(); if (i === 3) throw e; }
+      try { await this.net.host(this.code); break; } catch (e) { this.net.close(); if (i === 3 || !e || e.type !== 'unavailable-id') throw e; }
     }
     this.players = [{ peer: 'host', setup: sanitizeSetup(this.setup), level: this.level }];
     this.net.onJoin = () => {};

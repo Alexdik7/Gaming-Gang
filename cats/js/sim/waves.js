@@ -11,19 +11,20 @@ export const waveHp = w => 1 + WS.hpLin * (w - 1) + Math.pow((w - 1) / WS.hpPowB
 export const waveSpeed = w => Math.min(WS.speedCap, 1 + WS.speedPer10 * (w - 1) / 10);
 export const waveArmor = w => 1 + WS.armorPer10 * (w - 1) / 10;
 export const waveBudget = w => WS.budgetBase + WS.budgetLin * Math.pow(w, WS.budgetPow);
-export const waveReward = w => (1 + WS.hpLin * (w - 1)) / (1 + WS.rewardDecay * (w - 1) * (w - 1) / 10 + (w - 1) * 0.05);
+export const waveReward = w => waveHp(w) / (1 + WS.rewardDecay * (w - 1));
 
 export function isBossWave(w, total) { return w === total || w % WS.bossEvery === 0; }
 
 // Werte eines Hundes in Welle w. opts: { diff, players }
 export function scaleEnemy(def, w, opts = {}) {
   const D = BALANCE.difficulty[opts.diff || 'normal'], n = Math.min(4, Math.max(1, opts.players || 1)) - 1, MP = BALANCE.multiplayer;
-  let hp = def.hp * waveHp(w) * BALANCE.enemy_health_multiplier * D.hp * (opts.dense || 1);
+  const dHp = 1 + (D.hp - 1) * (D.hp > 1 ? Math.min(1, w / WS.diffRamp) : 1);
+  let hp = def.hp * waveHp(w) * BALANCE.enemy_health_multiplier * dHp * (opts.dense || 1) * (def.boss ? opts.threat || 1 : 1);
   if (def.boss) {
     const cycle = Math.floor((w / WS.bossEvery - 1) / BOSS_ORDER.length);
-    hp *= BALANCE.boss_multiplier * MP.boss[n] * Math.pow(WS.bossHpPerCycle, Math.max(0, cycle)) * (opts.final ? 1.4 : 1) * (opts.mini ? 0.55 : 1);
+    hp *= BALANCE.boss_multiplier * MP.boss[n] * Math.pow(WS.bossHpPerCycle, Math.max(0, cycle)) * (opts.final ? WS.finalBoss : 1) * (opts.mini ? WS.miniBoss : 1);
   } else hp *= MP.hp[n];
-  const armor = (def.armor || 0) * waveArmor(w) * BALANCE.enemy_armor_multiplier;
+  const armor = (def.armor || 0) * (def.boss ? 1 : waveArmor(w)) * BALANCE.enemy_armor_multiplier;
   return {
     hp: Math.round(hp), shield: Math.round((def.shield || 0) * hp / def.hp),
     speed: def.speed * (def.boss ? 1 : waveSpeed(w)) * BALANCE.enemy_speed_multiplier * D.speed, armor,
@@ -42,7 +43,7 @@ export function buildWave(w, mapDef, opts = {}) {
     fixed.forEach(([type, count, gap, delay], i) => out.groups.push({ type, count: Math.max(1, Math.round(count * countMul)), gap, delay, path: i % nPaths }));
     return out;
   }
-  let budget = waveBudget(w) * countMul;
+  let budget = waveBudget(w) * countMul * (mapDef.threat || 1);
   if (isBossWave(w, total)) {
     const final = w === total, k = Math.round(w / WS.bossEvery);
     out.boss = final ? mapDef.boss : BOSS_ORDER[(Math.max(1, k) - 1) % BOSS_ORDER.length];

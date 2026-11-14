@@ -20,7 +20,7 @@ export const cleanCode = s => { const d = String(s || '').replace(/\D/g, '').sli
 class LocalTransport {   // gleiche Maschine/Browser – für automatische Tests
   constructor() { this.id = 'c' + Math.random().toString(36).slice(2, 8); }
   open(code, asHost) {
-    this.isHost = asHost; if (asHost) this.id = 'host';
+    this.isHost = asHost; this.code = code; if (asHost) this.id = 'host';
     this.ch = new BroadcastChannel('ctd-' + code);
     let ready = null;
     this.ch.onmessage = e => {
@@ -37,7 +37,7 @@ class LocalTransport {   // gleiche Maschine/Browser – für automatische Tests
       setTimeout(() => { if (ready) { ready = null; rej(new Error('timeout')); } }, 1500);
     });
   }
-  dial() { return new Promise((res, rej) => { this.ch.postMessage({ from: this.id, to: 'host', sys: 'join' }); setTimeout(res, 200); }); }
+  dial() { if (!this.ch) return this.open(this.code, false); return new Promise((res, rej) => { this.ch.postMessage({ from: this.id, to: 'host', sys: 'join' }); setTimeout(res, 200); }); }
   host(code) { return this.open(code, true); }
   join(code) { return this.open(code, false); }
   send(to, msg) { this.ch && this.ch.postMessage({ from: this.id, to: this.isHost ? to : 'host', msg }); }
@@ -59,8 +59,9 @@ class PeerTransport {    // echtes Internet: WebRTC über den öffentlichen Peer
     await this.lib(); this.isHost = true;
     return new Promise((res, rej) => {
       const p = this.peer = new window.Peer('ctd-' + code.toLowerCase());
-      p.on('open', () => res());
-      p.on('error', e => rej(e));
+      const to = setTimeout(() => rej(new Error('timeout')), 12000);      // Vermittler nicht erreichbar
+      p.on('open', () => { clearTimeout(to); res(); });
+      p.on('error', e => { clearTimeout(to); rej(e); });
       p.on('connection', conn => { conn.on('open', () => { this.conns.set(conn.peer, conn); this.wire(conn); this.onJoin && this.onJoin(conn.peer); }); });
       p.on('disconnected', () => { try { p.reconnect(); } catch { } });
     });

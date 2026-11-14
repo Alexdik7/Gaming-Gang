@@ -17,11 +17,11 @@ export class EnemyManager {
 
   spawn(type, pi, dist = 0, o = {}) {
     const W = this.world, def = DOGS[type], path = W.map.paths[pi] || W.map.paths[0];
-    const s = scaleEnemy(def, W.wave, { diff: W.diff, players: W.players.length, final: o.final, mini: o.mini, dense: o.dense });
+    const s = scaleEnemy(def, W.wave, { diff: W.diff, players: W.players.length, final: o.final, mini: o.mini, dense: o.dense, threat: W.mapDef.threat });
     const e = this.pool.pop() || {};
     Object.assign(e, {
       id: this.nextId++, def, type, hp: s.hp, maxHp: s.hp, shield: s.shield, maxShield: s.shield, armor: s.armor, speed: s.speed,
-      reward: s.reward, lives: def.lives || 1, path, dist, x: 0, y: 0, dx: 1, dy: 0, zone: 1,
+      reward: s.reward, lives: o.mini ? 10 : def.lives || 1, path, dist, x: 0, y: 0, dx: 1, dy: 0, zone: 1,
       slowV: 0, slowT: 0, stunT: 0, burnV: 0, burnT: 0, burnBy: null, burnSpread: false, shredV: 0, shredT: 0, vulnV: 0, vulnT: 0,
       bounty: 0, healT: 0, stunCd: 0, revealT: 0, hasteV: 0, hasteT: 0, under: false, cyc: 0, phaseT: 0, enraged: false, dead: false, t: 0, hitT: 0,
       boss: !!def.boss, elite: !!def.elite, res: def.res || null, mini: !!o.mini,

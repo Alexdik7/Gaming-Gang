@@ -4,6 +4,7 @@
 // high: Hochsitze (+25 % Reichweite), power: Energiefelder (+20 % Angriffstempo).
 // fast: [Weg, Abschnitt, Faktor] – Abschnitt, auf dem Hunde schneller laufen (Förderband, Glatteis).
 // mods: Schadens-Faktoren je Schadensart auf dieser Map. deco: Anzahl zufälliger Hindernisse.
+// threat: Bedrohungs-Faktor (Ausgleich für Maps mit getrennten oder kurzen Wegen).
 
 export const MAPS = [
   { id: 'city', n: ['Katzenstadt', 'Cat City'], lvl: 1, theme: 'city', boss: 'bulldozer', deco: 9,
@@ -13,7 +14,7 @@ export const MAPS = [
     d: ['Eine Spirale um den Teich. Lange Geraden – ein Traum für Scharfschützen.', 'A spiral around the pond. Long straights – a sniper\'s dream.'],
     paths: [[[1, -1], [1, 13], [10, 13], [10, 2], [4, 2], [4, 10], [7, 10], [7, 5]]],
     water: [[5, 4, 2, 5]], high: [[8, 7]] },
-  { id: 'harbor', n: ['Hafen', 'Harbor'], lvl: 4, theme: 'harbor', boss: 'bulldozer', deco: 5,
+  { id: 'harbor', n: ['Hafen', 'Harbor'], lvl: 4, theme: 'harbor', boss: 'bulldozer', deco: 5, threat: 0.85,
     d: ['Zwei Eingänge, ein Engpass am Pier. Viel Wasser, wenig Platz.', 'Two entrances, one choke point at the pier. Lots of water, little room.'],
     paths: [[[-1, 2], [3, 2], [3, 7], [6, 7], [6, 16]], [[12, 2], [8, 2], [8, 7], [6, 7], [6, 16]]],
     water: [[0, 10, 4, 6], [9, 10, 3, 6], [5, 0, 2, 1]] },
@@ -33,15 +34,15 @@ export const MAPS = [
     d: ['Der Weg kreuzt sich selbst. Wer die Kreuzung hält, trifft doppelt.', 'The path crosses itself. Hold the crossing and you hit twice.'],
     paths: [[[-1, 3], [8, 3], [8, 11], [3, 11], [3, 6], [12, 6]]],
     high: [[9, 7], [2, 4]] },
-  { id: 'cyber', n: ['Cyberstadt', 'Cyber City'], lvl: 23, theme: 'cyber', boss: 'mecha', deco: 8,
+  { id: 'cyber', n: ['Cyberstadt', 'Cyber City'], lvl: 23, theme: 'cyber', boss: 'mecha', deco: 8, threat: 0.72,
     d: ['Zwei getrennte Wege, zwei Ziele. Energiefelder machen Katzen schneller.', 'Two separate lanes, two goals. Power tiles make cats faster.'],
     paths: [[[2, -1], [2, 6], [5, 6], [5, 12], [2, 12], [2, 16]], [[9, -1], [9, 8], [7, 8], [7, 14], [9, 14], [9, 16]]],
     power: [[6, 10], [4, 3], [10, 11], [6, 4]], mods: { volt: 1.2 } },
-  { id: 'volcano', n: ['Vulkan', 'Volcano'], lvl: 29, theme: 'volcano', boss: 'king', deco: 7,
+  { id: 'volcano', n: ['Vulkan', 'Volcano'], lvl: 29, theme: 'volcano', boss: 'king', deco: 7, threat: 0.85,
     d: ['Ein kurzer Weg zwischen Lavaseen. Feuer brennt heißer, Eis schmilzt.', 'A short road between lava lakes. Fire burns hotter, ice melts.'],
     paths: [[[-1, 7], [4, 7], [4, 3], [8, 3], [8, 11], [12, 11]]],
     water: [[0, 0, 3, 3], [10, 0, 2, 4], [0, 12, 4, 4], [5, 5, 2, 3]], mods: { fire: 1.25, ice: 0.8 }, high: [[6, 9]] },
-  { id: 'station', n: ['Forschungsstation', 'Research Station'], lvl: 35, theme: 'station', boss: 'king', deco: 8,
+  { id: 'station', n: ['Forschungsstation', 'Research Station'], lvl: 35, theme: 'station', boss: 'king', deco: 8, threat: 0.9,
     d: ['Ein Teleporter und zwei Eingänge. Hier wartet der König des Rudels.', 'A teleporter and two entrances. The King of the Pack awaits.'],
     paths: [[[-1, 2], [5, 2], [5, 6], [2, 9, 'tp'], [8, 9], [8, 13], [3, 13], [3, 16]], [[12, 5], [10, 5], [10, 9], [8, 9], [8, 13], [3, 13], [3, 16]]],
     power: [[6, 11], [3, 4]], high: [[10, 11], [1, 7]] }
