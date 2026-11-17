@@ -7,7 +7,8 @@ import { ELEMENT_NAMES } from '../data/enemies.js';
 import { ACCOUNT_REWARDS, ACHIEVEMENTS, FRAMES, TITLES, SYNERGIES } from '../data/meta.js';
 import { charNeed, accNeed, formsFor, maxStage, perkList, unlocked, unlockLevel, unlockedCreatures, achValue, hasBranch, MASTERY_REWARDS, nextFormByLevel } from '../meta/progression.js';
 import { baseStats, dps } from '../sim/stats.js';
-import { portrait, Preview } from '../render/icons.js';
+import { portrait, Preview, mapThumb } from '../render/icons.js';
+import { ELEMENT_COLORS } from '../data/enemies.js';
 import { saveProfile, resetProfile } from '../meta/profile.js';
 
 const $ = id => document.getElementById(id);
@@ -33,12 +34,12 @@ export class Menus {
   s_home() {
     const P = this.P, a = P.account, need = accNeed(a.level);
     const newAch = ACHIEVEMENTS.some(x => !P.ach[x.id] && achValue(P, x) >= x.goal);
-    const frame = FRAMES[a.frame] || FRAMES.none;
+    const frame = FRAMES[a.frame] || FRAMES.none, k = P.chars.kitsune;
     this.render(`
-      <div class="title"><h1>BEAST<span>FORGE</span></h1><p>SHINOBI CREATURE DEFENSE</p></div>
-      <div class="home"><div class="inner">
-        <div class="box profile" data-go="account"><div class="fr" style="--fc:${frame}"><img src="${portrait('kitsune', { stage: maxStage('kitsune', P.chars.kitsune.level, P.chars.kitsune.branch), branch: P.chars.kitsune.branch })}" alt=""></div>
-          <div class="pi"><b>Konto-Level ${a.level}</b> · ${esc(TITLES[a.title] || TITLES.none)}<div class="bar acc" style="margin-top:4px"><u style="width:${a.xp / need * 100}%"></u></div><small>${fmt(a.xp)} / ${fmt(need)} Konto-XP</small></div></div>
+      <div class="homeL title"><h1>BEAST<span>FORGE</span></h1><p>SHINOBI CREATURE DEFENSE</p></div>
+      <div class="homeR">
+        <button class="profile" data-go="account"><div class="fr" style="--fc:${frame}"><img src="${portrait('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch })}" alt=""></div>
+          <div class="pi"><b>Konto-Level ${a.level}</b> · ${esc(TITLES[a.title] || TITLES.none)}<div class="bar acc" style="margin-top:4px"><u style="width:${a.xp / need * 100}%"></u></div><small>${fmt(a.xp)} / ${fmt(need)} Konto-XP</small></div></button>
         <button class="big" data-go="play">▶ SPIELEN</button>
         <div class="tiles">
           <button class="tile" data-go="collection"><span>🦊</span>Sammlung</button>
@@ -48,27 +49,37 @@ export class Menus {
           <button class="tile" data-go="stats"><span>📜</span>Statistik</button>
           <button class="tile" data-go="settings"><span>⚙</span>Optionen</button>
         </div>
-      </div></div>`);
+      </div>`);
     this.app.audio.playSong('menu');
   }
 
-  // ───────── Spielen ─────────
+  // ───────── Spielen: Karte → Modus ─────────
   s_play() {
-    const P = this.P, map = MAPS.ahnenhain, best = P.maps.ahnenhain || {};
+    const P = this.P;
+    const cards = Object.values(MAPS).map(m => { const b = P.maps[m.id] || {}; return `<button class="mcard" data-map="${m.id}"><span class="tag">${esc(m.level)}</span><img data-thumb="${m.id}" alt=""><div class="mi"><b>${esc(m.name)}</b><small>${esc(m.sub)}</small>
+      <div class="medals"><span class="${b.normal >= 20 ? 'on' : ''}">${b.normal >= 20 ? '🏅' : '○'} Normal</span><span class="${b.hard >= 20 ? 'on' : ''}">${b.hard >= 20 ? '🏅' : '○'} Schwer</span><span class="${b.endless ? 'on' : ''}">∞ ${b.endless || 0}</span></div></div></button>`; }).join('');
+    this.render(`<div class="scr">${this.hdr('Karte wählen')}<div class="maps">${cards}<div class="mcard soon">Weitere Karten folgen mit den nächsten Updates</div></div></div>`, m => {
+      m.querySelectorAll('[data-map]').forEach(b => b.onclick = () => { this.click(); this.s_diff(b.dataset.map); });
+      this.thumbs(m);
+    });
+  }
+  thumbs(root) { root.querySelectorAll('[data-thumb]').forEach(async img => { img.src = await mapThumb(img.dataset.thumb); }); }
+  s_diff(mapId = 'ahnenhain') {
+    const P = this.P, map = MAPS[mapId], best = P.maps[mapId] || {};
     this.diff = this.diff && unlocked(P, 'mode', this.diff) ? this.diff : 'normal';
-    const modes = [['normal', 'Normal', '20 Wellen'], ['hard', 'Schwer', '×1,5 Charakter-XP'], ['endless', 'Endlos', 'Wie weit kommst du?']];
-    const team = unlockedCreatures(P);
-    const heroOk = unlocked(P, 'hero', 'kairo');
-    this.render(`<div class="scr">${this.hdr('Spielen')}
-      <div class="mapcard"><b>${map.name}</b><small>${map.sub}</small><small style="opacity:.85">Bestwelle: Normal ${best.normal || 0} · Schwer ${best.hard || 0} · Endlos ${best.endless || 0}</small></div>
-      <div class="box"><small style="color:var(--mut)">${esc(map.desc)}</small></div>
-      <div class="seg">${modes.map(([k, n, s]) => { const ok = unlocked(P, 'mode', k); return `<button data-d="${k}" class="${this.diff === k ? 'on' : ''}" ${ok ? '' : 'disabled'}>${ok ? n : '🔒 ' + n}<small>${ok ? s : 'Konto-Lv ' + unlockLevel('mode', k)}</small></button>`; }).join('')}</div>
-      <div class="box"><b>Dein Team</b><small style="color:var(--mut)"> · alle freigeschalteten Kreaturen</small>
+    const modes = [['normal', '🌿', 'Normal', `${BAL.diff.normal.lives} Leben · 20 Wellen · Boss Vharox`], ['hard', '🔥', 'Schwer', `${BAL.diff.hard.lives} Leben · stärkere Gegner · ×1,5 Charakter-XP`], ['endless', '∞', 'Endlos', 'Wellen ohne Ende · alle 10 Wellen ein Boss']];
+    const team = unlockedCreatures(P), heroOk = unlocked(P, 'hero', 'kairo');
+    this.render(`<div class="scr"><div class="hdr"><button class="back" id="bk">‹ Karten</button><h2>${esc(map.name)}</h2></div>
+      <div class="dsel"><div style="display:grid;gap:12px"><div class="dmap"><img data-thumb="${mapId}" alt=""><div><b>${esc(map.name)}</b><small>${esc(map.desc)}</small></div></div>
+        <div class="box"><b>Dein Team</b><small class="mut"> · alle freigeschalteten Kreaturen</small>
         <div class="team" style="margin-top:8px">${Object.keys(CREATURES).map(id => { const ok = team.includes(id), c = P.chars[id]; return `<div class="tm" style="${ok ? '' : 'opacity:.35'}"><img src="${portrait(id, { stage: 0, branch: c.branch })}" alt=""><br>${ok ? 'Lv ' + c.level : '🔒 Konto ' + unlockLevel('creature', id)}</div>`; }).join('')}
-        <div class="tm" style="${heroOk ? '' : 'opacity:.35'}"><img src="${portrait('kairo', { hlvl: 1 })}" alt=""><br>${heroOk ? 'Held ★' + P.heroes.kairo.rank : '🔒 Konto 2'}</div></div></div>
-      <button class="big" id="go">⚔ KAMPF BEGINNEN</button></div>`, m => {
-      m.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { this.click(); this.diff = b.dataset.d; this.s_play(); });
-      $('go').onclick = () => { this.app.audio.init(); this.app.startRun('ahnenhain', this.diff); };
+        <div class="tm" style="${heroOk ? '' : 'opacity:.35'}"><img src="${portrait('kairo', { hlvl: 1 })}" alt=""><br>${heroOk ? 'Held ★' + P.heroes.kairo.rank : '🔒 Konto 2'}</div></div></div></div>
+      <div style="display:grid;gap:12px"><div class="dcards">${modes.map(([k, ic, n, d]) => { const ok = unlocked(P, 'mode', k); return `<button class="dcard ${k} ${this.diff === k ? 'on' : ''}" data-d="${k}" ${ok ? '' : 'disabled'}><span class="di">${ok ? ic : '🔒'}</span><span><b>${n}</b><small>${ok ? d : 'Ab Konto-Level ' + unlockLevel('mode', k)}</small></span><span class="best">Beste<br><b>${best[k] || 0}</b></span></button>`; }).join('')}</div>
+        <button class="big" id="go">⚔ LOS GEHT'S</button></div></div></div>`, m => {
+      $('bk').onclick = () => { this.click(); this.s_play(); };
+      m.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { this.click(); this.diff = b.dataset.d; this.s_diff(mapId); });
+      $('go').onclick = () => { this.app.audio.init(); this.app.startRun(mapId, this.diff); };
+      this.thumbs(m);
     });
   }
 
@@ -78,7 +89,7 @@ export class Menus {
     this.render(`<div class="scr">${this.hdr('Sammlung')}
       <div class="grid">${Object.keys(CREATURES).map(id => {
         const d = CREATURES[id], c = P.chars[id], ok = unlocked(P, 'creature', id), st = maxStage(id, c.level, c.branch);
-        return `<button class="ccard ${ok ? '' : 'locked'}" data-c="${id}">${ok ? `<span class="lvl">Lv ${c.level}</span>` : ''}<img src="${portrait(id, { stage: st, branch: c.branch })}" alt=""><b>${ok ? esc(d.name) : '???'}</b><small>${ok ? esc(d.role) : '🔒 Konto-Lv ' + unlockLevel('creature', id)}</small>
+        return `<button class="ccard ${ok ? '' : 'locked'}" data-c="${id}" style="--cc:${d.color}">${ok ? `<span class="lvl">Lv ${c.level}</span><span class="els">${d.elements.map(e => `<i style="color:${ELEMENT_COLORS[e]};font-style:normal">●</i>`).join('')}</span>` : ''}<img src="${portrait(id, { stage: st, branch: c.branch })}" alt=""><b>${ok ? esc(d.name) : '???'}</b><small>${ok ? esc(d.role) : '🔒 Konto-Lv ' + unlockLevel('creature', id)}</small>
           ${ok ? `<div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / charNeed(c.level) * 100}%"></u></div><div class="stars">${stars(c.mastery)}</div>` : ''}</button>`;
       }).join('')}</div>
       <div class="box"><b>Synergien</b><div class="list" style="margin-top:6px">${SYNERGIES.map(s => `<div class="li"><div class="d"><b>${esc(s.name)}</b><small>${esc(s.desc)}</small></div></div>`).join('')}</div><small style="color:var(--mut)">Aktiv, wenn beide Partner höchstens ${BAL.run.synergyRange} Felder auseinander stehen.</small></div></div>`,
@@ -125,9 +136,9 @@ export class Menus {
       body = `<div class="box"><p style="margin:0;line-height:1.5">${esc(d.lore)}</p></div><div class="box kv"><span>Rolle</span><b>${esc(d.role)}</b><span>Elemente</span><b>${d.elements.map(e => ELEMENT_NAMES[e]).join(', ')}</b></div>`;
     }
     this.render(`<div class="scr"><div class="hdr"><button class="back" id="bk">‹ Sammlung</button><h2>${esc(d.name)}</h2></div>
-      <div class="preview"><canvas id="pv"></canvas><div class="pv"><b>${esc(selForm.name)}</b><small>Ziehen zum Drehen · Tippen = Angriff</small></div></div>
-      <div class="charline"><b>Lv ${c.level}</b><div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / need * 100}%"></u></div><small>${c.level >= 50 ? 'MAX' : fmt(c.xp) + ' / ' + fmt(need) + ' XP'}${nx ? ' · ' + esc(nx.name) + ' bei Lv ' + nx.lvl : ''}</small></div>
-      <div class="tabs">${tabs.map(([k, n]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${n}</button>`).join('')}</div>${body}</div>`, m => {
+      <div class="cdet"><div class="side"><div class="preview"><canvas id="pv"></canvas><div class="els">${d.elements.map(e => `<span style="color:${ELEMENT_COLORS[e]}">● ${ELEMENT_NAMES[e]}</span>`).join('')}<span>${esc(d.role)}</span></div><div class="pv"><b>${esc(selForm.name)}</b><small>Ziehen zum Drehen · Tippen = Angriff</small></div></div>
+      <div class="charline"><b>Lv ${c.level}</b><div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / need * 100}%"></u></div><small>${c.level >= 50 ? 'MAX' : fmt(c.xp) + ' / ' + fmt(need) + ' XP'}${nx ? ' · ' + esc(nx.name) + ' bei Lv ' + nx.lvl : ''}</small></div><div class="stars" style="text-align:center;font-size:18px">${stars(c.mastery)}</div></div>
+      <div style="display:grid;gap:10px;align-content:start"><div class="tabs">${tabs.map(([k, n]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${n}</button>`).join('')}</div>${body}</div></div></div>`, m => {
       $('bk').onclick = () => { this.click(); this.s_collection(); };
       m.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { this.click(); this.s_creature(id, b.dataset.tab, view); });
       m.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { this.click(); this.s_creature(id, 'evo', b.dataset.f); });
@@ -228,7 +239,7 @@ export class Menus {
       const d = CREATURES[cid], c = P.chars[cid], s = r.snap.chars[cid], ups = r.charUps.filter(u => u.cid === cid);
       const total = Math.round((r.xp[cid] || 0) + (r.winBonus[cid] || 0));
       const forms = ups.flatMap(u => u.forms);
-      return `<div class="xprow"><img src="${portrait(cid, { stage: maxStage(cid, c.level, c.branch), branch: c.branch })}" alt=""><div><b>${esc(d.name)}</b> <span class="up">${ups.length ? `Lv ${s.level} → ${c.level} ⬆` : 'Lv ' + c.level}</span>
+      return `<div class="xprow"><img src="${portrait(cid, { stage: maxStage(cid, c.level, c.branch), branch: c.branch })}" alt=""><div><b>${esc(d.name)}</b> <span class="up2">${ups.length ? `Lv ${s.level} → ${c.level} ⬆` : 'Lv ' + c.level}</span>
         <div class="bar"><u data-w="${c.level >= 50 ? 100 : c.xp / charNeed(c.level) * 100}" style="width:${ups.length ? 0 : s.xp / charNeed(s.level) * 100}%"></u></div>
         ${forms.length ? `<div class="newform">✦ Neue Form freigeschaltet: <b>${forms.map(esc).join(', ')}</b></div>` : ''}</div><span class="gain">+${fmt(total)}</span></div>`;
     }).join('') || '<small style="color:var(--mut)">Keine Kreatur eingesetzt.</small>';
@@ -236,13 +247,13 @@ export class Menus {
     this.render(`<div class="scr res">
       <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>
       <p style="text-align:center;margin:0;color:var(--mut)">${esc(r.map)} · ${esc(r.diff)} · Welle ${r.wave}${r.maxWave === Infinity ? '' : '/' + r.maxWave}${r.perfect ? ' · <b style="color:var(--run)">PERFEKT!</b>' : ''}</p>
-      <div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.hero ? `<span>Kairo erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>
+      <div class="rgrid"><div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.hero ? `<span>Kairo erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>
       <div class="sect char"><h3>CHARAKTER-XP</h3>${xpRows}${r.won ? '<small style="color:var(--mut)">inkl. +25 % Siegbonus</small>' : '<small style="color:var(--mut)">Alle verdienten XP bleiben erhalten.</small>'}
         ${r.masteryUps.map(m => `<div class="newform">★ ${esc(CREATURES[m.cid].name)}: Meisterschaft ${m.m}!</div>`).join('')}</div>
-      <div class="sect acc"><h3>KONTO</h3><div class="xprow" style="grid-template-columns:1fr auto"><div><b>Level ${a.level}</b>${r.accUps.length ? ` <span class="up" style="color:var(--acc)">⬆ +${r.accUps.length}</span>` : ''}<div class="bar acc"><u data-w="${a.xp / need * 100}" style="width:0%"></u></div></div><span class="gain" style="color:var(--acc)">+${fmt(r.accGain)}</span></div>
+      <div class="sect acc"><h3>KONTO</h3><div class="xprow" style="grid-template-columns:1fr auto"><div><b>Level ${a.level}</b>${r.accUps.length ? ` <span class="up2" style="color:var(--acc)">⬆ +${r.accUps.length}</span>` : ''}<div class="bar acc"><u data-w="${a.xp / need * 100}" style="width:0%"></u></div></div><span class="gain" style="color:var(--acc)">+${fmt(r.accGain)}</span></div>
         ${r.accUps.flatMap(u => u.rewards).map(x => `<div class="newform" style="background:linear-gradient(90deg,rgba(185,140,255,.25),transparent);color:#e0ccff">🔓 ${esc(x.text)}</div>`).join('')}
         ${r.achs.map(x => `<div class="newform">🏆 ${esc(x.name)} <small>+${x.xp}</small></div>`).join('')}</div>
-      <div class="seg" style="grid-template-columns:1fr 1fr"><button class="btn" data-go="home">Menü</button><button class="btn pri" id="again">Nochmal</button></div>
+      </div><div class="seg" style="grid-template-columns:1fr 1fr;max-width:520px;margin:0 auto;width:100%"><button class="btn" data-go="home">Menü</button><button class="big" id="again" style="font-size:18px;padding:12px">↻ Nochmal</button></div>
       ${r.charUps.some(u => u.forms.length) ? '<button class="btn" data-go="collection">🦊 Neue Form in der Sammlung ansehen</button>' : ''}</div>`, m => {
       $('again').onclick = () => { this.app.audio.init(); this.app.startRun('ahnenhain', r.diffKey); };
       setTimeout(() => m.querySelectorAll('[data-w]').forEach(u => u.style.width = u.dataset.w + '%'), 250);

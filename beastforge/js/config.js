@@ -1,5 +1,5 @@
 // BEASTFORGE – alle Balance-Regler an EINEM Ort. Keine Zahlen in der Logik verstreuen.
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 
 export const BAL = {
   tick: 1 / 60,               // fester Simulationsschritt (s)
@@ -17,11 +17,11 @@ export const BAL = {
 
   // Schwierigkeiten: Run-Werte und Fortschritts-Multiplikatoren getrennt
   diff: {
-    normal:  { name: 'Normal',   start: 650, lives: 100, hp: 1.00, speed: 1.00, coins: 1.00, xp: 1.0, acc: 1.0, waves: 20 },
-    hard:    { name: 'Schwer',   start: 800, lives: 60,  hp: 1.25, speed: 1.05, coins: 0.95, xp: 1.5, acc: 1.4, waves: 20 },
-    endless: { name: 'Endlos',   start: 650, lives: 100, hp: 1.00, speed: 1.00, coins: 1.00, xp: 1.15, acc: 1.1, waves: Infinity },
+    normal:  { name: 'Normal',   start: 800, lives: 150, hp: 1.00, speed: 1.00, coins: 1.00, xp: 1.0, acc: 1.0, waves: 20 },
+    hard:    { name: 'Schwer',   start: 850, lives: 100, hp: 1.3, speed: 1.05, coins: 0.95, xp: 1.5, acc: 1.4, waves: 20 },
+    endless: { name: 'Endlos',   start: 800, lives: 150, hp: 1.00, speed: 1.00, coins: 1.00, xp: 1.15, acc: 1.1, waves: Infinity },
   },
-  hpScale: w => 1 + 0.10 * (w - 1) + 0.0044 * (w - 1) ** 2,   // Gegner-KP je Welle
+  hpScale: w => 1 + 0.085 * (w - 1) + 0.0034 * (w - 1) ** 2,   // Gegner-KP je Welle
   endlessScale: w => w <= 20 ? 1 : 1 + 0.09 * (w - 20) + 0.004 * (w - 20) ** 2,
 
   // Kreuzpfade: ein Pfad bis 5, ein zweiter bis 2, der dritte bleibt zu

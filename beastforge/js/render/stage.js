@@ -27,7 +27,7 @@ export class Stage {
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
     this.quality = 2; this.shake = 0; this.shakeDir = new THREE.Vector2(); this.camBase = new THREE.Vector3(); this.camLook = new THREE.Vector3();
-    this.insets = { top: 70, bottom: 150 }; this.mode = 'game'; this.zoomPunch = 0; this.focus = null;
+    this.insets = { top: 60, bottom: 0, left: 0, right: 0 }; this.mode = 'game'; this.zoomPunch = 0; this.focus = null;
     this.mapW = 11; this.mapH = 17;
     this.resize();
     addEventListener('resize', () => this.resize());
@@ -53,31 +53,26 @@ export class Stage {
   // Kamera für Seitenverhältnis w/freiH einpassen, dann per setViewOffset auf den ganzen Bildschirm erweitern.
   fit() {
     const cam = this.camera;
-    if (this.mode === 'menu') { cam.clearViewOffset(); cam.aspect = this.w / this.h; cam.updateProjectionMatrix(); this.scene.fog.near = 14; this.scene.fog.far = 40; return; }
-    const W = this.mapW + 0.4, H = this.mapH + 0.6, tilt = 0.98, tz = 0.4;
+    if (this.mode === 'menu') { cam.fov = 32; cam.clearViewOffset(); cam.aspect = this.w / this.h; cam.updateProjectionMatrix(); this.scene.fog.near = 14; this.scene.fog.far = 40; return; }
+    // Genre-Kamera: steil von schräg oben (≈64°), wenig Perspektive, Karte füllt den freien Bereich
+    const I = this.insets, W = this.mapW + 0.2, H = this.mapH + 0.2, tilt = 1.12, tz = 0.3;
+    cam.fov = 24;
     const dir = new THREE.Vector3(0, Math.sin(tilt), Math.cos(tilt));
-    const freeH = Math.max(120, this.h - this.insets.top - this.insets.bottom);
-    cam.clearViewOffset(); cam.aspect = this.w / freeH; cam.updateProjectionMatrix();
+    const freeW = Math.max(120, this.w - I.left - I.right), freeH = Math.max(120, this.h - I.top - I.bottom);
+    cam.clearViewOffset(); cam.aspect = freeW / freeH; cam.updateProjectionMatrix();
     const corners = [[-W / 2, -H / 2], [W / 2, -H / 2], [-W / 2, H / 2], [W / 2, H / 2]].map(([x, z]) => new THREE.Vector3(x, 0, z));
-    corners.push(new THREE.Vector3(0, 1.6, -H / 2 + 0.5), new THREE.Vector3(0, 1.7, H / 2 - 0.6));
     const place = d => { cam.position.copy(dir).multiplyScalar(d).add(new THREE.Vector3(0, 0, tz)); cam.lookAt(0, 0, tz); cam.updateMatrixWorld(); };
-    let lo = 4, hi = 90;
-    for (let it = 0; it < 32; it++) {
-      const d = (lo + hi) / 2; place(d);
-      let minY = 9, maxY = -9, ok = true;
-      for (const c of corners) { const p = c.clone().project(cam); if (Math.abs(p.x) > 0.98) ok = false; minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
-      if (maxY - minY > 1.96) ok = false;
-      if (ok) hi = d; else lo = d;
-    }
+    const box = () => { let a = 9, b = -9, c = 9, e = -9; for (const k of corners) { const p = k.clone().project(cam); a = Math.min(a, p.x); b = Math.max(b, p.x); c = Math.min(c, p.y); e = Math.max(e, p.y); } return [a, b, c, e]; };
+    let lo = 4, hi = 120;
+    for (let it = 0; it < 34; it++) { const d = (lo + hi) / 2; place(d); const [a, b, c, e] = box(); if (b - a <= 1.99 && e - c <= 1.99) hi = d; else lo = d; }
     place(hi);
-    let minY = 9, maxY = -9; for (const c of corners) { const p = c.clone().project(cam); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
-    const cy = (minY + maxY) / 2;
-    cam.setViewOffset(this.w, freeH, 0, -this.insets.top - cy * freeH / 2, this.w, this.h);
+    const [a, b, c, e] = box(), cx = (a + b) / 2, cy = (c + e) / 2;
+    cam.setViewOffset(freeW, freeH, -I.left + cx * freeW / 2, -I.top - cy * freeH / 2, this.w, this.h);
     this.camBase.copy(cam.position); this.camLook.set(0, 0, tz);
-    this.scene.fog.near = hi * 1.05; this.scene.fog.far = hi * 2.6;
+    this.scene.fog.near = hi * 1.1; this.scene.fog.far = hi * 2.6;
   }
   setMode(m) { this.mode = m; this.fit(); }
-  setInsets(top, bottom) { if (this.insets.top !== top || this.insets.bottom !== bottom) { this.insets = { top, bottom }; this.fit(); } }
+  setInsets(i) { const o = this.insets; if (o.top !== i.top || o.bottom !== i.bottom || o.left !== i.left || o.right !== i.right) { this.insets = { left: 0, right: 0, top: 0, bottom: 0, ...i }; this.fit(); } }
   addShake(a, dx = 0, dy = 0) { this.shake = Math.min(1.2, this.shake + a); this.shakeDir.set(dx, dy); }
   update(dt, t) {
     const cam = this.camera;

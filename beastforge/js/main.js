@@ -135,5 +135,7 @@ window.BF = {
   menu: n => app.menus.show(n),
   level: (L) => app.devLevel(L),
   charNeed,
+  spot: (cid, r = 3) => app.game?.world.suggestSpot(cid, r),
+  put: (cid, r = 3) => { const w = app.game?.world, p = w?.suggestSpot(cid, r); return p ? w.place(cid, ...p) : { ok: false }; },
 };
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});

@@ -8,7 +8,7 @@ import { ELEMENT_COLORS } from '../data/enemies.js';
 import { CREATURES } from '../data/creatures.js';
 
 const PI = Math.PI;
-const TOWER_SCALE = 1.3, ENEMY_SCALE = 1.25;
+const TOWER_SCALE = 1.75, ENEMY_SCALE = 1.5;
 const backOut = k => { const c = 1.9; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
 const TINT = { flash: [1, 1, 1, 0.75], burn: [1, 0.45, 0.1, 0.32], frost: [0.45, 0.8, 1, 0.38], stun: [1, 0.95, 0.4, 0.4], shield: [0.7, 0.5, 1, 0.35], vuln: [1, 0.25, 0.35, 0.22], elite: [1, 0.82, 0.3, 0.16], none: [0, 0, 0, 0] };
 
@@ -59,7 +59,7 @@ export class GameView {
     this.rangeDisc = new THREE.Mesh(discG, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false }));
     this.rangeRing.visible = this.rangeDisc.visible = false; this.root.add(this.rangeRing, this.rangeDisc);
     this.supportRing = new THREE.Mesh(ringG, new THREE.MeshBasicMaterial({ color: 0x7be0a8, transparent: true, opacity: 0.5, depthWrite: false })); this.supportRing.visible = false; this.root.add(this.supportRing);
-    const sq = new THREE.PlaneGeometry(0.94, 0.94); sq.rotateX(-PI / 2);
+    const sq = new THREE.CircleGeometry(0.42 * 1.05, 32); sq.rotateX(-PI / 2);
     this.cellMark = new THREE.Mesh(sq, new THREE.MeshBasicMaterial({ color: 0x5aff8a, transparent: true, opacity: 0.45, depthWrite: false })); this.cellMark.visible = false; this.root.add(this.cellMark);
     this.selRing = new THREE.Mesh(new THREE.RingGeometry(0.36, 0.44, 40).rotateX(-PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe14d, transparent: true, opacity: 0.9, depthWrite: false })); this.selRing.visible = false; this.root.add(this.selRing);
     // Pfeile entlang des Pfads
@@ -186,6 +186,8 @@ export class GameView {
     for (const m of [this.rangeRing, this.rangeDisc]) { m.visible = true; m.position.set(wx, h + 0.03, wz); m.scale.setScalar(Math.max(0.01, r)); m.material.color.set(color); }
   }
   hideRange() { this.rangeRing.visible = this.rangeDisc.visible = this.supportRing.visible = false; }
+  showFoot(x, y, ok, h = 0) { this.cellMark.visible = true; const [wx, wz] = this.toW(x, y); this.cellMark.position.set(wx, h + 0.025, wz); this.cellMark.material.color.set(ok ? 0x5aff8a : 0xff4a5a); }
+  hideFoot() { this.cellMark.visible = false; }
   showCell(cx, cy, ok) { this.cellMark.visible = true; const [x, z] = this.toW(cx + 0.5, cy + 0.5); this.cellMark.position.set(x, this.hAt(cx, cy) + 0.02, z); this.cellMark.material.color.set(ok ? 0x5aff8a : 0xff4a5a); }
   hideCell() { this.cellMark.visible = false; }
   select(t) {

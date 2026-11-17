@@ -15,14 +15,14 @@ export const WAVES = [
   /* 10 */ { groups: [g('slime', 22, 0.35), g('boar', 6, 1.2, 3), g('oni', 1, 1, 9)], miniboss: true, tip: 'Mini-Boss: Der Oni-Hauptmann treibt seine Truppen an.' },
   /* 11 */ { groups: [g('healer', 4, 2.5), g('boar', 10, 0.9, 1), g('wolf', 18, 0.35, 6)] },
   /* 12 */ { groups: [g('wolf', 44, 0.24, 0, ['fast'])], mods: ['fast'], tip: 'Ein Rudel – sehr schnell!' },
-  /* 13 */ { groups: [g('golem', 1, 1), g('beetle', 10, 1.0, 2), g('mage', 4, 2, 5)] },
+  /* 13 */ { groups: [g('golem', 1, 1), g('beetle', 8, 1.1, 2), g('mage', 2, 2.5, 5)] },
   /* 14 */ { groups: [g('boar', 6, 1.6, 0, ['elite']), g('shade', 10, 0.8, 2), g('wisp', 14, 0.6, 5)], mods: ['elite'] },
   /* 15 */ { groups: [g('shade', 16, 0.6), g('wisp', 20, 0.45, 3), g('healer', 4, 2, 6)] },
-  /* 16 */ { groups: [g('boar', 15, 0.7, 0, ['armored']), g('mage', 6, 2, 3), g('slime', 30, 0.25, 4)], mods: ['armored'] },
-  /* 17 */ { groups: [g('golem', 2, 7), g('healer', 6, 2, 2), g('beetle', 14, 0.7, 4)] },
-  /* 18 */ { groups: [g('wolf', 20, 0.45, 0, ['elite']), g('wisp', 10, 0.8, 2, ['elite']), g('mage', 6, 1.6, 4), g('shade', 14, 0.6, 6)], mods: ['elite'] },
-  /* 19 */ { groups: [g('golem', 3, 5), g('boar', 14, 0.7, 2, ['regen']), g('beetle', 10, 0.7, 5), g('healer', 6, 1.6, 6), g('shade', 10, 0.6, 8)], mods: ['regen'] },
-  /* 20 */ { groups: [g('slime', 30, 0.3), g('wolf', 20, 0.35, 4), g('vharox', 1, 1, 7)], boss: 'vharox', tip: 'BOSS: Vharox, der Abgrunddrache!' },
+  /* 16 */ { groups: [g('boar', 10, 0.9, 0, ['armored']), g('mage', 6, 2, 3), g('slime', 30, 0.25, 4)], mods: ['armored'] },
+  /* 17 */ { groups: [g('golem', 2, 8), g('healer', 4, 2.4, 2), g('beetle', 10, 0.9, 4)] },
+  /* 18 */ { groups: [g('wolf', 14, 0.5, 0, ['elite']), g('wisp', 8, 0.9, 2, ['elite']), g('mage', 6, 1.6, 4), g('shade', 14, 0.6, 6)], mods: ['elite'] },
+  /* 19 */ { groups: [g('golem', 2, 6), g('boar', 8, 0.9, 2, ['regen']), g('beetle', 8, 0.8, 5), g('healer', 4, 2, 6), g('shade', 10, 0.7, 8)], mods: ['regen'] },
+  /* 20 */ { groups: [g('slime', 20, 0.4), g('wolf', 12, 0.45, 4), g('vharox', 1, 1, 9)], boss: 'vharox', tip: 'BOSS: Vharox, der Abgrunddrache!' },
 ];
 
 // Endlos ab Welle 21: Budget-Generator mit festem Seed pro Welle

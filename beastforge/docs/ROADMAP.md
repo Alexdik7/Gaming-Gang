@@ -25,6 +25,9 @@
 | 23 | Content-Ausbau | ⏳ nächster Schritt |
 | 24 | Final Polish | ⏳ |
 
+## v0.2 erledigt
+Genre-Optik (Querformat, steile Kamera, freie Platzierung, Shop rechts, Upgrade-Panel), neue Menüs mit Kartenauswahl, detailliertere Modelle, leichteres Normal.
+
 ## Nächste Schritte (Content-Ausbau, je ein „Weiter“)
 1. **Echter Spieltest auf dem iPhone** → Balance (Boss, Welle 10/19), Lesbarkeit, Leistung.
 2. **Kreaturen 6–8**: Drachenwolf (Frost/Inferno), Mantisklinge (extremes Tempo), Golem (Fläche/Kontrolle) – je 3 Formen.

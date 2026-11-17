@@ -5,13 +5,14 @@ import { BAL } from '../config.js';
 import { CREATURES } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
 import { ENEMIES, BOSSES } from '../data/enemies.js';
-import { MAPS } from '../data/maps.js';
+import { MAPS, PATH_HALF } from '../data/maps.js';
 import { waveDef } from '../data/waves.js';
 import { REACTIONS, SYNERGIES } from '../data/meta.js';
 import { baseStats, applyFx, canTier } from './stats.js';
 import { maxStage, formAt } from '../meta/progression.js';
 
 const PLACE = { '.': 'ground', '^': 'high', '~': 'water' };
+export const TOWER_R = 0.42;   // Fußabdruck einer Kreatur (Felder)
 export const TARGETS = ['first', 'last', 'strong', 'weak', 'close', 'fast', 'boss', 'random'];
 export const TARGET_NAMES = { first: 'Erster', last: 'Letzter', strong: 'Stärkster', weak: 'Schwächster', close: 'Nächster', fast: 'Schnellster', boss: 'Boss/Elite', random: 'Zufall' };
 const ELEMENTAL = new Set(['fire', 'lightning', 'earth', 'spirit', 'shadow', 'light']);
@@ -55,28 +56,54 @@ export class World {
 
   // ───────── Befehle (prüfen alles, geben {ok, why} zurück) ─────────
   cellType(cx, cy) { return this.grid[cy]?.[cx]; }
-  towerAt(cx, cy) { return this.towers.find(t => t.cx === cx && t.cy === cy); }
+  terrainAt(x, y) { return this.cellType(Math.floor(x), Math.floor(y)); }
+  towerNear(x, y, r = TOWER_R + 0.12) { let best = null, bd = r; for (const t of this.towers) { const d = Math.hypot(t.x - x, t.y - y); if (d < bd) { bd = d; best = t; } } return best; }
+  pathDist(x, y) {
+    let best = Infinity;
+    for (let i = 1; i < this.pts.length; i++) {
+      const a = this.pts[i - 1], b = this.pts[i], dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy;
+      const f = L ? Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / L)) : 0;
+      best = Math.min(best, Math.hypot(x - a.x - dx * f, y - a.y - dy * f));
+    }
+    return best;
+  }
   costOf(cid) { return cid === this.heroId ? BAL.hero.cost : CREATURES[cid].cost; }
-  canPlace(cid, cx, cy) {
+  // Bester freier Platz (max. Pfadlänge in Reichweite) – für Bot, Tests und Hinweise
+  suggestSpot(cid, range = 3, preferEnd = false) {
+    let best = null, bv = -1;
+    for (let y = 0.5; y < this.H; y += 0.5) for (let x = 0.5; x < this.W; x += 0.5) {
+      if (!this.canPlace(cid, x, y).ok) continue;
+      let cov = 0; for (let d = 0; d < this.len; d += 0.5) { const p = this.posAt(d, {}); if (Math.hypot(p.x - x, p.y - y) <= range) cov += 0.5 * (preferEnd ? 0.5 + d / this.len : 1); }
+      if (this.terrainAt(x, y) === '^') cov *= 1.15;
+      if (cov > bv) { bv = cov; best = [x, y]; }
+    }
+    return best;
+  }
+  // Freie Platzierung: Mittelpunkt (x, y) in Feld-Koordinaten, Kreis-Fußabdruck TOWER_R
+  canPlace(cid, x, y) {
     if (this.over) return { ok: false, why: 'Run ist vorbei' };
-    const ch = this.cellType(cx, cy), kind = PLACE[ch];
     const isHero = cid === this.heroId && HEROES[cid];
     if (!isHero && !this.loadout.includes(cid)) return { ok: false, why: 'Nicht im Team' };
-    if (ch === 'R') return { ok: false, why: 'Fels – erst räumen' };
-    if (!kind) return { ok: false, why: ch === '#' ? 'Auf dem Pfad nicht möglich' : 'Hier ist kein Platz' };
+    if (x < TOWER_R || y < TOWER_R || x > this.W - TOWER_R || y > this.H - TOWER_R) return { ok: false, why: 'Außerhalb der Karte' };
+    if (this.pathDist(x, y) < PATH_HALF + TOWER_R * 0.75) return { ok: false, why: 'Zu nah am Pfad' };
+    const ch = this.terrainAt(x, y), kind = PLACE[ch];
+    if (ch === 'R') return { ok: false, why: 'Fels – antippen zum Räumen' };
+    if (!kind) return { ok: false, why: 'Hier ist kein Platz' };
+    const r = TOWER_R * 0.7;
+    for (const [dx, dy] of [[r, 0], [-r, 0], [0, r], [0, -r]]) { const k = PLACE[this.terrainAt(x + dx, y + dy)]; if (!k || (kind === 'water') !== (k === 'water')) return { ok: false, why: kind === 'water' ? 'Ganz ins Wasser setzen' : 'Hier ist kein Platz' }; }
     const allowed = isHero ? HEROES[cid].place : CREATURES[cid].place;
     if (!allowed.includes(kind)) return { ok: false, why: kind === 'water' ? 'Nur Wasserkreaturen im Wasser' : 'Ungeeigneter Boden' };
-    if (this.towerAt(cx, cy)) return { ok: false, why: 'Feld belegt' };
+    if (this.towers.some(t => Math.hypot(t.x - x, t.y - y) < TOWER_R * 2)) return { ok: false, why: 'Zu nah an einer Kreatur' };
     if (isHero && this.towers.some(t => t.hero)) return { ok: false, why: 'Nur ein Held pro Run' };
-    if (this.towers.length >= BAL.run.maxTowers) return { ok: false, why: 'Zu viele Türme' };
+    if (this.towers.length >= BAL.run.maxTowers) return { ok: false, why: 'Zu viele Kreaturen' };
     if (this.coins < this.costOf(cid)) return { ok: false, why: 'Zu wenig Münzen' };
-    return { ok: true };
+    return { ok: true, kind };
   }
-  place(cid, cx, cy) {
-    const c = this.canPlace(cid, cx, cy); if (!c.ok) return c;
+  place(cid, x, y) {
+    const c = this.canPlace(cid, x, y); if (!c.ok) return c;
     const cost = this.costOf(cid); this.coins -= cost;
     const hero = cid === this.heroId && !!HEROES[cid];
-    const t = { id: this.nid++, cid, hero, cx, cy, x: cx + 0.5, y: cy + 0.5, ground: PLACE[this.cellType(cx, cy)], stage: 0, tiers: [0, 0, 0], spent: cost,
+    const t = { id: this.nid++, cid, hero, cx: Math.floor(x), cy: Math.floor(y), x, y, ground: c.kind, stage: 0, tiers: [0, 0, 0], spent: cost,
       target: 'first', cd: 0.2, mcd: 0.5, cnt: 0, kills: 0, dmg: 0, ang: Math.PI / 2, abCd: 0, ultCd: 0, disabledT: 0, buffs: [], orbT: 0, dashCd: 3, clonesT: 0,
       hlvl: hero ? (this.hooks.heroStart?.() || 1) : 0, hxp: 0, s: null, prot: false };
     this.towers.push(t); this.stats.used.add(cid); this.dirty = true; this.refresh();

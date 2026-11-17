@@ -37,7 +37,7 @@ export class Game {
     if (app.devGod) this.world.god = true;
     app.stage.setMode('game');
     this.view = new GameView(app.stage, this.world, { branch: hooks.branch, skin: cid => this.skinOf(cid) });
-    this.speed = 1; this.paused = false; this.placing = null; this.sel = null; this.ghost = null; this.ghostCell = null;
+    this.speed = 1; this.paused = false; this.placing = null; this.sel = null; this.ghost = null; this.ghostPos = null;
     this.slowT = 0; this.endT = -1; this.finished = false; this.saveT = 0;
     this.hud = new Hud(this);
     this.bindInput();
@@ -70,83 +70,84 @@ export class Game {
     this.hud.refreshPanel(); this.hud.buildTray();
   }
 
-  // ───────── Eingabe ─────────
+  // ───────── Eingabe: frei platzieren (ziehen oder antippen), Kreatur antippen = auswählen ─────────
   bindInput() {
     const cv = this.app.stage.canvas;
     let down = null;
-    this.onDown = e => { this.app.audio.init(); down = { x: e.clientX, y: e.clientY, t: performance.now(), type: e.pointerType }; };
-    this.onUp = e => {
-      if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y); const d = down; down = null;
-      if (moved > 14) return;
-      this.tap(e.clientX, e.clientY, d.type === 'mouse');
+    this.onDown = e => {
+      this.app.audio.init(); down = { x: e.clientX, y: e.clientY, type: e.pointerType };
+      if (this.placing) { const p = this.groundAt(e.clientX, e.clientY); if (p) this.setGhost(p); }
     };
-    this.onMove = e => { if (e.pointerType === 'mouse' && this.placing && !down) { const c = this.cellAt(e.clientX, e.clientY); if (c) this.setGhost(c); } };
-    cv.addEventListener('pointerdown', this.onDown); cv.addEventListener('pointerup', this.onUp); cv.addEventListener('pointermove', this.onMove);
+    this.onMove = e => {
+      if (!this.placing) return;
+      if (e.pointerType === 'mouse' || down || this.dragging) { const p = this.groundAt(e.clientX, e.clientY); if (p) this.setGhost(p); }
+    };
+    this.onUp = e => {
+      const d = down; down = null;
+      if (this.dragging) { this.dragging = false; const p = this.groundAt(e.clientX, e.clientY); if (p && document.elementFromPoint(e.clientX, e.clientY) === cv) { this.setGhost(p); this.tryPlace(); } else this.cancelPlace(); return; }
+      if (!d || e.target !== cv) return;
+      if (this.placing) { const p = this.groundAt(e.clientX, e.clientY); if (p) { this.setGhost(p); this.tryPlace(); } return; }
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 14) return;
+      this.tap(e.clientX, e.clientY);
+    };
+    cv.addEventListener('pointerdown', this.onDown); addEventListener('pointermove', this.onMove); addEventListener('pointerup', this.onUp);
     this.onKey = e => {
-      if (e.key === ' ') { e.preventDefault(); this.hud.waveBtn(); }
+      if (e.key === ' ') { e.preventDefault(); this.hud.playBtn(); }
       else if (e.key === 'Escape') { if (this.placing) this.cancelPlace(); else if (this.sel) this.select(null); else this.hud.pause(); }
       else if (/^[1-6]$/.test(e.key)) { const c = this.hud.trayIds[+e.key - 1]; if (c) this.startPlace(c); }
       else if (e.key === 'f') this.hud.cycleSpeed();
     };
     addEventListener('keydown', this.onKey);
   }
-  cellAt(cx, cy) {
+  groundAt(cx, cy) {
     const st = this.app.stage, W = this.world.W, H = this.world.H;
-    let p = st.ground(cx, cy, 0); if (!p) return null;
-    let x = Math.floor(p.x + W / 2), y = Math.floor(p.z + H / 2);
-    if (this.world.cellType(x, y) === '^' || this.world.cellType(x, y + 1) === '^') {
-      const q = st.ground(cx, cy, 0.34); if (q) { const x2 = Math.floor(q.x + W / 2), y2 = Math.floor(q.z + H / 2); if (this.world.cellType(x2, y2) === '^') { x = x2; y = y2; } }
-    }
-    if (x < 0 || y < 0 || x >= W || y >= H) return null;
+    const p = st.ground(cx, cy, 0); if (!p) return null;
+    let x = p.x + W / 2, y = p.z + H / 2;
+    const q = st.ground(cx, cy, 0.34);
+    if (q) { const x2 = q.x + W / 2, y2 = q.z + H / 2; if (this.world.terrainAt(x2, y2) === '^') { x = x2; y = y2; } }
     return { x, y };
   }
-  tap(cx, cy, mouse) {
-    const c = this.cellAt(cx, cy); if (!c) { if (!this.placing) this.select(null); return; }
-    const w = this.world;
-    if (this.placing) {
-      const ok = w.canPlace(this.placing, c.x, c.y);
-      if ((mouse || (this.ghostCell && this.ghostCell.x === c.x && this.ghostCell.y === c.y)) && ok.ok) { this.doPlace(c); return; }
-      if (!ok.ok && this.ghostCell && this.ghostCell.x === c.x && this.ghostCell.y === c.y) { this.hud.err(ok.why); }
-      const t = w.towerAt(c.x, c.y); if (t && !ok.ok && ok.why === 'Feld belegt') { this.cancelPlace(); this.select(t); return; }
-      this.setGhost(c); return;
-    }
-    const t = w.towerAt(c.x, c.y);
+  tap(cx, cy) {
+    const p = this.groundAt(cx, cy), w = this.world; if (!p) { this.select(null); return; }
+    const t = w.towerNear(p.x, p.y, 0.6);
     if (t) { this.select(t === this.sel ? null : t); this.app.audio.play('click'); return; }
+    const c = { x: Math.floor(p.x), y: Math.floor(p.y) };
     if (w.cellType(c.x, c.y) === 'R') { this.hud.rockPrompt(c); return; }
     this.select(null);
   }
-  startPlace(cid) {
+  startPlace(cid, drag = false) {
     if (this.world.over) return;
-    if (this.placing === cid) { this.cancelPlace(); return; }
+    if (this.placing === cid && !drag) { this.cancelPlace(); return; }
     this.select(null); this.cancelPlace();
     if (this.world.coins < this.world.costOf(cid)) { this.hud.err('Zu wenig Münzen'); return; }
     if (cid === this.heroId && this.world.towers.some(t => t.hero)) { this.hud.err('Kairo ist schon im Einsatz'); return; }
-    this.placing = cid; this.app.audio.play('click');
+    this.placing = cid; this.dragging = drag; this.app.audio.play('click');
     this.view.showArrows(1.5);
     this.hud.buildTray(); this.hud.coachEvent('pick');
-    // Vorschlag: erste freie gute Position zeigen? → nein, Spieler wählt. Hinweis anzeigen.
-    this.hud.hint(cid === this.heroId ? 'Tippe ein Feld für <b>Kairo</b> – nochmal tippen zum Platzieren' : 'Tippe ein Feld neben dem Pfad – <b>nochmal tippen</b> zum Platzieren');
+    this.hud.hint(drag ? 'Auf die Karte <b>ziehen</b> und loslassen' : 'Auf die Karte tippen – Finger bewegen – <b>loslassen</b> zum Platzieren');
   }
-  setGhost(c) {
+  setGhost(p) {
     const w = this.world, cid = this.placing; if (!cid) return;
-    this.ghostCell = c;
-    const ok = w.canPlace(cid, c.x, c.y);
+    this.ghostPos = p;
+    const ok = w.canPlace(cid, p.x, p.y);
     if (!this.ghost || this.ghost.cid !== cid) {
       if (this.ghost) this.view.root.remove(this.ghost.m.root);
       const m = buildModel(cid, { stage: 0, branch: this.P.chars[cid]?.branch, skin: this.skinOf(cid), hlvl: 1 });
       this.view.root.add(m.root); this.ghost = { cid, m };
     }
-    const h = this.view.hAt(c.x, c.y), [x, z] = this.view.toW(c.x + 0.5, c.y + 0.5);
-    this.ghost.m.root.position.set(x, h, z); this.ghost.m.root.scale.setScalar(1.3); this.ghost.m.root.visible = true;
+    const h = this.view.hAt(Math.floor(p.x), Math.floor(p.y)), [x, z] = this.view.toW(p.x, p.y);
+    this.ghost.m.root.position.set(x, h, z); this.ghost.m.root.scale.setScalar(1.75); this.ghost.m.root.visible = true;
     const hero = cid === this.heroId;
     const s = baseStats({ cid, hero, stage: 0, tiers: [0, 0, 0], hlvl: 1 }, this.P.chars[cid]?.level || 1, this.P.chars[cid]?.branch);
-    let r = s.range * (w.cellType(c.x, c.y) === '^' ? 1 + BAL.run.highRange : 1);
-    this.view.showRange(c.x + 0.5, c.y + 0.5, r, ok.ok ? 0xffffff : 0xff5a6a, h);
-    this.view.showCell(c.x, c.y, ok.ok);
-    this.hud.hint(ok.ok ? 'Nochmal tippen zum <b>Platzieren</b>' + (w.cellType(c.x, c.y) === '^' ? ' · Anhöhe: +15 % Reichweite' : w.cellType(c.x, c.y) === '~' ? ' · Wasser: +20 % Tempo' : '') : '⚠ ' + ok.why);
+    const r = s.range * (w.terrainAt(p.x, p.y) === '^' ? 1 + BAL.run.highRange : 1);
+    this.view.showRange(p.x, p.y, r, ok.ok ? 0xffffff : 0xff5a6a, h);
+    this.view.showFoot(p.x, p.y, ok.ok, h);
+    this.ghostOk = ok;
+    this.hud.hint(ok.ok ? (w.terrainAt(p.x, p.y) === '^' ? 'Anhöhe: +15 % Reichweite' : w.terrainAt(p.x, p.y) === '~' ? 'Wasser: +20 % Tempo' : 'Loslassen zum Platzieren') : '⚠ ' + ok.why);
   }
-  doPlace(c) {
-    const r = this.world.place(this.placing, c.x, c.y);
+  tryPlace() {
+    const p = this.ghostPos; if (!p || !this.placing) return;
+    const r = this.world.place(this.placing, p.x, p.y);
     if (!r.ok) { this.hud.err(r.why); return; }
     this.app.audio.play('place');
     this.cancelPlace();
@@ -154,9 +155,9 @@ export class Game {
     this.hud.coachEvent('placed');
   }
   cancelPlace() {
-    this.placing = null; this.ghostCell = null;
+    this.placing = null; this.ghostPos = null; this.dragging = false;
     if (this.ghost) { this.view.root.remove(this.ghost.m.root); this.ghost = null; }
-    this.view.hideRange(); this.view.hideCell(); this.hud.hint(null); this.hud.buildTray();
+    this.view.hideRange(); this.view.hideFoot(); this.hud.hint(null); this.hud.buildTray();
   }
   select(t) {
     this.sel = t; this.view.select(t); this.hud.showPanel(t);
@@ -170,7 +171,7 @@ export class Game {
     const S = this.settings();
     for (const e of w.events) { this.view.handle(e, S); this.sound(e); this.hud.handle(e); this.react(e); }
     w.events.length = 0;
-    if (this.ghost) { this.ghost.m.tick(performance.now() / 1000, dt, {}); this.ghost.m.root.position.y = this.view.hAt(this.ghostCell?.x ?? 0, this.ghostCell?.y ?? 0) + 0.05 + Math.sin(performance.now() / 200) * 0.04; }
+    if (this.ghost && this.ghostPos) { this.ghost.m.tick(performance.now() / 1000, dt, {}); this.ghost.m.root.position.y = this.view.hAt(Math.floor(this.ghostPos.x), Math.floor(this.ghostPos.y)) + 0.08 + Math.sin(performance.now() / 200) * 0.04; }
     if (this.sel && !w.towers.includes(this.sel)) this.select(null);
     if (this.sel && this.selRange !== this.sel.s.range) { this.selRange = this.sel.s.range; this.view.select(this.sel); }
     this.view.update(this.paused ? 0 : dt * Math.min(this.speed, 2), S);
@@ -261,7 +262,7 @@ export class Game {
   quit() { this.world.over = true; this.finished = true; }
   destroy() {
     const cv = this.app.stage.canvas;
-    cv.removeEventListener('pointerdown', this.onDown); cv.removeEventListener('pointerup', this.onUp); cv.removeEventListener('pointermove', this.onMove);
+    cv.removeEventListener('pointerdown', this.onDown); removeEventListener('pointerup', this.onUp); removeEventListener('pointermove', this.onMove);
     removeEventListener('keydown', this.onKey);
     this.cancelPlace(); this.view.dispose(); this.hud.destroy();
   }

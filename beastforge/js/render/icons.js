@@ -70,11 +70,28 @@ export class Preview {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight; if (!w) return;
     if (this.canvas.width !== Math.round(w * this.r.getPixelRatio())) this.r.setSize(w, h, false);
     this.cam.aspect = w / h; this.cam.updateProjectionMatrix();
-    const s = this.span || 1; this.cam.position.set(0, this.h * 0.75 + s * 0.3, s * 2.6 + 0.6); this.cam.lookAt(0, this.h * 0.42, 0);
+    const s = this.span || 1; this.cam.position.set(0, this.h * 0.7 + s * 0.22, s * 1.75 + 0.35); this.cam.lookAt(0, this.h * 0.45, 0);
     if (this.drag > 0) this.drag -= dt; else this.rot += dt * 0.5;
     this.atk = Math.max(0, this.atk - dt * 3);
     if (this.m) { this.pop = Math.min(1, (this.pop || 0) + dt * 3); const k = this.pop, c = 1.9; this.m.root.scale.setScalar(1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2)); this.m.root.rotation.y = this.rot; this.m.tick(this.t, dt, { atk: this.atk }); }
     this.r.render(this.scene, this.cam);
   }
   dispose() { this.alive = false; this.r.dispose(); this.r.forceContextLoss?.(); }
+}
+
+// Karten-Vorschaubild (von schräg oben gerendert, gecacht)
+const mapCache = new Map();
+export async function mapThumb(mapId) {
+  if (mapCache.has(mapId)) return mapCache.get(mapId);
+  const { MAPS } = await import('../data/maps.js'); const { MapView } = await import('./mapview.js');
+  const c = document.createElement('canvas'); const r = new THREE.WebGLRenderer({ canvas: c, antialias: true, preserveDrawingBuffer: true });
+  r.setSize(640, 360, false); r.outputColorSpace = THREE.SRGBColorSpace;
+  const sc = new THREE.Scene(); sc.background = new THREE.Color(0x4f8f3a);
+  sc.add(new THREE.HemisphereLight(0xdff4ff, 0x5a7a3a, 1.3)); const d = new THREE.DirectionalLight(0xfff0d8, 2.1); d.position.set(-6, 14, 5); sc.add(d);
+  const m = MAPS[mapId], mv = new MapView(sc, m);
+  const cam = new THREE.PerspectiveCamera(24, 16 / 9, 0.1, 200), t = 1.12, dist = m.w * 1.9;
+  cam.position.set(0, Math.sin(t) * dist, Math.cos(t) * dist + 0.3); cam.lookAt(0, 0, 0.3);
+  mv.update(0.5, 1); r.render(sc, cam);
+  const url = c.toDataURL('image/jpeg', 0.85); r.dispose(); r.forceContextLoss?.();
+  mapCache.set(mapId, url); return url;
 }

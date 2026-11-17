@@ -11,13 +11,13 @@ export const ENEMIES = {
   beetle: { name: 'Spaltkäfer',    hp: 42,  speed: 1.1,  coins: 14, xp: 5,  lives: 2, r: 0.32, h: 0.55, split: { kind: 'mite', n: 3 }, res: { phys: 0.8 }, desc: 'Zerfällt in drei Käferlinge.' },
   mite:   { name: 'Käferling',     hp: 9,   speed: 1.7,  coins: 3,  xp: 1,  lives: 1, r: 0.2,  h: 0.35, desc: 'Klein und flink.' },
   golem:  { name: 'Felskoloss',    hp: 620, speed: 0.5,  coins: 154, xp: 30, lives: 10, r: 0.5, h: 1.6, heavy: true, res: { phys: 0.75, earth: 0.4, lightning: 1.25 }, desc: 'Titan: riesige KP, kein Rückstoß.' },
-  oni:    { name: 'Oni-Hauptmann', hp: 2200, speed: 0.62, coins: 490, xp: 120, lives: 15, r: 0.55, h: 1.8, heavy: true, miniboss: true, cry: { every: 6, r: 2.2, speed: 0.35, dur: 3 }, res: { phys: 0.8 }, desc: 'Mini-Boss: Kriegsschrei beschleunigt Verbündete.' },
+  oni:    { name: 'Oni-Hauptmann', hp: 1600, speed: 0.62, coins: 490, xp: 120, lives: 10, r: 0.55, h: 1.8, heavy: true, miniboss: true, cry: { every: 6, r: 2.2, speed: 0.35, dur: 3 }, res: { phys: 0.8 }, desc: 'Mini-Boss: Kriegsschrei beschleunigt Verbündete.' },
 };
 
 // Bosse: hp ohne Wellen-Skalierung (nur Schwierigkeit/Endlos). Phasen nach KP-Anteil.
 export const BOSSES = {
   vharox: {
-    name: 'Vharox, Abgrunddrache', title: 'Herr der Aschetiefe', hp: 7200, speed: 0.38, coins: 0, xp: 700, lives: 9999, r: 0.8, h: 2.4,
+    name: 'Vharox, Abgrunddrache', title: 'Herr der Aschetiefe', hp: 3000, speed: 0.36, coins: 0, xp: 700, lives: 100, r: 0.8, h: 2.4,
     heavy: true, boss: true, res: { fire: 0.4, phys: 0.85 },
     phases: [
       { at: 1.00, name: 'Erwachen',     desc: 'Der Drache kriecht aus der Tiefe.' },

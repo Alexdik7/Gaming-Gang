@@ -118,7 +118,8 @@ export class MapView {
       if (side === 0) { x = -this.W / 2 - 0.6 - a * 7; z = -this.H / 2 - 3 + b * (this.H + 2); }
       else if (side === 1) { x = this.W / 2 + 0.6 + a * 7; z = -this.H / 2 - 3 + b * (this.H + 2); }
       else { x = -this.W / 2 - 6 + a * (this.W + 12); z = -this.H / 2 - 0.7 - b * 6; }
-      if (Math.abs(x - this.wx(2)) < 0.8 && z < -this.H / 2) continue; // Pfad-Eingang frei
+      const e0 = this.map.path[0], e1 = this.map.path[1], ex = this.wx(Math.max(0, Math.min(this.W - 1, e1[0]))) , ez = this.wz(e0[1]);
+      if (Math.abs(z - ez) < 1.2 && x < -this.W / 2 + 0.5) continue; // Pfad-Eingang frei
       spots.push([x, z, rnd(i, 3)]);
     }
     const kinds = {
@@ -139,7 +140,10 @@ export class MapView {
   }
 
   buildShrine() {
-    const g = new THREE.Group(); g.position.set(0, 0, this.wz(16) + 0.15); this.root.add(g);
+    const S = []; this.map.grid.forEach((r, y) => [...r].forEach((c, x) => { if (c === 'S') S.push([x, y]); }));
+    const last = this.map.path[this.map.path.length - 1];
+    const cx = S.reduce((a, s) => a + s[0], 0) / S.length + 0.5, cy = last[1];
+    const g = new THREE.Group(); g.position.set(cx - this.W / 2 + 0.25, 0, cy - this.H / 2); g.rotation.y = -Math.PI / 2; g.scale.setScalar(0.9); this.root.add(g);
     const stone = toon(0xd8d2c4), wood = toon(0xd8342c), roof = toon(0x3f9a86), gold = toon(0xffc94a, { emissive: 0x7a5a10, emissiveIntensity: 0.4 });
     g.add(mk(geo.box(), stone, { p: [0, 0.08, 0], s: [2.6, 0.16, 0.95] }));
     g.add(mk(geo.box(), stone, { p: [0, 0.2, -0.05], s: [2.2, 0.1, 0.8] }));
@@ -158,7 +162,8 @@ export class MapView {
     for (const x of [-1.15, 1.15]) { g.add(mk(geo.box(), stone, { p: [x, 0.35, 0.4], s: [0.16, 0.5, 0.16] })); g.add(mk(geo.cone(4), roof, { p: [x, 0.68, 0.4], r: [0, PI / 4, 0], s: [0.2, 0.16, 0.2] })); g.add(mk(geo.sphere(6), glow(0xffd27a, 0.9), { p: [x, 0.5, 0.4], s: 0.05, ol: false })); }
   }
   buildTorii() {
-    const g = new THREE.Group(); g.position.set(this.wx(2), 0, this.wz(0) - 0.25); this.root.add(g);
+    const [px, py] = this.map.path[0], [qx, qy] = this.map.path[1], a = Math.atan2(qy - py, qx - px);
+    const g = new THREE.Group(); g.position.set(0.35 - this.W / 2, 0, py - this.H / 2); g.rotation.y = Math.PI / 2 - a; this.root.add(g);
     const red = toon(0xd8342c), blk = toon(0x2a2a36);
     for (const x of [-0.48, 0.48]) { g.add(mk(geo.cyl(10), red, { p: [x, 0.65, 0], s: [0.06, 1.3, 0.06] })); g.add(mk(geo.cyl(10), blk, { p: [x, 0.06, 0], s: [0.08, 0.12, 0.08] })); }
     g.add(mk(geo.box(), red, { p: [0, 1.06, 0], s: [1.15, 0.07, 0.08] }));
@@ -167,11 +172,14 @@ export class MapView {
     g.add(mk(geo.box(), blk, { p: [0, 1.17, 0.05], s: [0.16, 0.14, 0.02] }));
   }
   buildLanterns(rnd) {
-    const spots = [[1, 3], [9, 7], [1, 9], [9, 11], [4, 14], [6, 12]];
-    this.lanternLights = [];
+    // Laternen: in regelmäßigen Abständen neben dem Pfad, wo Gras ist
+    const P = this.map.path, spots = [];
+    for (let i = 1; i < P.length; i++) { const [ax, ay] = P[i - 1], [bx, by] = P[i], L = Math.hypot(bx - ax, by - ay), nx = -(by - ay) / L, ny = (bx - ax) / L; for (let d = 2.5; d < L - 1; d += 5) { const side = (spots.length % 2) ? 1 : -1; spots.push([ax + (bx - ax) * d / L + nx * 0.7 * side, ay + (by - ay) * d / L + ny * 0.7 * side]); } }
+    this.lanternLights = []; this.lanterns = [];
     for (const [x, y] of spots) {
-      if (this.map.grid[y]?.[x] !== '.') continue;
-      const g = new THREE.Group(); g.position.set(this.wx(x) + (rnd(x, y) - 0.5) * 0.3, 0, this.wz(y) + 0.3); this.root.add(g);
+      if (this.map.grid[Math.floor(y)]?.[Math.floor(x)] !== '.') continue;
+      this.lanterns.push([x, y]);
+      const g = new THREE.Group(); g.position.set(x - this.W / 2, 0, y - this.H / 2); g.scale.setScalar(0.75); this.root.add(g);
       const st = toon(0xa8a49a);
       g.add(mk(geo.cyl(6), st, { p: [0, 0.08, 0], s: [0.12, 0.08, 0.12] }));
       g.add(mk(geo.cyl(6), st, { p: [0, 0.28, 0], s: [0.05, 0.32, 0.05] }));

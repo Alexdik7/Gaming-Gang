@@ -1,5 +1,5 @@
 // Offline-Cache für Beastforge. Bei jeder Änderung CACHE erhöhen!
-const CACHE = 'beastforge-v0.1.0';
+const CACHE = 'beastforge-v0.2.0';
 const FILES = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',
   'js/main.js', 'js/game.js', 'js/audio.js', 'js/config.js',
   'js/data/creatures.js', 'js/data/enemies.js', 'js/data/heroes.js', 'js/data/maps.js', 'js/data/meta.js', 'js/data/waves.js',

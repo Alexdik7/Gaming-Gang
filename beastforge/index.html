@@ -27,23 +27,24 @@
 <div id="hud" class="hidden">
   <div class="top">
     <div class="runbox" title="Run – nur für diese Runde">
-      <div class="pill lives"><span class="ic">❤</span><b id="hLives">100</b></div>
-      <div class="pill coins"><span class="ic">◈</span><b id="hCoins">650</b></div>
-      <div class="pill wave"><span class="ic">≋</span><b id="hWave">0/20</b></div>
+      <div class="pill lives"><span class="ic">❤</span><b id="hLives">150</b></div>
+      <div class="pill coins"><span class="ic">◈</span><b id="hCoins">800</b></div>
     </div>
+    <div class="wavepill"><small>WELLE</small><b id="hWave">1</b></div>
     <div class="accbox" id="hAcc" title="Konto – dauerhaft"><small>KONTO</small><b id="hAccLv">1</b><i><u id="hAccBar"></u></i></div>
     <button class="ibtn" id="bPause" aria-label="Pause">❚❚</button>
   </div>
   <div id="bossBar" class="hidden"><div class="bn"><b id="bossName">Vharox</b><span id="bossPhase">Erwachen</span></div><div class="bb"><u id="bossFill"></u><i style="left:75%"></i><i style="left:50%"></i><i style="left:25%"></i></div></div>
   <div id="toasts"></div>
   <div id="banner"></div>
-  <div class="side">
-    <button class="ibtn speed" id="bSpeed">1×</button>
-    <div id="abilities"></div>
-  </div>
+  <div id="abilities"></div>
   <div id="tip" class="hidden"></div>
-  <button id="bWave" class="wavebtn">▶ Welle 1</button>
-  <div id="tray"></div>
+  <div id="rotate" class="hidden">↻ Quer halten für die beste Ansicht</div>
+  <aside id="shop">
+    <div class="shead"><b>Kreaturen</b><button id="bCancel" class="hidden">✕ Abbrechen</button></div>
+    <div id="tray"></div>
+    <div class="sfoot"><button id="bEarly" class="early hidden"></button><button id="bPlay" class="play go"><span>▶</span><small>Welle 1</small></button></div>
+  </aside>
   <div id="panel" class="hidden"></div>
 </div>
 

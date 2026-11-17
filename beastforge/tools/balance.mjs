@@ -8,8 +8,9 @@ import { BAL } from '../js/config.js';
 const [diff = 'normal', lvlArg = '1', runsArg = '20', bot = 'smart'] = process.argv.slice(2);
 const LVL = +lvlArg, RUNS = +runsArg;
 
-// Plätze nahe am Pfad (Feld-Koordinaten), sortiert nach Nutzen
-const SPOTS = { kitsune: [[4, 4], [3, 7], [7, 9], [5, 11]], raven: [[5, 4], [6, 12]], turtle: [[5, 8], [4, 9], [6, 9]], tiger: [[3, 5], [7, 11]], deer: [[4, 5], [6, 11]], kairo: [[3, 3]] };
+// Bester freier Platz: maximale Pfadlänge in Reichweite (Abtastung alle 0,5 Felder)
+export const autoSpot = (w, cid, range = 3, prefer = null) => w.suggestSpot(cid, range, prefer === 'end');
+const RANGE = { kitsune: 3.1, raven: 3.4, turtle: 1.7, tiger: 2.7, deer: 2.4, kairo: 2.8 };
 
 export function playRun({ diff = 'normal', level = 1, seed = 1, strat = 'smart', team = ['kitsune', 'raven', 'turtle', 'tiger', 'deer'], hero = 'kairo', log = false } = {}) {
   const xp = {}, lv = {};
@@ -27,8 +28,9 @@ export function playRun({ diff = 'normal', level = 1, seed = 1, strat = 'smart',
     for (const cid of want) {
       const need = want.slice(0, want.indexOf(cid) + 1).filter(c => c === cid).length;
       if (placedCount(cid) >= need) continue;
-      const spot = (SPOTS[cid] || []).find(([x, y]) => w.canPlace(cid, x, y).ok);
-      if (spot) { if (w.coins >= w.costOf(cid)) w.place(cid, ...spot); return; }
+      if (w.coins < w.costOf(cid)) return;
+      const spot = autoSpot(w, cid, RANGE[cid], need > 1 ? 'end' : null);
+      if (spot) { w.place(cid, ...spot); return; }
     }
     for (const t of w.towers) { const n = w.nextEvo(t); if (n?.unlocked && w.coins >= n.form.cost) { w.evolve(t.id); return; } }
     const plan = { kitsune: [2, 2, 2, 0, 0, 0, 0, 2, 2], raven: [1, 1, 0, 0, 0, 1, 1, 1], turtle: [0, 0, 0, 0, 1, 1, 1], tiger: [0, 0, 1, 1, 0, 0, 0, 0], deer: [0, 0, 2, 2, 0, 0, 0] };
@@ -40,7 +42,10 @@ export function playRun({ diff = 'normal', level = 1, seed = 1, strat = 'smart',
       const c = w.canUpgrade(t, p);
       if (c.ok && (!best || c.cost < best.cost)) best = { t, p, cost: c.cost };
     }
-    if (best) w.upgrade(best.t.id, best.p);
+    if (best) { w.upgrade(best.t.id, best.p); return; }
+    // nichts mehr zu kaufen → weitere Kreatur nahe dem Pfadende
+    const extra = ['kitsune', 'tiger', 'raven', 'kitsune', 'turtle'][w.towers.length % 5];
+    if (team.includes(extra) && w.coins >= w.costOf(extra) + 200 && w.towers.length < 16) { const sp = autoSpot(w, extra, RANGE[extra], 'end'); if (sp) w.place(extra, ...sp); }
   };
   let guard = 0;
   while (!w.over && guard++ < 200000) {
