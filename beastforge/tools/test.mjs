@@ -1,0 +1,203 @@
+// Systemtests ohne Browser: node --test beastforge/tools/test.mjs
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { World } from '../js/sim/world.js';
+import { canTier, baseStats } from '../js/sim/stats.js';
+import { BAL } from '../js/config.js';
+import { CREATURES } from '../js/data/creatures.js';
+import { defaultProfile, migrate, saveProfile, loadProfile } from '../js/meta/profile.js';
+import { addCharXp, addAccXp, dimFactor, maxStage, unlocked, checkAchievements, charNeed, formsFor, levelFx } from '../js/meta/progression.js';
+import { playRun } from './balance.mjs';
+
+const step = (w, sec) => { for (let i = 0; i < sec * 60; i++) w.step(1 / 60); w.events.length = 0; };
+function mkWorld(P = defaultProfile(), o = {}) {
+  const hooks = {
+    level: cid => P.chars[cid]?.level ?? 1, branch: cid => P.chars[cid]?.branch,
+    charXp: (cid, raw, wave) => addCharXp(P, cid, raw, { wave, diff: 'normal' }).xp,
+    accXp: a => addAccXp(P, a).xp, stat: (k, n, m) => { P.stats[k] = m ? Math.max(P.stats[k] || 0, n) : (P.stats[k] || 0) + n; },
+  };
+  const w = new World({ map: 'ahnenhain', diff: 'normal', loadout: Object.keys(CREATURES), hero: 'kairo', hooks, seed: 7, ...o });
+  return { w, P };
+}
+
+test('Kreuzpfade: 5/2/0 erlaubt, dritter Pfad und zweimal >2 verboten', () => {
+  assert.ok(canTier([4, 2, 0], 0).ok);
+  assert.ok(!canTier([5, 2, 0], 0).ok);
+  assert.ok(!canTier([5, 2, 0], 1).ok, 'zweiter Pfad über 2');
+  assert.ok(!canTier([2, 1, 0], 2).ok, 'dritter Pfad');
+  assert.ok(canTier([0, 2, 4], 2).ok);
+});
+
+test('Platzierung: Pfad, Wasser, Held, Fels, Münzen', () => {
+  const { w } = mkWorld();
+  assert.equal(w.canPlace('kitsune', 2, 1).why, 'Auf dem Pfad nicht möglich');
+  assert.ok(!w.canPlace('kitsune', 5, 8).ok, 'Kitsune nicht ins Wasser');
+  w.coins = 99999;
+  assert.ok(w.place('turtle', 5, 8).ok, 'Schildkröte ins Wasser');
+  assert.ok(!w.canPlace('raven', 5, 8).ok, 'Feld belegt');
+  assert.ok(w.place('kairo', 3, 3).ok);
+  assert.ok(!w.canPlace('kairo', 4, 3).ok, 'nur ein Held');
+  assert.ok(!w.canPlace('kitsune', 3, 11).ok, 'Fels');
+  assert.ok(w.clearRock(3, 11).ok); assert.ok(w.canPlace('kitsune', 3, 11).ok);
+  w.coins = 10; assert.equal(w.canPlace('kitsune', 4, 4).why, 'Zu wenig Münzen');
+});
+
+test('Wirtschaft: Kosten, Upgrade, Verkauf 70 %', () => {
+  const { w } = mkWorld(); w.coins = 5000;
+  const t = w.place('kitsune', 4, 4).tower;
+  w.upgrade(t.id, 0); w.upgrade(t.id, 0);
+  const spent = 500 + 200 + 450; assert.equal(t.spent, spent); assert.equal(w.coins, 5000 - spent);
+  const r = w.sell(t.id); assert.equal(r.value, Math.floor(spent * 0.7));
+});
+
+test('Höhe gibt Reichweite, Wasser gibt Tempo', () => {
+  const { w } = mkWorld(); w.coins = 9999;
+  const a = w.place('kitsune', 4, 4).tower, b = w.place('kitsune', 1, 2).tower;
+  assert.ok(Math.abs(a.s.range / b.s.range - 1.15) < 1e-9);
+  const t = w.place('turtle', 4, 8).tower, t2 = w.place('turtle', 1, 4).tower;
+  assert.ok(t.s.rate > t2.s.rate);
+});
+
+test('XP: mehrere Kreaturen teilen fair nach Schaden', () => {
+  const { w, P } = mkWorld(); w.wave = 1;
+  const k = w.place('kitsune', 4, 4).tower; w.coins = 9999; const r = w.place('raven', 5, 4).tower;
+  const e = w.spawn('golem'); e.hp = 100; e.maxHp = 100;
+  w.damage(e, 30, 'phys', k, { ignoreRes: true, noReact: true }); w.damage(e, 70, 'phys', r, { ignoreRes: true, noReact: true });
+  // Krit kann mehr Schaden machen – wir prüfen nur die Aufteilung
+  const xk = w.stats.xp.kitsune || 0, xr = w.stats.xp.raven || 0;
+  assert.ok(xk > 0 && xr > 0, 'beide bekommen XP');
+  assert.ok(xr > xk, 'mehr Schaden = mehr XP');
+});
+
+test('XP-Grenzfälle: verkaufte Kreatur behält XP, Niederlage behält XP', () => {
+  const { w, P } = mkWorld(); w.coins = 9999;
+  const t = w.place('kitsune', 4, 4).tower; w.startWave(); step(w, 12);
+  const before = P.chars.kitsune.total; assert.ok(before > 0);
+  w.sell(t.id); step(w, 1);
+  assert.ok(P.chars.kitsune.total >= before, 'XP nach Verkauf bleibt');
+  w.lives = 1; w.spawn('golem', [], w.len - 0.1); step(w, 2);
+  assert.ok(w.over && !w.won); assert.ok(P.chars.kitsune.total >= before, 'XP nach Niederlage bleibt');
+});
+
+test('Level-Up mitten in der Welle: Boni und neue Form sofort nutzbar', () => {
+  const { w, P } = mkWorld(); w.coins = 9999;
+  const t = w.place('kitsune', 4, 4).tower;
+  assert.equal(w.evolve(t.id).ok, false, 'Lv 1: Flammenform gesperrt');
+  const r0 = t.s.dmg;
+  P.chars.kitsune.xp = charNeed(4) - 1; P.chars.kitsune.level = 4;
+  addCharXp(P, 'kitsune', 5000, { flat: true }); w.dirty = true; w.step(1 / 60);
+  assert.ok(P.chars.kitsune.level >= 5);
+  assert.ok(t.s.dmg > r0, 'Level-Bonus (+2 % ab Lv 3) wirkt sofort');
+  assert.ok(w.evolve(t.id).ok, 'Evolution jetzt möglich');
+  assert.equal(t.stage, 1); assert.equal(t.s.dmgType, 'fire');
+});
+
+test('Evolution kostet weiterhin Münzen', () => {
+  const { w, P } = mkWorld(); P.chars.kitsune.level = 50; w.coins = 500;
+  const t = w.place('kitsune', 4, 4).tower; w.coins = 100;
+  assert.equal(w.evolve(t.id).why, 'Zu wenig Münzen');
+});
+
+test('Formen: Zweig Geist/Schatten, maxStage nach Level', () => {
+  assert.equal(maxStage('kitsune', 1), 0); assert.equal(maxStage('kitsune', 5), 1); assert.equal(maxStage('kitsune', 15), 2); assert.equal(maxStage('kitsune', 50), 5);
+  assert.equal(formsFor('kitsune', 'shadow').find(f => f.stage === 2).id, 'shadow');
+  assert.equal(formsFor('kitsune', 'spirit').length, 6);
+  const sp = baseStats({ cid: 'kitsune', stage: 2, tiers: [0, 0, 0] }, 15, 'spirit'), sh = baseStats({ cid: 'kitsune', stage: 2, tiers: [0, 0, 0] }, 15, 'shadow');
+  assert.ok(sp.camo && sp.orbs.n === 1); assert.ok(sh.crit.ch >= 0.15 && sh.dmgType === 'shadow');
+});
+
+test('Permanente Boni bleiben klein (Lv 50 ≤ +25 % Schaden ohne Formen)', () => {
+  const a = baseStats({ cid: 'kitsune', stage: 0, tiers: [0, 0, 0] }, 1), b = baseStats({ cid: 'kitsune', stage: 0, tiers: [0, 0, 0] }, 50);
+  assert.ok(b.dmg / a.dmg < 1.25, 'Schaden ' + (b.dmg / a.dmg)); assert.ok(b.rate / a.rate < 1.1);
+  assert.equal(levelFx('kitsune', 2).length, 0);
+});
+
+test('Abnehmender Ertrag gegen Farmen früher Wellen', () => {
+  assert.equal(dimFactor(3, 1, 'normal'), 1);
+  assert.equal(dimFactor(50, 1, 'normal'), BAL.char.dimFloor);
+  assert.ok(dimFactor(30, 20, 'normal') === 1);
+  assert.ok(dimFactor(45, 20, 'hard') > dimFactor(45, 20, 'normal'));
+});
+
+test('Konto-Level schaltet Inhalte frei', () => {
+  const P = defaultProfile();
+  assert.ok(unlocked(P, 'creature', 'kitsune')); assert.ok(!unlocked(P, 'creature', 'tiger')); assert.ok(!unlocked(P, 'mode', 'hard'));
+  const r = addAccXp(P, 50000); assert.ok(r.ups.length >= 5);
+  assert.ok(unlocked(P, 'creature', 'tiger') && unlocked(P, 'mode', 'hard') && unlocked(P, 'hero', 'kairo'));
+});
+
+test('Speichern/Laden + Migration alter Stände', () => {
+  const P = defaultProfile(); P.chars.kitsune.level = 17; P.account.level = 9; P.ach.first_blood = 1;
+  saveProfile(P); const Q = loadProfile();
+  assert.equal(Q.chars.kitsune.level, 17); assert.equal(Q.account.level, 9); assert.ok(Q.ach.first_blood);
+  const old = migrate({ account: { level: 3, xp: 10 }, chars: { kitsune: { level: 4, xp: 5 } } });
+  assert.equal(old.account.level, 3); assert.equal(old.chars.kitsune.level, 4); assert.ok(old.chars.tiger && old.settings && old.stats.kills === 0);
+  assert.equal(JSON.stringify(P).includes('"coins":0,'), true, 'nur Statistik-Münzen, keine Run-Münzen im Profil');
+});
+
+test('Letztes Leben verloren am Wellenende = Niederlage, kein Sieg', () => {
+  const { w } = mkWorld(); w.wave = 20; w.lives = 1;
+  w.spawn('slime', [], w.len - 0.05); for (let i = 0; i < 20; i++) w.step(1 / 60);
+  assert.ok(w.over); assert.equal(w.won, false);
+});
+
+test('3×-Tempo ist deterministisch (fester Zeitschritt)', () => {
+  const a = mkWorld().w, b = mkWorld().w;
+  for (const w of [a, b]) { w.coins = 9999; w.place('kitsune', 4, 4); w.place('tiger', 3, 5); w.startWave(); }
+  for (let i = 0; i < 600; i++) a.tick(1 / 60);
+  for (let i = 0; i < 200; i++) b.tick(3 / 60);
+  assert.equal(a.stats.kills, b.stats.kills); assert.equal(Math.round(a.coins), Math.round(b.coins)); assert.equal(a.enemies.length, b.enemies.length);
+});
+
+test('Boss: Phasen, Feueratem stört Türme, Schutzschild verhindert es', () => {
+  const { w } = mkWorld(); w.coins = 99999;
+  const t = w.place('kitsune', 4, 4).tower;
+  const turtle = w.place('turtle', 5, 5).tower; w.upgrade(turtle.id, 2); w.upgrade(turtle.id, 2);
+  const t2 = w.place('raven', 7, 9).tower;
+  const b = w.spawn('vharox', [], 18); w.posAt(b.d, b);
+  const phases = [];
+  b.hp = b.maxHp * 0.45; for (let i = 0; i < 60 * 12; i++) { w.step(1 / 60); for (const e of w.events) if (e.t === 'bossPhase') phases.push(e.phase); w.events.length = 0; if (t2.disabledT > 0) break; }
+  assert.ok(phases.includes(2), 'Phase Feuersturm erreicht');
+  assert.ok(t.prot, 'Kitsune ist durch Schutzschild geschützt');
+  assert.equal(t.disabledT, 0, 'geschützte Kitsune nicht gestört');
+});
+
+test('Fähigkeiten: Fuchsfeuer-Sturm braucht Lv 8 + Flammenform, Ultimate braucht Neunschweif', () => {
+  const { w, P } = mkWorld(); w.coins = 99999;
+  const t = w.place('kitsune', 4, 4).tower; w.spawn('golem', [], 6);
+  step(w, 1);
+  assert.equal(w.useAbility(t.id, 'ab').ok, false);
+  P.chars.kitsune.level = 30; w.dirty = true; w.evolve(t.id);
+  const hp0 = w.enemies[0].hp; assert.ok(w.useAbility(t.id, 'ab').ok); assert.ok(w.enemies.length === 0 || w.enemies[0].hp < hp0);
+  const second = w.useAbility(t.id, 'ab'); assert.equal(second.ok, false, JSON.stringify(second));
+  assert.equal(w.useAbility(t.id, 'ult').ok, false); w.evolve(t.id); w.evolve(t.id); w.spawn('golem', [], 6); step(w, 0.2);
+  assert.ok(w.useAbility(t.id, 'ult').ok);
+});
+
+test('Held steigt im Run auf und schaltet Meilensteine frei', () => {
+  const { w } = mkWorld(); w.coins = 9999;
+  const h = w.place('kairo', 3, 3).tower; assert.equal(h.hlvl, 1);
+  w.heroXp(h, 100000); assert.equal(h.hlvl, 20); w.step(1 / 60);
+  assert.ok(h.s.camo && h.s.dmgType === 'fire' && h.s.shots >= 3);
+  assert.equal(w.abilityInfo(h).filter(a => a.ready).length, 2);
+});
+
+test('Synergie Seelenhain gibt der Kitsune einen Orb', () => {
+  const { w } = mkWorld(); w.coins = 9999;
+  const k = w.place('kitsune', 4, 4).tower; assert.equal(k.s.orbs.n, 0);
+  w.place('deer', 5, 4); assert.equal(k.s.orbs.n, 1); assert.equal(w.synergies[0].sy.id, 'seelenhain');
+});
+
+test('Erfolge werden erkannt', () => {
+  const P = defaultProfile(); P.stats.kills = 600;
+  const got = checkAchievements(P).map(a => a.id);
+  assert.ok(got.includes('first_blood') && got.includes('hunter'));
+  assert.equal(checkAchievements(P).length, 0, 'nicht doppelt');
+});
+
+test('Balance: Charakter-Lv 15 gewinnt Normal, Lv 1 kommt mindestens bis Welle 15', () => {
+  const hi = [1, 2, 3].map(s => playRun({ level: 15, seed: s }));
+  assert.ok(hi.every(r => r.won), 'Lv 15: ' + hi.map(r => r.wave).join(','));
+  const lo = [1, 2, 3].map(s => playRun({ level: 1, seed: s }));
+  assert.ok(lo.every(r => r.wave >= 15), 'Lv 1: ' + lo.map(r => r.wave).join(','));
+});

@@ -1,0 +1,85 @@
+// BEASTFORGE – alle Balance-Regler an EINEM Ort. Keine Zahlen in der Logik verstreuen.
+export const VERSION = '0.1.0';
+
+export const BAL = {
+  tick: 1 / 60,               // fester Simulationsschritt (s)
+  maxSubsteps: 12,            // pro Bild höchstens so viele Schritte (3× Tempo bleibt stabil)
+
+  run: {
+    sellRefund: 0.7,          // Verkauf: 70 % aller Ausgaben zurück
+    waveBonus: w => 130 + 28 * w,           // Münzen am Wellenende
+    earlyCall: w => 20 + 4 * w,            // Bonus für frühes Rufen der nächsten Welle
+    rockClear: 150,           // Felsbrocken räumen
+    highRange: 0.15,          // Anhöhe: +15 % Reichweite
+    synergyRange: 3.2,        // Abstand für Synergien (Felder)
+    maxTowers: 40,
+  },
+
+  // Schwierigkeiten: Run-Werte und Fortschritts-Multiplikatoren getrennt
+  diff: {
+    normal:  { name: 'Normal',   start: 650, lives: 100, hp: 1.00, speed: 1.00, coins: 1.00, xp: 1.0, acc: 1.0, waves: 20 },
+    hard:    { name: 'Schwer',   start: 800, lives: 60,  hp: 1.25, speed: 1.05, coins: 0.95, xp: 1.5, acc: 1.4, waves: 20 },
+    endless: { name: 'Endlos',   start: 650, lives: 100, hp: 1.00, speed: 1.00, coins: 1.00, xp: 1.15, acc: 1.1, waves: Infinity },
+  },
+  hpScale: w => 1 + 0.10 * (w - 1) + 0.0044 * (w - 1) ** 2,   // Gegner-KP je Welle
+  endlessScale: w => w <= 20 ? 1 : 1 + 0.09 * (w - 20) + 0.004 * (w - 20) ** 2,
+
+  // Kreuzpfade: ein Pfad bis 5, ein zweiter bis 2, der dritte bleibt zu
+  cross: { main: 5, second: 2 },
+
+  // ---- SYSTEM B: Charakter-XP (pro Kreatur, dauerhaft) ----
+  char: {
+    maxLevel: 50,
+    need: L => Math.round(120 + 70 * Math.pow(L, 1.45)),     // XP von L nach L+1
+    waveScale: 0.07,          // spätere Wellen geben mehr XP
+    expected: w => 2 + w * 1.55,  // „angemessenes“ Level für eine Welle
+    dimStep: 0.07,            // je Level über Erwartung −7 % …
+    dimFloor: 0.15,           // … aber nie unter 15 %
+    survive: w => 4 + 1.2 * w,    // XP je eingesetzter Kreatur pro überstandener Welle
+    winBonus: 0.25,           // Sieg: +25 % der Run-XP
+    bossMul: 1.0,
+  },
+
+  // ---- SYSTEM C: Konto-XP (Spieler, dauerhaft) ----
+  acc: {
+    maxLevel: 100,
+    need: L => Math.round(380 + 120 * Math.pow(L, 1.3)),
+    wave: w => 8 + 2 * w,
+    win: 300, bossKill: 150, miniBoss: 50, charLevelUp: 20, firstMapClear: 400,
+  },
+
+  // Held (Kairo): Level IM Run (1–20) + dauerhafter Rang
+  hero: {
+    cost: 450,
+    maxLevel: 20,
+    need: L => Math.round(55 * Math.pow(L, 1.45)),   // In-Run-XP
+    perLevel: 0.06,             // +6 % Schaden je Level
+    dmgXp: 0.3,                // In-Run-XP je Schadenspunkt
+    waveXp: w => 25 + 6 * w,
+    rankNeed: L => Math.round(300 + 140 * Math.pow(L, 1.3)),  // dauerhafter Rang
+    rankMax: 30,
+  },
+
+  // Mastery: Meisterpunkte (Siege mit der Kreatur + Bosskills)
+  mastery: [0, 1, 4, 10, 22, 45],
+
+  // Elemente: Status hält so lange; Reaktion pro Gegner höchstens alle x s
+  elem: { mark: 3.0, reactCd: 1.2 },
+
+  ability: { slowMo: 0.3, slowMoTime: 0.45 },
+};
+
+// Permanente Level-Boni für ALLE Kreaturen (klein halten!)
+export const LEVEL_PERKS = [
+  { lvl: 3,  name: '+2 % Schaden',         fx: { mul: { dmg: 1.02 } } },
+  { lvl: 8,  name: 'Aktive Fähigkeit',     ability: true },
+  { lvl: 10, name: '+3 % Angriffstempo',   fx: { mul: { rate: 1.03 } } },
+  { lvl: 15, name: '+5 % Reichweite',      fx: { mul: { range: 1.05 } } },
+  { lvl: 20, name: 'Passive I',            passive: 20 },
+  { lvl: 25, name: '+5 % Charakter-XP',    xp: 0.05 },
+  { lvl: 30, name: '+8 % Bossschaden',     fx: { mul: { bossMul: 1.08 } } },
+  { lvl: 35, name: '+5 % Krit-Chance',     fx: { add: { 'crit.ch': 0.05 } } },
+  { lvl: 40, name: 'Passive II',           passive: 40 },
+  { lvl: 45, name: '+4 % Schaden',         fx: { mul: { dmg: 1.04 } } },
+  { lvl: 50, name: 'Meister-Passive',      passive: 50 },
+];

@@ -1,0 +1,451 @@
+// Prozedurale 3D-Modelle (eigene Designs, keine Fremd-Assets). Jedes Modell blickt nach +z, Ursprung am Boden.
+// buildModel(id, {stage, branch, tiers, skin}) → { root, tick(t, dt, st) }   st = { atk 0..1, dis, hlvl }
+import * as THREE from 'three';
+import { toon, glow, flat, mk, geo, merge, optimize, anim } from './toon.js';
+
+const PI = Math.PI;
+const S = () => geo.sphere(12), C = () => geo.cone(12), Y = () => geo.cyl(12), B = () => geo.box(), CP = () => geo.caps();
+const add = (par, g, m, o) => { const x = mk(g, m, o); par.add(x); return x; };
+const grp = (par, p = [0, 0, 0], r = [0, 0, 0]) => { const g = new THREE.Group(); g.position.set(...p); g.rotation.set(...r); par.add(g); return g; };
+const lerpHex = (a, b, f) => new THREE.Color(a).lerp(new THREE.Color(b), f).getHex();
+function skinPal(P, skin) {
+  if (!skin) return P;
+  const o = { ...P };
+  if (skin === 'moon') { o.fur = lerpHex(P.fur, 0xe9eef9, 0.7); o.cream = 0xffffff; o.sock = lerpHex(P.sock, 0x8fa3c8, 0.6); }
+  if (skin === 'star') { o.fur = 0x26305e; o.cream = 0x8fa0ff; o.sock = 0x121638; o.stars = true; }
+  return o;
+}
+function sparkles(par, n, r, h, color = 0xffffff) {
+  const out = [];
+  for (let i = 0; i < n; i++) out.push(add(par, S(), glow(color, 0.9), { p: [(Math.random() - 0.5) * r, h * 0.4 + Math.random() * h, (Math.random() - 0.5) * r], s: 0.018 + Math.random() * 0.015, ol: false }));
+  return out;
+}
+
+// ───────────────────────── KITSUNE ─────────────────────────
+const FOX = {
+  young:     { fur: 0xf08a3c, cream: 0xfff1dc, sock: 0x5a3326, inner: 0xffb8a8, tip: 0xfff6ea },
+  flame:     { fur: 0xff6a2a, cream: 0xffe6c8, sock: 0x6a2a1c, inner: 0xff9b7a, mark: 0xff2e3a, tip: 0xffe2a0, flame: 0xff9a2a },
+  spirit:    { fur: 0xf3f1ff, cream: 0xffffff, sock: 0x8fb8ff, inner: 0x9ff0ff, mark: 0x3ad0ff, eye: 0x6ff6ff, tip: 0xdffcff, flame: 0x7df3ff },
+  shadow:    { fur: 0x3a2a52, cream: 0x6d5a8c, sock: 0x1c1428, inner: 0xb07bff, mark: 0xc77bff, eye: 0xd28bff, tip: 0x9a7bd0, flame: 0xa060ff },
+  ninetail:  { fur: 0xfff1df, cream: 0xffffff, sock: 0xd65a3a, inner: 0xff8a8a, mark: 0xe8203a, eye: 0xffc94a, tip: 0xffd9b0, flame: 0xff7a2a, gold: 0xffc94a },
+  celestial: { fur: 0xfffaf0, cream: 0xffffff, sock: 0xf2c35a, inner: 0xffe2a8, mark: 0xffb020, eye: 0xfff2a8, tip: 0xfff7d8, flame: 0xffe9a0, gold: 0xffd257 },
+  astral:    { fur: 0x2e338a, cream: 0x7884ff, sock: 0x141640, inner: 0x9fe8ff, mark: 0x9fe8ff, eye: 0xe8f8ff, tip: 0xbfe9ff, flame: 0x9fb4ff, gold: 0xc8d8ff, em: 0x1c2470, stars: true },
+};
+function fox(o) {
+  const st = o.stage || 0, br = o.branch || 'spirit', tiers = o.tiers || [0, 0, 0];
+  const key = st === 2 ? br : ['young', 'flame', 'spirit', 'ninetail', 'celestial', 'astral'][st];
+  const P = skinPal(FOX[key], o.skin);
+  const root = new THREE.Group(), body = grp(root);
+  const sc = [0.82, 0.92, 1.0, 1.14, 1.2, 1.28][st]; body.scale.setScalar(sc);
+  const fur = toon(P.fur, P.em ? { emissive: P.em, emissiveIntensity: 0.7 } : {}), cream = toon(P.cream), sock = toon(P.sock), dark = toon(0x231a2a);
+  add(body, S(), fur, { p: [0, 0.4, 0], s: [0.27, 0.25, 0.36] });
+  add(body, S(), cream, { p: [0, 0.43, 0.2], s: [0.18, 0.2, 0.14] });
+  for (const [x, z] of [[-0.13, 0.2], [0.13, 0.2], [-0.13, -0.17], [0.13, -0.17]]) {
+    add(body, CP(), fur, { p: [x, 0.19, z], s: [0.11, 0.2, 0.11] });
+    add(body, S(), sock, { p: [x, 0.06, z + 0.02], s: [0.065, 0.05, 0.08], ol: 0.012 });
+  }
+  const head = grp(body, [0, 0.67, 0.27]);
+  add(head, S(), fur, { s: [0.22, 0.2, 0.21] });
+  add(head, C(), fur, { p: [0, -0.04, 0.2], r: [PI / 2, 0, 0], s: [0.105, 0.24, 0.085] });
+  add(head, S(), cream, { p: [0, -0.1, 0.13], s: [0.11, 0.07, 0.12], ol: 0.012 });
+  add(head, S(), dark, { p: [0, -0.035, 0.315], s: 0.03, ol: false });
+  for (const sd of [-1, 1]) {
+    add(head, C(), cream, { p: [sd * 0.19, -0.06, -0.01], r: [0, 0, sd * 2.1], s: [0.07, 0.14, 0.06], ol: 0.012 });
+    const ear = grp(head, [sd * 0.12, 0.15, -0.03], [0, 0, -sd * 0.3]);
+    add(ear, C(), fur, { p: [0, 0.13, 0], s: [0.085, 0.27, 0.06] });
+    add(ear, C(), toon(P.inner), { p: [0, 0.1, 0.025], s: [0.05, 0.18, 0.03], ol: false });
+    add(ear, C(), sock, { p: [0, 0.235, 0], s: [0.04, 0.06, 0.03], ol: false });
+    const eyeM = P.eye ? toon(P.eye, { emissive: P.eye, emissiveIntensity: 1.4 }) : dark;
+    add(head, S(), eyeM, { p: [sd * 0.085, 0.03, 0.165], s: [0.036, 0.05, 0.025], ol: false });
+    if (!P.eye) add(head, S(), flat(0xffffff), { p: [sd * 0.078, 0.05, 0.185], s: 0.013, ol: false });
+    if (P.mark) add(head, B(), flat(P.mark), { p: [sd * 0.13, -0.005, 0.12], r: [0, sd * 0.7, sd * 0.25], s: [0.08, 0.016, 0.01], ol: false });
+  }
+  if (P.mark) add(head, geo.oct(), toon(P.mark, { emissive: P.mark, emissiveIntensity: 0.6 }), { p: [0, 0.13, 0.15], s: [0.025, 0.04, 0.012], ol: false });
+  // Schweife
+  const n = [1, 2, 3, 9, 9, 9][st], tails = [];
+  const tipM = P.flame ? toon(P.tip, { emissive: P.flame, emissiveIntensity: 0.5 }) : toon(P.tip);
+  // Schweife fächern sich hinter dem Körper nach oben auf (Neunschweif-Silhouette)
+  for (let i = 0; i < n; i++) {
+    const base = n === 1 ? 0 : (i / (n - 1) - 0.5) * (n > 3 ? 2.5 : 1.0);
+    const tg = grp(body, [0, 0.42, -0.3], [-0.2, base * 0.25, base]);
+    const k = n > 3 ? 0.82 : 1;
+    add(tg, S(), fur, { p: [0, 0.05 * k, -0.12 * k], s: [0.1 * k, 0.1 * k, 0.14 * k] });
+    add(tg, S(), fur, { p: [0, 0.2 * k, -0.24 * k], s: [0.15 * k, 0.15 * k, 0.17 * k] });
+    add(tg, S(), fur, { p: [0, 0.37 * k, -0.29 * k], s: [0.14 * k, 0.14 * k, 0.14 * k] });
+    add(tg, S(), tipM, { p: [0, 0.5 * k, -0.29 * k], s: [0.1 * k, 0.11 * k, 0.1 * k] });
+    if (P.flame && st >= 1) add(tg, C(), glow(P.flame, 0.8), { p: [0, 0.64 * k, -0.28 * k], s: [0.07 * k, 0.2 * k, 0.07 * k], ol: false });
+    tg.userData.base = base; tails.push(tg);
+  }
+  const extra = [];
+  if (st >= 3) {
+    add(body, geo.torus(0.22), toon(0xd8342c), { p: [0, 0.6, 0.2], r: [PI / 2.4, 0, 0], s: 0.15 });
+    add(body, S(), toon(P.gold, { emissive: P.gold, emissiveIntensity: 0.35 }), { p: [0, 0.5, 0.33], s: 0.045 });
+  }
+  let halo = null, runes = null, rings = [];
+  if (st >= 4) {
+    halo = add(head, geo.torus(0.07), glow(P.gold, 0.95), { p: [0, 0.14, -0.14], s: 0.25, ol: false });
+    runes = grp(root, [0, 0.55 * sc, 0]);
+    for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2; add(runes, B(), glow(P.gold, 0.9), { p: [Math.cos(a) * 0.62, 0, Math.sin(a) * 0.62], r: [0, -a, 0], s: [0.09, 0.13, 0.01], ol: false }); }
+  }
+  if (st >= 5) {
+    for (let i = 0; i < 2; i++) rings.push(add(root, geo.torus(0.025), glow(i ? 0x9fe8ff : 0xc8a8ff, 0.8), { p: [0, 0.6, 0], r: [PI / 2 + i * 0.6, i * 0.8, 0], s: 0.75 + i * 0.12, ol: false }));
+  }
+  if (P.stars) extra.push(...sparkles(body, 14, 0.55, 0.8, 0xdfe8ff));
+  // Pfad-Optik
+  if (tiers[2] >= 1) {
+    add(body, geo.torus(0.3), toon(0xc8283a), { p: [0, 0.58, 0.16], r: [PI / 2.3, 0, 0], s: 0.15 });
+    const rib = grp(body, [0.08, 0.6, 0.05]);
+    add(rib, B(), toon(0xc8283a), { p: [0.04, -0.02, -0.14], r: [0.6, 0.3, 0], s: [0.06, 0.012, 0.22] });
+    extra.push(rib);
+  }
+  if (tiers[2] >= 3) add(body, B(), toon(0x2a2a3a), { p: [0.24, 0.36, 0], r: [0, 0, 0.2], s: [0.03, 0.12, 0.16] });
+  if (tiers[0] >= 3) for (const sd of [-1, 1]) add(body, C(), glow(0xff8a2a, 0.75), { p: [sd * 0.12, 0.66, -0.08], r: [0, 0, sd * 0.3], s: [0.06, 0.22, 0.06], ol: false });
+  let ofuda = null;
+  if (tiers[1] >= 3) {
+    ofuda = grp(root, [0, 0.8 * sc, 0]);
+    for (let i = 0; i < 4; i++) { const a = i / 4 * PI * 2; const p = add(ofuda, B(), flat(0xfff8ec), { p: [Math.cos(a) * 0.45, 0, Math.sin(a) * 0.45], r: [0, -a, 0], s: [0.07, 0.16, 0.005], ol: false }); add(p, B(), flat(0xd8203a), { p: [0, 0.1, 0.6], s: [0.6, 0.15, 1], ol: false }); }
+  }
+  let blink = 2 + Math.random() * 3;
+  anim(body, head, runes, ofuda, ...tails);
+  const tick = (t, dt, s) => {
+    const float = st >= 5 ? 0.22 + Math.sin(t * 1.6) * 0.05 : 0;
+    body.position.y = Math.abs(Math.sin(t * 3.4)) * 0.012 + float;
+    body.position.z = (s.atk || 0) * 0.07;
+    head.rotation.x = -(s.atk || 0) * 0.35 + Math.sin(t * 1.3) * 0.04;
+    head.rotation.z = Math.sin(t * 0.9) * 0.05;
+    tails.forEach((tg, i) => { tg.rotation.z = tg.userData.base + Math.sin(t * 2.3 + i * 0.7) * 0.12; tg.rotation.x = -0.2 + Math.sin(t * 1.9 + i) * 0.08; });
+    if (halo) halo.rotation.z = t * 0.6;
+    if (runes) { runes.rotation.y = t * 0.8; runes.position.y = 0.55 * sc + float + Math.sin(t * 2) * 0.04; }
+    if (ofuda) ofuda.rotation.y = -t * 1.1;
+    rings.forEach((r, i) => { r.rotation.z = t * (0.5 + i * 0.3); r.position.y = 0.6 * sc + float; });
+    blink -= dt; if (blink < 0) blink = 2.5 + Math.random() * 3;
+  };
+  return { root, tick, height: 1.0 * sc };
+}
+
+// ───────────────────────── DONNERTIGER ─────────────────────────
+function tiger(o) {
+  const st = o.stage || 0;
+  const P = skinPal({ fur: [0xf2b02c, 0xffc83a, 0xfff2d8][st], cream: 0xfff6e6, sock: 0x1d2550, inner: 0xff9a8a }, o.skin);
+  const root = new THREE.Group(), body = grp(root); const sc = [0.9, 1.05, 1.22][st]; body.scale.setScalar(sc);
+  const fur = toon(P.fur), cream = toon(P.cream), stripe = toon(st === 2 ? 0x2a3ea0 : P.sock), elec = 0x7fe3ff;
+  add(body, CP(), fur, { p: [0, 0.42, 0], r: [PI / 2, 0, 0], s: [0.42, 0.42, 0.44] });
+  add(body, S(), cream, { p: [0, 0.36, 0.06], s: [0.17, 0.12, 0.3], ol: false });
+  for (let i = 0; i < 4; i++) for (const sd of [-1, 1]) add(body, B(), stripe, { p: [sd * 0.17, 0.5, -0.2 + i * 0.13], r: [0, 0, sd * 0.5], s: [0.05, 0.16, 0.035], ol: false });
+  for (let i = 0; i < 3; i++) add(body, B(), stripe, { p: [0, 0.63, -0.18 + i * 0.14], s: [0.2, 0.02, 0.035], ol: false });
+  for (const [x, z] of [[-0.14, 0.2], [0.14, 0.2], [-0.14, -0.2], [0.14, -0.2]]) add(body, CP(), fur, { p: [x, 0.18, z], s: [0.13, 0.22, 0.13] });
+  const head = grp(body, [0, 0.62, 0.34]);
+  add(head, S(), fur, { s: [0.22, 0.2, 0.2] });
+  add(head, S(), cream, { p: [0, -0.06, 0.13], s: [0.14, 0.1, 0.1] });
+  add(head, S(), toon(0x3a2030), { p: [0, -0.02, 0.22], s: [0.04, 0.03, 0.03], ol: false });
+  for (const sd of [-1, 1]) {
+    add(head, S(), fur, { p: [sd * 0.15, 0.15, -0.02], s: [0.07, 0.07, 0.035] });
+    add(head, S(), toon(P.inner), { p: [sd * 0.15, 0.15, 0.005], s: [0.04, 0.04, 0.01], ol: false });
+    add(head, S(), toon(st ? elec : 0x2a1a20, st ? { emissive: elec, emissiveIntensity: 1.2 } : {}), { p: [sd * 0.08, 0.04, 0.165], s: [0.035, 0.03, 0.02], ol: false });
+    add(head, B(), stripe, { p: [sd * 0.06, 0.15, 0.14], r: [0.3, 0, sd * 0.4], s: [0.03, 0.08, 0.01], ol: false });
+    if (st >= 1) { // Blitzhörner (Zickzack)
+      const h = grp(head, [sd * 0.1, 0.17, -0.02], [-0.3, 0, -sd * 0.35]);
+      add(h, B(), toon(0xffe14d, { emissive: 0xffd000, emissiveIntensity: 0.8 }), { p: [0, 0.06, 0], r: [0, 0, sd * 0.4], s: [0.03, 0.12, 0.03], ol: 0.01 });
+      add(h, B(), toon(0xffe14d, { emissive: 0xffd000, emissiveIntensity: 0.8 }), { p: [sd * 0.03, 0.15, 0], r: [0, 0, -sd * 0.4], s: [0.025, 0.1, 0.025], ol: 0.01 });
+    }
+  }
+  let mane = null;
+  if (st >= 2) { mane = grp(body, [0, 0.6, 0.24]); for (let i = 0; i < 10; i++) { const a = i / 10 * PI * 2; add(mane, C(), toon(0xfff2d8, { emissive: elec, emissiveIntensity: 0.25 }), { p: [Math.cos(a) * 0.17, Math.sin(a) * 0.17, -0.02], r: [0, 0, a - PI / 2], s: [0.06, 0.18, 0.06] }); } }
+  const tail = grp(body, [0, 0.5, -0.38], [-0.9, 0, 0]);
+  add(tail, CP(), fur, { p: [0, 0.18, 0], s: [0.07, 0.3, 0.07] });
+  const tipC = add(tail, S(), st ? glow(elec, 0.9) : stripe, { p: [0, 0.38, 0], s: 0.06, ol: false });
+  if (o.tiers?.[2] >= 4) add(body, geo.torus(0.06), glow(elec, 0.6), { p: [0, 0.05, 0], r: [PI / 2, 0, 0], s: 0.7, ol: false });
+  anim(body, head, tail, mane);
+  const tick = (t, dt, s) => {
+    body.position.y = Math.sin(t * 2.6) * 0.01; body.position.z = (s.atk || 0) * 0.06;
+    head.rotation.x = -(s.atk || 0) * 0.45; tail.rotation.z = Math.sin(t * 2) * 0.35;
+    tipC.scale.setScalar(0.06 * (st ? 1 + Math.sin(t * 20) * 0.2 : 1));
+    if (mane) mane.rotation.z = Math.sin(t * 3) * 0.05;
+  };
+  return { root, tick, height: 0.9 * sc };
+}
+
+// ───────────────────────── EISENSCHILDKRÖTE ─────────────────────────
+function turtle(o) {
+  const st = o.stage || 0, tiers = o.tiers || [0, 0, 0];
+  const P = skinPal({ fur: [0x6f96b0, 0x5d7fa0, 0x6d7a6a][st], cream: 0xd9b46a, sock: 0x3c7f78, inner: 0x6bbfa8 }, o.skin);
+  const root = new THREE.Group(), body = grp(root); const sc = [0.95, 1.08, 1.25][st]; body.scale.setScalar(sc);
+  const shell = toon(P.fur), rim = toon(P.cream), skin = toon(P.sock);
+  const sh = add(body, new THREE.SphereGeometry(1, 18, 10, 0, PI * 2, 0, PI / 2), shell, { p: [0, 0.18, 0], s: [0.42, 0.34, 0.48] });
+  add(body, geo.torus(0.1), rim, { p: [0, 0.19, 0], r: [PI / 2, 0, 0], s: [0.43, 0.49, 0.5] });
+  const plate = toon(lerpHex(P.fur, 0xffffff, 0.25));
+  add(body, geo.cyl(6), plate, { p: [0, 0.51, 0], s: [0.13, 0.03, 0.13], ol: 0.01 });
+  for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2 + PI / 6; add(body, geo.cyl(6), plate, { p: [Math.cos(a) * 0.22, 0.43, Math.sin(a) * 0.26], r: [Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5], s: [0.1, 0.03, 0.1], ol: 0.01 }); }
+  add(body, S(), skin, { p: [0, 0.15, 0.4], s: [0.15, 0.14, 0.17] });
+  const head = grp(body, [0, 0.24, 0.52]);
+  add(head, S(), skin, { s: [0.15, 0.13, 0.16] });
+  for (const sd of [-1, 1]) { add(head, S(), toon(0x1c1a24), { p: [sd * 0.08, 0.04, 0.11], s: 0.03, ol: false }); add(head, S(), flat(0xffffff), { p: [sd * 0.075, 0.055, 0.135], s: 0.01, ol: false }); }
+  for (const [x, z] of [[-0.3, 0.26], [0.3, 0.26], [-0.3, -0.26], [0.3, -0.26]]) add(body, S(), skin, { p: [x, 0.09, z], s: [0.1, 0.08, 0.12] });
+  if (st >= 1) for (let i = 0; i < 7; i++) { const a = i / 7 * PI * 2; add(body, C(), toon(0xe8e2d0), { p: [Math.cos(a) * 0.3, 0.42, Math.sin(a) * 0.34], r: [Math.sin(a) * 0.9, 0, -Math.cos(a) * 0.9], s: [0.045, 0.14, 0.045] }); }
+  if (st >= 2) { // Moos + Steinschrein auf dem Rücken
+    add(body, S(), toon(0x5aa040), { p: [0, 0.48, -0.05], s: [0.3, 0.07, 0.32] });
+    add(body, B(), toon(0x9a9a92), { p: [0, 0.6, -0.05], s: [0.12, 0.14, 0.12] });
+    add(body, C(4), toon(0x5a4a4a), { p: [0, 0.74, -0.05], r: [0, PI / 4, 0], s: [0.16, 0.1, 0.16] });
+    add(body, S(), glow(0x9fffd0, 0.9), { p: [0, 0.6, 0.02], s: 0.03, ol: false });
+  }
+  let cannon = null;
+  if (tiers[1] >= 1) {
+    cannon = grp(body, [0, 0.55, -0.05]);
+    add(cannon, S(), toon(0x4a4f5a), { s: [0.12, 0.1, 0.12] });
+    add(cannon, Y(), toon(0x3a3e48), { p: [0, 0.07, 0.12], r: [PI / 2.6, 0, 0], s: [0.05 + tiers[1] * 0.008, 0.28, 0.05 + tiers[1] * 0.008] });
+    if (tiers[1] >= 4) add(cannon, Y(), toon(0x3a3e48), { p: [0.09, 0.07, 0.12], r: [PI / 2.6, 0, 0], s: [0.04, 0.26, 0.04] });
+  }
+  if (tiers[2] >= 2) add(body, geo.torus(0.04), glow(0x9ff0ff, 0.5), { p: [0, 0.03, 0], r: [PI / 2, 0, 0], s: 0.62, ol: false });
+  anim(body, head, cannon);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.scale.set(sc * (1 + a * 0.08), sc * (1 - a * 0.12), sc * (1 + a * 0.08));
+    head.position.z = 0.52 - a * 0.08 + Math.sin(t * 1.2) * 0.01; head.rotation.x = Math.sin(t * 0.8) * 0.08;
+    if (cannon) cannon.rotation.y = s.cannon || 0;
+  };
+  return { root, tick, height: 0.7 * sc };
+}
+
+// ───────────────────────── GEISTHIRSCH ─────────────────────────
+function deer(o) {
+  const st = o.stage || 0, tiers = o.tiers || [0, 0, 0];
+  const P = skinPal({ fur: [0xc68a52, 0xd99a5e, 0xf5f0ff][st], cream: 0xfff3e2, sock: 0x5a3a2a, inner: 0xffb8b0 }, o.skin);
+  const root = new THREE.Group(), body = grp(root); const sc = [0.85, 1.0, 1.12][st]; body.scale.setScalar(sc);
+  const fur = toon(P.fur, st === 2 ? { emissive: 0x3a4a7a, emissiveIntensity: 0.2 } : {}), cream = toon(P.cream), hoof = toon(P.sock);
+  add(body, S(), fur, { p: [0, 0.55, 0], s: [0.2, 0.19, 0.34] });
+  for (let i = 0; i < 6; i++) add(body, S(), cream, { p: [(i % 2 ? 1 : -1) * 0.12, 0.66, -0.15 + i * 0.06], s: [0.025, 0.012, 0.025], ol: false });
+  for (const [x, z] of [[-0.1, 0.2], [0.1, 0.2], [-0.1, -0.22], [0.1, -0.22]]) { add(body, Y(), fur, { p: [x, 0.25, z], s: [0.035, 0.42, 0.035], ol: 0.012 }); add(body, Y(), hoof, { p: [x, 0.04, z], s: [0.04, 0.06, 0.04], ol: 0.01 }); }
+  add(body, Y(), fur, { p: [0, 0.78, 0.28], r: [0.5, 0, 0], s: [0.07, 0.36, 0.07] });
+  add(body, S(), cream, { p: [0, 0.55, -0.34], s: [0.06, 0.07, 0.04] });
+  const head = grp(body, [0, 0.98, 0.38]);
+  add(head, S(), fur, { s: [0.12, 0.12, 0.15] });
+  add(head, S(), fur, { p: [0, -0.04, 0.13], s: [0.08, 0.07, 0.1] });
+  add(head, S(), toon(0x2a1a20), { p: [0, -0.03, 0.22], s: 0.025, ol: false });
+  for (const sd of [-1, 1]) {
+    add(head, S(), toon(st === 2 ? 0x9ff0ff : 0x1c1420, st === 2 ? { emissive: 0x9ff0ff, emissiveIntensity: 1 } : {}), { p: [sd * 0.08, 0.03, 0.09], s: [0.025, 0.03, 0.02], ol: false });
+    add(head, S(), fur, { p: [sd * 0.13, 0.07, -0.02], r: [0, 0, sd * 0.5], s: [0.08, 0.035, 0.04] });
+  }
+  // Geweih
+  const ant = st === 2 ? toon(0xbff6ff, { emissive: 0x6fd8ff, emissiveIntensity: 0.7 }) : toon(0xe8d8b8);
+  const leaf = st === 0 ? 0x8fe86a : st === 1 ? 0xffa8c8 : 0xbff6ff;
+  const lights = [];
+  for (const sd of [-1, 1]) {
+    const a = grp(head, [sd * 0.06, 0.1, -0.02], [0, 0, -sd * 0.35]);
+    const L = 0.22 + st * 0.07;
+    add(a, Y(6), ant, { p: [0, L / 2, 0], s: [0.018, L, 0.018], ol: 0.008 });
+    for (let k = 0; k < 2 + st; k++) {
+      const y = L * (0.35 + k * 0.25), br = grp(a, [0, y, 0], [0, 0, sd * (0.8 + k * 0.1)]);
+      add(br, Y(6), ant, { p: [0, 0.06, 0], s: [0.014, 0.12, 0.014], ol: 0.008 });
+      lights.push(add(br, S(), glow(leaf, 0.95), { p: [0, 0.13, 0], s: 0.03 + st * 0.008, ol: false }));
+    }
+  }
+  if (tiers[1] >= 2) add(body, geo.torus(0.25), toon(0xffc94a, { emissive: 0xffa000, emissiveIntensity: 0.4 }), { p: [0, 0.72, 0.2], r: [PI / 2.2, 0, 0], s: 0.08 });
+  let orbs = null;
+  anim(body, head);
+  if (st >= 1 || tiers[0] >= 3) { orbs = grp(root, [0, 0.9, 0]); anim(orbs); for (let i = 0; i < 3; i++) { const a = i / 3 * PI * 2; add(orbs, S(), glow(leaf, 0.85), { p: [Math.cos(a) * 0.5, 0, Math.sin(a) * 0.5], s: 0.04, ol: false }); } }
+  const tick = (t, dt, s) => {
+    head.rotation.x = Math.sin(t * 0.7) * 0.1 - (s.atk || 0) * 0.3; body.position.y = Math.sin(t * 1.8) * 0.008;
+    lights.forEach((l, i) => l.scale.setScalar((0.03 + st * 0.008) * (1 + Math.sin(t * 3 + i) * 0.25)));
+    if (orbs) { orbs.rotation.y = t * 0.6; orbs.position.y = 0.9 * sc + Math.sin(t * 1.5) * 0.06; }
+  };
+  return { root, tick, height: 1.2 * sc };
+}
+
+// ───────────────────────── SCHATTENRABE ─────────────────────────
+function raven(o) {
+  const st = o.stage || 0;
+  const P = skinPal({ fur: [0x2a2340, 0x241c38, 0x1a1030][st], cream: 0xffffff, sock: 0x5a5060, inner: 0x9a7bff }, o.skin);
+  const root = new THREE.Group();
+  // Sitzstange: Steinlaterne
+  add(root, Y(8), toon(0x8a8a90), { p: [0, 0.2, 0], s: [0.07, 0.4, 0.07] });
+  add(root, B(), toon(0x9a9aa0), { p: [0, 0.42, 0], s: [0.22, 0.05, 0.22] });
+  add(root, Y(8), toon(0x8a8a90), { p: [0, 0.03, 0], s: [0.16, 0.06, 0.16] });
+  const body = grp(root, [0, 0.62, 0]); const sc = [0.9, 1.0, 1.18][st]; body.scale.setScalar(sc);
+  const fur = toon(P.fur, st === 2 ? { emissive: 0x3a1a6a, emissiveIntensity: 0.4 } : {}), purple = 0xb07bff;
+  add(body, S(), fur, { p: [0, 0.12, 0], r: [0.3, 0, 0], s: [0.15, 0.17, 0.24] });
+  const head = grp(body, [0, 0.3, 0.14]);
+  add(head, S(), fur, { s: 0.12 });
+  add(head, C(), toon(0x4a4a58), { p: [0, -0.02, 0.15], r: [PI / 2, 0, 0], s: [0.04, 0.14, 0.035] });
+  for (const sd of [-1, 1]) add(head, S(), toon(0xff3a5a, { emissive: 0xff2040, emissiveIntensity: 1.2 }), { p: [sd * 0.065, 0.025, 0.08], s: 0.022, ol: false });
+  if (st >= 1) { // weiße Kampfmaske
+    add(head, S(), toon(0xf6f2ea), { p: [0, 0.02, 0.05], s: [0.11, 0.09, 0.1], ol: 0.008 });
+    for (const sd of [-1, 1]) { add(head, B(), flat(0xd8203a), { p: [sd * 0.05, 0.06, 0.145], r: [0, 0, sd * 0.5], s: [0.05, 0.012, 0.01], ol: false }); add(head, S(), toon(0xff3a5a, { emissive: 0xff2040, emissiveIntensity: 1.4 }), { p: [sd * 0.05, 0.025, 0.14], s: 0.02, ol: false }); }
+  }
+  const wings = [];
+  const nW = st >= 2 ? 2 : 1;
+  for (let k = 0; k < nW; k++) for (const sd of [-1, 1]) {
+    const w = grp(body, [sd * 0.12, 0.2 - k * 0.08, -0.02 - k * 0.05]);
+    add(w, S(), fur, { p: [sd * 0.2, 0, -0.04], s: [0.24, 0.035, 0.12] });
+    add(w, S(), fur, { p: [sd * 0.36, -0.02, -0.08], r: [0, sd * 0.4, 0], s: [0.14, 0.025, 0.08] });
+    if (st >= 2) add(w, S(), glow(purple, 0.7), { p: [sd * 0.3, -0.01, -0.13], s: [0.22, 0.012, 0.03], ol: false });
+    w.userData = { sd, k }; wings.push(w);
+  }
+  const tail = grp(body, [0, 0.06, -0.22]);
+  for (let i = -1; i <= 1; i++) add(tail, B(), fur, { p: [i * 0.04, 0, -0.08], r: [0.2, i * 0.3, 0], s: [0.05, 0.015, 0.18] });
+  let aura = null; if (st >= 2) aura = add(root, geo.torus(0.05), glow(purple, 0.5), { p: [0, 0.48, 0], r: [PI / 2, 0, 0], s: 0.35, ol: false });
+  anim(body, head, tail, ...wings);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.position.y = 0.62 + Math.sin(t * 2.4) * 0.03 + a * 0.05;
+    for (const w of wings) { const f = Math.sin(t * (5 + w.userData.k * 2) + w.userData.k) * 0.25 + a * 0.9; w.rotation.z = w.userData.sd * (0.25 + f); }
+    head.rotation.x = -a * 0.5; tail.rotation.x = Math.sin(t * 2) * 0.1;
+    if (aura) aura.rotation.z = t;
+  };
+  return { root, tick, height: 1.1 * sc };
+}
+
+// ───────────────────────── HELD: KAIRO ─────────────────────────
+function kairo(o) {
+  const lvl = o.hlvl || 1, form = lvl >= 20 ? 2 : lvl >= 15 ? 1 : 0;
+  const root = new THREE.Group(), body = grp(root); body.scale.setScalar(0.95 + form * 0.06);
+  const skin = toon(0xffd9bd), suit = toon(form === 2 ? 0x1c1a3a : 0x23305a), hair = toon(0xff8a2a, form ? { emissive: 0xff5a00, emissiveIntensity: 0.25 } : {}), red = toon(0xd6283a), dark = toon(0x2a2a36);
+  const legs = [];
+  for (const sd of [-1, 1]) { const l = grp(body, [sd * 0.07, 0.3, 0]); add(l, CP(), suit, { p: [0, -0.13, 0], s: [0.09, 0.2, 0.09] }); add(l, S(), dark, { p: [0, -0.27, 0.02], s: [0.055, 0.04, 0.08], ol: 0.01 }); legs.push(l); }
+  add(body, CP(), suit, { p: [0, 0.45, 0], s: [0.2, 0.2, 0.15] });
+  add(body, geo.torus(0.25), toon(0xff9b3d), { p: [0, 0.38, 0], r: [PI / 2, 0, 0], s: 0.105 });
+  const arms = [];
+  for (const sd of [-1, 1]) { const a = grp(body, [sd * 0.13, 0.54, 0]); add(a, CP(), suit, { p: [0, -0.1, 0], s: [0.07, 0.14, 0.07] }); add(a, S(), dark, { p: [0, -0.2, 0], s: 0.045, ol: 0.01 }); a.userData.sd = sd; arms.push(a); }
+  add(body, B(), toon(0x6a4a3a), { p: [0.05, 0.5, -0.1], r: [0, 0, 0.7], s: [0.03, 0.3, 0.03] }); // Tantō
+  add(body, geo.torus(0.35), red, { p: [0, 0.6, 0.0], r: [PI / 2, 0, 0], s: 0.11 });
+  const scarf = grp(body, [0.04, 0.6, -0.08]); add(scarf, B(), red, { p: [0.03, -0.04, -0.12], r: [0.5, 0.2, 0], s: [0.07, 0.012, 0.24] });
+  const head = grp(body, [0, 0.8, 0]);
+  add(head, S(), skin, { s: [0.17, 0.17, 0.16] });
+  add(head, S(), toon(0x3a3a48), { p: [0, -0.06, 0.06], s: [0.155, 0.1, 0.13], ol: 0.01 }); // Halbmaske
+  for (const sd of [-1, 1]) {
+    add(head, S(), toon(form ? 0xffc94a : 0x2a1a20, form ? { emissive: 0xffa000, emissiveIntensity: 0.9 } : {}), { p: [sd * 0.06, 0.02, 0.14], s: [0.025, 0.035, 0.015], ol: false });
+    if (!form) add(head, S(), flat(0xffffff), { p: [sd * 0.055, 0.035, 0.153], s: 0.009, ol: false });
+    const ear = grp(head, [sd * 0.1, 0.14, -0.02], [0, 0, -sd * 0.35]); add(ear, C(), hair, { p: [0, 0.07, 0], s: [0.05, 0.14, 0.035] });
+  }
+  add(head, S(), hair, { p: [0, 0.07, -0.03], s: [0.18, 0.14, 0.17] });
+  for (let i = 0; i < 7; i++) { const a = (i / 6 - 0.5) * 2.4; add(head, C(), hair, { p: [Math.sin(a) * 0.13, 0.13 + Math.cos(a) * 0.07, -0.07], r: [-0.7, 0, -a * 0.8], s: [0.065, 0.2, 0.065] }); }
+  add(head, C(), hair, { p: [0.04, 0.12, 0.12], r: [1.2, 0, -0.4], s: [0.05, 0.14, 0.04] });
+  // Fuchsmaske seitlich am Kopf
+  const m = grp(head, [-0.15, 0.06, 0.02], [0, -1.1, 0.2]); add(m, S(), toon(0xfaf6ee), { s: [0.07, 0.08, 0.04], ol: 0.008 }); add(m, B(), flat(0xd6283a), { p: [0, 0.02, 0.04], s: [0.06, 0.008, 0.005], ol: false });
+  const tails = [];
+  const nT = form === 2 ? 9 : form === 1 ? 3 : 0;
+  for (let i = 0; i < nT; i++) { const b = nT === 1 ? 0 : (i / (nT - 1) - 0.5) * 2.2; const tg = grp(body, [0, 0.36, -0.08], [-0.5, b, 0]); add(tg, C(), glow(form === 2 ? 0xffb030 : 0xff7a2a, 0.75), { p: [0, 0.05, -0.2], r: [-PI / 2.3, 0, 0], s: [0.06, 0.4, 0.06], ol: false }); tg.userData.base = b; tails.push(tg); }
+  anim(body, head, scarf, ...arms, ...tails);
+  let aura = null; if (form) aura = add(root, geo.torus(0.05), glow(0xff8a2a, 0.55), { p: [0, 0.04, 0], r: [PI / 2, 0, 0], s: 0.4, ol: false });
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.position.y = Math.abs(Math.sin(t * 3)) * 0.015;
+    arms.forEach(ar => { ar.rotation.x = ar.userData.sd > 0 ? -a * 2.2 + Math.sin(t * 3) * 0.1 : Math.sin(t * 3 + 1) * 0.1; });
+    head.rotation.y = Math.sin(t * 0.8) * 0.15; scarf.rotation.y = Math.sin(t * 4) * 0.2;
+    tails.forEach((tg, i) => { tg.rotation.y = tg.userData.base + Math.sin(t * 3 + i) * 0.15; });
+    if (aura) aura.scale.setScalar(0.4 + Math.sin(t * 4) * 0.03);
+  };
+  return { root, tick, height: 1.1 };
+}
+
+const BUILDERS = { kitsune: fox, tiger, turtle, deer, raven, kairo };
+export function buildModel(id, o = {}) { const m = (BUILDERS[id] || fox)(o); optimize(m.root); return m; }
+
+// ───────────────────────── GEGNER (verschmolzen für Instancing) ─────────────────────────
+const sp = () => geo.sphere(12), cn = () => geo.cone(8), bx = () => geo.box(), cy = () => geo.cyl(8), cap = () => geo.caps();
+export const ENEMY_GEO = {
+  slime: () => merge([[sp(), 0x7fd05a, [0, 0.24, 0], 0, [0.3, 0.24, 0.3]], [sp(), 0xa8f080, [0.06, 0.38, 0.06], 0, [0.1, 0.06, 0.1]],
+    [sp(), 0xffffff, [-0.09, 0.3, 0.22], 0, 0.065], [sp(), 0xffffff, [0.09, 0.3, 0.22], 0, 0.065], [sp(), 0x1a1424, [-0.09, 0.3, 0.27], 0, 0.035], [sp(), 0x1a1424, [0.09, 0.3, 0.27], 0, 0.035]]),
+  wolf: () => merge([[cap(), 0x5a5a3a, [0, 0.32, 0], [PI / 2, 0, 0], [0.24, 0.3, 0.24]], [sp(), 0x6a6a44, [0, 0.42, 0.28], 0, [0.13, 0.12, 0.14]], [cn(), 0x4a4a30, [0, 0.38, 0.42], [PI / 2, 0, 0], [0.07, 0.16, 0.06]],
+    [cn(), 0x4a4a30, [-0.07, 0.56, 0.24], 0, [0.04, 0.1, 0.03]], [cn(), 0x4a4a30, [0.07, 0.56, 0.24], 0, [0.04, 0.1, 0.03]], [sp(), 0xffe14d, [-0.06, 0.45, 0.39], 0, 0.022], [sp(), 0xffe14d, [0.06, 0.45, 0.39], 0, 0.022],
+    ...[0, 1, 2, 3].map(i => [cn(), 0xd8d0b0, [0, 0.47, 0.12 - i * 0.12], [-0.4, 0, 0], [0.04, 0.14, 0.04]]),
+    ...[[-0.1, 0.14], [0.1, 0.14], [-0.1, -0.14], [0.1, -0.14]].map(([x, z]) => [cy(), 0x4a4a30, [x, 0.12, z], 0, [0.04, 0.24, 0.04]]), [cn(), 0x5a5a3a, [0, 0.36, -0.3], [-1.9, 0, 0], [0.06, 0.25, 0.06]]]),
+  boar: () => merge([[sp(), 0x7a5040, [0, 0.38, 0], 0, [0.3, 0.27, 0.38]], [sp(), 0x6a4434, [0, 0.36, 0.34], 0, [0.17, 0.16, 0.16]], [cy(), 0xe0a0a0, [0, 0.32, 0.5], [PI / 2, 0, 0], [0.07, 0.04, 0.06]],
+    [cn(), 0xfff4e0, [-0.1, 0.3, 0.46], [0.6, 0, 0.3], [0.03, 0.14, 0.03]], [cn(), 0xfff4e0, [0.1, 0.3, 0.46], [0.6, 0, -0.3], [0.03, 0.14, 0.03]],
+    [bx(), 0x8a96a8, [0, 0.62, 0], 0, [0.36, 0.06, 0.5]], [bx(), 0x9aa6b8, [0, 0.58, 0.18], [0.2, 0, 0], [0.3, 0.05, 0.16]], [bx(), 0x8a96a8, [0, 0.5, 0.36], [0.4, 0, 0], [0.26, 0.04, 0.14]],
+    [sp(), 0xff4a3a, [-0.08, 0.42, 0.47], 0, 0.022], [sp(), 0xff4a3a, [0.08, 0.42, 0.47], 0, 0.022],
+    ...[[-0.15, 0.2], [0.15, 0.2], [-0.15, -0.2], [0.15, -0.2]].map(([x, z]) => [cy(), 0x4a3028, [x, 0.12, z], 0, [0.06, 0.24, 0.06]])]),
+  wisp: () => merge([[sp(), 0xdffcff, [0, 0, 0], 0, 0.15], [sp(), 0x7df3ff, [0, 0, 0], 0, 0.21], [cn(), 0x5ad8ff, [0, 0.02, -0.22], [-PI / 2, 0, 0], [0.13, 0.36, 0.13]],
+    [sp(), 0x1a3a5a, [-0.06, 0.03, 0.17], 0, 0.03], [sp(), 0x1a3a5a, [0.06, 0.03, 0.17], 0, 0.03]]),
+  shade: () => merge([[cn(), 0x2a1a40, [0, 0.38, 0], 0, [0.26, 0.76, 0.26]], [sp(), 0x1c1030, [0, 0.74, 0.02], 0, [0.15, 0.16, 0.15]], [cn(), 0x2a1a40, [0, 0.86, -0.04], [-0.3, 0, 0], [0.16, 0.2, 0.16]],
+    [sp(), 0xd07bff, [-0.05, 0.75, 0.14], 0, 0.025], [sp(), 0xd07bff, [0.05, 0.75, 0.14], 0, 0.025]]),
+  mage: () => merge([[cn(), 0x5a3a9a, [0, 0.36, 0], 0, [0.26, 0.72, 0.26]], [sp(), 0xf0d0b0, [0, 0.76, 0], 0, 0.13], [cn(), 0x3a2a7a, [0, 1.0, -0.02], [-0.2, 0, 0], [0.16, 0.4, 0.16]],
+    [cy(), 0x3a2a7a, [0, 0.86, 0], 0, [0.22, 0.02, 0.22]], [cy(), 0x7a5a3a, [0.22, 0.5, 0.06], 0, [0.02, 0.9, 0.02]], [sp(), 0xc8a8ff, [0.22, 0.98, 0.06], 0, 0.07],
+    [sp(), 0x1a1424, [-0.04, 0.78, 0.12], 0, 0.02], [sp(), 0x1a1424, [0.04, 0.78, 0.12], 0, 0.02]]),
+  healer: () => merge([[cn(), 0xe8842a, [0, 0.34, 0], 0, [0.27, 0.68, 0.27]], [bx(), 0xc04a2a, [0, 0.42, 0.06], [0, 0, 0.6], [0.06, 0.6, 0.27]], [sp(), 0xf0c8a0, [0, 0.72, 0], 0, 0.13],
+    [geo.torus(0.15), 0xff9ac8, [0, 0.78, -0.12], 0, 0.18], ...[0, 1, 2, 3, 4].map(i => [sp(), 0xffc0dc, [Math.cos(i * 1.256) * 0.18, 0.78 + Math.sin(i * 1.256) * 0.18, -0.12], 0, [0.05, 0.05, 0.02]]),
+    [sp(), 0x1a1424, [-0.04, 0.74, 0.12], 0, 0.018], [sp(), 0x1a1424, [0.04, 0.74, 0.12], 0, 0.018]]),
+  beetle: () => merge([[sp(), 0x2a8a8a, [0, 0.28, -0.02], 0, [0.3, 0.22, 0.34]], [bx(), 0x1a5a5a, [0, 0.42, -0.02], 0, [0.015, 0.1, 0.6]], [sp(), 0x1a3a3a, [0, 0.22, 0.3], 0, [0.15, 0.12, 0.12]],
+    [cn(), 0x8affd8, [0, 0.32, 0.42], [0.9, 0, 0], [0.035, 0.2, 0.035]], [sp(), 0xff6a3a, [-0.07, 0.26, 0.4], 0, 0.02], [sp(), 0xff6a3a, [0.07, 0.26, 0.4], 0, 0.02],
+    ...[-1, 1].flatMap(sd => [0, 1, 2].map(i => [cy(), 0x1a2a2a, [sd * 0.3, 0.1, -0.15 + i * 0.15], [0, 0, sd * 0.9], [0.025, 0.25, 0.025]]))]),
+  mite: () => merge([[sp(), 0x3aa8a0, [0, 0.16, 0], 0, [0.18, 0.13, 0.2]], [sp(), 0x1a3a3a, [0, 0.13, 0.18], 0, [0.09, 0.07, 0.07]], [sp(), 0xff6a3a, [-0.04, 0.15, 0.24], 0, 0.015], [sp(), 0xff6a3a, [0.04, 0.15, 0.24], 0, 0.015],
+    ...[-1, 1].flatMap(sd => [0, 1].map(i => [cy(), 0x1a2a2a, [sd * 0.17, 0.06, -0.05 + i * 0.1], [0, 0, sd * 0.9], [0.015, 0.15, 0.015]]))]),
+  golem: () => merge([[bx(), 0x8a8478, [0, 0.85, 0], [0, 0, 0.05], [0.7, 0.62, 0.48]], [bx(), 0x9a9488, [0, 1.28, 0.08], 0, [0.36, 0.3, 0.32]], [bx(), 0x5aa040, [0, 1.18, -0.05], 0, [0.6, 0.08, 0.4]],
+    [bx(), 0x7a7468, [-0.48, 0.72, 0.05], [0, 0, 0.15], [0.24, 0.6, 0.24]], [bx(), 0x7a7468, [0.48, 0.72, 0.05], [0, 0, -0.15], [0.24, 0.6, 0.24]], [bx(), 0x6a6458, [-0.18, 0.26, 0], 0, [0.24, 0.52, 0.26]], [bx(), 0x6a6458, [0.18, 0.26, 0], 0, [0.24, 0.52, 0.26]],
+    [bx(), 0xffa040, [-0.08, 1.3, 0.25], 0, [0.07, 0.04, 0.02]], [bx(), 0xffa040, [0.08, 1.3, 0.25], 0, [0.07, 0.04, 0.02]], [bx(), 0xff8a2a, [0.1, 0.9, 0.245], [0, 0, 0.6], [0.02, 0.3, 0.01]]]),
+};
+export const ENEMY_GLOW = { wisp: true };
+export const ENEMY_ALPHA = { shade: 0.62 };
+
+// Mini-Boss und Boss: einzelne Gruppen mit Animation
+export function buildOni() {
+  const root = new THREE.Group(), body = grp(root); body.scale.setScalar(1.25);
+  const sk = toon(0xd23a3a), pelt = toon(0xf0b030), dk = toon(0x2a2030);
+  for (const sd of [-1, 1]) add(body, CP(), sk, { p: [sd * 0.14, 0.25, 0], s: [0.14, 0.3, 0.14] });
+  add(body, B(), pelt, { p: [0, 0.48, 0], s: [0.42, 0.18, 0.3] });
+  for (let i = 0; i < 3; i++) add(body, B(), dk, { p: [-0.1 + i * 0.1, 0.48, 0.155], s: [0.03, 0.18, 0.01], ol: false });
+  add(body, CP(), sk, { p: [0, 0.78, 0], s: [0.38, 0.32, 0.28] });
+  const head = grp(body, [0, 1.12, 0.04]);
+  add(head, S(), sk, { s: [0.19, 0.18, 0.18] });
+  for (const sd of [-1, 1]) {
+    add(head, C(), toon(0xfff2d8), { p: [sd * 0.1, 0.18, 0], r: [0, 0, -sd * 0.3], s: [0.045, 0.18, 0.045] });
+    add(head, S(), toon(0xffe14d, { emissive: 0xffc000, emissiveIntensity: 1 }), { p: [sd * 0.07, 0.03, 0.155], s: [0.035, 0.022, 0.02], ol: false });
+    add(head, C(), toon(0xffffff), { p: [sd * 0.05, -0.1, 0.15], r: [PI, 0, 0], s: [0.02, 0.06, 0.02], ol: false });
+  }
+  add(head, S(), toon(0x2a1a1a), { p: [0, 0.12, -0.05], s: [0.18, 0.1, 0.16] });
+  const arm = grp(body, [0.3, 0.92, 0]); add(arm, CP(), sk, { p: [0, -0.18, 0], s: [0.12, 0.3, 0.12] });
+  const club = grp(arm, [0, -0.34, 0.05], [1.2, 0, 0]); add(club, Y(8), toon(0x5a4a40), { p: [0, 0.3, 0], s: [0.07, 0.65, 0.07] });
+  for (let i = 0; i < 6; i++) add(club, C(6), toon(0xc8c8d0), { p: [Math.cos(i) * 0.08, 0.45 + (i % 3) * 0.08, Math.sin(i) * 0.08], r: [0, 0, PI / 2 + i], s: [0.025, 0.07, 0.025], ol: false });
+  const arm2 = grp(body, [-0.3, 0.92, 0]); add(arm2, CP(), sk, { p: [0, -0.18, 0], s: [0.12, 0.3, 0.12] });
+  anim(body, head, arm, arm2);
+  const tick = (t, dt, s) => { body.position.y = Math.abs(Math.sin(t * 4)) * 0.04; arm.rotation.x = Math.sin(t * 2) * 0.3 - (s.cry ? 1.2 : 0); arm2.rotation.x = -Math.sin(t * 4) * 0.4; head.rotation.z = Math.sin(t * 4) * 0.06; };
+  optimize(root);
+  return { root, tick, height: 1.9 };
+}
+
+export function buildDragon() {
+  const root = new THREE.Group(), body = grp(root); body.scale.setScalar(1.35);
+  const scale = toon(0x3a2050), belly = toon(0xb0503a), horn = toon(0xe8dcc8);
+  const magma = toon(0xff6a2a, { emissive: 0xff4a10, emissiveIntensity: 1.2 });
+  add(body, S(), scale, { p: [0, 0.6, 0], s: [0.42, 0.36, 0.62] });
+  add(body, S(), belly, { p: [0, 0.48, 0.12], s: [0.32, 0.25, 0.45] });
+  for (let i = 0; i < 5; i++) add(body, C(), toon(0x6a2a40), { p: [0, 0.95 - i * 0.02, 0.35 - i * 0.2], r: [-0.4, 0, 0], s: [0.06, 0.22, 0.06] });
+  for (let i = 0; i < 4; i++) add(body, B(), magma, { p: [(i % 2 ? 1 : -1) * 0.3, 0.66, 0.2 - i * 0.18], r: [0, 0.3, (i % 2 ? -1 : 1) * 0.8], s: [0.02, 0.18, 0.01], ol: false });
+  for (const [x, z] of [[-0.3, 0.32], [0.3, 0.32], [-0.3, -0.3], [0.3, -0.3]]) { add(body, CP(), scale, { p: [x, 0.25, z], s: [0.15, 0.35, 0.15] }); add(body, C(), horn, { p: [x, 0.04, z + 0.1], r: [PI / 2, 0, 0], s: [0.04, 0.1, 0.04], ol: false }); }
+  const neck = grp(body, [0, 0.8, 0.5], [-0.5, 0, 0]);
+  add(neck, CP(), scale, { p: [0, 0.2, 0], s: [0.2, 0.42, 0.2] });
+  const head = grp(neck, [0, 0.48, 0.05], [0.9, 0, 0]);
+  add(head, S(), scale, { s: [0.2, 0.17, 0.26] });
+  const jaw = grp(head, [0, -0.06, 0.05]); add(jaw, B(), belly, { p: [0, -0.04, 0.17], s: [0.2, 0.06, 0.3] });
+  const mouth = add(head, S(), glow(0xff8a2a, 0).clone(), { p: [0, -0.06, 0.3], s: 0.08, ol: false });
+  add(head, B(), scale, { p: [0, 0.02, 0.2], s: [0.22, 0.1, 0.26] });
+  for (const sd of [-1, 1]) {
+    add(head, C(), horn, { p: [sd * 0.12, 0.16, -0.12], r: [-1.1, 0, -sd * 0.3], s: [0.05, 0.32, 0.05] });
+    add(head, S(), toon(0xffe14d, { emissive: 0xffa000, emissiveIntensity: 1.4 }), { p: [sd * 0.11, 0.06, 0.15], s: [0.04, 0.025, 0.03], ol: false });
+  }
+  const wings = [];
+  for (const sd of [-1, 1]) {
+    const w = grp(body, [sd * 0.3, 0.85, 0.1]);
+    const shape = new THREE.Shape(); shape.moveTo(0, 0); shape.lineTo(sd * 1.1, 0.5); shape.lineTo(sd * 1.0, -0.1); shape.lineTo(sd * 0.75, -0.35); shape.lineTo(sd * 0.45, -0.3); shape.lineTo(sd * 0.2, -0.45); shape.lineTo(0, -0.2);
+    const mem = new THREE.Mesh(new THREE.ShapeGeometry(shape), toon(0x6a2a50, { side: THREE.DoubleSide }));
+    mem.rotation.x = -PI / 2; mem.castShadow = true; w.add(mem);
+    add(w, Y(6), toon(0x2a1838), { p: [sd * 0.55, 0.01, -0.25], r: [0, 0, PI / 2], s: [0.03, 1.15, 0.03], ol: false });
+    w.userData.sd = sd; wings.push(w);
+  }
+  const tail = []; let prev = body;
+  for (let i = 0; i < 5; i++) { const g = grp(prev, i ? [0, 0, -0.22] : [0, 0.55, -0.55]); add(g, S(), scale, { p: [0, 0, -0.1], s: [0.15 - i * 0.022, 0.13 - i * 0.02, 0.16] }); tail.push(g); prev = g; }
+  add(prev, C(), magma, { p: [0, 0, -0.25], r: [-PI / 2, 0, 0], s: [0.08, 0.2, 0.08], ol: false });
+  const aura = add(root, geo.torus(0.06), glow(0xff3a20, 0).clone(), { p: [0, 0.05, 0], r: [PI / 2, 0, 0], s: 1.1, ol: false });
+  anim(body, neck, head, jaw, ...wings, ...tail);
+  const tick = (t, dt, s) => {
+    const fly = s.fly ? 1 : 0;
+    body.position.y += ((fly ? 1.1 : 0) + Math.sin(t * (fly ? 3 : 1.5)) * 0.05 - body.position.y) * Math.min(1, dt * 4);
+    wings.forEach(w => { const flap = fly ? Math.sin(t * 9) * 0.7 : Math.sin(t * 1.5) * 0.1 - 0.6; w.rotation.z = w.userData.sd * flap; w.rotation.y = w.userData.sd * (fly ? 0 : 0.9); });
+    tail.forEach((g, i) => { g.rotation.y = Math.sin(t * 2 - i * 0.6) * 0.25; });
+    neck.rotation.x = -0.5 + Math.sin(t * 1.2) * 0.08 + (s.roar ? -0.3 : 0);
+    jaw.rotation.x = s.breath || s.roar ? 0.5 : Math.max(0, Math.sin(t * 0.7)) * 0.1;
+    mouth.material.opacity = s.breath ? 0.9 : 0.2 * (s.phase >= 2 ? 1 : 0);
+    aura.material.opacity = s.phase >= 3 ? 0.5 + Math.sin(t * 8) * 0.2 : 0;
+  };
+  optimize(root);
+  return { root, tick, height: 2.6 };
+}

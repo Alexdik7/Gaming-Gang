@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#120e22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Beastforge">
+<title>Beastforge</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
+</script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="floaters"></div>
+<div id="bubbles"></div>
+
+<div id="hud" class="hidden">
+  <div class="top">
+    <div class="runbox" title="Run – nur für diese Runde">
+      <div class="pill lives"><span class="ic">❤</span><b id="hLives">100</b></div>
+      <div class="pill coins"><span class="ic">◈</span><b id="hCoins">650</b></div>
+      <div class="pill wave"><span class="ic">≋</span><b id="hWave">0/20</b></div>
+    </div>
+    <div class="accbox" id="hAcc" title="Konto – dauerhaft"><small>KONTO</small><b id="hAccLv">1</b><i><u id="hAccBar"></u></i></div>
+    <button class="ibtn" id="bPause" aria-label="Pause">❚❚</button>
+  </div>
+  <div id="bossBar" class="hidden"><div class="bn"><b id="bossName">Vharox</b><span id="bossPhase">Erwachen</span></div><div class="bb"><u id="bossFill"></u><i style="left:75%"></i><i style="left:50%"></i><i style="left:25%"></i></div></div>
+  <div id="toasts"></div>
+  <div id="banner"></div>
+  <div class="side">
+    <button class="ibtn speed" id="bSpeed">1×</button>
+    <div id="abilities"></div>
+  </div>
+  <div id="tip" class="hidden"></div>
+  <button id="bWave" class="wavebtn">▶ Welle 1</button>
+  <div id="tray"></div>
+  <div id="panel" class="hidden"></div>
+</div>
+
+<div id="menu"></div>
+<div id="modal" class="hidden"></div>
+<div id="flash"></div>
+<div id="dev" class="hidden"></div>
+<div id="boot"><b>BEAST<span>FORGE</span></b><small>lädt …</small></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
