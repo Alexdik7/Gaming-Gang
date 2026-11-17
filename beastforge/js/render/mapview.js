@@ -17,7 +17,7 @@ function tileGeo(top, side, h = 1) {
 export class MapView {
   constructor(scene, map) {
     this.map = map; this.scene = scene; this.root = new THREE.Group(); scene.add(this.root);
-    this.H = map.grid.length; this.W = map.grid[0].length; this.rocks = new Map(); this.t = 0;
+    this.H = map.grid.length; this.W = map.grid[0].length; this.rocks = new Map(); this.t = 0; this.paths = map.paths || [map.path];
     const th = map.theme;
     const vmat = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradTex });
     const cells = { grass: [], path: [], water: [], high: [] };
@@ -33,7 +33,13 @@ export class MapView {
     inst(tileGeo(th.grass, 0x7a5a3a, 0.6), cells.grass, ([x, y]) => (rnd(x, y) - 0.5) * 0.02, ([x, y], c) => c.setHSL(0, 0, 0.92 + rnd(x + 3, y) * 0.12).lerp(new THREE.Color(th.grass2), (x + y) % 2 ? 0.08 : 0));
     inst(tileGeo(th.dirt, 0x8a6a48, 0.6), cells.path, () => HEIGHT['#'], ([x, y], c) => c.setHSL(0, 0, 0.94 + rnd(x, y + 7) * 0.08));
     inst(tileGeo(0x2a7a9a, 0x5a4a3a, 0.6), cells.water, () => -0.42, (_, c) => c.setRGB(1, 1, 1));
-    inst(tileGeo(0x88c85a, th.cliff, 1.0), cells.high, () => HEIGHT['^'], ([x, y], c) => c.setHSL(0, 0, 0.95 + rnd(x, y) * 0.08));
+    inst(tileGeo(th.high || 0x88c85a, th.cliff, 1.0), cells.high, () => HEIGHT['^'], ([x, y], c) => c.setHSL(0, 0, 0.95 + rnd(x, y) * 0.08));
+    if (th.roof) { // Dachziegel-Reihen + First auf den Dächern
+      const rows = []; for (const [x, y] of cells.high) for (let k = 0; k < 3; k++) rows.push([this.wx(x), HEIGHT['^'] + 0.02, this.wz(y) - 0.33 + k * 0.33]);
+      const rm = new THREE.InstancedMesh(geo.box(), toon(0x5a3a32), rows.length), RM = new THREE.Matrix4();
+      rows.forEach(([x, y, z], i) => { RM.compose(new THREE.Vector3(x, y, z), new THREE.Quaternion(), new THREE.Vector3(1, 0.04, 0.06)); rm.setMatrixAt(i, RM); });
+      this.root.add(rm);
+    }
     // Ränder der Anhöhe: Steinkante
     for (const [x, y] of cells.high) {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -118,8 +124,7 @@ export class MapView {
       if (side === 0) { x = -this.W / 2 - 0.6 - a * 7; z = -this.H / 2 - 3 + b * (this.H + 2); }
       else if (side === 1) { x = this.W / 2 + 0.6 + a * 7; z = -this.H / 2 - 3 + b * (this.H + 2); }
       else { x = -this.W / 2 - 6 + a * (this.W + 12); z = -this.H / 2 - 0.7 - b * 6; }
-      const e0 = this.map.path[0], e1 = this.map.path[1], ex = this.wx(Math.max(0, Math.min(this.W - 1, e1[0]))) , ez = this.wz(e0[1]);
-      if (Math.abs(z - ez) < 1.2 && x < -this.W / 2 + 0.5) continue; // Pfad-Eingang frei
+      if (this.paths.some(P => Math.abs(z - this.wz(P[0][1])) < 1.2) && x < -this.W / 2 + 0.5) continue; // Pfad-Eingänge frei
       spots.push([x, z, rnd(i, 3)]);
     }
     const kinds = {
@@ -161,8 +166,9 @@ export class MapView {
     this.heartLight = new THREE.PointLight(0x6ff6ff, 1.5, 3.5); this.heartLight.position.set(0, 0.7, 0.3); g.add(this.heartLight);
     for (const x of [-1.15, 1.15]) { g.add(mk(geo.box(), stone, { p: [x, 0.35, 0.4], s: [0.16, 0.5, 0.16] })); g.add(mk(geo.cone(4), roof, { p: [x, 0.68, 0.4], r: [0, PI / 4, 0], s: [0.2, 0.16, 0.2] })); g.add(mk(geo.sphere(6), glow(0xffd27a, 0.9), { p: [x, 0.5, 0.4], s: 0.05, ol: false })); }
   }
-  buildTorii() {
-    const [px, py] = this.map.path[0], [qx, qy] = this.map.path[1], a = Math.atan2(qy - py, qx - px);
+  buildTorii() { for (const P of this.paths) this.torii(P); }
+  torii(P) {
+    const [px, py] = P[0], [qx, qy] = P[1], a = Math.atan2(qy - py, qx - px);
     const g = new THREE.Group(); g.position.set(0.35 - this.W / 2, 0, py - this.H / 2); g.rotation.y = Math.PI / 2 - a; this.root.add(g);
     const red = toon(0xd8342c), blk = toon(0x2a2a36);
     for (const x of [-0.48, 0.48]) { g.add(mk(geo.cyl(10), red, { p: [x, 0.65, 0], s: [0.06, 1.3, 0.06] })); g.add(mk(geo.cyl(10), blk, { p: [x, 0.06, 0], s: [0.08, 0.12, 0.08] })); }
@@ -173,8 +179,8 @@ export class MapView {
   }
   buildLanterns(rnd) {
     // Laternen: in regelmäßigen Abständen neben dem Pfad, wo Gras ist
-    const P = this.map.path, spots = [];
-    for (let i = 1; i < P.length; i++) { const [ax, ay] = P[i - 1], [bx, by] = P[i], L = Math.hypot(bx - ax, by - ay), nx = -(by - ay) / L, ny = (bx - ax) / L; for (let d = 2.5; d < L - 1; d += 5) { const side = (spots.length % 2) ? 1 : -1; spots.push([ax + (bx - ax) * d / L + nx * 0.7 * side, ay + (by - ay) * d / L + ny * 0.7 * side]); } }
+    const spots = [];
+    for (const P of this.paths) for (let i = 1; i < P.length; i++) { const [ax, ay] = P[i - 1], [bx, by] = P[i], L = Math.hypot(bx - ax, by - ay), nx = -(by - ay) / L, ny = (bx - ax) / L; for (let d = 2.5; d < L - 1; d += 5) { const side = (spots.length % 2) ? 1 : -1; spots.push([ax + (bx - ax) * d / L + nx * 0.7 * side, ay + (by - ay) * d / L + ny * 0.7 * side]); } }
     this.lanternLights = []; this.lanterns = [];
     for (const [x, y] of spots) {
       if (this.map.grid[Math.floor(y)]?.[Math.floor(x)] !== '.') continue;

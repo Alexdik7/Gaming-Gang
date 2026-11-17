@@ -29,8 +29,8 @@ export const BOSSES = {
 };
 
 export const ELEMENT_NAMES = {
-  phys: 'Physisch', fire: 'Feuer', lightning: 'Blitz', earth: 'Erde', spirit: 'Geist', shadow: 'Schatten', light: 'Licht', astral: 'Astral',
+  phys: 'Physisch', ice: 'Eis', fire: 'Feuer', lightning: 'Blitz', earth: 'Erde', spirit: 'Geist', shadow: 'Schatten', light: 'Licht', astral: 'Astral',
 };
 export const ELEMENT_COLORS = {
-  phys: '#d8dde6', fire: '#ff7a2f', lightning: '#ffe14d', earth: '#c8a060', spirit: '#7df3ff', shadow: '#b07bff', light: '#fff2a8', astral: '#9fb4ff',
+  phys: '#d8dde6', ice: '#9fe8ff', fire: '#ff7a2f', lightning: '#ffe14d', earth: '#c8a060', spirit: '#7df3ff', shadow: '#b07bff', light: '#fff2a8', astral: '#9fb4ff',
 };

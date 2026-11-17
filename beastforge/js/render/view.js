@@ -229,6 +229,20 @@ export class GameView {
         P.burst(x, h + 0.1, z, [0xc8b090, 0x8a7a68], 10, 2.5, 0.16, 0.4, { flat: true });
         break;
       }
+      case 'cone': {
+        const v = this.towers.get(ev.tower.id); if (v) v.atk = 1;
+        const t = ev.tower, [x, z] = at(t.x, t.y), h = this.hAt(t.cx, t.cy);
+        const col = ev.type === 'fire' ? [0xffd27a, 0xff7a2a, 0xff4a10] : [0xffffff, 0xbff4ff, 0x7ad0ff];
+        for (let i = 0; i < 14; i++) { const a = ev.ang + (Math.random() - 0.5) * ev.cone, sp = ev.r * (2 + Math.random() * 1.5); P.spawn(x + Math.cos(a) * 0.3, h + 0.55, z + Math.sin(a) * 0.3, Math.cos(a) * sp, 0.1, Math.sin(a) * sp, col[i % 3], 0.18 + Math.random() * 0.12, 0.35, { drag: 2.2, grow: 1.2 }); }
+        break;
+      }
+      case 'slash': {
+        const v = this.towers.get(ev.tower.id); if (v) v.atk = 1;
+        const [x, z] = at(ev.x, ev.y); this.rings.add(x, 0.4, z, 0.1, 0.55, 0xd8fff0, 0.12);
+        P.burst(x, 0.45, z, [0xffffff, 0xc8ffd8], 4, 2.6, 0.08, 0.18, { flat: true });
+        break;
+      }
+      case 'heal2': this.map.heartGlow && this.rings.add(this.map.heart.getWorldPosition(new THREE.Vector3()).x, 0.06, this.map.heart.getWorldPosition(new THREE.Vector3()).z, 0.2, 1.8, 0xff9ac8, 0.8); break;
       case 'bolt': {
         const v = this.towers.get(ev.tower.id); if (v) v.atk = 1;
         const pts = ev.pts.map((p, i) => { const [x, z] = at(p.x, p.y); return { x, z, y: i === 0 ? 0.8 : 0.45 }; });
@@ -341,13 +355,24 @@ export class GameView {
       case 'eclipse': { this.darken = 2.2; for (const e of this.world.enemies) { const [x, z] = this.toW(e.x, e.y); P.burst(x, 0.6, z, 0xb07bff, 8, 1.5, 0.18, 0.6); } this.stage.addShake(0.4); break; }
       case 'clones': { for (let i = 0; i < 3; i++) { const a = i * 2.1; P.burst(tx + Math.cos(a) * 0.9, 0.5, tz + Math.sin(a) * 0.9, [0x3a3a48, 0xffffff], 20, 2, 0.25, 0.6); } break; }
       case 'whirl': { this.runGhost(this.ghostFire, 'path', 1.1, 0xff8a2a); this.stage.addShake(0.6); break; }
+      case 'blizzard': { this.rings.add(tx, 0.06, tz, 0.3, ev.r, 0xbff4ff, 0.8); this.rings.add(tx, 0.05, tz, 0.3, ev.r, 0x7ad0ff, 0.9, { disc: true, alpha: 0.5 }); for (let i = 0; i < 120; i++) { const a = Math.random() * PI * 2, r = Math.random() * ev.r; P.spawn(tx + Math.cos(a) * r, 2 + Math.random() * 2, tz + Math.sin(a) * r, 0.5, -2, 0, i % 2 ? 0xffffff : 0xbff4ff, 0.14, 1.4, { drag: 0.3 }); } this.flashSky = 0.6; this.stage.addShake(0.7); break; }
+      case 'flurry': { for (let i = 0; i < 6; i++) setTimeout(() => this.rings.add(tx, 0.4, tz, 0.2, 1.4, 0xc8ffd8, 0.25), i * 90); P.burst(tx, 0.5, tz, [0xc8ffd8, 0xffffff], 30, 3, 0.12, 0.4, { flat: true }); break; }
+      case 'quake': { this.rings.add(tx, 0.06, tz, 0.3, ev.r, 0xc8a070, 0.7); this.rings.add(tx, 0.05, tz, 0.3, ev.r * 0.9, 0x8a6a48, 0.8, { disc: true, alpha: 0.45 }); P.burst(tx, 0.2, tz, [0xc8b090, 0x8a7a68, 0x6a5a48], 120, 7, 0.3, 0.9, { flat: true, grav: 3 }); this.stage.addShake(1.2); break; }
+      case 'storm': case 'thunderfall': {
+        const many = ev.id === 'thunderfall';
+        ev.targets.forEach((p, i) => { const [x, z] = this.toW(p.x, p.y); setTimeout(() => { this.bolts.add([{ x, z, y: 7 }, { x: x + 0.3, z, y: 4 }, { x: x - 0.2, z, y: 2 }, { x, z, y: 0.1 }], 0xffffff, many ? 0.16 : 0.13, 0.3); P.burst(x, 0.4, z, [0xffffff, 0x9fe8ff, 0xfff27a], 16, 3.5, 0.2, 0.45); this.rings.add(x, 0.06, z, 0.2, 1.2, 0x9fe8ff, 0.4); }, i * (many ? 25 : 70)); });
+        this.flashSky = many ? 1 : 0.6; this.stage.addShake(many ? 1.3 : 0.7); if (many) this.darken = 1.2;
+        break;
+      }
+      case 'bloom': { this.rings.add(tx, 0.06, tz, 0.3, ev.r, 0xff9ac8, 1.0); for (let i = 0; i < 90; i++) { const a = Math.random() * PI * 2, r = Math.random() * ev.r; P.spawn(tx + Math.cos(a) * r, 0.1, tz + Math.sin(a) * r, 0, 1 + Math.random(), 0, i % 2 ? 0xffb8d0 : 0xffffff, 0.15, 1.4, { drag: 0.5 }); } break; }
+      case 'sanctuary': { this.darken = 0.8; for (const e of this.world.enemies) { const [x, z] = this.toW(e.x, e.y); this.rings.add(x, 0.07, z, 0.2, 0.8, 0xff9ac8, 1.2); } this.rings.add(tx, 0.06, tz, 0.5, 9, 0xffd2e8, 1.4); this.pillars.add(tx, tz, 0.8, 8, 0xffb8d8, 1.5); break; }
     }
   }
   updGhost(dt) {
     const G = this.ghostAnim; if (!G) return;
     G.t += dt; const k = Math.min(1, G.t / G.dur), r = G.gm.root;
     if (G.mode === 'path') {
-      const w = this.world, d = w.len * (1 - k), p = w.posAt(d, {}), [x, z] = this.toW(p.x, p.y);
+      const w = this.world, d = w.len * (1 - k), p = w.posAt(d, {}, 0), [x, z] = this.toW(p.x, p.y);
       r.position.set(x, 0.1, z); r.rotation.y = PI / 2 - p.ang + PI; r.scale.setScalar(1.3);
       if (Math.random() < 0.9) this.parts.burst(x, 0.5, z, G.col, 3, 1.2, 0.2, 0.5);
     } else {
@@ -367,7 +392,7 @@ export class GameView {
     if (this.arrowT > 0) {
       this.arrowT -= dt; const w = this.world, n = 24, a = Math.min(1, this.arrowT);
       for (let i = 0; i < n; i++) {
-        const d = ((this.t * 2.4 + i * w.len / n) % w.len), p = w.posAt(d, {}), [x, z] = this.toW(p.x, p.y);
+        const pi = i % w.paths.length, L = w.paths[pi].len, d = ((this.t * 2.4 + i * L / n) % L), p = w.posAt(d, {}, pi), [x, z] = this.toW(p.x, p.y);
         this.E.set(0, PI / 2 - p.ang, 0); this.M.compose(this.V.set(x, 0.02, z), this.Q.setFromEuler(this.E), this.S.setScalar(a * 1.3)); this.arrows.setMatrixAt(i, this.M);
       }
       this.arrows.count = n; this.arrows.visible = true; this.arrows.instanceMatrix.needsUpdate = true;

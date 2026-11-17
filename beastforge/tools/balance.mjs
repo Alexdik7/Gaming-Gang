@@ -5,21 +5,21 @@ import { CREATURES } from '../js/data/creatures.js';
 import { dimFactor, xpGainMul } from '../js/meta/progression.js';
 import { BAL } from '../js/config.js';
 
-const [diff = 'normal', lvlArg = '1', runsArg = '20', bot = 'smart'] = process.argv.slice(2);
+const [diff = 'normal', lvlArg = '1', runsArg = '20', bot = 'smart', MAP = 'ahnenhain'] = process.argv.slice(2);
 const LVL = +lvlArg, RUNS = +runsArg;
 
 // Bester freier Platz: maximale Pfadlänge in Reichweite (Abtastung alle 0,5 Felder)
 export const autoSpot = (w, cid, range = 3, prefer = null) => w.suggestSpot(cid, range, prefer === 'end');
 const RANGE = { kitsune: 3.1, raven: 3.4, turtle: 1.7, tiger: 2.7, deer: 2.4, kairo: 2.8 };
 
-export function playRun({ diff = 'normal', level = 1, seed = 1, strat = 'smart', team = ['kitsune', 'raven', 'turtle', 'tiger', 'deer'], hero = 'kairo', log = false } = {}) {
+export function playRun({ map = 'ahnenhain', diff = 'normal', level = 1, seed = 1, strat = 'smart', team = ['kitsune', 'raven', 'turtle', 'tiger', 'deer'], hero = 'kairo', log = false } = {}) {
   const xp = {}, lv = {};
   const hooks = {
     level: cid => lv[cid] ?? level, branch: () => 'spirit',
     charXp: (cid, raw, wave) => { const v = raw * BAL.diff[diff].xp * xpGainMul(level) * dimFactor(level, wave, diff); xp[cid] = (xp[cid] || 0) + v; return v; },
     heroStart: () => 1,
   };
-  const w = new World({ map: 'ahnenhain', diff, loadout: team, hero, hooks, seed });
+  const w = new World({ map, diff, loadout: team, hero, hooks, seed });
   const placedCount = c => w.towers.filter(t => t.cid === c).length;
   const coinLog = [];
   const act = () => {
@@ -60,7 +60,7 @@ export function playRun({ diff = 'normal', level = 1, seed = 1, strat = 'smart',
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const res = []; const t0 = Date.now();
-  for (let i = 0; i < RUNS; i++) res.push(playRun({ diff, level: LVL, seed: i + 1, strat: bot }));
+  for (let i = 0; i < RUNS; i++) res.push(playRun({ map: MAP, diff, level: LVL, seed: i + 1, strat: bot }));
   const wins = res.filter(r => r.won).length;
   const avg = k => (res.reduce((a, r) => a + r[k], 0) / res.length).toFixed(1);
   console.log(`${diff} Lv${LVL} bot=${bot}: Siege ${wins}/${RUNS} · Ø Welle ${avg('wave')} · Ø Leben ${avg('lives')} · Ø Münzen ${avg('coins')} · Ø Reaktionen ${avg('reactions')} · ${Date.now() - t0} ms`);

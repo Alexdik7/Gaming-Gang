@@ -9,6 +9,9 @@ export const REACTIONS = {
   'earth+fire':       { name: 'Magma',        color: '#ff5a2a', bonus: 0.3, slow: [0.4, 2], desc: '+30 % Schaden, verlangsamt.' },
   'light+shadow':     { name: 'Zwielicht',    color: '#fff2a8', bonus: 0.4, stun: 0.6, desc: '+40 % Schaden, betäubt kurz.' },
   'lightning+spirit': { name: 'Geistblitz',   color: '#a9f6ff', aoe: 1.6, aoeMul: 0.4, desc: 'Blitz springt auf Nahe über.' },
+  'fire+ice':         { name: 'Dampfstoß',    color: '#e8f4ff', aoe: 1.4, aoeMul: 0.7, desc: 'Heißer Dampf explodiert.' },
+  'ice+lightning':    { name: 'Frostblitz',   color: '#bff4ff', bonus: 0.3, stun: 0.8, desc: '+30 % Schaden, erstarrt kurz.' },
+  'earth+ice':        { name: 'Gletscherbruch', color: '#d8f0ff', brk: 3, bonus: 0.2, desc: 'Panzer bricht, +20 % Schaden.' },
 };
 
 // Synergien: zwei Kreaturen im Abstand ≤ BAL.run.synergyRange
@@ -19,6 +22,11 @@ export const SYNERGIES = [
   { id: 'gewitternacht', a: 'tiger', b: 'raven', name: 'Gewitternacht', desc: 'Tiger: +0,3 Reichweite · Rabe: Krits +0,5×', fxA: { add: { range: 0.3 } }, fxB: { add: { 'crit.mult': 0.5 } } },
   { id: 'waldquelle', a: 'deer', b: 'turtle',    name: 'Waldquelle',    desc: 'Hirsch: +15 Münzen/Welle · Schildkröte: +0,2 Reichweite', fxA: { add: { income: 15 } }, fxB: { add: { range: 0.2 } } },
   { id: 'fuchsbund', a: 'kairo', b: 'kitsune',   name: 'Fuchsbund',     desc: 'Kairo und Kitsune: +10 % Schaden', fxA: { mul: { dmg: 1.1 } }, fxB: { mul: { dmg: 1.1 } } },
+  { id: 'dampfkessel', a: 'dragonwolf', b: 'kitsune', name: 'Dampfkessel', desc: 'Drachenwolf: Kegel +0,15 · Kitsune: +8 % Schaden', fxA: { add: { cone: 0.15 } }, fxB: { mul: { dmg: 1.08 } } },
+  { id: 'schattentanz', a: 'mantis', b: 'raven',   name: 'Schattentanz',  desc: 'Mantis: +10 % Tempo · Rabe: +0,3 Reichweite', fxA: { mul: { rate: 1.1 } }, fxB: { add: { range: 0.3 } } },
+  { id: 'erdwall', a: 'golem', b: 'turtle',        name: 'Erdwall',       desc: 'Golem: +5 % Betäubung · Schildkröte: +0,15 Verlangsamung', fxA: { add: { 'stun.ch': 0.05 } }, fxB: { add: { 'slow.pct': 0.15 } } },
+  { id: 'gewitterkette', a: 'raizen', b: 'tiger',  name: 'Gewitterkette', desc: 'Raizen und Tiger: Kette +1', fxA: { add: { 'chain.n': 1 } }, fxB: { add: { 'chain.n': 1 } } },
+  { id: 'lotushain', a: 'mika', b: 'deer',         name: 'Lotushain',     desc: 'Mika und Hirsch: Aura +5 % Tempo', fxA: { add: { 'support.rate': 0.05 } }, fxB: { add: { 'support.rate': 0.05 } } },
 ];
 
 // Konto-Level → Freischaltungen (wird abgeleitet, nicht gespeichert)
@@ -29,10 +37,16 @@ export const ACCOUNT_REWARDS = [
   { lvl: 2,  type: 'hero',     id: 'kairo',   text: 'Held: Kairo, der Fuchs-Shinobi' },
   { lvl: 3,  type: 'creature', id: 'tiger',   text: 'Donnertiger' },
   { lvl: 4,  type: 'creature', id: 'deer',    text: 'Geisthirsch' },
+  { lvl: 3,  type: 'map',      id: 'dorf',    text: 'Karte: Shinobi-Dorf' },
   { lvl: 5,  type: 'mode',     id: 'hard',    text: 'Schwierigkeit: Schwer' },
+  { lvl: 5,  type: 'hero',     id: 'raizen',  text: 'Held: Raizen, der Blitz-Shinobi' },
+  { lvl: 6,  type: 'creature', id: 'dragonwolf', text: 'Drachenwolf' },
   { lvl: 6,  type: 'frame',    id: 'bronze',  text: 'Porträtrahmen: Bronze' },
   { lvl: 7,  type: 'mode',     id: 'endless', text: 'Modus: Endlos' },
   { lvl: 8,  type: 'title',    id: 'warden',  text: 'Titel: Hainwächter' },
+  { lvl: 8,  type: 'hero',     id: 'mika',    text: 'Held: Mika, die Geisterheilerin' },
+  { lvl: 9,  type: 'creature', id: 'mantis',  text: 'Mantisklinge' },
+  { lvl: 11, type: 'creature', id: 'golem',   text: 'Felsgolem' },
   { lvl: 10, type: 'frame',    id: 'silver',  text: 'Porträtrahmen: Silber' },
   { lvl: 12, type: 'title',    id: 'shinobi', text: 'Titel: Schatten-Shinobi' },
   { lvl: 15, type: 'frame',    id: 'gold',    text: 'Porträtrahmen: Gold' },
@@ -71,7 +85,9 @@ export const ACHIEVEMENTS = [
   { id: 'ult', name: 'Urteil der Neun', desc: 'Setze das Ultimate der Kitsune ein.', stat: 'ults', goal: 1, xp: 300 },
   { id: 'reactions', name: 'Elementarist', desc: 'Löse 100 Elementreaktionen aus.', stat: 'reactions', goal: 100, xp: 250 },
   { id: 'synergy', name: 'Im Einklang', desc: 'Aktiviere eine Synergie.', stat: 'synergies', goal: 1, xp: 100 },
-  { id: 'allcreatures', name: 'Ganze Bande', desc: 'Setze alle 5 Kreaturen in einem Run ein.', stat: 'allFive', goal: 1, xp: 200 },
+  { id: 'allcreatures', name: 'Ganze Bande', desc: 'Setze 5 verschiedene Kreaturen in einem Run ein.', stat: 'allFive', goal: 1, xp: 200 },
+  { id: 'dorf', name: 'Dorfschützer', desc: 'Gewinne im Shinobi-Dorf.', stat: 'winDorf', goal: 1, xp: 300 },
+  { id: 'heroes3', name: 'Heldenbund', desc: 'Gewinne mit drei verschiedenen Helden.', get: p => Object.values(p.heroes).filter(h => h.wins > 0).length, goal: 3, xp: 400 },
   { id: 'hero10', name: 'Shinobi-Ausbildung', desc: 'Bringe Kairo im Run auf Level 10.', stat: 'hero10', goal: 1, xp: 200 },
   { id: 'hero20', name: 'Neun Flammenschweife', desc: 'Erreiche Kairos Meisterform.', stat: 'hero20', goal: 1, xp: 600 },
   { id: 'rich', name: 'Schatzhüter', desc: 'Verdiene insgesamt 50.000 Münzen.', stat: 'coins', goal: 50000, xp: 300 },

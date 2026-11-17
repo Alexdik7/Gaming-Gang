@@ -472,7 +472,241 @@ function kairo(o) {
   return { root, tick, height: 1.1 };
 }
 
-const BUILDERS = { kitsune: fox, tiger, turtle, deer, raven, kairo };
+// ───────────────────────── DRACHENWOLF ─────────────────────────
+function dragonwolf(o) {
+  const st = o.stage || 0, tiers = o.tiers || [0, 0, 0];
+  const fire = tiers[1] >= 1;
+  const P = skinPal({ fur: [0xbfe4ff, 0x9fd0ff, 0x8ab8ff][st], cream: 0xf4fbff, sock: 0x2a3a6a, inner: 0x9fd8ff }, o.skin);
+  const root = new THREE.Group(), body = grp(root); const sc = [0.92, 1.06, 1.22][st]; body.scale.setScalar(sc);
+  const fur = toon(P.fur), cream = toon(P.cream), scale = toon(fire ? 0x6a2a2a : 0x2a4a8a), horn = toon(0xe8f4ff, { emissive: fire ? 0xff6a20 : 0x6ad0ff, emissiveIntensity: 0.35 }), claw = toon(0xf0f4ff);
+  const glowC = fire ? 0xff8a30 : 0x8fe8ff;
+  add(body, CP(), fur, { p: [0, 0.42, -0.02], r: [PI / 2, 0, 0], s: [0.34, 0.34, 0.38] });
+  add(body, S(), fur, { p: [0, 0.48, 0.2], s: [0.21, 0.22, 0.19] });
+  add(body, S(), cream, { p: [0, 0.36, 0.1], s: [0.14, 0.1, 0.25], ol: false });
+  for (let i = 0; i < 6; i++) tuft(body, [(i - 2.5) * 0.045, 0.4, 0.33], [0.6, 0, (i - 2.5) * 0.18], [0.04, 0.12, 0.035], cream);
+  for (let i = 0; i < 6; i++) add(body, geo.oct(), scale, { p: [0, 0.62 - i * 0.012, 0.18 - i * 0.1], r: [0.3, 0, 0], s: [0.05, 0.08, 0.06], ol: 0.008 });
+  for (const [x, z] of [[-0.13, 0.2], [0.13, 0.2], [-0.13, -0.2], [0.13, -0.2]]) {
+    add(body, S(), fur, { p: [x, 0.42, z], s: [0.1, 0.12, 0.11] });
+    add(body, CP(), fur, { p: [x, 0.2, z], s: [0.1, 0.22, 0.1] });
+    add(body, geo.oct(), scale, { p: [x * 1.3, 0.26, z], s: [0.025, 0.05, 0.04], ol: false });
+    paw(body, x, 0.05, z + 0.02, toon(P.sock), claw, 1.05);
+  }
+  const head = grp(body, [0, 0.64, 0.33]);
+  add(head, S(), fur, { s: [0.19, 0.17, 0.19] });
+  add(head, C(), fur, { p: [0, -0.04, 0.19], r: [PI / 2, 0, 0], s: [0.1, 0.24, 0.08] });
+  add(head, S(), cream, { p: [0, -0.08, 0.16], s: [0.09, 0.05, 0.12], ol: 0.01 });
+  add(head, S(), toon(0x1a2030), { p: [0, -0.03, 0.31], s: [0.03, 0.022, 0.022], ol: false });
+  for (const sd of [-1, 1]) {
+    add(head, C(5), claw, { p: [sd * 0.04, -0.1, 0.24], r: [PI, 0, 0], s: [0.012, 0.04, 0.012], ol: false });
+    for (let i = 0; i < 3; i++) tuft(head, [sd * (0.15 + i * 0.015), -0.05 - i * 0.025, 0.0], [0.2, 0, sd * (2 + i * 0.2)], [0.04, 0.11, 0.03], cream);
+    const ear = grp(head, [sd * 0.1, 0.14, -0.04], [-0.2, 0, -sd * 0.2]);
+    add(ear, C(), fur, { p: [0, 0.1, 0], s: [0.07, 0.22, 0.05] });
+    add(ear, C(), toon(P.inner), { p: [0, 0.08, 0.018], s: [0.04, 0.14, 0.02], ol: false });
+    eye(head, sd * 0.075, 0.035, 0.145, 0.04, glowC, { side: sd, glow: true });
+    if (st >= 1) { const h = grp(head, [sd * 0.08, 0.12, -0.1], [-0.9, 0, -sd * 0.35]); add(h, C(), horn, { p: [0, 0.1, 0], s: [0.035, 0.22, 0.035], ol: 0.008 }); add(h, C(), horn, { p: [sd * 0.03, 0.06, 0.03], r: [0.4, 0, -sd * 0.5], s: [0.02, 0.1, 0.02], ol: false }); }
+  }
+  const wings = [];
+  if (st >= 2) for (const sd of [-1, 1]) {
+    const w = grp(body, [sd * 0.16, 0.6, 0.05]);
+    const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(sd * 0.45, 0.24); sh.lineTo(sd * 0.4, -0.03); sh.lineTo(sd * 0.3, -0.13); sh.lineTo(sd * 0.16, -0.1); sh.lineTo(0, -0.08);
+    const mem = new THREE.Mesh(new THREE.ShapeGeometry(sh), toon(fire ? 0x8a2a2a : 0x2a4aa8, { side: THREE.DoubleSide })); mem.rotation.x = -PI / 2; mem.castShadow = true; w.add(mem);
+    add(w, Y(6), scale, { p: [sd * 0.22, 0.01, -0.11], r: [0, 0, PI / 2], s: [0.02, 0.46, 0.02], ol: false });
+    w.userData.sd = sd; wings.push(w);
+  }
+  const tail = grp(body, [0, 0.48, -0.4], [-0.6, 0, 0]);
+  add(tail, CP(), fur, { p: [0, 0.16, 0], s: [0.09, 0.28, 0.09] });
+  for (let i = 0; i < 3; i++) add(tail, geo.oct(), scale, { p: [0, 0.08 + i * 0.1, -0.06], s: [0.03, 0.05, 0.04], ol: false });
+  const tip = add(tail, C(), glow(glowC, 0.85), { p: [0, 0.38, 0], s: [0.07, 0.18, 0.07], ol: false });
+  if (tiers[0] >= 3) for (let i = 0; i < 5; i++) { const a = i / 5 * PI * 2; add(body, C(5), toon(0xdff8ff, { emissive: 0x6ad0ff, emissiveIntensity: 0.6 }), { p: [Math.cos(a) * 0.2, 0.63, Math.sin(a) * 0.15], r: [Math.sin(a) * 0.6, 0, -Math.cos(a) * 0.6], s: [0.025, 0.12, 0.025], ol: false }); }
+  anim(body, head, tail, ...wings);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.position.y = Math.sin(t * 2.5) * 0.01; head.rotation.x = -a * 0.25 + Math.sin(t * 1.1) * 0.05; body.position.z = a * 0.04;
+    tail.rotation.z = Math.sin(t * 2.2) * 0.35; { const f = 1 + Math.sin(t * 14) * 0.15; tip.scale.set(0.07 * f, 0.18 * f, 0.07 * f); }
+    wings.forEach(w => { w.rotation.z = w.userData.sd * (0.3 + Math.sin(t * 2) * 0.15 + a * 0.4); });
+  };
+  return { root, tick, height: 0.9 * sc };
+}
+
+// ───────────────────────── MANTISKLINGE ─────────────────────────
+function mantis(o) {
+  const st = o.stage || 0, tiers = o.tiers || [0, 0, 0];
+  const P = skinPal({ fur: [0x6ad85a, 0x4ac8a0, 0xa83a5a][st], cream: [0xc8f8a0, 0xa8f8e0, 0xf8a0c0][st], sock: 0x2a4a2a, inner: 0xffe14d }, o.skin);
+  const root = new THREE.Group(), body = grp(root); const sc = [0.95, 1.05, 1.15][st]; body.scale.setScalar(sc);
+  const shell = toon(P.fur), belly = toon(P.cream), blade = toon(0xcfeee0, { emissive: st === 2 ? 0xff2a5a : 0x000000, emissiveIntensity: st === 2 ? 0.6 : 0 }), dark = toon(0x1a2a1a);
+  for (const [x, z] of [[-0.1, 0.05], [0.1, 0.05], [-0.13, -0.18], [0.13, -0.18]]) { add(body, Y(6), shell, { p: [x, 0.13, z], r: [0, 0, Math.sign(x) * 0.5], s: [0.02, 0.26, 0.02], ol: 0.008 }); add(body, Y(6), dark, { p: [x * 1.6, 0.02, z], s: [0.02, 0.05, 0.02], ol: false }); }
+  add(body, S(), shell, { p: [0, 0.28, -0.18], r: [0.4, 0, 0], s: [0.08, 0.075, 0.18] });
+  for (let i = 0; i < 4; i++) add(body, geo.torus(0.2), dark, { p: [0, 0.29 - i * 0.025, -0.1 - i * 0.05], r: [PI / 2 + 0.4, 0, 0], s: [0.075 - i * 0.006, 0.075 - i * 0.006, 0.075], ol: false });
+  add(body, CP(), shell, { p: [0, 0.48, 0.02], r: [-0.5, 0, 0], s: [0.09, 0.26, 0.08] });
+  add(body, S(), belly, { p: [0, 0.46, 0.06], r: [-0.5, 0, 0], s: [0.06, 0.15, 0.05], ol: false });
+  const wings = [];
+  for (const sd of [-1, 1]) { const w = grp(body, [sd * 0.04, 0.38, -0.12], [0.35, 0, 0]); add(w, S(), glow(st === 2 ? 0xff8ab8 : 0xc8ffd8, 0.45), { p: [sd * 0.05, 0, -0.16], s: [0.07, 0.01, 0.2], ol: false }); w.userData.sd = sd; wings.push(w); }
+  const head = grp(body, [0, 0.66, 0.1]);
+  add(head, C(3), shell, { p: [0, -0.02, 0.04], r: [PI / 2 + 0.3, PI, 0], s: [0.11, 0.12, 0.08] });
+  add(head, S(), belly, { p: [0, -0.07, 0.08], s: [0.04, 0.03, 0.04], ol: false });
+  for (const sd of [-1, 1]) {
+    add(head, S(), toon(st === 2 ? 0xff3a6a : 0xffe14d, { emissive: st === 2 ? 0xff1a4a : 0xc8a000, emissiveIntensity: 0.6 }), { p: [sd * 0.085, 0.02, 0.02], s: [0.05, 0.06, 0.05], ol: 0.008 });
+    add(head, SM(), flat(0x1a1020), { p: [sd * 0.1, 0.025, 0.05], s: 0.018, ol: false });
+    add(head, SM(), flat(0xffffff), { p: [sd * 0.095, 0.045, 0.06], s: 0.009, ol: false });
+    add(head, Y(4), dark, { p: [sd * 0.03, 0.12, 0.0], r: [-0.5, 0, sd * 0.4], s: [0.006, 0.16, 0.006], ol: false });
+  }
+  const arms = [];
+  const nA = st >= 1 ? 2 : 1;
+  for (let k = 0; k < nA; k++) for (const sd of [-1, 1]) {
+    const a = grp(body, [sd * 0.07, 0.56 - k * 0.08, 0.1 - k * 0.04]);
+    add(a, CP(), shell, { p: [0, 0.02, 0.08], r: [PI / 2.2, 0, 0], s: [0.035, 0.12, 0.035] });
+    const fa = grp(a, [0, 0.06, 0.16], [-2.4, 0, 0]);
+    add(fa, B(), blade, { p: [0, 0.1, 0.01], s: [0.014, 0.2, 0.04], ol: 0.008 });
+    for (let i = 0; i < 4; i++) add(fa, C(4), blade, { p: [0, 0.03 + i * 0.04, 0.035], r: [-PI / 2, 0, 0], s: [0.008, 0.03, 0.008], ol: false });
+    a.userData = { sd, k }; arms.push(a);
+  }
+  if (tiers[2] >= 2) for (const sd of [-1, 1]) add(body, B(), toon(0x8a1a2a), { p: [sd * 0.05, 0.62, -0.02], r: [0.2, 0, sd * 0.3], s: [0.02, 0.12, 0.015], ol: false });
+  if (tiers[1] >= 3) add(root, geo.torus(0.04), glow(0xc8ffd8, 0.5), { p: [0, 0.04, 0], r: [PI / 2, 0, 0], s: 0.5, ol: false });
+  anim(body, head, ...arms, ...wings);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.rotation.x = Math.sin(t * 1.6) * 0.03 + a * 0.15;
+    arms.forEach((ar, i) => { ar.rotation.x = -0.3 + Math.sin(t * 2 + i) * 0.1 - a * (i % 2 ? 1.4 : 0.6); });
+    head.rotation.z = Math.sin(t * 0.9) * 0.2; head.rotation.y = Math.sin(t * 0.6) * 0.3;
+    wings.forEach(w => { w.rotation.z = w.userData.sd * (Math.sin(t * 30) * 0.05 * (a > 0.3 ? 4 : 0.3)); });
+  };
+  return { root, tick, height: 0.8 * sc };
+}
+
+// ───────────────────────── FELSGOLEM ─────────────────────────
+function golem(o) {
+  const st = o.stage || 0, tiers = o.tiers || [0, 0, 0];
+  const lava = tiers[1] >= 3;
+  const P = skinPal({ fur: [0x9a9288, 0x8a8aa0, 0x7a7068][st], cream: 0x5aa040, sock: 0x6a6258, inner: 0xffa040 }, o.skin);
+  const root = new THREE.Group(), body = grp(root); const sc = [1.0, 1.1, 1.3][st]; body.scale.setScalar(sc);
+  const rock = toon(P.fur), rock2 = toon(lerpHex(P.fur, 0x000000, 0.18)), moss = toon(P.cream), glowC = lava ? 0xff6a20 : st === 1 ? 0x6ad0ff : 0xffb040;
+  const rune = toon(glowC, { emissive: glowC, emissiveIntensity: 1.1 });
+  const legs = [];
+  for (const sd of [-1, 1]) { const l = grp(body, [sd * 0.13, 0.22, 0]); add(l, geo.dodec(), rock2, { p: [0, -0.06, 0], s: [0.1, 0.14, 0.11] }); add(l, B(), rock, { p: [0, -0.18, 0.02], s: [0.15, 0.07, 0.18] }); legs.push(l); }
+  add(body, geo.dodec(), rock, { p: [0, 0.5, 0], s: [0.27, 0.25, 0.22] });
+  add(body, geo.dodec(), rock2, { p: [0, 0.36, 0.02], s: [0.2, 0.12, 0.17] });
+  add(body, S(), moss, { p: [0.04, 0.68, -0.04], s: [0.22, 0.05, 0.16] });
+  for (let i = 0; i < 4; i++) tuft(body, [-0.12 + i * 0.08, 0.72, -0.02 + (i % 2) * 0.05], [0, 0, (i - 1.5) * 0.3], [0.025, 0.07, 0.025], toon(0x7ac85a));
+  add(body, B(), rune, { p: [0, 0.52, 0.205], s: [0.06, 0.06, 0.01], r: [0, 0, PI / 4], ol: false });
+  for (const sd of [-1, 1]) add(body, B(), rune, { p: [sd * 0.12, 0.45, 0.19], r: [0, 0, sd * 0.6], s: [0.012, 0.09, 0.01], ol: false });
+  const head = grp(body, [0, 0.76, 0.06]);
+  add(head, geo.dodec(), rock, { s: [0.13, 0.11, 0.12] });
+  add(head, B(), rock2, { p: [0, 0.03, 0.08], s: [0.18, 0.03, 0.06], ol: false });
+  for (const sd of [-1, 1]) add(head, B(), rune, { p: [sd * 0.05, 0.0, 0.11], s: [0.035, 0.02, 0.01], ol: false });
+  const arms = [];
+  for (const sd of [-1, 1]) {
+    const a = grp(body, [sd * 0.3, 0.6, 0.02]);
+    add(a, geo.dodec(), rock2, { s: [0.11, 0.1, 0.1] });
+    add(a, geo.dodec(), rock, { p: [sd * 0.03, -0.17, 0.02], s: [0.09, 0.13, 0.09] });
+    add(a, geo.dodec(), rock, { p: [sd * 0.04, -0.34, 0.04], s: [0.12, 0.1, 0.12] });
+    a.userData.sd = sd; arms.push(a);
+  }
+  if (st >= 1) for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2; add(body, geo.oct(), toon(st === 1 ? 0x9fe8ff : 0xc8a8ff, { emissive: st === 1 ? 0x3ad0ff : 0x8a5aff, emissiveIntensity: 0.6 }), { p: [Math.cos(a) * 0.18, 0.66 + (i % 2) * 0.05, -0.08 + Math.sin(a) * 0.1], r: [Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5], s: [0.035, 0.1, 0.035], ol: 0.006 }); }
+  if (st >= 2) { for (const sd of [-1, 1]) { add(body, C(5), rock2, { p: [sd * 0.3, 0.76, 0], r: [0, 0, -sd * 0.3], s: [0.1, 0.22, 0.1] }); add(body, C(5), toon(0xf4f4f8), { p: [sd * 0.31, 0.86, 0], r: [0, 0, -sd * 0.3], s: [0.05, 0.08, 0.05], ol: false }); } add(body, C(6), toon(0x2f7a46), { p: [-0.1, 0.8, -0.08], s: [0.05, 0.14, 0.05], ol: 0.006 }); add(body, C(6), toon(0x2f7a46), { p: [0.12, 0.79, -0.1], s: [0.04, 0.11, 0.04], ol: 0.006 }); }
+  if (tiers[2] >= 1) { add(body, geo.dodec(), rock2, { p: [0.05, 0.8, -0.16], s: 0.09 }); }
+  if (lava) for (let i = 0; i < 3; i++) add(body, B(), rune, { p: [-0.08 + i * 0.08, 0.6 - i * 0.05, -0.2], r: [0, 0, 0.5 * i], s: [0.012, 0.1, 0.01], ol: false });
+  anim(body, head, ...arms, ...legs);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.position.y = Math.sin(t * 1.2) * 0.01 - a * 0.05;
+    arms.forEach(ar => { ar.rotation.x = -a * 1.6 + Math.sin(t * 1.2 + ar.userData.sd) * 0.05; ar.rotation.z = ar.userData.sd * (0.1 + a * 0.3); });
+    head.rotation.y = Math.sin(t * 0.5) * 0.2;
+  };
+  return { root, tick, height: 1.0 * sc };
+}
+
+// ───────────────────────── HELD: RAIZEN ─────────────────────────
+function raizen(o) {
+  const lvl = o.hlvl || 1, form = lvl >= 20 ? 2 : lvl >= 15 ? 1 : 0;
+  const root = new THREE.Group(), body = grp(root); body.scale.setScalar(1.0 + form * 0.05);
+  const suit = toon(0x1a1e30), suit2 = toon(0x2a3050), steel = toon(0x9aa4b8), wrap = toon(0x3a4058), elec = 0x7fe3ff;
+  const hair = toon(0xeef4ff, form ? { emissive: 0x6ad0ff, emissiveIntensity: 0.2 } : {}), visor = toon(elec, { emissive: elec, emissiveIntensity: 1.5 });
+  for (const sd of [-1, 1]) { const l = grp(body, [sd * 0.07, 0.32, 0]); add(l, CP(), suit, { p: [0, -0.13, 0], s: [0.085, 0.21, 0.085] }); add(l, B(), steel, { p: [0, -0.15, 0.045], s: [0.06, 0.1, 0.02], ol: 0.006 }); add(l, B(), toon(0x10121a), { p: [0, -0.29, 0.02], s: [0.07, 0.03, 0.12], ol: 0.008 }); }
+  add(body, CP(), suit, { p: [0, 0.5, 0], s: [0.2, 0.22, 0.15] });
+  add(body, B(), steel, { p: [0, 0.54, 0.075], s: [0.14, 0.12, 0.02], ol: 0.008 });
+  for (let i = 0; i < 3; i++) add(body, B(), suit2, { p: [0, 0.6 - i * 0.04, 0.088], s: [0.12, 0.01, 0.005], ol: false });
+  add(body, geo.torus(0.25), wrap, { p: [0, 0.4, 0], r: [PI / 2, 0, 0], s: 0.105 });
+  const arms = [];
+  for (const sd of [-1, 1]) {
+    const a = grp(body, [sd * 0.14, 0.58, 0]);
+    add(a, S(), steel, { s: [0.07, 0.06, 0.07] });
+    add(a, CP(), suit, { p: [0, -0.11, 0], s: [0.065, 0.14, 0.065] });
+    add(a, B(), steel, { p: [0, -0.15, 0.03], s: [0.05, 0.08, 0.02], ol: 0.006 });
+    add(a, S(), toon(0x10121a), { p: [0, -0.22, 0], s: 0.045, ol: 0.008 });
+    a.userData.sd = sd; arms.push(a);
+  }
+  const sword = grp(body, [-0.06, 0.52, -0.1], [0, 0, -0.6]);
+  add(sword, B(), toon(0x10121a), { p: [0, -0.04, 0], s: [0.03, 0.14, 0.03] });
+  add(sword, B(), toon(0xdff8ff, { emissive: elec, emissiveIntensity: form ? 0.8 : 0.3 }), { p: [0, 0.2, 0], s: [0.02, 0.34, 0.035], ol: 0.006 });
+  const head = grp(body, [0, 0.85, 0]);
+  add(head, S(), suit, { s: [0.16, 0.16, 0.15] });
+  add(head, B(), visor, { p: [0, 0.02, 0.135], s: [0.18, 0.03, 0.03], ol: false });
+  add(head, S(), steel, { p: [0, -0.05, 0.08], s: [0.13, 0.08, 0.1], ol: 0.008 });
+  for (let i = 0; i < 6; i++) { const a = (i / 5 - 0.5) * 2; add(head, C(), hair, { p: [Math.sin(a) * 0.11, 0.13, -0.06], r: [-0.9, 0, -a * 0.7], s: [0.05, 0.2, 0.05] }); }
+  const tail = grp(head, [0, 0.08, -0.14], [-1.2, 0, 0]); add(tail, C(), hair, { p: [0, 0.16, 0], s: [0.05, 0.34, 0.05] });
+  let aura = null; if (form) aura = add(root, geo.torus(0.04), glow(elec, 0.6), { p: [0, 0.04, 0], r: [PI / 2, 0, 0], s: 0.42, ol: false });
+  const sparks = []; if (form === 2) for (let i = 0; i < 3; i++) sparks.push(add(root, B(), glow(elec, 0.9), { p: [0, 0.6, 0], s: [0.012, 0.18, 0.012], ol: false }));
+  anim(body, head, tail, ...arms);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.position.y = Math.sin(t * 2) * 0.008;
+    arms.forEach(ar => { ar.rotation.x = ar.userData.sd > 0 ? -a * 2 : Math.sin(t * 2) * 0.05; });
+    tail.rotation.z = Math.sin(t * 3) * 0.2; visor.emissiveIntensity = 1.2 + Math.sin(t * 6) * 0.4;
+    if (aura) aura.rotation.z = t * 2;
+    sparks.forEach((sp, i) => { const ang = t * 3 + i * 2.1; sp.position.set(Math.cos(ang) * 0.32, 0.4 + Math.sin(t * 7 + i) * 0.2, Math.sin(ang) * 0.32); sp.rotation.z = Math.sin(t * 20 + i); });
+  };
+  return { root, tick, height: 1.15 };
+}
+
+// ───────────────────────── HELDIN: MIKA ─────────────────────────
+function mika(o) {
+  const lvl = o.hlvl || 1, form = lvl >= 20 ? 2 : lvl >= 15 ? 1 : 0;
+  const root = new THREE.Group(), body = grp(root); body.scale.setScalar(0.95 + form * 0.05);
+  const skin = toon(0xffe0cc), robe = toon(0xfaf6ff), robe2 = toon(0xff8ab8), hair = toon(0x2a6a7a, form ? { emissive: 0x2a8aa0, emissiveIntensity: 0.25 } : {}), gold = toon(0xffd257), pink = 0xff9ac8;
+  add(body, C(), robe, { p: [0, 0.25, 0], s: [0.2, 0.5, 0.18] });
+  add(body, geo.cyl(16), robe2, { p: [0, 0.04, 0], s: [0.205, 0.05, 0.185], ol: 0.008 });
+  add(body, CP(), robe, { p: [0, 0.48, 0], s: [0.16, 0.16, 0.13] });
+  for (const sd of [-1, 1]) add(body, B(), robe2, { p: [sd * 0.035, 0.5, 0.065], r: [0, 0, sd * 0.4], s: [0.025, 0.2, 0.01], ol: false });
+  add(body, geo.torus(0.3), robe2, { p: [0, 0.42, 0], r: [PI / 2, 0, 0], s: 0.095 });
+  add(body, B(), robe2, { p: [0, 0.4, -0.1], s: [0.14, 0.06, 0.04], ol: 0.006 });
+  const arms = [];
+  for (const sd of [-1, 1]) {
+    const a = grp(body, [sd * 0.11, 0.55, 0]);
+    add(a, C(), robe, { p: [0, -0.1, 0], s: [0.07, 0.2, 0.07] });
+    add(a, S(), skin, { p: [0, -0.21, 0.01], s: 0.03, ol: 0.006 });
+    a.userData.sd = sd; arms.push(a);
+  }
+  const staff = grp(arms[1], [0, -0.2, 0.03]);
+  add(staff, Y(6), toon(0x8a6a4a), { p: [0, 0.1, 0], s: [0.015, 0.6, 0.015], ol: 0.006 });
+  add(staff, geo.torus(0.15), gold, { p: [0, 0.42, 0], s: 0.05, ol: 0.005 });
+  const bell = add(staff, S(), glow(pink, 0.9), { p: [0, 0.42, 0], s: 0.03, ol: false });
+  const head = grp(body, [0, 0.78, 0]);
+  add(head, S(), skin, { s: [0.15, 0.15, 0.14] });
+  for (const sd of [-1, 1]) { eye(head, sd * 0.055, 0.0, 0.12, 0.03, form === 2 ? 0xffd257 : 0xd85aa0, { side: sd, glow: form > 0 }); add(head, SM(), toon(0xffb0c0), { p: [sd * 0.08, -0.04, 0.11], s: [0.025, 0.012, 0.01], ol: false }); }
+  add(head, S(), hair, { p: [0, 0.05, -0.02], s: [0.16, 0.13, 0.15] });
+  add(head, B(), hair, { p: [0, 0.07, 0.11], r: [0.3, 0, 0], s: [0.2, 0.05, 0.03], ol: 0.006 });
+  for (const sd of [-1, 1]) add(head, CP(), hair, { p: [sd * 0.13, -0.08, -0.02], s: [0.05, 0.22, 0.05] });
+  add(head, CP(), hair, { p: [0, -0.12, -0.12], r: [0.2, 0, 0], s: [0.09, 0.3, 0.07] });
+  const lotus = grp(head, [0.1, 0.1, 0.02]);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2; add(lotus, S(), toon(pink), { p: [Math.cos(a) * 0.03, 0, Math.sin(a) * 0.03], r: [0, -a, 0.6], s: [0.025, 0.01, 0.015], ol: false }); }
+  add(lotus, SM(), gold, { s: 0.012, ol: false });
+  const orbs = grp(root, [0, 0.6, 0]);
+  for (let i = 0; i < 3; i++) { const a = i / 3 * PI * 2; add(orbs, S(), glow(i % 2 ? pink : 0xbff6ff, 0.8), { p: [Math.cos(a) * 0.32, 0, Math.sin(a) * 0.32], s: 0.035, ol: false }); }
+  const wings = [];
+  if (form) for (const sd of [-1, 1]) for (let k = 0; k < (form === 2 ? 3 : 2); k++) { const w = grp(body, [sd * 0.06, 0.55, -0.08], [0, 0, sd * (0.4 + k * 0.4)]); add(w, S(), glow(form === 2 ? 0xffd2e8 : pink, 0.5), { p: [sd * 0.18, 0, -0.03], s: [0.2, 0.06, 0.012], ol: false }); w.userData = { sd, k }; wings.push(w); }
+  anim(body, head, orbs, ...arms, ...wings);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.position.y = Math.sin(t * 1.8) * 0.012 + (form ? 0.05 : 0);
+    arms.forEach(ar => { ar.rotation.x = ar.userData.sd > 0 ? -a * 1.4 - 0.2 : Math.sin(t * 2) * 0.08; });
+    orbs.rotation.y = t * 0.9; orbs.position.y = 0.6 + Math.sin(t * 1.5) * 0.05;
+    bell.scale.setScalar(0.03 * (1 + Math.sin(t * 5) * 0.2));
+    wings.forEach(w => { w.rotation.z = w.userData.sd * (0.4 + w.userData.k * 0.4 + Math.sin(t * 2.5) * 0.1); });
+  };
+  return { root, tick, height: 1.1 };
+}
+
+const BUILDERS = { kitsune: fox, tiger, turtle, deer, raven, kairo, dragonwolf, mantis, golem, raizen, mika };
 export function buildModel(id, o = {}) { const m = (BUILDERS[id] || fox)(o); optimize(m.root); return m; }
 
 // ───────────────────────── GEGNER (verschmolzen für Instancing) ─────────────────────────

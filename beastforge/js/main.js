@@ -7,6 +7,9 @@ import { toon, glow, mk, geo } from './render/toon.js';
 import { Audio } from './audio.js';
 import { Menus } from './ui/menus.js';
 import { Game } from './game.js';
+import { Loader } from './ui/loading.js';
+import { portrait, mapThumb } from './render/icons.js';
+import { unlockedCreatures } from './meta/progression.js';
 import { MAPS } from './data/maps.js';
 import { CREATURES } from './data/creatures.js';
 import { BAL, VERSION } from './config.js';
@@ -23,8 +26,8 @@ class App {
     this.menus = new Menus(this);
     this.game = null; this.t = 0; this.last = performance.now();
     this.applySettings();
-    this.buildMenuScene();
-    this.menus.show('home');
+    this.loader = new Loader(); this.loader.show();
+    this.boot();
     addEventListener('pointerdown', () => this.audio.init(), { once: true });
     const save = () => saveProfile(this.profile);
     document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); if (this.game && !this.game.paused && !this.game.world.over) this.game.hud.pause(); } });
@@ -32,7 +35,6 @@ class App {
     this.perf = { n: 0, sum: 0, checked: false };
     if (DEV) this.devMenu();
     requestAnimationFrame(n => this.loop(n));
-    setTimeout(() => { const b = document.getElementById('boot'); b.style.opacity = 0; setTimeout(() => b.remove(), 500); }, 150);
   }
   applySettings() {
     const S = this.profile.settings;
@@ -69,7 +71,28 @@ class App {
     this.menuFocus = on;
   }
 
-  startRun(map, diff) {
+  async boot() {
+    const P = this.profile;
+    await this.loader.run([
+      ['Der Ahnenhain erwacht …', () => this.buildMenuScene()],
+      ['Kreaturen werden beschworen …', () => { for (const id of unlockedCreatures(P)) portrait(id, { stage: 0, branch: P.chars[id].branch }); }],
+      ['Fuchsfeuer wird entzündet …', () => { this.stage.setMode('menu'); this.stage.renderer.compile(this.stage.scene, this.stage.camera); }],
+      ['Karten werden gezeichnet …', () => Promise.all(Object.keys(MAPS).map(id => mapThumb(id)))],
+      ['Schriftrollen werden geöffnet …', () => document.fonts?.ready],
+    ], 1400);
+    this.menus.show('home');
+    this.loader.hide();
+  }
+  async startRun(map, diff) {
+    this.loader.show(MAPS[map].name, 'Betrete ' + MAPS[map].name + ' …');
+    await this.loader.run([
+      ['Gelände wird geformt …', () => this._startRun(map, diff)],
+      ['Gegner sammeln sich am Tor …', () => this.stage.renderer.compile(this.stage.scene, this.stage.camera)],
+      ['Kreaturen machen sich bereit …', () => { for (const id of this.game.loadout) portrait(id, { stage: 0, branch: this.profile.chars[id].branch }); }],
+    ], 1100);
+    this.loader.hide();
+  }
+  _startRun(map, diff) {
     if (this.game) { this.game.destroy(); this.game = null; }
     document.getElementById('menu').innerHTML = ''; this.menus.closePreview();
     this.menuRoot.visible = false;
@@ -91,7 +114,7 @@ class App {
       this.game.update(dt);
       // Automatische Qualität: in den ersten Sekunden messen
       if (!this.perf.checked) { this.perf.n++; this.perf.sum += dt; if (this.perf.n >= 150) { const avg = this.perf.sum / this.perf.n; this.perf.checked = true; if (avg > 0.026 && this.stage.quality > 0) { this.autoQ = this.stage.quality - 1; this.applySettings(); } } }
-    } else {
+    } else if (this.menuMap) {
       for (const m of this.showModels || []) m.tick(this.t, dt, { atk: Math.max(0, Math.sin(this.t * 1.3 + m.root.position.x) - 0.92) * 12 });
       this.menuMap.update(dt, 1);
       const a = this.t * 0.07, cam = this.stage.camera;
@@ -131,7 +154,7 @@ const app = new App();
 window.BF = {
   app, VERSION, BAL,
   get game() { return app.game; }, get world() { return app.game?.world; }, get profile() { return app.profile; },
-  start: (d = 'normal') => app.startRun('ahnenhain', d),
+  start: (d = 'normal', map = 'ahnenhain') => app._startRun(map, d),
   menu: n => app.menus.show(n),
   level: (L) => app.devLevel(L),
   charNeed,

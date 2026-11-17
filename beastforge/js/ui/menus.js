@@ -53,35 +53,61 @@ export class Menus {
     this.app.audio.playSong('menu');
   }
 
-  // ───────── Spielen: Karte → Modus ─────────
-  s_play() {
+  // ───────── Spielen: Weltkarte mit Kartenpunkten, wandernden Kreaturen, Seitenleiste ─────────
+  s_play(sel) {
     const P = this.P;
-    const cards = Object.values(MAPS).map(m => { const b = P.maps[m.id] || {}; return `<button class="mcard" data-map="${m.id}"><span class="tag">${esc(m.level)}</span><img data-thumb="${m.id}" alt=""><div class="mi"><b>${esc(m.name)}</b><small>${esc(m.sub)}</small>
-      <div class="medals"><span class="${b.normal >= 20 ? 'on' : ''}">${b.normal >= 20 ? '🏅' : '○'} Normal</span><span class="${b.hard >= 20 ? 'on' : ''}">${b.hard >= 20 ? '🏅' : '○'} Schwer</span><span class="${b.endless ? 'on' : ''}">∞ ${b.endless || 0}</span></div></div></button>`; }).join('');
-    this.render(`<div class="scr">${this.hdr('Karte wählen')}<div class="maps">${cards}<div class="mcard soon">Weitere Karten folgen mit den nächsten Updates</div></div></div>`, m => {
-      m.querySelectorAll('[data-map]').forEach(b => b.onclick = () => { this.click(); this.s_diff(b.dataset.map); });
+    this.diff = this.diff && unlocked(P, 'mode', this.diff) ? this.diff : 'normal';
+    const NODES = { ahnenhain: [22, 64], dorf: [48, 42] };
+    const FOG = [['Glutkrater', 72, 68, '🌋'], ['Frosttempel', 84, 38, '❄'], ['Himmelsinseln', 64, 26, '☁']];
+    const nodes = Object.values(MAPS).map(m => {
+      const [x, y] = NODES[m.id] || [50, 50], ok = unlocked(P, 'map', m.id), b = P.maps[m.id] || {};
+      const st = (b.normal >= 20 ? 1 : 0) + (b.hard >= 20 ? 1 : 0) + ((b.endless || 0) >= 30 ? 1 : 0);
+      return `<button class="wnode ${ok ? '' : 'lock'} ${sel === m.id ? 'on' : ''}" data-map="${m.id}" style="left:${x}%;top:${y}%"><span class="ring"><img data-thumb="${m.id}" alt=""></span><b>${esc(m.name)}</b><small>${ok ? '★'.repeat(st) + '☆'.repeat(3 - st) : '🔒 Konto-Lv ' + unlockLevel('map', m.id)}</small></button>`;
+    }).join('');
+    const fog = FOG.map(([n, x, y, ic]) => `<div class="wnode fog" style="left:${x}%;top:${y}%"><span class="ring">${ic}</span><b>${n}</b><small>unerforscht</small></div>`).join('');
+    const team = unlockedCreatures(P);
+    const critters = team.slice(0, 8).map((id, i) => `<img class="critter" src="${portrait(id, { stage: maxStage(id, P.chars[id].level, P.chars[id].branch), branch: P.chars[id].branch })}" style="left:${8 + (i * 11) % 80}%;top:${70 + (i % 3) * 8}%;--dur:${9 + i * 1.7}s;--del:-${i * 1.3}s" alt="">`).join('');
+    let panel = '';
+    if (sel) {
+      const map = MAPS[sel], ok = unlocked(P, 'map', sel), best = P.maps[sel] || {};
+      const modes = [['normal', '🌿', 'Normal'], ['hard', '🔥', 'Schwer'], ['endless', '∞', 'Endlos']];
+      const heroes = Object.values(HEROES);
+      if (!unlocked(P, 'hero', P.hero)) P.hero = 'kairo';
+      panel = `<aside class="wpanel"><button class="x" id="wx">✕</button><img class="wthumb" data-thumb="${sel}" alt="">
+        <b class="wname">${esc(map.name)}</b><small class="mut">${esc(map.level)} · ${map.paths ? map.paths.length + ' Eingänge' : '1 Eingang'}</small><p>${esc(map.desc)}</p>
+        ${ok ? `<div class="wlabel">Modus</div><div class="pills">${modes.map(([k, ic, n]) => { const u = unlocked(P, 'mode', k); return `<button data-d="${k}" class="${this.diff === k ? 'on' : ''}" ${u ? '' : 'disabled'}>${u ? ic : '🔒'} ${n}<small>${u ? 'Beste: ' + (best[k] || 0) : 'Lv ' + unlockLevel('mode', k)}</small></button>`; }).join('')}</div>
+        <div class="wlabel">Held</div><div class="heroes">${heroes.map(h => { const u = unlocked(P, 'hero', h.id); return `<button class="hpick ${P.hero === h.id ? 'on' : ''}" data-hero="${h.id}" ${u ? '' : 'disabled'} title="${esc(h.name)}"><img src="${portrait(h.id, { hlvl: 1 })}" alt=""><span>${u ? esc(h.name) : '🔒 ' + unlockLevel('hero', h.id)}</span></button>`; }).join('')}</div>
+        <div class="wlabel">Team <small class="mut">· ${team.length} Kreaturen im Shop</small></div><div class="teamrow">${team.map(id => `<img src="${portrait(id, { stage: 0, branch: P.chars[id].branch })}" title="${esc(CREATURES[id].name)}" alt="">`).join('')}</div>
+        <button class="big" id="go">⚔ LOS GEHT'S</button>` : `<div class="wlock">🔒 Erreiche Konto-Level ${unlockLevel('map', sel)}, um diese Karte zu betreten.</div>`}</aside>`;
+    }
+    this.render(`<div class="world">
+      <svg class="wmap" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid slice">
+        <defs><pattern id="wv" width="60" height="30" patternUnits="userSpaceOnUse"><path d="M0 15 Q15 5 30 15 T60 15" fill="none" stroke="#7ec8e0" stroke-width="2" opacity=".45"/></pattern>
+        <radialGradient id="wl" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#f6e9c4"/><stop offset="1" stop-color="#d9c08a"/></radialGradient></defs>
+        <rect width="1000" height="560" fill="#5ab4d0"/><rect width="1000" height="560" fill="url(#wv)"/>
+        <path d="M40 470 Q20 330 120 260 Q160 120 330 110 Q470 30 640 70 Q800 40 900 120 Q990 220 940 360 Q960 470 820 520 Q620 560 430 520 Q250 560 120 530 Z" fill="url(#wl)" stroke="#8a6a3a" stroke-width="5"/>
+        <path d="M80 450 Q120 360 230 340 Q300 400 260 470 Q170 510 80 450 Z" fill="#7ab85a" opacity=".85"/>
+        <path d="M390 160 Q480 120 560 170 Q570 260 470 270 Q380 250 390 160 Z" fill="#c8a070" opacity=".7"/>
+        <path d="M640 330 Q740 300 800 370 Q790 450 690 450 Q620 420 640 330 Z" fill="#a85a3a" opacity=".55"/>
+        <path d="M720 90 Q820 70 880 130 Q860 190 780 180 Q700 160 720 90 Z" fill="#dff4ff" opacity=".85"/>
+        ${[[300, 230], [330, 250], [360, 225], [600, 300], [630, 280], [870, 300], [900, 330]].map(([x, y]) => `<path d="M${x - 22} ${y + 18} L${x} ${y - 20} L${x + 22} ${y + 18} Z" fill="#9a8a72" stroke="#6a5a42" stroke-width="3"/><path d="M${x - 8} ${y - 6} L${x} ${y - 20} L${x + 8} ${y - 6} Z" fill="#fff"/>`).join('')}
+        ${[[120, 400], [150, 420], [180, 395], [210, 430], [140, 450], [190, 460], [100, 420]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="16" fill="#3a8a4a" stroke="#2a5a32" stroke-width="3"/>`).join('')}
+        ${[[160, 380], [235, 440]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="14" fill="#ffb8d0" stroke="#c87898" stroke-width="3"/>`).join('')}
+        <path d="M240 340 C 300 300, 420 260, 500 200 S 680 330, 740 360 S 820 160, 820 130 M 500 200 C 560 140, 600 90, 600 70" fill="none" stroke="#7a5a2a" stroke-width="5" stroke-dasharray="4 14" stroke-linecap="round"/>
+        <path d="M560 30 Q590 120 540 200" fill="none" stroke="#5ab4d0" stroke-width="10" opacity=".8"/>
+      </svg>
+      <div class="wtop"><button class="back" data-go="home">‹ Menü</button><h2>Weltkarte</h2><div class="wmini"><button data-go="collection" title="Sammlung">🦊</button><button data-go="hero" title="Helden">🥷</button><button data-go="account" title="Konto">🏯</button><button data-go="settings" title="Optionen">⚙</button></div></div>
+      ${critters}${fog}${nodes}${panel}</div>`, m => {
+      m.querySelectorAll('[data-map]').forEach(b => b.onclick = () => { this.click(); this.s_play(b.dataset.map); });
+      m.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { this.click(); this.diff = b.dataset.d; this.s_play(sel); });
+      m.querySelectorAll('[data-hero]').forEach(b => b.onclick = () => { this.click(); P.hero = b.dataset.hero; saveProfile(P); this.s_play(sel); });
+      $('wx')?.addEventListener('click', () => { this.click(); this.s_play(); });
+      const go = $('go'); if (go) go.onclick = () => { this.app.audio.init(); this.app.startRun(sel, this.diff); };
       this.thumbs(m);
     });
   }
   thumbs(root) { root.querySelectorAll('[data-thumb]').forEach(async img => { img.src = await mapThumb(img.dataset.thumb); }); }
-  s_diff(mapId = 'ahnenhain') {
-    const P = this.P, map = MAPS[mapId], best = P.maps[mapId] || {};
-    this.diff = this.diff && unlocked(P, 'mode', this.diff) ? this.diff : 'normal';
-    const modes = [['normal', '🌿', 'Normal', `${BAL.diff.normal.lives} Leben · 20 Wellen · Boss Vharox`], ['hard', '🔥', 'Schwer', `${BAL.diff.hard.lives} Leben · stärkere Gegner · ×1,5 Charakter-XP`], ['endless', '∞', 'Endlos', 'Wellen ohne Ende · alle 10 Wellen ein Boss']];
-    const team = unlockedCreatures(P), heroOk = unlocked(P, 'hero', 'kairo');
-    this.render(`<div class="scr"><div class="hdr"><button class="back" id="bk">‹ Karten</button><h2>${esc(map.name)}</h2></div>
-      <div class="dsel"><div style="display:grid;gap:12px"><div class="dmap"><img data-thumb="${mapId}" alt=""><div><b>${esc(map.name)}</b><small>${esc(map.desc)}</small></div></div>
-        <div class="box"><b>Dein Team</b><small class="mut"> · alle freigeschalteten Kreaturen</small>
-        <div class="team" style="margin-top:8px">${Object.keys(CREATURES).map(id => { const ok = team.includes(id), c = P.chars[id]; return `<div class="tm" style="${ok ? '' : 'opacity:.35'}"><img src="${portrait(id, { stage: 0, branch: c.branch })}" alt=""><br>${ok ? 'Lv ' + c.level : '🔒 Konto ' + unlockLevel('creature', id)}</div>`; }).join('')}
-        <div class="tm" style="${heroOk ? '' : 'opacity:.35'}"><img src="${portrait('kairo', { hlvl: 1 })}" alt=""><br>${heroOk ? 'Held ★' + P.heroes.kairo.rank : '🔒 Konto 2'}</div></div></div></div>
-      <div style="display:grid;gap:12px"><div class="dcards">${modes.map(([k, ic, n, d]) => { const ok = unlocked(P, 'mode', k); return `<button class="dcard ${k} ${this.diff === k ? 'on' : ''}" data-d="${k}" ${ok ? '' : 'disabled'}><span class="di">${ok ? ic : '🔒'}</span><span><b>${n}</b><small>${ok ? d : 'Ab Konto-Level ' + unlockLevel('mode', k)}</small></span><span class="best">Beste<br><b>${best[k] || 0}</b></span></button>`; }).join('')}</div>
-        <button class="big" id="go">⚔ LOS GEHT'S</button></div></div></div>`, m => {
-      $('bk').onclick = () => { this.click(); this.s_play(); };
-      m.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { this.click(); this.diff = b.dataset.d; this.s_diff(mapId); });
-      $('go').onclick = () => { this.app.audio.init(); this.app.startRun(mapId, this.diff); };
-      this.thumbs(m);
-    });
-  }
+  s_diff(mapId = 'ahnenhain') { this.s_play(mapId); }
 
   // ───────── Sammlung ─────────
   s_collection() {
@@ -152,17 +178,20 @@ export class Menus {
 
   // ───────── Held ─────────
   s_hero() {
-    const P = this.P, h = HEROES.kairo, r = P.heroes.kairo, ok = unlocked(P, 'hero', 'kairo'), need = BAL.hero.rankNeed(r.rank);
+    const P = this.P, hid = this.heroSel || P.hero || 'kairo', h = HEROES[hid], r = P.heroes[hid], ok = unlocked(P, 'hero', hid), need = BAL.hero.rankNeed(r.rank);
     const lv = this.heroView || 1;
-    this.render(`<div class="scr">${this.hdr('Held')}
-      <div class="preview"><canvas id="pv"></canvas><div class="pv"><b>${esc(h.name)} – ${esc(h.title)}</b><small>${ok ? esc(h.personality) : '🔒 Konto-Level 2'}</small></div></div>
+    this.render(`<div class="scr">${this.hdr('Helden')}
+      <div class="heroes" style="max-width:420px">${Object.values(HEROES).map(x => `<button class="hpick ${x.id === hid ? 'on' : ''}" data-h="${x.id}"><img src="${portrait(x.id, { hlvl: 1 })}" alt=""><span>${unlocked(P, 'hero', x.id) ? esc(x.name) + (P.hero === x.id ? ' ✓' : '') : '🔒 Konto ' + unlockLevel('hero', x.id)}</span></button>`).join('')}</div>
+      <div class="preview"><canvas id="pv"></canvas><div class="pv"><b>${esc(h.name)} – ${esc(h.title)}</b><small>${ok ? esc(h.personality) : '🔒 Konto-Level ' + unlockLevel('hero', hid)}</small></div></div>
       <div class="charline" style="background:rgba(255,155,61,.08);border-color:rgba(255,155,61,.35)"><b style="color:#ff9b3d">Rang ${r.rank}</b><div class="bar hero"><u style="width:${r.xp / need * 100}%"></u></div><small>${fmt(r.xp)}/${fmt(need)} · Start im Run: Lv ${1 + Math.floor((r.rank - 1) / 10)}</small></div>
       <div class="seg"><button data-v="1" class="${lv === 1 ? 'on' : ''}">Basis</button><button data-v="15" class="${lv === 15 ? 'on' : ''}">Aufstieg (Lv 15)</button><button data-v="20" class="${lv === 20 ? 'on' : ''}">Meister (Lv 20)</button></div>
       <div class="box"><b>Entwicklung im Run (Level 1–20)</b><div class="list" style="margin-top:6px">${h.milestones.map(m => `<div class="li on"><span class="lv">Lv ${m.lvl}</span><div class="d">${esc(m.name)}<small>${esc(m.desc)}</small></div></div>`).join('')}</div>
-      <small style="color:var(--mut)">Kairo kostet ◈${BAL.hero.cost}, nur einmal pro Run. Er steigt durch Schaden und Wellen auf. Sein Rang (dauerhaft) lässt ihn später höher starten.</small></div>
+      <small style="color:var(--mut)">Ein Held kostet ◈${BAL.hero.cost}, nur einmal pro Run. Er steigt durch Schaden und Wellen auf. Der Rang (dauerhaft) lässt ihn später höher starten.</small>${ok && P.hero !== hid ? `<button class="btn pri" id="hsel" style="margin-top:8px">${esc(h.name)} als Held wählen</button>` : ''}</div>
       <div class="box"><p style="margin:0;line-height:1.5">${esc(h.lore)}</p><p style="color:var(--mut);margin:8px 0 0;font-style:italic">„${esc(h.lines.place[0])}“</p></div></div>`, m => {
       m.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { this.click(); this.heroView = +b.dataset.v; this.s_hero(); });
-      this.preview = new Preview($('pv')); this.preview.show('kairo', { hlvl: lv });
+      m.querySelectorAll('[data-h]').forEach(b => b.onclick = () => { this.click(); this.heroSel = b.dataset.h; this.s_hero(); });
+      const hs = $('hsel'); if (hs) hs.onclick = () => { this.click(); P.hero = hid; saveProfile(P); this.s_hero(); };
+      this.preview = new Preview($('pv')); this.preview.show(hid, { hlvl: lv });
     });
   }
 
@@ -247,7 +276,7 @@ export class Menus {
     this.render(`<div class="scr res">
       <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>
       <p style="text-align:center;margin:0;color:var(--mut)">${esc(r.map)} · ${esc(r.diff)} · Welle ${r.wave}${r.maxWave === Infinity ? '' : '/' + r.maxWave}${r.perfect ? ' · <b style="color:var(--run)">PERFEKT!</b>' : ''}</p>
-      <div class="rgrid"><div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.hero ? `<span>Kairo erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>
+      <div class="rgrid"><div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.hero ? `<span>${esc(HEROES[r.hero.id]?.name || 'Held')} erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>
       <div class="sect char"><h3>CHARAKTER-XP</h3>${xpRows}${r.won ? '<small style="color:var(--mut)">inkl. +25 % Siegbonus</small>' : '<small style="color:var(--mut)">Alle verdienten XP bleiben erhalten.</small>'}
         ${r.masteryUps.map(m => `<div class="newform">★ ${esc(CREATURES[m.cid].name)}: Meisterschaft ${m.m}!</div>`).join('')}</div>
       <div class="sect acc"><h3>KONTO</h3><div class="xprow" style="grid-template-columns:1fr auto"><div><b>Level ${a.level}</b>${r.accUps.length ? ` <span class="up2" style="color:var(--acc)">⬆ +${r.accUps.length}</span>` : ''}<div class="bar acc"><u data-w="${a.xp / need * 100}" style="width:0%"></u></div></div><span class="gain" style="color:var(--acc)">+${fmt(r.accGain)}</span></div>

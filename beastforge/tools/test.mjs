@@ -201,3 +201,32 @@ test('Balance: Charakter-Lv 15 gewinnt Normal, Lv 1 kommt mindestens bis Welle 1
   const lo = [1, 2, 3].map(s => playRun({ level: 1, seed: s }));
   assert.ok(lo.every(r => r.wave >= 15), 'Lv 1: ' + lo.map(r => r.wave).join(','));
 });
+
+test('Neue Kreaturen: Atem-Kegel trifft mehrere, Hieb springt über, Kopfgeld', () => {
+  const { w } = mkWorld(); w.coins = 99999;
+  const dw = w.place('dragonwolf', 3, 4.5).tower;
+  const e1 = w.spawn('golem', [], 4.5), e2 = w.spawn('golem', [], 5.0); // beide auf Zeile 2.5 vor dem Wolf
+  for (const e of [e1, e2]) { e.speed = 0; }
+  step(w, 1.5);
+  assert.ok(e1.hp < e1.maxHp && e2.hp < e2.maxHp, 'Kegel trifft beide');
+  const m = w.place('mantis', 4, 3.6).tower; w.upgrade(m.id, 2); w.upgrade(m.id, 2); w.upgrade(m.id, 2);
+  assert.equal(m.s.bounty, 1);
+  const before = m.dmg; step(w, 1); assert.ok(m.dmg > before, 'Mantis schlägt zu');
+});
+
+test('Mehrpfad-Karte: Gegner verteilen sich auf beide Eingänge', () => {
+  const w = new World({ map: 'dorf', hooks: {}, loadout: ['kitsune'] });
+  assert.equal(w.paths.length, 2);
+  const a = w.spawn('slime'), b = w.spawn('slime');
+  assert.notEqual(a.pi, b.pi); assert.ok(Math.abs(a.y - b.y) > 5, 'verschiedene Tore');
+});
+
+test('Helden Raizen und Mika: Fähigkeiten und Lebensheilung', () => {
+  const r = mkWorld(undefined, { hero: 'raizen' }).w; r.coins = 99999;
+  const h = r.place('raizen', 3, 4.5).tower; r.heroXp(h, 1e6); r.spawn('golem', [], 4); r.step(1 / 60);
+  assert.equal(h.s.atk, 'chain'); assert.ok(r.useAbility(h.id, 'ab').ok); assert.ok(r.useAbility(h.id, 'ult').ok);
+  const m = mkWorld(undefined, { hero: 'mika' }).w; m.coins = 99999;
+  const k = m.place('mika', 3, 4.5).tower; m.heroXp(k, 1e6); m.step(1 / 60);
+  assert.ok(k.s.lifeRegen >= 4); m.lives = 100; m.wave = 1; m.waveEnd(); assert.ok(m.lives > 100, 'Leben geheilt');
+  m.spawn('slime', [], 3); m.step(1 / 60); assert.ok(m.useAbility(k.id, 'ult').ok); assert.ok(m.enemies[0].slowPct >= 0.7);
+});

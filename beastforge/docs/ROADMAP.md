@@ -28,12 +28,15 @@
 ## v0.2 erledigt
 Genre-Optik (Querformat, steile Kamera, freie Platzierung, Shop rechts, Upgrade-Panel), neue Menüs mit Kartenauswahl, detailliertere Modelle, leichteres Normal.
 
+## v0.3 erledigt
+Ladebildschirm, Weltkarte, Karte 2 (Mehrpfad), Kreaturen 6–8, Helden 2–3, Heldenwahl.
+
 ## Nächste Schritte (Content-Ausbau, je ein „Weiter“)
 1. **Echter Spieltest auf dem iPhone** → Balance (Boss, Welle 10/19), Lesbarkeit, Leistung.
-2. **Kreaturen 6–8**: Drachenwolf (Frost/Inferno), Mantisklinge (extremes Tempo), Golem (Fläche/Kontrolle) – je 3 Formen.
-3. **Karte 2 „Shinobi-Dorf“** mit zwei Pfaden (Split Paths) + Dächer als Anhöhen.
+2. ✅ Kreaturen 6–8 · ✅ Karte 2 · ✅ Helden Raizen + Mika
+3. **Karte 3 „Glutkrater“** (Lava-Felder, bewegliche Plattformen) + neue Gegner (Feuerdämonen, Schildträger).
 4. **Kreaturen 9–12**: Schlangenmagier, Windmönch, Phönix (Wiederbelebung), Leerenkatze (Realitätsschaden).
-5. **Helden 2–5**: Raizen, Mika, Akuma, Sora (Auswahl im Spielen-Menü).
+5. **Helden 4–5**: Akuma (Oni-Krieger), Sora (Himmelskriegerin).
 6. **Bosse 2–5**: Leerenkaiser (stört Türme), Titan, Seuchenkönigin (Adds), Himmelsbestie (sehr schnell).
 7. **Modi**: Boss-Rush, Herausforderungen mit Modifikatoren, Zufallsmodus, härteste Stufe „Seelenbrand“ (eigener Name).
 8. **Karten 3–8**: Vulkan, Frosttempel, Himmelsinseln, Spuksumpf, Neon-Stadt, Himmelsreich (Teleporter, bewegliche Plattformen).

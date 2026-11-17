@@ -12,6 +12,7 @@ export const BASE_STATS = {
   mortar: { dmg: 0, rate: 0, aoe: 0, range: 0, burn: 0, stun: 0 },
   support: { range: 0, rate: 0, dmg: 0, rng: 0, camo: false, protect: false },
   income: 0, dash: { every: 0, mul: 0 }, multi: 0, mark: 0, brk: 0, water: 0,
+  cone: 0.7, cleave: 0, bounty: 0, lifeRegen: 0,
 };
 
 export const CREATURES = {
@@ -240,6 +241,135 @@ export const CREATURES = {
     },
     mastery: { title: 'Schattenseher', skins: [{ name: 'Silberfeder', pal: 'moon' }, { name: 'Sternenfeder', pal: 'star' }] },
   },
+};
+
+// ───────────────────────── DRACHENWOLF (Atem-Kegel, Eis/Feuer) ─────────────────────────
+CREATURES.dragonwolf = {
+  id: 'dragonwolf', name: 'Drachenwolf', role: 'Hybrid / Atem-Kegel', elements: ['ice', 'fire'],
+  color: '#7ad0ff', cost: 550, place: ['ground', 'high'], model: 'dragonwolf',
+  lore: 'Ein Wolf, dessen Ahnin ein Eisdrache war. Sein Atem friert Flüsse – oder bringt sie zum Kochen, wenn er wütend ist.',
+  base: { atk: 'breath', dmg: 4, rate: 2, range: 2.2, dmgType: 'ice', cone: 0.75, 'slow.pct': 0.2, 'slow.dur': 0.8 },
+  forms: [
+    { id: 'pup', stage: 0, lvl: 1, cost: 0, name: 'Junger Drachenwolf', desc: 'Frostatem in einem Kegel, verlangsamt alle darin.' },
+    { id: 'frostfang', stage: 1, lvl: 10, cost: 650, name: 'Frostfang', desc: 'Eishörner, breiterer Atem.', fx: { mul: { dmg: 1.3 }, add: { cone: 0.2, range: 0.2 } } },
+    { id: 'skywolf', stage: 2, lvl: 25, cost: 2400, name: 'Sturmdrachen-Wolf', desc: 'Drachenschwingen. Jeder 5. Atem: Drachen-Nova.', fx: { mul: { dmg: 1.45 }, set: { 'every2.n': 5, 'every2.mul': 4, 'every2.aoe': 1.5, 'every2.proj': 'nova', 'every2.dmgType': 'ice' } } },
+  ],
+  paths: [
+    { id: 'frost', name: 'Frost', icon: '❄', tiers: [
+      { name: 'Eiszähne', cost: 200, desc: '+15 % Verlangsamung', fx: { add: { 'slow.pct': 0.15 } } },
+      { name: 'Frostatem', cost: 480, desc: '+3 Schaden, Kälte hält länger', fx: { add: { dmg: 3, 'slow.dur': 1 } } },
+      { name: 'Gefrieren', cost: 1150, desc: '12 % Chance zu erstarren (0,8 s)', fx: { add: { 'stun.ch': 0.12, 'stun.dur': 0.8 } } },
+      { name: 'Permafrost', cost: 2700, desc: '+0,4 Reichweite, 60 % Verlangsamung', fx: { add: { range: 0.4 }, set: { 'slow.pct': 0.6 } } },
+      { name: 'Weißer Winter', cost: 6900, desc: 'Schaden ×2,5, 25 % Erstarren, bricht Panzer', fx: { mul: { dmg: 2.5 }, add: { 'stun.ch': 0.13, 'stun.dur': 0.4 }, set: { brk: 2 } } },
+    ] },
+    { id: 'inferno', name: 'Inferno', icon: '🔥', tiers: [
+      { name: 'Glutkehle', cost: 250, desc: 'Feueratem: setzt in Brand', fx: { set: { dmgType: 'fire' }, add: { 'burn.dps': 3, 'burn.dur': 2 } } },
+      { name: 'Feuerlunge', cost: 550, desc: '+4 Schaden', fx: { add: { dmg: 4 } } },
+      { name: 'Flammenwalze', cost: 1300, desc: 'Breiterer Kegel, Brand ×2', fx: { add: { cone: 0.35 }, mul: { 'burn.dps': 2 } } },
+      { name: 'Höllenschlund', cost: 3100, desc: 'Tempo ×1,4, +8 Brand', fx: { mul: { rate: 1.4 }, add: { 'burn.dps': 8 } } },
+      { name: 'Inferno-Drache', cost: 7400, desc: 'Schaden ×2,6, +25 Brand', fx: { mul: { dmg: 2.6 }, add: { 'burn.dps': 25 } } },
+    ] },
+    { id: 'dragon', name: 'Drache', icon: '🐉', tiers: [
+      { name: 'Drachenschuppen', cost: 220, desc: '+0,3 Reichweite, +10 % Bossschaden', fx: { add: { range: 0.3 }, mul: { bossMul: 1.1 } } },
+      { name: 'Schwingenschlag', cost: 500, desc: 'Atem stößt zurück', fx: { add: { knock: 0.3 } } },
+      { name: 'Drachenblut', cost: 1250, desc: 'Jeder 4. Atem: Drachenfeuerball (×4)', fx: { set: { 'every.n': 4, 'every.mul': 4, 'every.aoe': 1.3, 'every.proj': 'fireball', 'every.dmgType': 'fire' } } },
+      { name: 'Drachenzorn', cost: 2900, desc: '15 % Krit (×2,5)', fx: { add: { 'crit.ch': 0.15 }, set: { 'crit.mult': 2.5 } } },
+      { name: 'Urdrache', cost: 7600, desc: 'Jeder 3. Atem: Feuerball ×7, Schaden ×1,6', fx: { set: { 'every.n': 3, 'every.mul': 7 }, mul: { dmg: 1.6 } } },
+    ] },
+  ],
+  ability: { id: 'blizzard', name: 'Eissturm', lvl: 8, stage: 1, cd: 45, desc: 'Alle Gegner in der Nähe erstarren 2,5 s und nehmen schweren Frostschaden.' },
+  passives: {
+    20: { name: 'Kalte Glut', desc: '+10 % Verlangsamung', fx: { add: { 'slow.pct': 0.1 } } },
+    40: { name: 'Drachenatem', desc: 'Kegel +0,15', fx: { add: { cone: 0.15 } } },
+    50: { name: 'Eisfeuer-Herrscher', desc: 'Meister: +15 % Schaden', fx: { mul: { dmg: 1.15 } } },
+  },
+  mastery: { title: 'Frostzähmer', skins: [{ name: 'Glutfell', pal: 'moon' }, { name: 'Sternenfell', pal: 'star' }] },
+};
+
+// ───────────────────────── MANTISKLINGE (extremes Tempo, Nahkampf) ─────────────────────────
+CREATURES.mantis = {
+  id: 'mantis', name: 'Mantisklinge', role: 'Extremes Tempo / Nahkampf', elements: ['phys', 'shadow'],
+  color: '#7af07a', cost: 400, place: ['ground', 'high'], model: 'mantis',
+  lore: 'Die Mantisklingen trainieren tausend Jahre lang nur einen einzigen Schnitt – und führen ihn dann tausendmal pro Minute aus.',
+  base: { atk: 'slash', dmg: 2.6, rate: 4, range: 1.45, dmgType: 'phys', cleave: 1 },
+  forms: [
+    { id: 'blade', stage: 0, lvl: 1, cost: 0, name: 'Mantisklinge', desc: 'Rasend schnelle Hiebe, trifft auch einen Nachbarn.' },
+    { id: 'queen', stage: 1, lvl: 10, cost: 450, name: 'Sichelmeisterin', desc: 'Vier Sicheln, präziser.', fx: { mul: { dmg: 1.3, rate: 1.1 } } },
+    { id: 'crimson', stage: 2, lvl: 25, cost: 1700, name: 'Purpurmantis', desc: 'Purpurne Klingen, mehr Nachbartreffer.', fx: { mul: { dmg: 1.45 }, add: { cleave: 1, pierceArmor: 0.3 } } },
+  ],
+  paths: [
+    { id: 'assassin', name: 'Assassine', icon: '🗡', tiers: [
+      { name: 'Schärfere Sicheln', cost: 180, desc: '+1,5 Schaden', fx: { add: { dmg: 1.5 } } },
+      { name: 'Lautlos', cost: 420, desc: 'Erkennt Getarnte, 10 % Krit', fx: { set: { camo: true }, add: { 'crit.ch': 0.1 } } },
+      { name: 'Todesstoß', cost: 1000, desc: '25 % Krit (×3)', fx: { add: { 'crit.ch': 0.15 }, set: { 'crit.mult': 3 } } },
+      { name: 'Kopfjäger', cost: 2500, desc: '+40 % Bossschaden, +4 Schaden', fx: { mul: { bossMul: 1.4 }, add: { dmg: 4 } } },
+      { name: 'Schattensense', cost: 6600, desc: 'Schaden ×2,5, Krits ×4', fx: { mul: { dmg: 2.5 }, set: { 'crit.mult': 4 } } },
+    ] },
+    { id: 'master', name: 'Klingenmeister', icon: '⚔', tiers: [
+      { name: 'Flinke Klingen', cost: 200, desc: 'Tempo ×1,25', fx: { mul: { rate: 1.25 } } },
+      { name: 'Doppelsichel', cost: 480, desc: '+1 Nachbartreffer', fx: { add: { cleave: 1 } } },
+      { name: 'Klingenwirbel', cost: 1100, desc: '+2 Nachbartreffer, +0,3 Reichweite', fx: { add: { cleave: 2, range: 0.3 } } },
+      { name: 'Tausend Schnitte', cost: 2600, desc: 'Tempo ×1,6', fx: { mul: { rate: 1.6 } } },
+      { name: 'Sturm der Klingen', cost: 6400, desc: 'Tempo ×2, +3 Nachbartreffer', fx: { mul: { rate: 2 }, add: { cleave: 3 } } },
+    ] },
+    { id: 'reaper', name: 'Purpurschnitter', icon: '🩸', tiers: [
+      { name: 'Blutsichel', cost: 220, desc: 'Blutung (2/s)', fx: { add: { 'burn.dps': 2, 'burn.dur': 2 } } },
+      { name: 'Purpurklinge', cost: 520, desc: 'Schattenschaden, ignoriert 50 % Panzer', fx: { set: { dmgType: 'shadow' }, add: { pierceArmor: 0.5 } } },
+      { name: 'Ernte', cost: 1200, desc: '+1 Münze je Kill', fx: { add: { bounty: 1 } } },
+      { name: 'Seelenernte', cost: 2800, desc: 'Tempo ×1,3, +1 Münze je Kill', fx: { mul: { rate: 1.3 }, add: { bounty: 1 } } },
+      { name: 'Purpurner Schnitter', cost: 7000, desc: 'Jeder 6. Hieb: Rundumschlag (×6)', fx: { set: { 'every.n': 6, 'every.mul': 6, 'every.aoe': 2.3, 'every.proj': 'reap', 'every.dmgType': 'shadow' } } },
+    ] },
+  ],
+  ability: { id: 'flurry', name: 'Klingensturm', lvl: 8, stage: 1, cd: 40, desc: '6 s lang dreifaches Angriffstempo.' },
+  passives: {
+    20: { name: 'Jagdreflex', desc: '+10 % Tempo', fx: { mul: { rate: 1.1 } } },
+    40: { name: 'Schnittmuster', desc: '+1 Nachbartreffer', fx: { add: { cleave: 1 } } },
+    50: { name: 'Klingenheilige', desc: 'Meister: +5 % Krit', fx: { add: { 'crit.ch': 0.05 } } },
+  },
+  mastery: { title: 'Klingentänzer', skins: [{ name: 'Orchideenmantis', pal: 'moon' }, { name: 'Sternenmantis', pal: 'star' }] },
+};
+
+// ───────────────────────── FELSGOLEM (Fläche / Kontrolle) ─────────────────────────
+CREATURES.golem = {
+  id: 'golem', name: 'Felsgolem', role: 'Fläche / Betäubung', elements: ['earth'],
+  color: '#c8a070', cost: 650, place: ['ground', 'high'], model: 'golem',
+  lore: 'Ein Wächter aus dem Fels unter dem Schrein. Er schläft hundert Jahre und erwacht, wenn der Herzkristall flackert.',
+  base: { atk: 'pulse', dmg: 14, rate: 0.42, range: 1.8, dmgType: 'earth', flying: false, camo: true, 'stun.ch': 0.15, 'stun.dur': 0.7 },
+  forms: [
+    { id: 'rock', stage: 0, lvl: 1, cost: 0, name: 'Felsgolem', desc: 'Stampft – betäubt Gegner in der Nähe.' },
+    { id: 'crystal', stage: 1, lvl: 10, cost: 700, name: 'Kristallgolem', desc: 'Leuchtende Kristalle, häufiger Betäubung.', fx: { mul: { dmg: 1.3 }, add: { 'stun.ch': 0.05 } } },
+    { id: 'titan', stage: 2, lvl: 25, cost: 2600, name: 'Bergtitan', desc: 'Ein wandelnder Berg.', fx: { mul: { dmg: 1.5 }, add: { range: 0.3 } } },
+  ],
+  paths: [
+    { id: 'stone', name: 'Stein', icon: '🪨', tiers: [
+      { name: 'Granitfäuste', cost: 220, desc: '+6 Schaden', fx: { add: { dmg: 6 } } },
+      { name: 'Beben', cost: 520, desc: '+0,4 Reichweite', fx: { add: { range: 0.4 } } },
+      { name: 'Felsbrecher', cost: 1200, desc: 'Getroffene verlieren 3 s ihren Panzer', fx: { set: { brk: 3 } } },
+      { name: 'Erdriss', cost: 2800, desc: '25 % Betäubung (1 s)', fx: { add: { 'stun.ch': 0.1, 'stun.dur': 0.3 } } },
+      { name: 'Weltenbeben', cost: 7000, desc: 'Schaden ×3, +0,6 Reichweite', fx: { mul: { dmg: 3 }, add: { range: 0.6 } } },
+    ] },
+    { id: 'obsidian', name: 'Obsidian', icon: '🌋', tiers: [
+      { name: 'Obsidiansplitter', cost: 200, desc: 'Ignoriert 50 % Panzer', fx: { add: { pierceArmor: 0.5 } } },
+      { name: 'Glasklingen', cost: 480, desc: '15 % Krit (×2,5)', fx: { add: { 'crit.ch': 0.15 }, set: { 'crit.mult': 2.5 } } },
+      { name: 'Lavakern', cost: 1150, desc: 'Feuer: setzt in Brand', fx: { set: { dmgType: 'fire' }, add: { 'burn.dps': 6, 'burn.dur': 3 } } },
+      { name: 'Magmaherz', cost: 2700, desc: 'Brand ×2, Tempo ×1,3', fx: { mul: { 'burn.dps': 2, rate: 1.3 } } },
+      { name: 'Obsidiantitan', cost: 6800, desc: 'Schaden ×2,5, +20 Brand', fx: { mul: { dmg: 2.5 }, add: { 'burn.dps': 20 } } },
+    ] },
+    { id: 'mountain', name: 'Bergtitan', icon: '⛰', tiers: [
+      { name: 'Felsenwurf', cost: 300, desc: 'Wirft Felsen (Fläche, Reichweite 5)', fx: { add: { 'mortar.dmg': 18, 'mortar.rate': 0.35, 'mortar.aoe': 1.1, 'mortar.range': 5 } } },
+      { name: 'Felsbrocken', cost: 650, desc: 'Felsen +18 Schaden', fx: { add: { 'mortar.dmg': 18 } } },
+      { name: 'Steinhagel', cost: 1400, desc: 'Felsen-Tempo ×1,8', fx: { mul: { 'mortar.rate': 1.8 } } },
+      { name: 'Bergsturz', cost: 3000, desc: 'Größere Einschläge, betäuben', fx: { add: { 'mortar.aoe': 0.5, 'mortar.stun': 0.6 } } },
+      { name: 'Gipfelsturm', cost: 7200, desc: 'Felsen ×3', fx: { mul: { 'mortar.dmg': 3 } } },
+    ] },
+  ],
+  ability: { id: 'quake', name: 'Erdbeben', lvl: 8, stage: 1, cd: 45, desc: 'Alle Bodengegner in der Nähe: schwerer Schaden und 2 s Betäubung.' },
+  passives: {
+    20: { name: 'Steinhaut', desc: '+0,2 Reichweite', fx: { add: { range: 0.2 } } },
+    40: { name: 'Grollen', desc: '+5 % Betäubung', fx: { add: { 'stun.ch': 0.05 } } },
+    50: { name: 'Urfels', desc: 'Meister: +15 % Schaden', fx: { mul: { dmg: 1.15 } } },
+  },
+  mastery: { title: 'Bergrufer', skins: [{ name: 'Marmorgolem', pal: 'moon' }, { name: 'Sternengolem', pal: 'star' }] },
 };
 
 export const CREATURE_IDS = Object.keys(CREATURES);

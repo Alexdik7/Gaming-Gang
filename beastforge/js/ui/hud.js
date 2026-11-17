@@ -155,7 +155,7 @@ export class Hud {
         <div class="chips">${chips}</div>
         ${next ? `<div class="nextm">Nächster Meilenstein · <b>Lv ${next.lvl}: ${esc(next.name)}</b><br><small>${esc(next.desc)}</small></div>` : ''}
         <div class="miles">${h.milestones.map(m => `<div class="${t.hlvl >= m.lvl ? 'on' : ''}"><i>${t.hlvl >= m.lvl ? '✓' : m.lvl}</i><span><b>${esc(m.name)}</b> ${esc(m.desc)}</span></div>`).join('')}</div>
-        <small class="mut">Kairo steigt durch Schaden und Wellen auf – kein Münzkauf nötig.</small>`;
+        <small class="mut">${esc(h.name)} steigt durch Schaden und Wellen auf – kein Münzkauf nötig.</small>`;
     } else {
       const def = CREATURES[t.cid], c = this.P.chars[t.cid], need = charNeed(c.level), br = c.branch;
       const form = formAt(t.cid, t.stage, br);
@@ -218,7 +218,7 @@ export class Hud {
       case 'waveEnd': this.toast('syn', `Welle ${e.wave} geschafft · +◈${fmt(e.bonus + e.income)}`, e.income ? `Wellenbonus ${fmt(e.bonus)} · Einkommen ${fmt(e.income)}` : ''); break;
       case 'synergy': this.toast('syn', '✦ Synergie: ' + e.sy.name, e.sy.desc); break;
       case 'say': this.bubble(e.tower, e.text); break;
-      case 'heroLevel': if (e.milestone) this.toast('char', `Kairo Lv ${e.lvl}: ${e.milestone.name}`, e.milestone.desc); if (this.sel === e.tower) this.refreshPanel(); break;
+      case 'heroLevel': if (e.milestone) this.toast('char', `${HEROES[e.tower.cid].name} Lv ${e.lvl}: ${e.milestone.name}`, e.milestone.desc); if (this.sel === e.tower) this.refreshPanel(); break;
       case 'evolve': if (this.sel === e.tower) this.refreshPanel(); this.coachEvent('evolve'); break;
       case 'leak': this.flash(0.15, '#ff2040'); break;
       case 'early': this.toast('syn', `+◈${e.coins} früh gerufen`, ''); break;

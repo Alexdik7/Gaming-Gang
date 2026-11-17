@@ -10,7 +10,7 @@ export function newCharProgress() { return { level: 1, xp: 0, total: 0, branch: 
 
 export function defaultProfile() {
   const chars = {}; for (const id in CREATURES) chars[id] = newCharProgress();
-  const heroes = {}; for (const id in HEROES) heroes[id] = { rank: 1, xp: 0, runs: 0 };
+  const heroes = {}; for (const id in HEROES) heroes[id] = { rank: 1, xp: 0, runs: 0, wins: 0 };
   return {
     v: V, created: Date.now(),
     account: { level: 1, xp: 0, total: 0, frame: 'none', title: 'none' },

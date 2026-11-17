@@ -15,9 +15,9 @@ export class Game {
   constructor(app, { map = 'ahnenhain', diff = 'normal' }) {
     this.app = app; const P = this.P = app.profile;
     this.mapId = map; this.diffKey = diff;
-    this.loadout = unlockedCreatures(P).filter(id => P.loadout.includes(id)).slice(0, 5);
+    this.loadout = unlockedCreatures(P);
     if (!this.loadout.length) this.loadout = ['kitsune'];
-    this.heroId = unlocked(P, 'hero', P.hero) ? P.hero : null;
+    this.heroId = unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
     this.snap = { acc: { ...P.account }, chars: Object.fromEntries(Object.entries(P.chars).map(([k, c]) => [k, { level: c.level, xp: c.xp }])) };
     this.accGain = 0; this.charUps = []; this.accUps = []; this.achs = [];
     const hooks = {
@@ -120,7 +120,7 @@ export class Game {
     if (this.placing === cid && !drag) { this.cancelPlace(); return; }
     this.select(null); this.cancelPlace();
     if (this.world.coins < this.world.costOf(cid)) { this.hud.err('Zu wenig Münzen'); return; }
-    if (cid === this.heroId && this.world.towers.some(t => t.hero)) { this.hud.err('Kairo ist schon im Einsatz'); return; }
+    if (cid === this.heroId && this.world.towers.some(t => t.hero)) { this.hud.err(HEROES[cid].name + ' ist schon im Einsatz'); return; }
     this.placing = cid; this.dragging = drag; this.app.audio.play('click');
     this.view.showArrows(1.5);
     this.hud.buildTray(); this.hud.coachEvent('pick');
@@ -215,7 +215,8 @@ export class Game {
       case 'evolve': A.play('evolve'); break; case 'sell': A.play('sell'); break; case 'rock': A.play('boom'); break;
       case 'wave': A.play('wave'); break; case 'waveEnd': A.play('waveEnd'); break;
       case 'bossWarn': A.play('bossWarn'); break; case 'bossPhase': A.play('roar'); break; case 'breath': A.play('breath'); break; case 'bossDie': A.play('roar'); break;
-      case 'ability': A.play(e.id === 'judgement' || e.id === 'whirl' ? 'ult' : 'ability'); if (e.id === 'roar') A.play('thunder'); break;
+      case 'ability': A.play(['judgement', 'whirl', 'thunderfall', 'sanctuary'].includes(e.id) ? 'ult' : 'ability'); if (e.id === 'roar' || e.id === 'storm' || e.id === 'thunderfall') A.play('thunder'); break;
+      case 'cone': A.play(e.type === 'fire' ? 'fire' : 'frost'); break; case 'slash': A.play('slash'); break; case 'heal2': A.play('levelup'); break;
       case 'dash': A.play('ability'); break; case 'say': A.play('say'); break; case 'heroLevel': A.play('levelup'); break;
     }
   }
@@ -226,6 +227,7 @@ export class Game {
     P.stats.runs++; if (won) P.stats.wins++; else P.stats.losses++;
     const perfect = won && w.lives >= w.maxLives;
     if (won && d === 'hard') P.stats.winsHard++;
+    if (won && this.mapId === 'dorf') P.stats.winDorf = (P.stats.winDorf || 0) + 1;
     if (perfect) P.stats.perfect++; if (perfect && d === 'hard') P.stats.perfectHard++;
     if (d === 'endless') P.stats.bestEndless = Math.max(P.stats.bestEndless || 0, w.doneWave);
     const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, endless: 0 };
@@ -242,7 +244,7 @@ export class Game {
       }
       const m = addMastery(P, cid, (won ? 1 : 0) + (w.stats.bossKills ? 1 : 0)); if (m) masteryUps.push({ cid, m });
     }
-    if (this.heroId) P.heroes[this.heroId].runs++;
+    if (this.heroId) { const h = P.heroes[this.heroId]; h.runs++; if (won) h.wins = (h.wins || 0) + 1; }
     if (won) this.giveAcc(BAL.acc.win * D.acc);
     if (firstClear) this.giveAcc(BAL.acc.firstMapClear);
     for (const a of checkAchievements(P)) { this.achs.push(a); this.giveAcc(a.xp); }

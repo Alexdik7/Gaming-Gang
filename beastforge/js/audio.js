@@ -96,6 +96,8 @@ export class Audio {
       case 'levelup': [0, 4, 7, 12, 16].forEach((s, i) => this.koto(72 + s, t + i * 0.07, 0.14, B)); break;
       case 'acclevel': [0, 4, 7, 11, 14, 19].forEach((s, i) => this.osc('triangle', N(67 + s), t + i * 0.08, 0.6, 0.11, B, { rev: true })); this.taiko(t + 0.48, 0.5, B); break;
       case 'kunai': this.noiseHit(t, 0.06, 0.07, B, { f: 4200 * p, q: 3 }); break;
+      case 'frost': this.noiseHit(t, 0.22, 0.07, B, { type: 'highpass', f: 3000 * p, to: 6000 }); this.osc('sine', 1800 * p, t, 0.1, 0.03, B, { to: 2600 }); break;
+      case 'slash': this.noiseHit(t, 0.05, 0.06, B, { f: 5200 * p, to: 2500, q: 4 }); break;
       case 'fire': this.noiseHit(t, 0.25, 0.09, B, { f: 700 * p, to: 2400, q: 0.7 }); break;
       case 'zap': this.osc('sawtooth', 1800 * p, t, 0.09, 0.05, B, { to: 300, lp: 5000 }); this.noiseHit(t, 0.12, 0.08, B, { f: 5200, q: 0.6 }); break;
       case 'thunder': this.noiseHit(t, 0.9, 0.3, B, { type: 'lowpass', f: 2500, to: 200, rev: true }); this.osc('sine', 60, t, 0.6, 0.3, B, { to: 30 }); break;
@@ -124,7 +126,7 @@ export class Audio {
     }
   }
 }
-const THROTTLE = { kunai: 60, fire: 90, zap: 80, hit: 45, coin: 50, crit: 70, pulse: 120, feather: 60, leaf: 80, shuriken: 70, pop: 40, boom: 90, react: 120, mortar: 120 };
+const THROTTLE = { frost: 110, slash: 55, kunai: 60, fire: 90, zap: 80, hit: 45, coin: 50, crit: 70, pulse: 120, feather: 60, leaf: 80, shuriken: 70, pop: 40, boom: 90, react: 120, mortar: 120 };
 
 // Tonleitern: In (D Es G A B) = Kampf/Boss, Yo (D E G A H) = Menü
 const IN = [0, 1, 5, 7, 8], YO = [0, 2, 5, 7, 9];

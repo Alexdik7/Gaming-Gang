@@ -29,7 +29,8 @@ export class World {
     this.rng = mulberry(o.seed ?? 12345);
     this.grid = this.map.grid.map(r => r.split(''));
     this.H = this.grid.length; this.W = this.grid[0].length;
-    this.buildPath(this.map.path);
+    this.paths = (this.map.paths || [this.map.path]).map(pts => this.buildPath(pts));
+    ({ pts: this.pts, cum: this.cum, len: this.len } = this.paths[0]); this.spawnPi = 0;
     this.coins = this.diff.start; this.lives = this.diff.lives; this.maxLives = this.diff.lives;
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
@@ -40,15 +41,17 @@ export class World {
   }
 
   // ───────── Pfad ─────────
-  buildPath(pts) {
-    this.pts = pts.map(([x, y]) => ({ x, y })); this.cum = [0];
-    for (let i = 1; i < this.pts.length; i++) this.cum.push(this.cum[i - 1] + Math.hypot(this.pts[i].x - this.pts[i - 1].x, this.pts[i].y - this.pts[i - 1].y));
-    this.len = this.cum[this.cum.length - 1];
+  buildPath(raw) {
+    const pts = raw.map(([x, y]) => ({ x, y })), cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+    return { pts, cum, len: cum[cum.length - 1] };
   }
-  posAt(d, out = {}) {
-    d = Math.max(0, Math.min(this.len, d));
-    let i = 1; while (i < this.cum.length - 1 && this.cum[i] < d) i++;
-    const a = this.pts[i - 1], b = this.pts[i], seg = this.cum[i] - this.cum[i - 1], f = seg ? (d - this.cum[i - 1]) / seg : 0;
+  pathLen(pi = 0) { return this.paths[pi].len; }
+  posAt(d, out = {}, pi = 0) {
+    const P = this.paths[pi] || this.paths[0], pts = P.pts, cum = P.cum;
+    d = Math.max(0, Math.min(P.len, d));
+    let i = 1; while (i < cum.length - 1 && cum[i] < d) i++;
+    const a = pts[i - 1], b = pts[i], seg = cum[i] - cum[i - 1], f = seg ? (d - cum[i - 1]) / seg : 0;
     out.x = a.x + (b.x - a.x) * f; out.y = a.y + (b.y - a.y) * f; out.ang = Math.atan2(b.y - a.y, b.x - a.x);
     return out;
   }
@@ -60,8 +63,8 @@ export class World {
   towerNear(x, y, r = TOWER_R + 0.12) { let best = null, bd = r; for (const t of this.towers) { const d = Math.hypot(t.x - x, t.y - y); if (d < bd) { bd = d; best = t; } } return best; }
   pathDist(x, y) {
     let best = Infinity;
-    for (let i = 1; i < this.pts.length; i++) {
-      const a = this.pts[i - 1], b = this.pts[i], dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy;
+    for (const P of this.paths) for (let i = 1; i < P.pts.length; i++) {
+      const a = P.pts[i - 1], b = P.pts[i], dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy;
       const f = L ? Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / L)) : 0;
       best = Math.min(best, Math.hypot(x - a.x - dx * f, y - a.y - dy * f));
     }
@@ -73,7 +76,7 @@ export class World {
     let best = null, bv = -1;
     for (let y = 0.5; y < this.H; y += 0.5) for (let x = 0.5; x < this.W; x += 0.5) {
       if (!this.canPlace(cid, x, y).ok) continue;
-      let cov = 0; for (let d = 0; d < this.len; d += 0.5) { const p = this.posAt(d, {}); if (Math.hypot(p.x - x, p.y - y) <= range) cov += 0.5 * (preferEnd ? 0.5 + d / this.len : 1); }
+      let cov = 0; this.paths.forEach((P, pi) => { for (let d = 0; d < P.len; d += 0.5) { const p = this.posAt(d, {}, pi); if (Math.hypot(p.x - x, p.y - y) <= range) cov += 0.5 * (preferEnd ? 0.5 + d / P.len : 1); } });
       if (this.terrainAt(x, y) === '^') cov *= 1.15;
       if (cov > bv) { bv = cov; best = [x, y]; }
     }
@@ -109,7 +112,7 @@ export class World {
     this.towers.push(t); this.stats.used.add(cid); this.dirty = true; this.refresh();
     this.emit({ t: 'place', tower: t });
     if (hero) this.say(t, 'place');
-    if (!hero && this.loadout.every(id => this.stats.used.has(id)) && this.loadout.length >= 5) this.hooks.stat?.('allFive', 1, true);
+    if (!hero && [...this.stats.used].filter(id => CREATURES[id]).length >= 5) this.hooks.stat?.('allFive', 1, true);
     return { ok: true, tower: t };
   }
   canUpgrade(t, p) {
@@ -184,11 +187,12 @@ export class World {
   }
   waveRunning() { return this.spawners.length > 0 || this.enemies.length > 0; }
 
-  spawn(kind, mods = [], d = 0, wave = this.wave) {
+  spawn(kind, mods = [], d = 0, wave = this.wave, pi = null) {
+    if (pi === null) { pi = this.spawnPi; this.spawnPi = (this.spawnPi + 1) % this.paths.length; }
     const def = ENEMIES[kind] || BOSSES[kind]; if (!def) return null;
     const boss = !!def.boss, elite = mods.includes('elite');
     const scale = BAL.endlessScale(wave);
-    let hp = def.hp * this.diff.hp * scale * (boss || def.miniboss ? 1 : BAL.hpScale(wave));
+    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * scale * (boss || def.miniboss ? 1 : BAL.hpScale(wave));
     if (elite) hp *= 2.2;
     const res = { ...(def.res || {}) };
     if (mods.includes('armored')) res.phys = Math.max(0.25, (res.phys ?? 1) * 0.6);
@@ -196,8 +200,8 @@ export class World {
       speed: def.speed * this.diff.speed * (mods.includes('fast') ? 1.3 : 1), slowPct: 0, slowT: 0, burnDps: 0, burnT: 0, burnSrc: null,
       stunT: 0, shield: 0, flying: !!def.flying, camo: !!def.camo || mods.includes('camo'), elite, mods, res, dmgBy: {}, vuln: 0, vulnT: 0, revealT: 0, brkT: 0,
       elem: null, elemT: 0, reactT: 0, abT: 1 + this.rng() * 2, regen: mods.includes('regen') ? 0.02 : 0, wave, boss, miniboss: !!def.miniboss,
-      heavy: !!def.heavy, phase: 0, flyT: 0, flyCd: 6, breathCd: 4, addCd: 5, roarT: 0, cryT: 0, hitT: 0, alive: true, coinMul: 1 };
-    this.posAt(d, e);
+      heavy: !!def.heavy, pi, phase: 0, flyT: 0, flyCd: 6, breathCd: 4, addCd: 5, roarT: 0, cryT: 0, hitT: 0, alive: true, coinMul: 1 };
+    this.posAt(d, e, pi);
     this.enemies.push(e);
     if (boss) { this.boss = e; this.emit({ t: 'boss', e }); }
     this.emit({ t: 'spawn', e });
@@ -266,8 +270,8 @@ export class World {
     if (e.cryT > 0) sp *= 1 + (ENEMIES.oni.cry.speed);
     if (e.boss) { const ph = def.phases[e.phase]; if (e.flyT > 0) sp *= def.phases[1].fly.speed; if (e.phase >= 3) sp *= ph.enrage || 1; }
     e.d += sp * dt;
-    this.posAt(e.d, e);
-    if (e.d >= this.len) this.leak(e);
+    this.posAt(e.d, e, e.pi);
+    if (e.d >= this.paths[e.pi].len) this.leak(e);
   }
   updBoss(e, dt) {
     const def = e.def, ratio = e.hp / e.maxHp;
@@ -290,7 +294,7 @@ export class World {
     }
     if (e.phase >= 3) {
       const a = def.phases[3].adds;
-      if ((e.addCd -= dt) <= 0) { e.addCd = a.every; for (let i = 0; i < a.n; i++) this.spawn(a.kind, [], Math.max(0, e.d - 0.6 - i * 0.4), e.wave); this.emit({ t: 'bossSummon', e }); }
+      if ((e.addCd -= dt) <= 0) { e.addCd = a.every; for (let i = 0; i < a.n; i++) this.spawn(a.kind, [], Math.max(0, e.d - 0.6 - i * 0.4), e.wave, e.pi); this.emit({ t: 'bossSummon', e }); }
     }
   }
   leak(e) {
@@ -361,7 +365,7 @@ export class World {
     const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul);
     this.gain(coins);
     this.stats.kills++; this.hooks.stat?.('kills', 1);
-    if (src) src.kills++;
+    if (src) { src.kills++; if (src.s?.bounty) this.gain(src.s.bounty); }
     // Charakter-XP nach Schadensanteil verteilen (mehrere Kreaturen am selben Gegner teilen fair)
     const base = (def.xp || 1) * (e.elite ? 2.5 : 1) * (1 + BAL.char.waveScale * this.wave) * (e.boss ? BAL.char.bossMul : 1);
     const total = Object.values(e.dmgBy).reduce((a, b) => a + b, 0);
@@ -372,7 +376,7 @@ export class World {
     }
     if (e.boss) { this.stats.bossKills++; this.hooks.stat?.('bossKills', 1); this.hooks.accXp?.(BAL.acc.bossKill * this.diff.acc, 'boss'); this.boss = null; this.emit({ t: 'bossDie', e }); }
     if (e.miniboss) { this.stats.minibossKills++; this.hooks.stat?.('minibossKills', 1); this.hooks.accXp?.(BAL.acc.miniBoss * this.diff.acc, 'miniboss'); }
-    if (def.split) for (let i = 0; i < def.split.n; i++) { const m = this.spawn(def.split.kind, e.elite ? ['elite'] : [], Math.max(0, e.d - 0.25 * i), e.wave); if (m) m.coinMul = 1; }
+    if (def.split) for (let i = 0; i < def.split.n; i++) { const m = this.spawn(def.split.kind, e.elite ? ['elite'] : [], Math.max(0, e.d - 0.25 * i), e.wave, e.pi); if (m) m.coinMul = 1; }
     this.emit({ t: 'kill', e, x: e.x, y: e.y, coins, src });
   }
   charXp(cid, raw) {
@@ -445,16 +449,16 @@ export class World {
     for (const e of this.enemies) {
       if (!e.alive || !this.canSee(s, e) || (filter && !filter(e))) continue;
       const dx = e.x - t.x, dy = e.y - t.y, d2 = dx * dx + dy * dy; if (d2 > r2) continue;
-      let v;
+      let v; const pr = e.d - this.paths[e.pi].len;
       switch (mode) {
-        case 'last': v = -e.d; break;
-        case 'strong': v = e.hp * 1000 + e.d; break;
-        case 'weak': v = -e.hp * 1000 + e.d; break;
+        case 'last': v = -pr; break;
+        case 'strong': v = e.hp * 1000 + pr; break;
+        case 'weak': v = -e.hp * 1000 + pr; break;
         case 'close': v = -d2; break;
-        case 'fast': v = e.speed * 100 + e.d; break;
-        case 'boss': v = (e.boss ? 3e6 : e.miniboss ? 2e6 : e.elite ? 1e6 : 0) + e.d; break;
+        case 'fast': v = e.speed * 100 + pr; break;
+        case 'boss': v = (e.boss ? 3e6 : e.miniboss ? 2e6 : e.elite ? 1e6 : 0) + pr; break;
         case 'random': cands.push(e); continue;
-        default: v = e.d;
+        default: v = pr;
       }
       if (v > bv) { bv = v; best = e; }
     }
@@ -488,7 +492,7 @@ export class World {
       const e = this.pick(t, s.mortar.range, t.target === 'first' ? 'strong' : t.target, o => !o.flying);
       if (e) {
         t.mcd = 1 / s.mortar.rate;
-        const lead = Math.min(this.len, e.d + e.speed * 0.9), p = this.posAt(lead, {});
+        const lead = Math.min(this.paths[e.pi].len, e.d + e.speed * 0.9), p = this.posAt(lead, {}, e.pi);
         this.projs.push({ lob: true, sx: t.x, sy: t.y, x: t.x, y: t.y, tx: p.x, ty: p.y, T: 0.9, tt: 0, dmg: s.mortar.dmg, aoe: s.mortar.aoe, type: 'earth', src: t, kind: 'shell',
           burn: s.mortar.burn, stun: s.mortar.stun, id: this.nid++ });
         this.emit({ t: 'mortar', tower: t });
@@ -514,9 +518,37 @@ export class World {
       for (const e of this.enemies) {
         if (!e.alive || !this.canSee(s, e) || Math.hypot(e.x - t.x, e.y - t.y) > s.range) continue;
         this.damage(e, s.dmg, s.dmgType, t); this.applyStatus(e, s, t);
-        if (s.knock && !e.heavy && e.alive) { e.d = Math.max(0, e.d - s.knock); this.posAt(e.d, e); }
+        if (s.knock && !e.heavy && e.alive) { e.d = Math.max(0, e.d - s.knock); this.posAt(e.d, e, e.pi); }
       }
       this.emit({ t: 'pulse', tower: t, r: s.range });
+      return;
+    }
+    const specials = (tx, ty) => {
+      for (const sp of [s.every, s.every2]) if (ev(sp)) {
+        if (sp.proj === 'reap') this.strike(t, t.x, t.y, s.dmg * sp.mul, sp.aoe, sp.dmgType || s.dmgType, 'reap');
+        else this.fire(t, x, y, Math.atan2(ty - y, tx - x), tgt, { dmg: s.dmg * sp.mul, aoe: sp.aoe, type: sp.dmgType || s.dmgType, kind: sp.proj, pierce: 1, homing: true, speed: 11 });
+      }
+    };
+    if (s.atk === 'breath') { // Atem-Kegel: alle Gegner im Kegel Richtung Ziel
+      const aim = Math.atan2(tgt.y - y, tgt.x - x);
+      for (const e of this.enemies) {
+        if (!e.alive || !this.canSee(s, e)) continue;
+        const dx = e.x - x, dy = e.y - y, d = Math.hypot(dx, dy); if (d > s.range + e.r) continue;
+        let da = Math.abs(Math.atan2(dy, dx) - aim); if (da > Math.PI) da = 2 * Math.PI - da;
+        if (da > s.cone / 2 && d > 0.5) continue;
+        this.damage(e, s.dmg, s.dmgType, t); this.applyStatus(e, s, t);
+        if (s.knock && !e.heavy && e.alive) { e.d = Math.max(0, e.d - s.knock * 0.3); this.posAt(e.d, e, e.pi); }
+      }
+      this.emit({ t: 'cone', tower: t, ang: aim, r: s.range, cone: s.cone, type: s.dmgType });
+      specials(tgt.x, tgt.y);
+      return;
+    }
+    if (s.atk === 'slash') { // Nahkampf-Hieb + Nachbartreffer
+      this.damage(tgt, s.dmg, s.dmgType, t); this.applyStatus(tgt, s, t);
+      let n = s.cleave;
+      for (const e of this.enemies) { if (n <= 0) break; if (e === tgt || !e.alive || !this.canSee(s, e) || Math.hypot(e.x - tgt.x, e.y - tgt.y) > 0.8) continue; this.damage(e, s.dmg * 0.7, s.dmgType, t); this.applyStatus(e, s, t); n--; }
+      this.emit({ t: 'slash', tower: t, x: tgt.x, y: tgt.y });
+      specials(tgt.x, tgt.y);
       return;
     }
     if (s.atk === 'chain') {
@@ -651,7 +683,7 @@ export class World {
         this.emit({ t: 'ability', id: 'fortress', tower: t, r: 3.5 });
         for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 3.5) {
           this.damage(e, s.dmg * 8, 'earth', t, { big: true });
-          if (e.alive) { if (!e.heavy) { e.d = Math.max(0, e.d - 1.5); this.posAt(e.d, e); } e.slowPct = Math.max(e.slowPct, 0.6); e.slowT = 4; }
+          if (e.alive) { if (!e.heavy) { e.d = Math.max(0, e.d - 1.5); this.posAt(e.d, e, e.pi); } e.slowPct = Math.max(e.slowPct, 0.6); e.slowT = 4; }
         }
         break;
       }
@@ -666,6 +698,40 @@ export class World {
         break;
       }
       case 'clones': t.clonesT = HEROES[t.cid].abilities.clones.dur; this.emit({ t: 'ability', id: 'clones', tower: t }); this.say(t, 'ability'); break;
+      case 'blizzard': {
+        this.emit({ t: 'ability', id: 'blizzard', tower: t, r: 4 });
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 4) { this.damage(e, s.dmg * 10, 'ice', t, { big: true }); if (e.alive && !e.boss) e.stunT = Math.max(e.stunT, 2.5); if (e.alive) { e.slowPct = Math.max(e.slowPct, 0.5); e.slowT = 5; } }
+        break;
+      }
+      case 'flurry': t.buffs.push({ id: 'flurry', t: 6, fx: { mul: { rate: 3 } } }); this.dirty = true; this.emit({ t: 'ability', id: 'flurry', tower: t }); break;
+      case 'quake': {
+        this.emit({ t: 'ability', id: 'quake', tower: t, r: 4 });
+        for (const e of this.enemies) if (e.alive && !e.flying && Math.hypot(e.x - t.x, e.y - t.y) < 4) { this.damage(e, s.dmg * 12, 'earth', t, { big: true }); if (e.alive && !e.boss) e.stunT = Math.max(e.stunT, 2); }
+        break;
+      }
+      case 'storm': {
+        const ts = this.enemies.filter(e => e.alive).sort((a, b) => b.hp - a.hp).slice(0, 6);
+        if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'storm', tower: t, targets: ts.map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ability');
+        for (const e of ts) { this.damage(e, s.dmg * 12, 'lightning', t, { big: true }); if (e.alive && !e.boss) e.stunT = Math.max(e.stunT, 1); }
+        break;
+      }
+      case 'thunderfall': {
+        if (!this.enemies.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'thunderfall', tower: t, targets: this.enemies.slice(0, 30).map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ult');
+        for (const e of [...this.enemies]) if (e.alive) { this.damage(e, s.dmg * 20, 'lightning', t, { big: true }); if (e.alive && !e.boss) e.stunT = Math.max(e.stunT, 1.5); }
+        break;
+      }
+      case 'bloom': {
+        this.emit({ t: 'ability', id: 'bloom', tower: t, r: 4 }); this.say(t, 'ability');
+        for (const o of this.towers) if (Math.hypot(o.x - t.x, o.y - t.y) <= 4) o.buffs.push({ id: 'bloom', t: 8, fx: { mul: { rate: 1.5 } } });
+        this.lives = Math.min(this.maxLives, this.lives + 5); this.dirty = true; break;
+      }
+      case 'sanctuary': {
+        this.emit({ t: 'ability', id: 'sanctuary', tower: t }); this.say(t, 'ult');
+        for (const e of this.enemies) if (e.alive) { e.slowPct = Math.max(e.slowPct, 0.7); e.slowT = Math.max(e.slowT, 6); }
+        this.lives = Math.min(this.maxLives, this.lives + 15); break;
+      }
       case 'whirl': {
         if (!this.enemies.length) { ok = false; break; }
         this.emit({ t: 'ability', id: 'whirl', tower: t }); this.say(t, 'ult');
@@ -687,7 +753,8 @@ export class World {
     while (this.doneWave < this.wave) {
       this.doneWave++;
       const w = this.doneWave, bonus = Math.round(BAL.run.waveBonus(w) * this.diff.coins);
-      let income = 0; for (const t of this.towers) income += t.s?.income || 0;
+      let income = 0, heal = 0; for (const t of this.towers) { income += t.s?.income || 0; heal += t.s?.lifeRegen || 0; }
+      if (heal && this.lives < this.maxLives) { this.lives = Math.min(this.maxLives, this.lives + heal); this.emit({ t: 'heal2', lives: heal }); }
       this.gain(bonus + income); this.stats.income += income; if (income) this.hooks.stat?.('income', income);
       const used = new Set(this.towers.filter(t => !t.hero).map(t => t.cid));
       for (const cid of used) this.charXp(cid, BAL.char.survive(w));
