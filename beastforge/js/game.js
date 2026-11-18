@@ -7,6 +7,7 @@ import { buildModel } from './render/models.js';
 import { Hud } from './ui/hud.js';
 import { BAL } from './config.js';
 import { CREATURES } from './data/creatures.js';
+import { MAPS } from './data/maps.js';
 import { HEROES } from './data/heroes.js';
 import { addCharXp, addAccXp, addHeroRankXp, heroStartLevel, unlocked, unlockedCreatures, addMastery, checkAchievements, formsFor } from './meta/progression.js';
 import { saveProfile } from './meta/profile.js';
@@ -14,7 +15,7 @@ import { saveProfile } from './meta/profile.js';
 export class Game {
   constructor(app, { map = 'ahnenhain', diff = 'normal' }) {
     this.app = app; const P = this.P = app.profile;
-    this.mapId = map; this.diffKey = diff;
+    this.mapId = map; this.diffKey = diff; this.music = MAPS[map]?.music || 'forest';
     this.loadout = unlockedCreatures(P);
     if (!this.loadout.length) this.loadout = ['kitsune'];
     this.heroId = unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
@@ -41,7 +42,7 @@ export class Game {
     this.slowT = 0; this.endT = -1; this.finished = false; this.saveT = 0;
     this.hud = new Hud(this);
     this.bindInput();
-    app.audio.playSong('forest'); app.audio.setIntensity(0.2);
+    app.audio.playSong(this.music); app.audio.setIntensity(0.2);
     this.hud.banner(this.world.map.name, this.world.diff.name + ' · ' + (this.world.maxWave === Infinity ? 'Endlos' : this.world.maxWave + ' Wellen'));
     P.stats.runs = P.stats.runs; // Zähler erst am Ende
   }
@@ -192,11 +193,11 @@ export class Game {
       case 'bossPhase': this.slow(0.4, 0.6); break;
       case 'upgrade': if (e.tier === 5) { this.slow(0.3, 0.6); this.hud.flash(0.35); } break;
       case 'boss': this.app.audio.playSong('boss'); break;
-      case 'wave': if (this.world.boss == null && this.app.audio.song?.name !== 'forest') this.app.audio.playSong('forest'); break;
+      case 'wave': if (this.world.boss == null && this.app.audio.song?.name !== this.music) this.app.audio.playSong(this.music); break;
       case 'waveEnd': {
         saveProfile(this.P);
         for (const a of checkAchievements(this.P)) { this.achs.push(a); this.hud.toast('ach', '🏆 ' + a.name, a.desc); this.giveAcc(a.xp); }
-        if (!this.world.boss && this.app.audio.song?.name === 'boss') this.app.audio.playSong('forest');
+        if (!this.world.boss && this.app.audio.song?.name === 'boss') this.app.audio.playSong(this.music);
         if (this.settings().autoWave && !this.world.over) setTimeout(() => { if (!this.world.over && !this.world.waveRunning()) this.world.startWave(); }, 900);
         break;
       }
@@ -228,6 +229,7 @@ export class Game {
     const perfect = won && w.lives >= w.maxLives;
     if (won && d === 'hard') P.stats.winsHard++;
     if (won && this.mapId === 'dorf') P.stats.winDorf = (P.stats.winDorf || 0) + 1;
+    if (won && this.mapId === 'glut') P.stats.winGlut = (P.stats.winGlut || 0) + 1;
     if (perfect) P.stats.perfect++; if (perfect && d === 'hard') P.stats.perfectHard++;
     if (d === 'endless') P.stats.bestEndless = Math.max(P.stats.bestEndless || 0, w.doneWave);
     const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, endless: 0 };
@@ -255,7 +257,7 @@ export class Game {
     saveProfile(P);
     const hero = w.towers.find(t => t.hero);
     this.app.results({
-      won, perfect, firstClear, map: w.map.name, diff: D.name, diffKey: d, wave: w.doneWave, maxWave: w.maxWave, lives: w.lives, maxLives: w.maxLives,
+      won, perfect, firstClear, map: w.map.name, mapId: this.mapId, diff: D.name, diffKey: d, wave: w.doneWave, maxWave: w.maxWave, lives: w.lives, maxLives: w.maxLives,
       kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves,
       used, xp: w.stats.xp, winBonus, snap: this.snap, charUps: this.charUps, accGain: this.accGain, accUps: this.accUps, achs: this.achs, masteryUps,
       hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg,

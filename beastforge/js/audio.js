@@ -150,6 +150,17 @@ const SONGS = {
     const mel = [[10, -1, -1, 9, -1, 7, -1, -1, 8, -1, 7, -1, 5, -1, -1, -1], [7, -1, 8, -1, 10, -1, -1, -1, 12, -1, 10, -1, 9, -1, 7, -1]];
     if (bar >= 4 && I > 0.4) { const m = mel[bar % 2][st]; if (m >= 0) a.flute(deg(IN, root, m), t, spb * 3.5, 0.055); }
   } },
+  crater: { bpm: 116, play(a, s, t, spb, I) {
+    const bar = Math.floor(s / 16) % 8, st = s % 16, root = 57, prog = [0, 0, 1, -1, 0, 0, 3, 1];
+    const ost = [0, 1, 3, 1, 4, 3, 1, 0];
+    if (st % 2 === 0) a.koto(deg(IN, root, prog[bar] + ost[(st / 2) % 8]), t, 0.06 + I * 0.03);
+    if (st === 0 || st === 6 || st === 10) a.bass(deg(IN, root - 24, prog[bar]), t, spb * 3, 0.15);
+    if (st === 0) a.pad([deg(IN, root - 12, prog[bar]), deg(IN, root - 12, prog[bar] + 1)], t, spb * 16, 0.025);
+    if (st === 0 || st === 3 || st === 8) a.taiko(t, I > 0.4 ? 0.34 : 0.2, a.mBus, st === 3 ? 1.2 : 0.9);
+    if (I > 0.4 && st % 4 === 2) a.shime(t, 0.06);
+    const mel = [[5, -1, 6, -1, 8, -1, -1, -1, 6, -1, 5, -1, 3, -1, -1, -1], [8, -1, -1, 9, 10, -1, 9, -1, 8, -1, 6, -1, 5, -1, -1, -1]];
+    if (bar >= 4 && I > 0.4) { const m = mel[bar % 2][st]; if (m >= 0) a.flute(deg(IN, root, m), t, spb * 3, 0.05); }
+  } },
   boss: { bpm: 132, play(a, s, t, spb, I) {
     const bar = Math.floor(s / 16) % 4, st = s % 16, root = 50, prog = [0, 0, 1, -1];
     if (st % 2 === 0) a.bass(deg(IN, root - 12, prog[bar] + (st % 4 === 0 ? 0 : 3)), t, spb * 1.6, 0.18);

@@ -31,10 +31,13 @@ Genre-Optik (Querformat, steile Kamera, freie Platzierung, Shop rechts, Upgrade-
 ## v0.3 erledigt
 Ladebildschirm, Weltkarte, Karte 2 (Mehrpfad), Kreaturen 6–8, Helden 2–3, Heldenwahl.
 
+## v0.4 erledigt
+Karte 3 Glutkrater (Lava-Spalten, Basalt-Flöße), Gegner Feuerdämon + Schildträger, Kartenmusik.
+
 ## Nächste Schritte (Content-Ausbau, je ein „Weiter“)
 1. **Echter Spieltest auf dem iPhone** → Balance (Boss, Welle 10/19), Lesbarkeit, Leistung.
 2. ✅ Kreaturen 6–8 · ✅ Karte 2 · ✅ Helden Raizen + Mika
-3. **Karte 3 „Glutkrater“** (Lava-Felder, bewegliche Plattformen) + neue Gegner (Feuerdämonen, Schildträger).
+3. ✅ Karte 3 „Glutkrater“ + Feuerdämon/Schildträger
 4. **Kreaturen 9–12**: Schlangenmagier, Windmönch, Phönix (Wiederbelebung), Leerenkatze (Realitätsschaden).
 5. **Helden 4–5**: Akuma (Oni-Krieger), Sora (Himmelskriegerin).
 6. **Bosse 2–5**: Leerenkaiser (stört Türme), Titan, Seuchenkönigin (Adds), Himmelsbestie (sehr schnell).

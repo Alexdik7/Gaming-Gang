@@ -1,9 +1,13 @@
 // 3D-Karte aus dem Raster (Daten in data/maps.js). Viele gleiche Teile → InstancedMesh.
 import * as THREE from 'three';
 import { toon, glow, flat, mk, geo, merge, gradTex, optimize, anim } from './toon.js';
+import { raftPos } from '../data/maps.js';
 
 const PI = Math.PI;
-export const HEIGHT = { '.': 0, 'T': 0, 'R': 0, '#': -0.05, '~': -0.32, '^': 0.34, 'S': 0 };
+export const HEIGHT = { '.': 0, 'T': 0, 'R': 0, '#': -0.05, '~': -0.32, '^': 0.34, 'S': 0, 'L': -0.3 };
+export const RAFT_TOP = 0.02;
+// Instanz-Matrix mitnehmen, sonst landen alle Kacheln an derselben Stelle
+const VS = 'varying vec3 vW; void main(){ vec4 p = vec4(position,1.0);\n#ifdef USE_INSTANCING\np = instanceMatrix*p;\n#endif\nvec4 w = modelMatrix*p; vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }';
 
 function tileGeo(top, side, h = 1) {
   const g = new THREE.BoxGeometry(1, h, 1).toNonIndexed();
@@ -20,9 +24,9 @@ export class MapView {
     this.H = map.grid.length; this.W = map.grid[0].length; this.rocks = new Map(); this.t = 0; this.paths = map.paths || [map.path];
     const th = map.theme;
     const vmat = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradTex });
-    const cells = { grass: [], path: [], water: [], high: [] };
+    const cells = { grass: [], path: [], water: [], high: [], lava: [] };
     map.grid.forEach((row, y) => [...row].forEach((ch, x) => {
-      if (ch === '#') cells.path.push([x, y]); else if (ch === '~') cells.water.push([x, y]); else if (ch === '^') cells.high.push([x, y]); else cells.grass.push([x, y, ch]);
+      if (ch === '#') cells.path.push([x, y]); else if (ch === 'L') cells.lava.push([x, y]); else if (ch === '~') cells.water.push([x, y]); else if (ch === '^') cells.high.push([x, y]); else cells.grass.push([x, y, ch]);
     }));
     const inst = (g, list, yOf, colFn) => {
       const m = new THREE.InstancedMesh(g, vmat, list.length); const M = new THREE.Matrix4(), c = new THREE.Color();
@@ -33,6 +37,7 @@ export class MapView {
     inst(tileGeo(th.grass, 0x7a5a3a, 0.6), cells.grass, ([x, y]) => (rnd(x, y) - 0.5) * 0.02, ([x, y], c) => c.setHSL(0, 0, 0.92 + rnd(x + 3, y) * 0.12).lerp(new THREE.Color(th.grass2), (x + y) % 2 ? 0.08 : 0));
     inst(tileGeo(th.dirt, 0x8a6a48, 0.6), cells.path, () => HEIGHT['#'], ([x, y], c) => c.setHSL(0, 0, 0.94 + rnd(x, y + 7) * 0.08));
     inst(tileGeo(0x2a7a9a, 0x5a4a3a, 0.6), cells.water, () => -0.42, (_, c) => c.setRGB(1, 1, 1));
+    if (cells.lava.length) inst(tileGeo(0x3a1a12, th.cliff, 0.6), cells.lava, () => -0.42, (_, c) => c.setRGB(1, 1, 1));
     inst(tileGeo(th.high || 0x88c85a, th.cliff, 1.0), cells.high, () => HEIGHT['^'], ([x, y], c) => c.setHSL(0, 0, 0.95 + rnd(x, y) * 0.08));
     if (th.roof) { // Dachziegel-Reihen + First auf den Dächern
       const rows = []; for (const [x, y] of cells.high) for (let k = 0; k < 3; k++) rows.push([this.wx(x), HEIGHT['^'] + 0.02, this.wz(y) - 0.33 + k * 0.33]);
@@ -58,22 +63,22 @@ export class MapView {
     const tufts = [];
     cells.grass.forEach(([x, y, ch]) => { if (ch !== '.') return; const n = 2 + Math.floor(rnd(x, y) * 3); for (let i = 0; i < n; i++) tufts.push([this.wx(x) + (rnd(x + i, y * 2) - 0.5) * 0.85, this.wz(y) + (rnd(x * 2, y + i) - 0.5) * 0.85, rnd(i, y) * PI]); });
     cells.high.forEach(([x, y]) => { for (let i = 0; i < 2; i++) tufts.push([this.wx(x) + (rnd(x + i, y) - 0.5) * 0.8, this.wz(y) + (rnd(x, y + i) - 0.5) * 0.8, 0, HEIGHT['^']]); });
-    const tg = merge([[geo.cone(4), th.grass2, [0, 0.06, 0], [0, 0, 0.2], [0.03, 0.14, 0.03]], [geo.cone(4), th.grass, [0.04, 0.05, 0.01], [0, 0, -0.3], [0.025, 0.11, 0.025]], [geo.cone(4), 0x9ad86a, [-0.03, 0.045, -0.02], [0.2, 0, 0.1], [0.025, 0.1, 0.025]]]);
+    const tg = merge([[geo.cone(4), th.grass2, [0, 0.06, 0], [0, 0, 0.2], [0.03, 0.14, 0.03]], [geo.cone(4), th.grass, [0.04, 0.05, 0.01], [0, 0, -0.3], [0.025, 0.11, 0.025]], [geo.cone(4), th.grass3 || 0x9ad86a, [-0.03, 0.045, -0.02], [0.2, 0, 0.1], [0.025, 0.1, 0.025]]]);
     const tm = new THREE.InstancedMesh(tg, new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradTex }), tufts.length);
     tufts.forEach(([x, z, r, h = 0], i) => { M.compose(new THREE.Vector3(x, h, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, r, 0)), new THREE.Vector3(1, 1, 1)); tm.setMatrixAt(i, M); });
     this.root.add(tm);
     // Blumen
-    const fl = []; cells.grass.forEach(([x, y, ch]) => { if (ch === '.' && rnd(x * 7, y) > 0.72) fl.push([this.wx(x) + (rnd(x, y * 3) - 0.5) * 0.7, this.wz(y) + (rnd(x * 3, y) - 0.5) * 0.7, rnd(x, y) > 0.5 ? 0xffe14d : 0xffffff]); });
+    const fl = []; cells.grass.forEach(([x, y, ch]) => { if (ch === '.' && !th.ash && rnd(x * 7, y) > 0.72) fl.push([this.wx(x) + (rnd(x, y * 3) - 0.5) * 0.7, this.wz(y) + (rnd(x * 3, y) - 0.5) * 0.7, rnd(x, y) > 0.5 ? 0xffe14d : 0xffffff]); });
     const fm = new THREE.InstancedMesh(geo.sphere(6), toon(0xffffff), fl.length);
     fl.forEach(([x, z, c], i) => { M.compose(new THREE.Vector3(x, 0.05, z), new THREE.Quaternion(), new THREE.Vector3(0.035, 0.02, 0.035)); fm.setMatrixAt(i, M); fm.setColorAt(i, new THREE.Color(c)); });
     this.root.add(fm);
-    this.buildWater(cells.water);
+    this.buildWater(cells.water); this.buildLava(cells.lava); this.buildRafts();
     this.buildTrees(cells, rnd, th);
     // Felsen (räumbar)
     map.grid.forEach((row, y) => [...row].forEach((ch, x) => {
       if (ch !== 'R') return;
       const g = new THREE.Group(); g.position.set(this.wx(x), 0, this.wz(y));
-      g.add(mk(geo.dodec(), toon(0x8a8a90), { p: [0, 0.2, 0], r: [0.3, 0.5, 0.2], s: [0.36, 0.28, 0.32] }));
+      g.add(mk(geo.dodec(), toon(th.rock || 0x8a8a90), { p: [0, 0.2, 0], r: [0.3, 0.5, 0.2], s: [0.36, 0.28, 0.32] }));
       g.add(mk(geo.dodec(), toon(0x9a9aa0), { p: [0.2, 0.12, 0.15], r: [0.1, 1, 0.4], s: [0.18, 0.14, 0.16] }));
       g.add(mk(geo.sphere(8), toon(0x5aa040), { p: [-0.05, 0.38, 0], s: [0.2, 0.06, 0.18], ol: false }));
       this.root.add(g); this.rocks.set(x + ',' + y, g);
@@ -81,11 +86,11 @@ export class MapView {
     this.buildShrine(); this.buildTorii(); this.buildLanterns(rnd);
     // Umgebung
     // Umgebung: vier Flächen rund um die Karte (nicht darüber – sonst verdecken sie Pfad und Wasser)
-    const gm = toon(0x5a9a40), W2 = this.W / 2, H2 = this.H / 2, F = 40;
+    const gm = toon(th.ground || 0x5a9a40), W2 = this.W / 2, H2 = this.H / 2, F = 40;
     for (const [x, z, w, h] of [[-W2 - F / 2, 0, F, 2 * F], [W2 + F / 2, 0, F, 2 * F], [0, -H2 - F / 2, this.W, F], [0, H2 + F / 2, this.W, F]]) {
       const g = new THREE.Mesh(new THREE.PlaneGeometry(w, h), gm); g.rotation.x = -PI / 2; g.position.set(x, -0.012, z); g.receiveShadow = true; this.root.add(g);
     }
-    anim(this.heart, ...this.rocks.values());
+    anim(this.heart, ...this.rocks.values(), ...this.raftG.map(r => r[1]));
     optimize(this.root);
   }
   wx(x) { return x + 0.5 - this.W / 2; }
@@ -96,7 +101,7 @@ export class MapView {
     if (!list.length) return;
     this.waterMat = new THREE.ShaderMaterial({
       transparent: true, uniforms: { uT: { value: 0 }, uA: { value: new THREE.Color(0x2aa6e6) }, uB: { value: new THREE.Color(0xc4f8ff) } },
-      vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }',
+      vertexShader: VS,
       fragmentShader: `uniform float uT; uniform vec3 uA; uniform vec3 uB; varying vec3 vW;
         void main(){ float w = sin(vW.x*3.1+uT*1.3)*sin(vW.z*2.7-uT*1.1) + sin((vW.x+vW.z)*5.0+uT*2.0)*0.5;
           float s = smoothstep(0.75, 1.0, w); vec3 c = mix(uA, uB, 0.3 + w*0.12) + s*0.4;
@@ -111,6 +116,42 @@ export class MapView {
     for (const [x, y] of pads) {
       this.root.add(mk(geo.cyl(10), toon(0x4aa040), { p: [this.wx(x) + 0.2, -0.11, this.wz(y) - 0.15], s: [0.16, 0.01, 0.16], ol: 0.008 }));
       this.root.add(mk(geo.sphere(8), toon(0xffb0d0), { p: [this.wx(x) + 0.22, -0.08, this.wz(y) - 0.12], s: [0.05, 0.035, 0.05], ol: 0.008 }));
+    }
+  }
+
+  buildLava(list) {
+    if (!list.length) return;
+    this.lavaMat = new THREE.ShaderMaterial({
+      uniforms: { uT: { value: 0 } },
+      vertexShader: VS,
+      fragmentShader: `uniform float uT; varying vec3 vW;
+        void main(){ float a = sin(vW.x*2.3+uT*0.7)*sin(vW.z*1.9-uT*0.5); float b = sin((vW.x-vW.z)*4.1+uT*1.3)*0.5+sin(vW.x*7.0+vW.z*5.0-uT)*0.25;
+          float w = a + b; vec3 c = mix(vec3(0.75,0.12,0.02), vec3(1.0,0.55,0.08), smoothstep(-0.6, 0.8, w));
+          c = mix(c, vec3(1.0,0.92,0.45), smoothstep(0.85, 1.2, w)); c = mix(c, vec3(0.16,0.05,0.04), smoothstep(0.3, 0.9, -w) * 0.75);
+          gl_FragColor = vec4(c * 0.9, 1.0); }`,
+    });
+    const g = new THREE.PlaneGeometry(1, 1); g.rotateX(-PI / 2);
+    const m = new THREE.InstancedMesh(g, this.lavaMat, list.length), M = new THREE.Matrix4();
+    list.forEach(([x, y], i) => { M.makeTranslation(this.wx(x), -0.2, this.wz(y)); m.setMatrixAt(i, M); });
+    this.root.add(m);
+    // Glut-Licht über größeren Lavaflächen
+    const L = new THREE.PointLight(0xff6a20, 1.6, 6); const c = list.reduce((a, [x, y]) => [a[0] + x, a[1] + y], [0, 0]);
+    L.position.set(this.wx(c[0] / list.length), 0.8, this.wz(c[1] / list.length)); this.root.add(L); this.lavaLight = L;
+    // Spalten (Ausbruchstellen): Kraterring aus Basalt
+    for (const [x, y] of this.map.vents || []) {
+      for (let i = 0; i < 6; i++) { const a = i * PI / 3; this.root.add(mk(geo.dodec(), toon(0x2e2426), { p: [this.wx(x) + Math.cos(a) * 0.42, -0.05, this.wz(y) + Math.sin(a) * 0.42], r: [a, i, 0], s: [0.16, 0.12 + (i % 2) * 0.05, 0.14] })); }
+    }
+  }
+  buildRafts() {
+    this.raftG = [];
+    for (const r of this.map.rafts || []) {
+      const g = new THREE.Group(), basalt = toon(0x3a3034), top = toon(0x4e4246);
+      g.add(mk(geo.box(), basalt, { p: [0, -0.12, 0], s: [r.w, 0.24, r.h] }));
+      g.add(mk(geo.box(), top, { p: [0, -0.005, 0], s: [r.w - 0.12, 0.03, r.h - 0.12], ol: false }));
+      for (let i = 0; i < 6; i++) { const sx = (i % 3 - 1) * r.w * 0.36, sz = (i < 3 ? -1 : 1) * r.h * 0.42; g.add(mk(geo.dodec(), basalt, { p: [sx, -0.06, sz], r: [i, i * 2, 0], s: [0.2, 0.12, 0.14] })); }
+      g.add(mk(geo.box(), glow(0xff8a2a, 0.9), { p: [r.w * 0.2, 0.012, 0.1], r: [0, 0.6, 0], s: [0.5, 0.01, 0.025], ol: false }));
+      g.add(mk(geo.box(), glow(0xff8a2a, 0.9), { p: [-r.w * 0.25, 0.012, -0.15], r: [0, -0.4, 0], s: [0.4, 0.01, 0.02], ol: false }));
+      const p = raftPos(r, 0); g.position.set(p.x - this.W / 2, 0, p.y - this.H / 2); this.root.add(g); this.raftG.push([r, g]);
     }
   }
 
@@ -136,6 +177,11 @@ export class MapView {
     const buckets = { pine: [], round: [], blossom: [] };
     for (const [x, z, r] of spots) buckets[r < 0.4 ? 'pine' : r < 0.75 ? 'round' : 'blossom'].push([x, z, r]);
     const M = new THREE.Matrix4();
+    if (th.dead) { // verkohlte Bäume mit Glutspitzen
+      kinds.pine = merge([[geo.cyl(6), 0x2a2224, [0, 0.45, 0], 0, [0.07, 0.9, 0.07]], [geo.cyl(5), 0x2a2224, [0.12, 0.7, 0], [0, 0, -0.8], [0.035, 0.35, 0.035]], [geo.cyl(5), 0x2a2224, [-0.1, 0.55, 0], [0, 0, 0.9], [0.03, 0.3, 0.03]], [geo.sphere(6), 0xff7a2a, [0, 0.92, 0], 0, 0.04]]);
+      kinds.round = merge([[geo.dodec(), 0x3a3034, [0, 0.25, 0], [0.3, 0.5, 0.2], [0.4, 0.3, 0.36]], [geo.dodec(), 0x4a3e42, [0.25, 0.15, 0.15], [0.1, 1, 0.4], [0.22, 0.18, 0.2]]]);
+      kinds.blossom = merge([[geo.cone(6), 0x3a2c2c, [0, 0.5, 0], 0, [0.32, 1.0, 0.32]], [geo.cone(6), 0xff6a1a, [0, 1.02, 0], 0, [0.09, 0.1, 0.09]], [geo.dodec(), 0x2a2224, [0.25, 0.1, 0.1], 0, 0.16]]);
+    }
     for (const k in buckets) {
       const L = buckets[k]; if (!L.length) continue;
       const m = new THREE.InstancedMesh(kinds[k], mats, L.length);
@@ -198,6 +244,8 @@ export class MapView {
   update(dt, livesFrac = 1) {
     this.t += dt;
     if (this.waterMat) this.waterMat.uniforms.uT.value = this.t;
+    if (this.lavaMat) { this.lavaMat.uniforms.uT.value = this.t; this.lavaLight.intensity = 1.4 + Math.sin(this.t * 2.3) * 0.3; }
+    if (this.raftG) for (const [r, g] of this.raftG) { const p = raftPos(r, this.wt ?? this.t); g.position.set(p.x - this.W / 2, Math.sin(this.t * 1.7 + r.period) * 0.012, p.y - this.H / 2); g.rotation.z = Math.sin(this.t * 1.1 + r.period) * 0.012; }
     if (this.heart) {
       this.heart.rotation.y = this.t * 0.8; this.heart.position.y = 0.72 + Math.sin(this.t * 2) * 0.05;
       const f = Math.max(0.15, livesFrac);

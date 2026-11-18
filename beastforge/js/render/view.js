@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { MapView, HEIGHT } from './mapview.js';
 import { Particles, Rings, Bolts, Pillars, Projectiles, Floaters, projStyle } from './fx.js';
+import { RAFT_TOP } from './mapview.js';
 import { buildModel, ENEMY_GEO, ENEMY_GLOW, ENEMY_ALPHA, buildOni, buildDragon } from './models.js';
 import { enemyMat, enemyOutline, glow, toon, geo } from './toon.js';
 import { ELEMENT_COLORS } from '../data/enemies.js';
@@ -23,13 +24,15 @@ export class GameView {
     this.floaters = new Floaters(document.getElementById('floaters'));
     this.towers = new Map(); this.bigs = new Map(); this.t = 0; this.numCount = 0;
     this.buildEnemyPools(); this.buildHelpers();
-    this.petalT = 0;
+    this.petalT = 0; this.sky = world.map.theme.sky ?? 0xbfe6dc; this.ash = !!world.map.theme.ash;
+    this.stage.hemi.color.setHex(this.ash ? 0xffd8c0 : 0xdff4ff);
   }
   toW(x, y) { return [x - this.map.W / 2, y - this.map.H / 2]; }
   hAt(cx, cy) { return this.map.heightAt(cx, cy); }
+  ty(t) { return t.raft != null ? RAFT_TOP : this.hAt(t.cx, t.cy); }
 
   buildEnemyPools() {
-    this.pools = {}; const cap = { slime: 120, wolf: 140, boar: 90, wisp: 90, shade: 90, mage: 50, healer: 50, beetle: 90, mite: 200, golem: 24 };
+    this.pools = {}; const cap = { slime: 120, wolf: 140, boar: 90, wisp: 90, shade: 90, mage: 50, healer: 50, beetle: 90, mite: 200, golem: 24, demon: 120, bearer: 60, bearerX: 60 };
     for (const k in ENEMY_GEO) {
       const g = ENEMY_GEO[k]();
       const tint = new THREE.InstancedBufferAttribute(new Float32Array(cap[k] * 4), 4); tint.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aTint', tint);
@@ -81,7 +84,7 @@ export class GameView {
   makeTower(t) {
     const m = buildModel(t.cid, { stage: t.stage, tiers: t.tiers, branch: this.opts.branch?.(t.cid), skin: this.opts.skin?.(t.cid), hlvl: t.hlvl });
     const g = new THREE.Group(); g.add(m.root); g.scale.setScalar(TOWER_SCALE);
-    const [x, z] = this.toW(t.x, t.y); g.position.set(x, this.hAt(t.cx, t.cy), z);
+    const [x, z] = this.toW(t.x, t.y); g.position.set(x, this.ty(t), z);
     // Schatten-Kreis unter der Figur
     const sh = new THREE.Mesh(new THREE.CircleGeometry(0.34, 20).rotateX(-PI / 2), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18, depthWrite: false })); sh.position.y = 0.01; g.add(sh);
     this.root.add(g);
@@ -101,6 +104,7 @@ export class GameView {
       if (v.evoT <= 0) v.m.root.rotation.y = v.rot;
       v.atk = Math.max(0, v.atk - dt * 5);
       if (v.born < 1) { v.born = Math.min(1, v.born + dt * 3); if (v.evoT <= 0) v.m.root.scale.setScalar(backOut(v.born)); }
+      if (t.raft != null) { const [x, z] = this.toW(t.x, t.y); v.g.position.set(x, RAFT_TOP, z); }
       const dis = t.disabledT > 0;
       v.m.tick(this.t, dt, { atk: v.atk, dis, cannon: v.rot, hlvl: t.hlvl });
       if (dis && Math.random() < dt * 14) { const [x, z] = this.toW(t.x, t.y); this.parts.spawn(x + (Math.random() - 0.5) * 0.4, 0.4, z + (Math.random() - 0.5) * 0.4, 0, 0.8, 0, Math.random() < 0.5 ? 0xff6a20 : 0x3a3030, 0.22, 0.6, { drag: 1 }); }
@@ -110,7 +114,7 @@ export class GameView {
     let n = 0;
     for (const t of this.world.towers) {
       const o = t.s?.orbs; if (!o || !o.n) continue;
-      const R = o.r + 0.15 * o.n, [x, z] = this.toW(t.x, t.y), h = this.hAt(t.cx, t.cy);
+      const R = o.r + 0.15 * o.n, [x, z] = this.toW(t.x, t.y), h = this.ty(t);
       for (let i = 0; i < o.n && n < 120; i++) {
         const a = this.world.t * 2.2 + i * PI * 2 / o.n, ox = x + Math.cos(a) * R, oz = z + Math.sin(a) * R, oy = h + 0.55 + Math.sin(this.t * 3 + i) * 0.08;
         this.M.compose(this.V.set(ox, oy, oz), this.Q.identity(), this.S.setScalar(0.07)); this.orbMesh.setMatrixAt(n, this.M);
@@ -145,7 +149,7 @@ export class GameView {
         b.tick(this.t, dt, { fly: e.flying, breath: e.boss && e.roarT > 0 && e.phase >= 2, roar: e.roarT > 0, phase: e.phase, cry: e.cryT > 2.5 });
         b.flash = e.hitT > 0 ? 1 : 0;
       } else {
-        const P = this.pools[e.kind]; if (!P || P.m.count >= P.cap) continue;
+        const P = this.pools[e.kind === 'bearer' && e.guard <= 0 ? 'bearerX' : e.kind]; if (!P || P.m.count >= P.cap) continue;
         const i = P.m.count++;
         const bob = e.kind === 'slime' ? Math.abs(Math.sin(this.t * 6 + e.id)) : 0;
         const sq = e.kind === 'slime' ? 1 + Math.sin(this.t * 12 + e.id) * 0.08 : 1;
@@ -192,7 +196,7 @@ export class GameView {
   hideCell() { this.cellMark.visible = false; }
   select(t) {
     if (!t) { this.selRing.visible = false; this.hideRange(); return; }
-    const [x, z] = this.toW(t.x, t.y), h = this.hAt(t.cx, t.cy);
+    const [x, z] = this.toW(t.x, t.y), h = this.ty(t);
     this.selRing.visible = true; this.selRing.position.set(x, h + 0.03, z);
     this.showRange(t.x, t.y, t.s.range, 0xffffff, h);
     if (t.s.support.range) { this.supportRing.visible = true; this.supportRing.position.set(x, h + 0.035, z); this.supportRing.scale.setScalar(t.s.support.range); } else this.supportRing.visible = false;
@@ -207,13 +211,24 @@ export class GameView {
       case 'hit': {
         const [x, z] = at(ev.x, ev.y), col = ELEMENT_COLORS[ev.type] || 0xffffff, y = (ev.e.h || 0.5) * 0.6 + (ev.e.flying && !ev.e.boss ? 0.85 : 0);
         P.burst(x, y, z, col, ev.crit ? 10 : 3, ev.crit ? 3 : 1.6, ev.crit ? 0.16 : 0.1, 0.3);
+        if (ev.guard) { if (this.numCount++ % 6 === 0) P.burst(x, y, z, [0xd8e0f0, 0xffffff], 3, 1.4, 0.08, 0.2); break; }
         if (settings.dmgNums && (ev.crit || ev.big || ev.dmg >= 25 || (this.numCount++ % 4 === 0))) this.floaters.add(x, y + 0.3, z, Math.round(ev.dmg), ev.crit ? 'crit' : ev.big ? 'big' : '', ev.crit ? 0.95 : 0.7);
         if (ev.crit && ev.dmg > 60) this.stage.addShake(0.08);
         break;
       }
+      case 'ventWarn': { const [x, z] = at(ev.x, ev.y); this.rings.add(x, 0.06, z, ev.r, 0.3, 0xff6a20, 1.5); P.burst(x, 0, z, [0xff8a2a, 0xffd060], 10, 1.2, 0.1, 0.8, { up: 1 }); break; }
+      case 'erupt': {
+        const [x, z] = at(ev.x, ev.y);
+        this.pillars.add(x, z, 0.45, 2.6, 0xff6a20, 0.6);
+        P.burst(x, 0.2, z, [0xff5a10, 0xffb040, 0xffe080, 0x3a2a28], 46, 4.5, 0.2, 1.0, { grav: 6, up: 4 });
+        this.rings.add(x, 0.05, z, 0.2, ev.r, 0xff7a2a, 0.5);
+        this.stage.addShake(0.18); break;
+      }
+      case 'blast': { const [x, z] = at(ev.x, ev.y); P.burst(x, 0.4, z, [0xff6a1a, 0xffc040, 0x2a1a18], 20, 3, 0.16, 0.6, { up: 2 }); this.rings.add(x, 0.05, z, 0.1, ev.r, 0xff5a1a, 0.4); break; }
+      case 'guardBreak': { const [x, z] = at(ev.x, ev.y); P.burst(x, 0.5, z, [0xd8e0f0, 0x8a96a8, 0xffffff], 22, 3.2, 0.14, 0.5, { grav: 5, up: 1.5 }); this.floaters.add(x, 1.2, z, 'Schild gebrochen!', 'crit', 0.9); break; }
       case 'kill': {
         const [x, z] = at(ev.x, ev.y), e = ev.e, big = e.boss || e.miniboss || e.kind === 'golem';
-        const col = { slime: 0x9af070, wolf: 0xb0a070, boar: 0xc0a090, wisp: 0x9ff6ff, shade: 0xa070ff, mage: 0xc0a0ff, healer: 0xffb070, beetle: 0x5ae8d8, mite: 0x5ae8d8, golem: 0xc0b8a8 }[e.kind] || 0xffffff;
+        const col = { slime: 0x9af070, wolf: 0xb0a070, boar: 0xc0a090, wisp: 0x9ff6ff, shade: 0xa070ff, mage: 0xc0a0ff, healer: 0xffb070, beetle: 0x5ae8d8, mite: 0x5ae8d8, golem: 0xc0b8a8, demon: 0xff7a2a, bearer: 0xc8b8a0 }[e.kind] || 0xffffff;
         P.burst(x, 0.35, z, [col, 0xffffff], big ? 60 : 12, big ? 4 : 2.4, big ? 0.3 : 0.16, big ? 0.9 : 0.5, { grav: 4, up: 1.4 });
         this.rings.add(x, 0.05, z, 0.1, big ? 2.5 : 0.7, col, big ? 0.7 : 0.35);
         if (ev.coins && settings.dmgNums !== false) this.floaters.add(x, 0.9, z, '+' + ev.coins, 'coin', 0.8);
@@ -224,14 +239,14 @@ export class GameView {
       case 'mortar': { const [x, z] = at(ev.tower.x, ev.tower.y); P.burst(x, 0.75, z, [0xd8c8a0, 0x8a8070], 8, 1.6, 0.2, 0.5, { up: 2 }); break; }
       case 'pulse': {
         const v = this.towers.get(ev.tower.id); if (v) v.atk = 1;
-        const [x, z] = at(ev.tower.x, ev.tower.y), h = this.hAt(ev.tower.cx, ev.tower.cy);
+        const [x, z] = at(ev.tower.x, ev.tower.y), h = this.ty(ev.tower);
         this.rings.add(x, h + 0.06, z, 0.3, ev.r, 0xbfe8ff, 0.4); this.rings.add(x, h + 0.05, z, 0.2, ev.r * 0.92, 0x7ab0c8, 0.5, { disc: true, alpha: 0.25 });
         P.burst(x, h + 0.1, z, [0xc8b090, 0x8a7a68], 10, 2.5, 0.16, 0.4, { flat: true });
         break;
       }
       case 'cone': {
         const v = this.towers.get(ev.tower.id); if (v) v.atk = 1;
-        const t = ev.tower, [x, z] = at(t.x, t.y), h = this.hAt(t.cx, t.cy);
+        const t = ev.tower, [x, z] = at(t.x, t.y), h = this.ty(t);
         const col = ev.type === 'fire' ? [0xffd27a, 0xff7a2a, 0xff4a10] : [0xffffff, 0xbff4ff, 0x7ad0ff];
         for (let i = 0; i < 14; i++) { const a = ev.ang + (Math.random() - 0.5) * ev.cone, sp = ev.r * (2 + Math.random() * 1.5); P.spawn(x + Math.cos(a) * 0.3, h + 0.55, z + Math.sin(a) * 0.3, Math.cos(a) * sp, 0.1, Math.sin(a) * sp, col[i % 3], 0.18 + Math.random() * 0.12, 0.35, { drag: 2.2, grow: 1.2 }); }
         break;
@@ -270,20 +285,20 @@ export class GameView {
       case 'heal': case 'shield': case 'cry': { const [x, z] = at(ev.x, ev.y); const c = ev.t === 'heal' ? 0x7aff9a : ev.t === 'shield' ? 0xb07bff : 0xff4a3a; this.rings.add(x, 0.06, z, 0.2, ev.r, c, 0.6); P.burst(x, 0.6, z, c, 10, 1.4, 0.16, 0.6, { lift: 0.8 }); break; }
       case 'leak': this.stage.addShake(ev.e.boss ? 1 : 0.25); break;
       case 'place': {
-        const t = ev.tower, [x, z] = at(t.x, t.y), h = this.hAt(t.cx, t.cy);
+        const t = ev.tower, [x, z] = at(t.x, t.y), h = this.ty(t);
         this.rings.add(x, h + 0.04, z, 0.2, 0.9, 0xffffff, 0.4); P.burst(x, h + 0.1, z, [0xd8c8a0, 0xffffff], 14, 2, 0.18, 0.5, { flat: true });
         this.stage.addShake(0.06);
         break;
       }
       case 'upgrade': {
-        const t = ev.tower, [x, z] = at(t.x, t.y), h = this.hAt(t.cx, t.cy), col = ['#ff7a3d', '#5fd6ff', '#c39bff'][ev.path];
+        const t = ev.tower, [x, z] = at(t.x, t.y), h = this.ty(t), col = ['#ff7a3d', '#5fd6ff', '#c39bff'][ev.path];
         this.rings.add(x, h + 0.05, z, 0.2, 1.1, col, 0.45); P.burst(x, h + 0.4, z, [col, 0xffffff], ev.tier >= 5 ? 50 : 18, 2.5, 0.18, 0.7, { lift: 1.5 });
         if (ev.tier >= 5) { this.pillars.add(x, z, 0.5, 6, col, 1.2); this.stage.addShake(0.4); }
         const v = this.towers.get(t.id); if (v) v.born = 0.55;
         break;
       }
       case 'evolve': {
-        const t = ev.tower, [x, z] = at(t.x, t.y), v = this.towers.get(t.id), h = this.hAt(t.cx, t.cy);
+        const t = ev.tower, [x, z] = at(t.x, t.y), v = this.towers.get(t.id), h = this.ty(t);
         if (v) v.evoT = 0.55;
         this.pillars.add(x, z, 0.65, 9, 0xfff6d8, 1.6); this.pillars.add(x, z, 0.35, 9, 0xffffff, 1.2, 0.1);
         for (let i = 0; i < 70; i++) { const a = i * 0.45, r = 0.6 + (i % 7) * 0.05; P.spawn(x + Math.cos(a) * r, h + 0.1 + i * 0.02, z + Math.sin(a) * r, -Math.sin(a) * 1.5, 2.2, Math.cos(a) * 1.5, i % 3 ? 0xfff2a8 : 0x9ff6ff, 0.22, 1.1, { drag: 0.8 }); }
@@ -401,22 +416,23 @@ export class GameView {
     this.petalT += dt;
     if (this.petalT > 0.12 && this.stage.quality > 0) {
       this.petalT = 0;
-      this.parts.spawn((Math.random() - 0.5) * 14, 3 + Math.random() * 2, (Math.random() - 0.5) * 18, 0.4, -0.35, 0.2, Math.random() < 0.7 ? 0xffb8d0 : 0xffffff, 0.09, 6, { drag: 0.05 });
+      if (this.ash) this.parts.spawn((Math.random() - 0.5) * 20, 0.1, (Math.random() - 0.5) * 12, 0.15, 0.5 + Math.random() * 0.4, 0, Math.random() < 0.6 ? 0xff8a2a : 0x6a5a58, 0.07, 5, { drag: 0.05 });
+      else this.parts.spawn((Math.random() - 0.5) * 14, 3 + Math.random() * 2, (Math.random() - 0.5) * 18, 0.4, -0.35, 0.2, Math.random() < 0.7 ? 0xffb8d0 : 0xffffff, 0.09, 6, { drag: 0.05 });
     }
     this.parts.update(dt); this.rings.update(dt); this.bolts.update(dt); this.pillars.update(dt);
     const lf = this.world.lives / this.world.maxLives;
-    this.map.update(dt, lf);
+    this.map.wt = this.world.t; this.map.update(dt, lf);
     // Himmel abdunkeln (Ultimates)
     const bg = this.stage.scene.background;
-    if (this.darken > 0) { this.darken -= dt; bg.setHex(0xbfe6dc).lerp(new THREE.Color(0x1a1030), Math.min(1, this.darken) * 0.75); this.stage.hemi.intensity = 1.25 - Math.min(1, this.darken) * 0.7; }
-    else if (this.flashSky > 0) { this.flashSky -= dt * 2; bg.setHex(0xbfe6dc).lerp(new THREE.Color(0xffffff), Math.max(0, this.flashSky)); }
-    else { bg.setHex(0xbfe6dc); this.stage.hemi.intensity = 1.25; }
+    if (this.darken > 0) { this.darken -= dt; bg.setHex(this.sky).lerp(new THREE.Color(0x1a1030), Math.min(1, this.darken) * 0.75); this.stage.hemi.intensity = 1.25 - Math.min(1, this.darken) * 0.7; }
+    else if (this.flashSky > 0) { this.flashSky -= dt * 2; bg.setHex(this.sky).lerp(new THREE.Color(0xffffff), Math.max(0, this.flashSky)); }
+    else { bg.setHex(this.sky); this.stage.hemi.intensity = 1.25; }
     this.stage.scene.fog.color.copy(bg);
     this.floaters.update(dt, this.stage.camera, this.stage.w, this.stage.h);
   }
   screenPos(x, y, h = 1) { const [wx, wz] = this.toW(x, y); const v = new THREE.Vector3(wx, h, wz).project(this.stage.camera); return [(v.x * 0.5 + 0.5) * this.stage.w, (-v.y * 0.5 + 0.5) * this.stage.h]; }
   dispose() {
     this.scene.remove(this.root); this.floaters.clear();
-    this.stage.scene.background.setHex(0xbfe6dc);
+    this.stage.scene.background.setHex(0xbfe6dc); this.stage.hemi.color.setHex(0xdff4ff);
   }
 }

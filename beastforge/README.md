@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.3.0
+## Stand: v0.4.0
+**Neu in 0.4:** **Karte 3 Glutkrater** (Konto-Lv 6, `hpMul` 1,4, Stufe „Schwer“): Lavafelder (`L`, nicht bebaubar, eigener Shader + Glutlicht), 4 **Lava-Spalten** am Weg brechen alle 14 s aus (Warnring 1,6 s vorher, Feuerschaden + Brand, Bosse nur 30 %; `map.vents`/`map.lava`, `world.updVents`), 2 **Basalt-Flöße** treiben über die Lava und tragen Kreaturen mit (+15 % Schaden; `map.rafts`, `raftPos()` in `data/maps.js` für Simulation *und* Grafik, `world.raftAt`, Turm hat `raft/ox/oy`). Wellen werden je Karte über `map.mix(w, groups)` angepasst. **Neue Gegner:** Feuerdämon (fast feuerimmun, Eis ×1,5, Explosion legt nahe Kreatur 1,6 s lahm – `blast`) und Schildträger (Schild = 60 % KP schluckt zuerst Schaden, Blitz/Erde ×2; schützt Gegner im Umkreis um 35 % – `guard`, `e.guardT`). Eigene Musik `crater`, Aschefunken statt Blüten, verkohlte Bäume. Fix: Wasser-/Lava-Shader beachten jetzt die Instanz-Matrix; „Nochmal“ startet die gespielte Karte.
+
+## Stand v0.3.0
 **Neu in 0.3:** Ladebildschirm (Torii, Fuchsmaske, 9 Fuchsfeuer als echter Fortschritt, Tipps; auch beim Betreten einer Karte – `ui/loading.js`), **Weltkarte** als Auswahl (gezeichnete Karte, Kartenpunkte als Medaillons, wandernde Kreaturen, Seitenleiste mit Modus/Held/Team), **Karte 2 Shinobi-Dorf** (zwei Eingänge, Dächer als Anhöhe, `hpMul` 1,25), **3 neue Kreaturen** – Drachenwolf (Atem-Kegel Eis/Feuer, `atk: 'breath'`), Mantisklinge (Hiebe mit Nachbartreffern + Kopfgeld, `atk: 'slash'`), Felsgolem (Betäubung, Panzerbruch, Felswurf) – **2 neue Helden** Raizen (Kettenblitz, Blitzschlag, Donnerfall) und Mika (Heilerin: Aura, Leben pro Welle, Blütensegen, Lotusheiligtum), Heldenwahl, neues Element Eis mit 3 Reaktionen, 5 neue Synergien.
 
 ## Stand v0.2.0 (Vertical Slice + Genre-Optik)
@@ -13,10 +16,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 | Bereich | Inhalt |
 |---|---|
-| Karte | Ahnenhain (22×13, Querformat): verschlungener Pfad, Anhöhe (+15 % Reichweite), Teich (nur Wasserkreaturen, +20 % Tempo), räumbare Felsen, Torii, Laternen, Schrein mit Herzkristall (leuchtet nach Leben) |
+| Karten (3) | Glutkrater (Lava, Spalten-Ausbrüche, treibende Flöße), Shinobi-Dorf (2 Eingänge), Ahnenhain (22×13, Querformat): verschlungener Pfad, Anhöhe (+15 % Reichweite), Teich (nur Wasserkreaturen, +20 % Tempo), räumbare Felsen, Torii, Laternen, Schrein mit Herzkristall (leuchtet nach Leben) |
 | Kreaturen (8) | Drachenwolf, Mantisklinge, Felsgolem (je 3 Formen) + Kitsune (Benchmark, 7 Formen inkl. Zweig Geist/Schatten), Donnertiger, Eisenschildkröte, Geisthirsch (Support + Wirtschaft), Schattenrabe – je 3 Pfade × 5 Stufen, Kreuzpfade 5/2/0 |
 | Helden (3) | Raizen (Blitz), Mika (Heilerin), Kairo, Fuchs-Shinobi: Level 1–20 im Run, Meilensteine (Passiv, Fähigkeit, Ultimate, Aufstieg, Meisterform), Sprüche, dauerhafter Rang |
-| Gegner (11 + Boss) | Moorschleim, Dornwolf, Eisenkeiler (Panzer), Irrlicht (fliegt), Schattenschleicher (getarnt), Nebelmagier (Schilde), Lotusmönch (heilt), Spaltkäfer → Käferlinge, Felskoloss (Titan), Oni-Hauptmann (Mini-Boss), **Vharox, Abgrunddrache** (4 Phasen: Erwachen, Schwingen/Flug, Feuersturm legt Türme lahm, Raserei + Diener) |
+| Gegner (13 + Boss) | Feuerdämon, Schildträger (nur Glutkrater), Moorschleim, Dornwolf, Eisenkeiler (Panzer), Irrlicht (fliegt), Schattenschleicher (getarnt), Nebelmagier (Schilde), Lotusmönch (heilt), Spaltkäfer → Käferlinge, Felskoloss (Titan), Oni-Hauptmann (Mini-Boss), **Vharox, Abgrunddrache** (4 Phasen: Erwachen, Schwingen/Flug, Feuersturm legt Türme lahm, Raserei + Diener) |
 | Wellen | 20 handgebaute Wellen mit Modifikatoren (schnell, gepanzert, Regeneration, Elite), Endlos-Generator ab 21 (Boss alle 10) |
 | Modi | Normal, Schwer (Konto-Lv 5), Endlos (Konto-Lv 7) |
 | Systeme | Zielmodi (8), Elementreaktionen (7), Synergien (6), Fähigkeiten + Ultimate, Erfolge (35), Mastery mit Skins, Konto-Belohnungen, Tutorial |

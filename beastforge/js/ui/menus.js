@@ -57,8 +57,8 @@ export class Menus {
   s_play(sel) {
     const P = this.P;
     this.diff = this.diff && unlocked(P, 'mode', this.diff) ? this.diff : 'normal';
-    const NODES = { ahnenhain: [22, 64], dorf: [48, 42] };
-    const FOG = [['Glutkrater', 72, 68, '🌋'], ['Frosttempel', 84, 38, '❄'], ['Himmelsinseln', 64, 26, '☁']];
+    const NODES = { ahnenhain: [22, 64], dorf: [48, 42], glut: [72, 68] };
+    const FOG = [['Frosttempel', 84, 38, '❄'], ['Himmelsinseln', 64, 26, '☁']];
     const nodes = Object.values(MAPS).map(m => {
       const [x, y] = NODES[m.id] || [50, 50], ok = unlocked(P, 'map', m.id), b = P.maps[m.id] || {};
       const st = (b.normal >= 20 ? 1 : 0) + (b.hard >= 20 ? 1 : 0) + ((b.endless || 0) >= 30 ? 1 : 0);
@@ -284,7 +284,7 @@ export class Menus {
         ${r.achs.map(x => `<div class="newform">🏆 ${esc(x.name)} <small>+${x.xp}</small></div>`).join('')}</div>
       </div><div class="seg" style="grid-template-columns:1fr 1fr;max-width:520px;margin:0 auto;width:100%"><button class="btn" data-go="home">Menü</button><button class="big" id="again" style="font-size:18px;padding:12px">↻ Nochmal</button></div>
       ${r.charUps.some(u => u.forms.length) ? '<button class="btn" data-go="collection">🦊 Neue Form in der Sammlung ansehen</button>' : ''}</div>`, m => {
-      $('again').onclick = () => { this.app.audio.init(); this.app.startRun('ahnenhain', r.diffKey); };
+      $('again').onclick = () => { this.app.audio.init(); this.app.startRun(r.mapId || 'ahnenhain', r.diffKey); };
       setTimeout(() => m.querySelectorAll('[data-w]').forEach(u => u.style.width = u.dataset.w + '%'), 250);
       if (r.charUps.length) setTimeout(() => this.app.audio.play('levelup'), 500);
       if (r.accUps.length) setTimeout(() => this.app.audio.play('acclevel'), 1100);
