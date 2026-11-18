@@ -1,7 +1,9 @@
 /* Offline-Cache. Bei jeder Änderung CACHE erhöhen. */
-const CACHE = 'gymdesk-v2';
+const CACHE = 'gymdesk-v3';
 const FILES = ['./', 'index.html', 'styles.css', 'manifest.webmanifest', 'icon.svg', 'icon-192.png',
-  'js/app.js', 'js/core/ui.js', 'js/core/db.js', 'js/core/crypto.js', 'js/core/auth.js', 'js/core/validate.js', 'js/core/pricing.js',
+  'assets/logo-dark.png', 'assets/logo-light.png', 'assets/gloves.png', 'assets/brush.svg', 'assets/canvas.svg', 'assets/apple-touch-icon.png',
+  'fonts/bebas-neue.woff2', 'fonts/permanent-marker.woff2', 'icon-512.png',
+  'js/app.js', 'js/core/brand.js', 'js/core/ui.js', 'js/core/db.js', 'js/core/crypto.js', 'js/core/auth.js', 'js/core/validate.js', 'js/core/pricing.js',
   'js/services/data.js', 'js/services/email.js', 'js/data/seed.js',
   'js/pages/dashboard.js', 'js/pages/signup.js', 'js/pages/signature.js', 'js/pages/contractview.js', 'js/pages/members.js',
   'js/pages/forms.js', 'js/pages/offers.js', 'js/pages/settings.js',

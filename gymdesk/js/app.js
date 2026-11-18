@@ -4,6 +4,7 @@ import { h, replace, icon, toast, confirmDialog, loading } from './core/ui.js';
 import * as db from './core/db.js';
 import * as auth from './core/auth.js';
 import { getSettings, maintenance } from './services/data.js';
+import { BRAND } from './core/brand.js';
 
 const NAV = /** @type {const} */ ([
   ['dashboard', 'Dashboard', 'grid'], ['anmeldung', 'Neue Anmeldung', 'userPlus'], ['mitglieder', 'Mitglieder', 'users'],
@@ -74,15 +75,17 @@ async function render() {
 
 /** @param {any} s */
 function shell(s) {
-  const brand = h('div', { class: 'brand' }, s.logo ? h('img', { src: s.logo, alt: '' }) : h('span', { class: 'brand-mark' }, icon('dumbbell', 22)),
-    h('div', { class: 'brand-txt' }, h('b', null, s.name), h('small', null, 'Mitgliederverwaltung')));
+  const brand = h('a', { class: 'brand', href: '#/dashboard', 'aria-label': s.name + ' – Dashboard' },
+    h('img', { class: 'brand-logo', src: s.logo || BRAND.logoDark, alt: s.name }),
+    h('img', { class: 'brand-mini', src: BRAND.gloves, alt: '' }),
+    h('span', { class: 'brand-sub' }, 'Mitgliederverwaltung'));
   const links = NAV.map(([k, l, i]) => h('a', { href: '#/' + k, class: 'nav-link', dataset: { nav: k } }, icon(i, 22), h('span', { class: 'lbl' }, l)));
   const side = h('aside', { class: 'side' }, brand, h('nav', { 'aria-label': 'Hauptnavigation' }, links),
     h('div', { class: 'side-foot' },
       h('a', { class: 'nav-link small', href: 'film/' }, icon('film', 20), h('span', { class: 'lbl' }, 'Making-of')),
       h('button', { class: 'nav-link small', onclick: () => auth.lock() }, icon('lock', 20), h('span', { class: 'lbl' }, 'Sperren'))));
   const tabs = h('nav', { class: 'tabbar', 'aria-label': 'Navigation' },
-    NAV.map(([k, l, i]) => h('a', { href: '#/' + k, dataset: { nav: k } }, icon(i, 22), h('span', null, l.replace('Neue ', '')))));
+    NAV.map(([k, l, i]) => h('a', { href: '#/' + k, dataset: { nav: k } }, icon(i, 22), h('span', null, l.replace('Neue ', '').replace('Einstellungen', 'Setup')))));
   main = h('main', { class: 'main', tabindex: '-1' });
   replace(root, h('div', { class: 'shell' }, side, main, tabs));
 }
@@ -90,13 +93,13 @@ function shell(s) {
 /* ---------- Einrichten & Entsperren ---------- */
 /** @param {any} pub */
 function brandBox(pub) {
-  return h('div', { class: 'auth-brand' }, pub?.logo ? h('img', { src: pub.logo, alt: '' }) : h('span', { class: 'brand-mark big' }, icon('dumbbell', 34)),
-    h('h1', null, pub?.name || 'GymDesk'), h('p', null, 'Mitgliederverwaltung'));
+  return h('div', { class: 'auth-brand' }, h('img', { src: pub?.logo || BRAND.logoDark, alt: pub?.name || BRAND.name }),
+    h('p', { class: 'auth-kicker' }, 'Mitgliederverwaltung'));
 }
 
 function setupScreen() {
   const err = h('p', { class: 'err', role: 'alert' });
-  const name = h('input', { id: 'su-name', value: 'Mein Gym', autocomplete: 'organization' });
+  const name = h('input', { id: 'su-name', value: BRAND.name, autocomplete: 'organization' });
   const pw = h('input', { id: 'su-pw', type: 'password', autocomplete: 'new-password' });
   const pw2 = h('input', { id: 'su-pw2', type: 'password', autocomplete: 'new-password' });
   const demo = h('input', { type: 'checkbox', checked: true, id: 'su-demo' });
@@ -116,7 +119,8 @@ function setupScreen() {
     } catch (x) { err.textContent = 'Einrichtung fehlgeschlagen: ' + /** @type {Error} */ (x).message; btn.removeAttribute('disabled'); btn.textContent = 'Einrichten'; }
   } },
   brandBox(null),
-  h('h2', null, 'Willkommen! Zugang einrichten'),
+  h('h2', null, 'Willkommen im Ring!'),
+  h('p', { class: 'auth-lead' }, 'Zugang einrichten'),
   h('p', { class: 'muted' }, 'Alle Daten werden verschlüsselt nur auf diesem Gerät gespeichert. Das Passwort schützt den Zugang – es kann nicht wiederhergestellt werden.'),
   h('div', { class: 'field' }, h('label', { for: 'su-name' }, 'Name des Gyms'), name),
   h('div', { class: 'field' }, h('label', { for: 'su-pw' }, 'Passwort (mind. 8 Zeichen, Buchstaben + Ziffern)'), pw),

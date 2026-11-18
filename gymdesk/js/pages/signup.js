@@ -1,6 +1,6 @@
 // @ts-check
 /* Neue Anmeldung: 9 Schritte, Validierung je Schritt, verschlüsselter Entwurf, Verlassen-Schutz, Unterschrift. */
-import { h, icon, field, showErrors, fmtEUR, fmtDate, fmtDateTime, toast, confirmDialog, debounce, today } from '../core/ui.js';
+import { h, replace, icon, field, showErrors, fmtEUR, fmtDate, fmtDateTime, toast, confirmDialog, debounce, today } from '../core/ui.js';
 import { validate, personalSchema, membershipSchema, paymentSchema, fmtIban, cleanIban, ibanValid, ageOf } from '../core/validate.js';
 import { calc, endDate, planLabel } from '../core/pricing.js';
 import { loadAll, getDraft, saveDraft, dropDraft, completeSignup, applicableConsents } from '../services/data.js';
@@ -52,10 +52,10 @@ export async function render() {
     const body = h('form', { class: 'step-body', novalidate: true, onsubmit: (/** @type {Event} */ e) => { e.preventDefault(); next(); } }, STEP_VIEWS[step]());
     const showAside = step >= 1 && step <= 4;
     if (showAside) refreshAside();
-    root.replaceChildren(
-      h('div', { class: 'signup-top' }, h('h1', null, step === 8 ? 'Geschafft!' : 'Neue Anmeldung'), step < 8 ? h('span', { class: 'step-count' }, `Schritt ${step + 1} von 9`) : null),
+    replace(root,
+      h('div', { class: 'signup-top' }, h('h1', null, h('span', { class: 'brush' }, step === 8 ? 'Geschafft!' : 'Neue Anmeldung')), step < 8 ? h('span', { class: 'step-count' }, h('b', null, `Runde ${step + 1}`), ' / 9') : null),
       stepper(),
-      h('div', { class: ['signup-grid', showAside && 'with-aside'] }, h('div', { class: 'card step-card' }, h('h2', { class: 'step-title' }, STEPS[step]), body), showAside ? aside : null),
+      h('div', { class: ['signup-grid', showAside && 'with-aside'] }, h('div', { class: 'card step-card' }, step < 8 ? h('span', { class: 'kicker' }, `Runde ${step + 1}`) : null, h('h2', { class: 'step-title' }, STEPS[step]), body), showAside ? aside : null),
       step < 7 ? h('div', { class: 'step-foot' },
         step > 0 ? h('button', { class: 'btn big', type: 'button', onclick: back }, icon('chevL', 22), 'Zurück') : h('span'),
         h('button', { class: 'btn primary big', type: 'button', onclick: next }, step === 5 ? 'Weiter zur Unterschrift' : step === 6 ? 'Weiter zum Abschluss' : 'Weiter', icon('chevR', 22))) : null);
@@ -233,7 +233,7 @@ export async function render() {
         h('div', { class: 'final-bar' }, h('button', { type: 'button', class: 'btn big', onclick: back }, icon('chevL', 22), 'Zurück'), btn));
     },
 
-    () => h('div', { class: 'success-box' }, h('div', { class: 'success-ico' }, icon('check', 56)),
+    () => h('div', { class: 'success-box' }, h('img', { class: 'success-gloves', src: 'assets/gloves.png', alt: '' }), h('span', { class: 'kicker big' }, 'Willkommen im Team!'),
       h('h2', null, 'Mitgliedschaft erfolgreich abgeschlossen.'),
       h('p', null, `${done.member.firstName} ${done.member.lastName} ist jetzt Mitglied.`),
       h('div', { class: 'ids' }, h('div', null, h('small', null, 'Mitgliedsnummer'), h('b', null, done.member.memberNo)), h('div', null, h('small', null, 'Vertragsnummer'), h('b', null, done.contract.contractNo))),

@@ -15,7 +15,7 @@ const PH = (/** @type {string} */ t) => `[Platzhalter] Hier wird später ${t} de
 
 export function defaultSettings() {
   return {
-    id: 'gym', name: 'Mein Gym', logo: null, street: 'Musterstraße 1', zip: '12345', city: 'Musterstadt',
+    id: 'gym', name: 'West Center Boxing', logo: null, street: '', zip: '', city: 'Wiesbaden',
     phone: '+49 000 0000000', email: 'info@example.com', website: 'https://example.com',
     hours: 'Mo–Fr 06:00–23:00\nSa–So 08:00–20:00',
     legal: { agb: PH('die AGB'), datenschutz: PH('die Datenschutzerklärung'), hausordnung: PH('die Hausordnung'),
@@ -29,7 +29,7 @@ export function defaultSettings() {
       { key: 'kontakt', label: 'Das Gym darf mich zu meiner Mitgliedschaft per E-Mail kontaktieren.', text: 'kontakt', required: false },
       { key: 'werbung', label: 'Ich möchte Angebote und Neuigkeiten per E-Mail erhalten (jederzeit widerrufbar).', text: 'werbung', required: false },
     ],
-    autoLockMin: 15, expiringDays: 60, mail: { mode: 'mock', fromName: 'Mein Gym', from: 'angebote@example.com', endpoint: '' },
+    autoLockMin: 15, expiringDays: 60, mail: { mode: 'mock', fromName: 'West Center Boxing', from: 'angebote@example.com', endpoint: '' },
   };
 }
 

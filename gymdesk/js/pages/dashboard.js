@@ -1,5 +1,7 @@
 // @ts-check
-import { h, icon, pageHead, card, fmtDate, fmtDateTime, fmtEUR, badge, empty } from '../core/ui.js';
+import { h, icon, pageHead, card, fmtDate, fmtDateTime, fmtEUR, badge, empty, ropes } from '../core/ui.js';
+
+const greeting = () => { const hr = new Date().getHours(); return hr < 11 ? 'Guten Morgen, Champ!' : hr < 17 ? 'Ab in den Ring!' : 'Starker Abend!'; };
 import { loadAll, memberRows, offerState } from '../services/data.js';
 import { planLabel } from '../core/pricing.js';
 
@@ -23,7 +25,8 @@ export async function render() {
 
   return h('div', { class: 'page' },
     pageHead('Dashboard', `${d.settings.name} · ${new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}`,
-      h('a', { class: 'btn primary big', href: '#/anmeldung' }, icon('userPlus', 22), 'Neue Anmeldung')),
+      h('a', { class: 'btn primary big', href: '#/anmeldung' }, icon('userPlus', 22), 'Neue Anmeldung'), greeting()),
+    ropes(),
     h('div', { class: 'kpis' },
       kpi('Aktive Mitglieder', active.length, '#/mitglieder?f=aktiv', 'users', 'blue'),
       kpi('Neu (30 Tage)', fresh.length, '#/mitglieder?f=neu', 'userPlus', 'green'),

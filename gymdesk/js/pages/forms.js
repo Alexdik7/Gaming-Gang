@@ -23,7 +23,7 @@ export async function render(ctx) {
       : empty('Keine Formulare', q ? 'Keine Treffer.' : 'Abgeschlossene Anmeldungen erscheinen hier automatisch.'));
   };
   draw('');
-  return h('div', { class: 'page' }, pageHead('Abgeschlossene Formulare', `${list.length} vollständig abgeschlossene Anmeldungen · schreibgeschützt`),
+  return h('div', { class: 'page' }, pageHead('Abgeschlossene Formulare', `${list.length} vollständig abgeschlossene Anmeldungen · schreibgeschützt`, null, 'Sicher verwahrt'),
     h('div', { class: 'toolbar' }, h('div', { class: 'search' }, icon('search', 20), h('input', { type: 'search', class: 'search-in', placeholder: 'Name oder Vertragsnummer', 'aria-label': 'Formulare suchen',
       oninput: (/** @type {Event} */ e) => draw(/** @type {HTMLInputElement} */ (e.target).value) }))),
     h('div', { class: 'card flush' }, body));
@@ -37,6 +37,7 @@ async function detail(id) {
   const snap = { ...c.snapshot, consents: c.snapshot.consents };
   return h('div', { class: 'page print-page' },
     h('a', { class: 'back no-print', href: '#/formulare' }, icon('chevL', 18), 'Formulare'),
+    h('img', { class: 'print-logo', src: 'assets/logo-light.png', alt: '' }),
     pageHead(`Anmeldeformular ${c.contractNo}`, `${m ? m.firstName + ' ' + m.lastName : ''} · abgeschlossen am ${fmtDateTime(c.createdAt)}`,
       [h('a', { class: 'btn big no-print', href: '#/mitglieder/' + c.memberId }, 'Zum Mitglied'), h('button', { class: 'btn big no-print', onclick: () => print() }, icon('print', 20), 'Drucken / PDF')]),
     h('div', { class: ['notice', x.intact ? 'ok' : 'warn'] }, icon(x.intact ? 'shield' : 'alert', 22),

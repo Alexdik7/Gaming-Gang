@@ -7,6 +7,7 @@ import { planLabel, parseMoney, INTERVALS } from '../core/pricing.js';
 import { INTERVAL_TXT } from './contractview.js';
 import * as auth from '../core/auth.js';
 import * as db from '../core/db.js';
+import { BRAND } from '../core/brand.js';
 
 const TABS = [['gym', 'Gym-Daten'], ['plans', 'Mitgliedschaften'], ['addons', 'Leistungen & Preise'], ['legal', 'Vertragstexte'], ['mail', 'E-Mail'], ['security', 'Sicherheit & Daten']];
 
@@ -15,7 +16,7 @@ export async function render(ctx) {
   const tab = ctx.query.tab || 'gym';
   const s = await getSettings();
   const content = await (/** @type {Record<string, (s:any, r:()=>void)=>Promise<any>>} */ ({ gym: gymTab, plans: plansTab, addons: addonsTab, legal: legalTab, mail: mailTab, security: securityTab }))[tab]?.(s, ctx.refresh) ?? h('div');
-  return h('div', { class: 'page' }, pageHead('Einstellungen', 'Alles, was sich für dein Gym ändern lässt – ohne Code.'),
+  return h('div', { class: 'page' }, pageHead('Einstellungen', 'Alles, was sich für dein Gym ändern lässt – ohne Code.', null, 'Dein Setup'),
     h('div', { class: 'tabs', role: 'tablist' }, TABS.map(([k, l]) => h('a', { role: 'tab', class: ['tab', tab === k && 'on'], 'aria-selected': String(tab === k), href: '#/einstellungen?tab=' + k }, l))),
     content);
 }
@@ -25,7 +26,7 @@ async function gymTab(s) {
   const v = { ...s };
   /** @param {string} n @param {string} l @param {any} [o] */
   const F = (n, l, o = {}) => field({ name: n, label: l, value: v[n], onInput: (x) => { v[n] = x; }, ...o });
-  const logoImg = h('div', { class: 'logo-prev' }, v.logo ? h('img', { src: v.logo, alt: 'Logo' }) : icon('dumbbell', 32));
+  const logoImg = h('div', { class: 'logo-prev' }, h('img', { src: v.logo || BRAND.logoDark, alt: 'Logo' }));
   const file = /** @type {HTMLInputElement} */ (h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', class: 'visually-hidden', id: 'logo-in' }));
   file.addEventListener('change', async () => {
     const f = file.files?.[0]; if (!f) return;
@@ -35,7 +36,7 @@ async function gymTab(s) {
   });
   const form = h('div', { class: 'form-grid' },
     h('div', { class: 'field wide logo-row' }, logoImg, h('div', null, h('label', { class: 'btn', for: 'logo-in' }, icon('upload', 18), 'Logo hochladen'), file,
-      v.logo ? h('button', { class: 'btn ghost', type: 'button', onclick: () => { v.logo = null; replace(logoImg, icon('dumbbell', 32)); } }, 'Entfernen') : null)),
+      v.logo ? h('button', { class: 'btn ghost', type: 'button', onclick: () => { v.logo = null; replace(logoImg, h('img', { src: BRAND.logoDark, alt: 'Logo' })); } }, 'Standard-Logo') : null)),
     F('name', 'Name des Gyms', { required: true }), F('website', 'Website', { type: 'url' }),
     F('street', 'Straße und Hausnummer'), F('zip', 'PLZ', { inputmode: 'numeric' }), F('city', 'Ort'), F('phone', 'Telefon', { type: 'tel' }), F('email', 'E-Mail', { type: 'email' }),
     F('hours', 'Öffnungszeiten', { type: 'textarea', rows: 3, wide: true }),

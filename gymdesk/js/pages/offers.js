@@ -19,7 +19,7 @@ export async function render(ctx) {
   }
   const list = [...d.offers].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return h('div', { class: 'page' },
-    pageHead('Angebote', 'Angebote erstellen und personalisiert per E-Mail versenden', h('a', { class: 'btn primary big', href: '#/angebote/neu' }, icon('plus', 22), 'Neues Angebot')),
+    pageHead('Angebote', 'Angebote erstellen und personalisiert per E-Mail versenden', h('a', { class: 'btn primary big', href: '#/angebote/neu' }, icon('plus', 22), 'Neues Angebot'), 'Volltreffer per Mail'),
     d.settings.mail.mode !== 'live' ? h('div', { class: 'notice' }, icon('shield', 22), h('span', null, h('b', null, 'Testmodus: '), 'Es werden keine echten E-Mails verschickt. Fertige Mails landen im Postausgang des Angebots.')) : null,
     h('div', { class: 'card flush' }, list.length ? h('table', { class: 'table rtable' },
       h('thead', null, h('tr', null, ['Angebot', 'Erstellt', 'Gültig bis', 'Empfänger', 'Status', 'Versand', ''].map((t) => h('th', null, t)))),

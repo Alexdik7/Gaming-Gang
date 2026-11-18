@@ -1,4 +1,7 @@
-# GymDesk – Mitgliederverwaltung fürs Gym
+# West Center Boxing – Mitgliederverwaltung (GymDesk)
+
+Gestaltet nach dem Logo von **West Center Boxing Wiesbaden**: Schwarz, Logo-Rot und Off-White, Ringseile als Trenner, Überschriften in Bebas Neue, Akzente in Permanent Marker (beide frei lizenziert, lokal in `fonts/`). Die Anmeldung zählt in „Runden“.
+Produktvideo: `media/WestCenterBoxing-App-Demo.mp4` (2:12 Min.).
 
 Web-App für das iPad an der Theke: Mitglieder digital anmelden und unterschreiben lassen, Mitglieder und Verträge verwalten, Angebote personalisiert per E-Mail vorbereiten.
 
@@ -18,6 +21,8 @@ npx -p typescript@5.6 tsc -p gymdesk            # Typprüfung (checkJs)
 node gymdesk/tools/e2e.cjs                       # Ende-zu-Ende-Test (31 Prüfungen)
 ```
 Bei jeder Änderung `CACHE` in `sw.js` erhöhen und neue Dateien in `FILES` eintragen.
+
+Marke: Logos in `assets/` (`logo-dark.png` für dunklen Grund, `logo-light.png` für hellen, `gloves.png` als Bildmarke), Konstanten in `js/core/brand.js`, Theme am Ende von `styles.css` („THEME WEST CENTER BOXING“). Ein eigenes Logo aus den Einstellungen ersetzt das Standard-Logo in der Seitenleiste.
 
 ## Stand v1.0 (MVP)
 Alle 18 Punkte der Zielliste sind umgesetzt: Anmeldung in 9 Schritten mit Validierung, Entwurf und Verlassen-Warnung · Unterschrift per Finger oder Pencil · Mitgliederliste mit Suche, Filter und Sortierung · Kundenmaske mit Historie · schreibgeschützte Formulare mit Prüfsumme · Angebote mit Empfängerfiltern, Platzhaltern, Vorschau, Sicherheitsabfrage und geplantem Versand · Mock-Mailversand mit Postausgang · Einstellungen für Gym-Daten, Tarife, Leistungen, Texte, Passwort und Sicherung · alles AES-256-verschlüsselt, offline-fähig.

@@ -70,7 +70,7 @@ export async function render(ctx) {
     SORTS.map(([k, l]) => h('option', { value: k }, l)));
   apply();
   return h('div', { class: 'page' },
-    pageHead('Mitglieder', count, h('a', { class: 'btn primary big', href: '#/anmeldung' }, icon('userPlus', 22), 'Neue Anmeldung')),
+    pageHead('Mitglieder', count, h('a', { class: 'btn primary big', href: '#/anmeldung' }, icon('userPlus', 22), 'Neue Anmeldung'), 'Dein Team'),
     h('div', { class: 'toolbar' }, h('div', { class: 'search' }, icon('search', 20), search), planSel, sortSel), chips, h('div', { class: 'card flush' }, body));
 }
 

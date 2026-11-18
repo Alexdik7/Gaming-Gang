@@ -237,17 +237,21 @@ export function confirmDialog(o) {
 
 /** Leerer Zustand @param {string} title @param {string} text @param {any} [action] */
 export function empty(title, text, action) {
-  return h('div', { class: 'empty' }, h('div', { class: 'empty-ico' }, icon('info', 28)), h('h3', null, title), h('p', null, text), action || null);
+  return h('div', { class: 'empty' }, h('img', { class: 'empty-ico', src: 'assets/gloves.png', alt: '' }), h('h3', null, title), h('p', null, text), action || null);
 }
 
 /** Ladeanzeige */
 export function loading() { return h('div', { class: 'loading', 'aria-busy': 'true' }, h('span', { class: 'spinner' }), 'Lade …'); }
 
-/** @param {string} title @param {any} [sub] @param {any} [actions] */
-export function pageHead(title, sub, actions) {
-  return h('header', { class: 'page-head' }, h('div', null, h('h1', null, title), sub ? h('p', { class: 'sub' }, sub) : null),
+/** @param {string} title @param {any} [sub] @param {any} [actions] @param {string} [kicker] Pinsel-Zeile über dem Titel */
+export function pageHead(title, sub, actions, kicker) {
+  return h('header', { class: 'page-head' }, h('div', null, kicker ? h('span', { class: 'kicker' }, kicker) : null,
+    h('h1', null, h('span', { class: 'brush' }, title)), sub ? h('p', { class: 'sub' }, sub) : null),
     actions ? h('div', { class: 'head-actions' }, actions) : null);
 }
+
+/** Ringseile als Trenner */
+export const ropes = () => h('div', { class: 'ropes', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'));
 
 /** @param {string} title @param {any} body @param {any} [extra] */
 export function card(title, body, extra) {

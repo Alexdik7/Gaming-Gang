@@ -49,11 +49,11 @@ export function buildEmail(offer, vars, settings, to) {
   const html = `<!doctype html><html><body style="margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden">
-<tr><td style="background:#1e3a8a;color:#fff;padding:20px 28px;font-size:18px;font-weight:bold">${esc(settings.name)}</td></tr>
+<tr><td style="background:#111114;color:#fff;padding:20px 28px;font-size:20px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;border-bottom:4px solid #d0161e">${esc(settings.name)}</td></tr>
 <tr><td style="padding:28px"><h1 style="margin:0 0 16px;font-size:24px">${esc(headline)}</h1>
 ${body.split(/\n{2,}/).map((p) => `<p style="line-height:1.55;margin:0 0 14px">${esc(p).replace(/\n/g, '<br>')}</p>`).join('')}
 ${facts.length ? `<table style="margin:12px 0;border-collapse:collapse">${facts.map((f) => `<tr><td style="padding:4px 16px 4px 0;color:#6b7280">${esc(f?.[0])}</td><td style="padding:4px 0;font-weight:bold">${esc(f?.[1])}</td></tr>`).join('')}</table>` : ''}
-${offer.cta ? `<p style="margin:22px 0 0"><a href="${esc(/^https?:\/\//.test(offer.ctaUrl || '') ? offer.ctaUrl : '#')}" style="background:#2563eb;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold">${esc(offer.cta)}</a></p>` : ''}
+${offer.cta ? `<p style="margin:22px 0 0"><a href="${esc(/^https?:\/\//.test(offer.ctaUrl || '') ? offer.ctaUrl : '#')}" style="background:#d0161e;color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:bold;text-transform:uppercase;letter-spacing:1px">${esc(offer.cta)}</a></p>` : ''}
 </td></tr><tr><td style="padding:16px 28px;background:#f9fafb;color:#6b7280;font-size:12px">${esc(settings.name)} · ${esc(settings.street || '')} ${esc(settings.zip || '')} ${esc(settings.city || '')}<br>Du erhältst diese Mail, weil du der Kontaktaufnahme zu Werbezwecken zugestimmt hast. [Platzhalter: Abmeldelink]</td></tr>
 </table></td></tr></table></body></html>`;
   return { to, subject, text, html, headline, body, facts };

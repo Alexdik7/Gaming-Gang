@@ -63,7 +63,7 @@ const PEOPLE = [
 
 /** @param {string} gymName */
 export async function seedBase(gymName) {
-  const s = { ...defaultSettings(), name: gymName || 'Mein Gym' };
+  const s = { ...defaultSettings(), name: gymName || 'West Center Boxing' };
   s.mail.fromName = s.name;
   await saveSettings(s);
   await db.putMany([...PLANS.map((p) => /** @type {[string, any]} */ (['plans', p])), ...ADDONS.map((a) => /** @type {[string, any]} */ (['addons', a]))]);
