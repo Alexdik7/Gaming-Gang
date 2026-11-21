@@ -113,6 +113,15 @@ export class World {
     return best;
   }
   // Freie Platzierung: Mittelpunkt (x, y) in Feld-Koordinaten, Kreis-Fußabdruck TOWER_R
+  // Nächster gültiger Platz um (x, y) – macht das Platzieren mit dem Finger verzeihend
+  nearestPlace(cid, x, y, maxR = 0.9) {
+    const c = this.canPlace(cid, x, y); if (c.ok || /Münzen|Team|vorbei|Held|Zu viele/.test(c.why)) return { x, y, c };
+    for (let r = 0.15; r <= maxR + 1e-6; r += 0.15) for (let k = 0; k < 12; k++) {
+      const a = k / 12 * Math.PI * 2, px = x + Math.cos(a) * r, py = y + Math.sin(a) * r, q = this.canPlace(cid, px, py);
+      if (q.ok) return { x: px, y: py, c: q };
+    }
+    return { x, y, c };
+  }
   canPlace(cid, x, y) {
     if (this.over) return { ok: false, why: 'Run ist vorbei' };
     const isHero = cid === this.heroId && HEROES[cid];

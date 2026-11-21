@@ -76,11 +76,12 @@ export class Game {
     const cv = this.app.stage.canvas;
     let down = null;
     this.onDown = e => {
-      this.app.audio.init(); down = { x: e.clientX, y: e.clientY, type: e.pointerType };
+      this.app.audio.init(); down = { x: e.clientX, y: e.clientY, type: e.pointerType }; this.touchDrag = e.pointerType !== 'mouse';
       if (this.placing) { const p = this.groundAt(e.clientX, e.clientY); if (p) this.setGhost(p); }
     };
     this.onMove = e => {
       if (!this.placing) return;
+      if (this.dragging) this.touchDrag = e.pointerType !== 'mouse';
       if (e.pointerType === 'mouse' || down || this.dragging) { const p = this.groundAt(e.clientX, e.clientY); if (p) this.setGhost(p); }
     };
     this.onUp = e => {
@@ -101,6 +102,7 @@ export class Game {
     addEventListener('keydown', this.onKey);
   }
   groundAt(cx, cy) {
+    if (this.dragging && this.touchDrag) cy -= 46; // beim Ziehen mit dem Finger: Vorschau sichtbar über dem Finger
     const st = this.app.stage, W = this.world.W, H = this.world.H;
     const p = st.ground(cx, cy, 0); if (!p) return null;
     let x = p.x + W / 2, y = p.z + H / 2;
@@ -129,8 +131,9 @@ export class Game {
   }
   setGhost(p) {
     const w = this.world, cid = this.placing; if (!cid) return;
+    const n = w.nearestPlace(cid, p.x, p.y); p = { x: n.x, y: n.y };
     this.ghostPos = p;
-    const ok = w.canPlace(cid, p.x, p.y);
+    const ok = n.c;
     if (!this.ghost || this.ghost.cid !== cid) {
       if (this.ghost) this.view.root.remove(this.ghost.m.root);
       const m = buildModel(cid, { stage: 0, branch: this.P.chars[cid]?.branch, skin: this.skinOf(cid), hlvl: 1 });
@@ -152,7 +155,8 @@ export class Game {
     if (!r.ok) { this.hud.err(r.why); return; }
     this.app.audio.play('place');
     this.cancelPlace();
-    this.select(r.tower);
+    // Hochformat: Shop offen lassen (weiter platzieren); Upgrades per Antippen der Kreatur
+    if (!this.app.stage.portrait) this.select(r.tower); else this.view.showSel?.(r.tower);
     this.hud.coachEvent('placed');
   }
   cancelPlace() {

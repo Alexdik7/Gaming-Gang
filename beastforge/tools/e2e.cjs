@@ -39,7 +39,10 @@ const S = {
   async port(b) {
     const p = await open(b);
     await p.evaluate(() => { BF.start('normal'); BF.world.coins = 9999; BF.put('kitsune'); BF.put('turtle', 1.7); BF.world.startWave(); });
-    await p.waitForTimeout(2500); await shot(p, 'p1_game');
+    await p.waitForTimeout(2500); await shot(p, 'p1_turn');
+    assert(await p.evaluate(() => getComputedStyle(document.getElementById('turn')).display !== 'none'), 'Dreh-Hinweis im Hochformat');
+    await p.setViewportSize({ width: 844, height: 390 }); await p.waitForTimeout(600);
+    assert(await p.evaluate(() => getComputedStyle(document.getElementById('turn')).display === 'none'), 'Kein Hinweis im Querformat');
     await p.evaluate(() => BF.game.select(BF.world.towers[0])); await p.waitForTimeout(500); await shot(p, 'p2_panel');
     assert(!p.errs.length, p.errs.join(' | '));
     await p.context().close();

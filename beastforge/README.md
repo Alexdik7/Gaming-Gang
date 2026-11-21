@@ -5,7 +5,13 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.8.0 – Menü wie ein fertiges Spiel
+## Stand: v0.8.2 – nur Querformat
+**0.8.2:** Gespielt wird nur im Querformat (Wunsch des Spielers): Manifest `orientation: landscape`, im Hochformat Vollbild-Hinweis `#turn` mit drehendem Handy (CSS `@media (orientation: portrait)`), laufender Run pausiert automatisch (`resize`/`orientationchange` in `main.js`), `screen.orientation.lock` wo möglich (iOS kann nicht sperren). Die Hochformat-Kamera aus 0.8.1 bleibt als Rückfall im Code.
+
+## Stand v0.8.1 – iPhone-Hochformat
+**Fix 0.8.1** (Rückmeldung vom iPhone): Im Hochformat dreht sich die Kamera um 90° (`stage.portrait`, `fit()` mit Gierwinkel) – die Karte füllt den Bildschirm statt winzig zu sein; kein „Quer halten“-Hinweis mehr. Platzieren rastet auf den nächsten freien Platz ein (`world.nearestPlace`, bis 0,9 Felder), beim Ziehen mit dem Finger sitzt die Vorschau 46 px über dem Finger. Im Hochformat öffnet sich nach dem Platzieren nicht mehr das Upgrade-Fenster (Shop bleibt sichtbar), das Fenster ist dort max. 46 % hoch.
+
+## Stand v0.8.0 – Menü wie ein fertiges Spiel
 **Neu in 0.8:** **Titelbildschirm** nach dem Laden (Buchstaben fallen ein, „Tippe, um zu beginnen“ – schaltet auch den iPhone-Ton frei, `menus.s_title`). **Hub** mit runden Medaillons (`s_home`, CSS `.med`/`.mbig`): Kreaturen, Helden, großes pulsierendes SPIELEN, Entwicklung, Konto; oben Profil-Chip, Logo, Erfolge/Statistik/Optionen. **Entwicklungszentrum** (`s_evo`): alle Entwicklungsreihen mit Porträts, „noch N Level bis …“, nächste Form pulsiert. **Übergänge:** `menus.go(name, arg, event)` – Fuchsfeuer-Wipe wächst vom Tipp-Punkt (`#wipe`, Web Animations API), Inhalte fliegen gestaffelt ein (`.pop`), Kamera fährt je Bildschirm weich an eine eigene Position (`app.camT`), Geräusche `whoosh`/`start`. **Eisenschildkröte und Mantis neu** (`js/render/beasts.js`): Schildkröte mit Sechseck-Schuppen → Stahlpanzer mit Nieten, Stacheln, Helm, Nasenhorn → wandelnder Berg (Gipfel, Schnee, Kiefern, Wasserfall, Schrein); Mantis mit Facettenaugen, Fühlern, Flügeln und Fangarmen → Sichelkönigin (Krone, vier Sicheln) → Purpurmantis (glühende Klingen, ausgebreitete Flügel, Aura). Gelenk-Animationen: Stampfen, Sichelhieb, Beine, Atmen.
 
 ## Stand v0.7.0 – Jede Entwicklung ein eigenes Modell
