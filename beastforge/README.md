@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.13.0 – Herausforderungen
+## Stand: v0.14.0 – Täglich
+**0.14:** Neuer Hub-Knopf 📅 **Täglich** (`menus.s_daily`, Daten `js/data/daily.js`): **Tageskampf** – für jedes Datum feste Bedingungen (Karte aus den freigeschalteten, Normal/Schwer, 2 kombinierte Herausforderungen, `dailyChallenge`), erster Sieg am Tag = +1 Shinobi-Punkt (`daily.sp`) + 500 Konto-XP; **3 Tagesaufgaben** aus 12 (`QUESTS`, `ensureDaily`), Fortschritt = Statistik seit Tagesbeginn (`daily.snap`), Belohnung Konto-XP zum Abholen. Neuer Zähler `stats.pops` (geplatzte Schichten). Roter Punkt am Knopf, wenn etwas offen ist.
+
+## Stand v0.13.0 – Herausforderungen
 **0.13:** Pro Karte 6 **Herausforderungen** (`data/challenges.js`, Auswahl in der Kartenwahl, `World({ mods })`): Nur Grundformen (`basic`, kein Erwecken), Halbes Gold (`halfCash` in `gain`), Umgekehrt (`reversedMap`, Schrein/Torii wandern mit), Doppelte KP (`dblHp`), Apokalypse (`apoc`, Wellen ohne Pause), Seelenbrand (`soulburn`: Schwer, 1 Leben, kein Verkaufen, kein Einkommen). Freigeschaltet nach Sieg auf der Karte (Seelenbrand nach Sieg auf Schwer). Sieg = **Medaille** 🏅 (`maps[id].medals`), Konto-XP und +1 Shinobi-Punkt.
 
 ## Stand v0.12.0 – Seelenwale + freies Spiel

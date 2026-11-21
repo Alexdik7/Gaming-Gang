@@ -448,7 +448,7 @@ export class World {
     if (def.split) {
       const kids = [], mods = e.mods.filter(m => m !== 'elite');
       for (let i = 0; i < def.split.n; i++) { const m = this.spawn(def.split.kind, e.elite ? ['elite', ...mods] : mods, Math.max(0, e.d - (def.layer ? 0.18 : 0.25) * i), e.wave, e.pi); if (m) { m.coinMul = 1; kids.push(m); } }
-      if (def.layer) this.emit({ t: 'pop', x: e.x, y: e.y, layer: def.layer, n: kids.length });
+      if (def.layer) { this.emit({ t: 'pop', x: e.x, y: e.y, layer: def.layer, n: kids.length }); this.hooks.stat?.('pops', 1); }
       if (over > 0.5 && kids[0]) this.damage(kids[0], over, type, src, { noReact: true, ignoreRes: true });   // Treffer reißt mehrere Schichten durch
     }
     this.emit({ t: 'kill', e, x: e.x, y: e.y, coins, src });

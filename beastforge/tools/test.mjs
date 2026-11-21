@@ -337,3 +337,17 @@ test('Herausforderungen: Regeln greifen, Medaillen geben Shinobi-Punkte', async 
   const P = defaultProfile(); assert.equal(chUnlocked(P, 'ahnenhain', 'half'), false); P.maps.ahnenhain.normal = 20; assert.equal(chUnlocked(P, 'ahnenhain', 'half'), true);
   const p0 = shinobiPoints(P).earned; P.maps.ahnenhain.medals = { half: 1, rev: 1 }; assert.equal(shinobiPoints(P).earned, p0 + 2);
 });
+
+test('Täglich: Aufgaben je Tag, Fortschritt seit Tagesbeginn, Tageskampf gibt Shinobi-Punkt', async () => {
+  const { ensureDaily, questProgress, dailyChallenge, QUESTS } = await import('../js/data/daily.js');
+  const { shinobiPoints } = await import('../js/data/academy.js');
+  const P = defaultProfile(); P.stats.kills = 500;
+  const D = ensureDaily(P, new Date(2026, 10, 21)); assert.equal(D.quests.length, 3); assert.equal(new Set(D.quests).size, 3);
+  const q = QUESTS.find(x => x.id === D.quests[0]); assert.equal(questProgress(P, q), 0);
+  P.stats[q.stat] = (P.stats[q.stat] || 0) + 7; assert.equal(questProgress(P, q), 7);
+  assert.deepEqual(ensureDaily(P, new Date(2026, 10, 21)).quests, D.quests, 'gleicher Tag = gleiche Aufgaben');
+  const a = dailyChallenge(P, () => true, '2026-11-21'), b = dailyChallenge(P, () => true, '2026-11-21');
+  assert.deepEqual(a, b, 'Tageskampf ist für ein Datum fest'); assert.equal(a.mods.length, 2);
+  const p0 = shinobiPoints(P).earned; P.daily.sp = 2; assert.equal(shinobiPoints(P).earned, p0 + 2);
+  const D2 = ensureDaily(P, new Date(2026, 10, 22)); assert.equal(D2.sp, 2, 'Punkte bleiben am nächsten Tag'); assert.equal(D2.won, false);
+});
