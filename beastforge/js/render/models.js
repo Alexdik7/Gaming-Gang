@@ -2,7 +2,7 @@
 // buildModel(id, {stage, branch, tiers, skin}) → { root, tick(t, dt, st) }   st = { atk 0..1, dis, hlvl }
 import * as THREE from 'three';
 import { toon, glow, flat, mk, geo, merge, optimize, anim } from './toon.js';
-import { buildGlb } from './assets.js';
+import { buildGlb, gearOn } from './assets.js';
 
 const PI = Math.PI;
 const S = () => geo.sphere(12), C = () => geo.cone(12), Y = () => geo.cyl(12), B = () => geo.box(), CP = () => geo.caps();
@@ -708,7 +708,7 @@ function mika(o) {
 }
 
 const BUILDERS = { kitsune: fox, tiger, turtle, deer, raven, kairo, dragonwolf, mantis, golem, raizen, mika };
-export function buildModel(id, o = {}) { const g = buildGlb(id, o); if (g) return g; const m = (BUILDERS[id] || fox)(o); optimize(m.root); return m; }
+export function buildModel(id, o = {}) { const g = buildGlb(id, o); if (g) return g; const m = (BUILDERS[id] || fox)(o); optimize(m.root); return (id === 'turtle' || id === 'mantis') && o.tiers ? gearOn(m, o.tiers) : m; }
 
 // ───────────────────────── GEGNER (verschmolzen für Instancing) ─────────────────────────
 const sp = () => geo.sphere(12), cn = () => geo.cone(8), bx = () => geo.box(), cy = () => geo.cyl(8), cap = () => geo.caps();

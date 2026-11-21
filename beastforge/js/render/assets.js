@@ -7,7 +7,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { gradTex, glow, toon, flat, mk, geo } from './toon.js';
 
 const PI = Math.PI;
-export const MODELS = ['blob', 'ghost', 'skull', 'wizard', 'mushking', 'bee', 'bee2', 'rockling', 'demon', 'orc', 'dragon', 'wolf', 'bull', 'husky', 'stag', 'fox', 'owl', 'cat', 'kk_rogue', 'kk_raizen', 'kk_mage', 'kk_anim1', 'kk_anim2', 'kk_anim3'];
+export const MODELS = ['blob', 'ghost', 'skull', 'wizard', 'mushking', 'bee', 'bee2', 'rockling', 'demon', 'orc', 'dragon', 'wolf', 'bull', 'husky', 'stag', 'fox', 'owl', 'cat', 'deer2', 'fox2', 'shiba', 'pigeon', 'goleling', 'kk_ninja', 'kk_golem', 'kk_large1', 'kk_large2', 'kk_raizen', 'kk_mage', 'kk_anim1', 'kk_anim2', 'kk_anim3'];
 export const ASSETS = {};
 let ready = false;
 export const assetsReady = () => ready;
@@ -143,7 +143,7 @@ function skinOutline(th) {
 export class Rig {
   // o: { h: höhe, tint: [farbe, anteil], em: leuchtfarbe, ol: umrissdicke, rotY }
   constructor(name, o = {}) {
-    const g = ASSETS[name];
+    const g = ASSETS[name]; if (!g) throw new Error('Modell fehlt: ' + name);
     this.root = new THREE.Group(); this.norm = new THREE.Group(); this.root.add(this.norm);
     const model = SkeletonUtils.clone(g.scene); this.norm.add(model); this.model = model;
     this.mats = []; this.bones = {};
@@ -213,9 +213,10 @@ function kitsune(o) {
   let [tint, em] = KIT[key];
   if (o.skin === 1) tint = [0xf4f4ff, 0.85]; if (o.skin === 2) { tint = [0x2a3070, 0.8]; em = 0x0a1040; }
   const sc = [0.84, 0.94, 1.0, 1.14, 1.2, 1.28][st];
-  const R = new Rig('fox', { h: 0.72 * sc, tint, em, ol: 0.012 });
+  const adult = st >= 3, R = new Rig(adult ? 'fox2' : 'fox', { h: (adult ? 0.66 : 0.72) * sc, tint, em, ol: 0.012 });
+  const HB = boneBy(R, /^head$/i) || boneBy(R, /head/i), TB = boneBy(R, /^tail_?1$/i) || boneBy(R, /tail/i), NB = boneBy(R, /^neck/i), PB = boneBy(R, /^hips$|^body$/i) || TB;
   const flameC = { young: 0xff9a2a, flame: 0xff7a1a, spirit: 0x7df3ff, shadow: 0xa060ff, ninetail: 0xff7a2a, celestial: 0xffe9a0, astral: 0x9fb4ff }[key];
-  const head = R.bonePos('Head'), tail = R.bonePos('Tail_1'), neck = R.bonePos('Neck');
+  const head = R.bonePos(HB), tail = R.bonePos(TB), neck = R.bonePos(NB);
   // Zusatzschweife (Fächer), hängen an der Hüfte
   const n = [0, 1, 2, 8, 8, 8][st], fur = toon([0xf08a3c, 0xff6a2a, 0xf3f1ff, 0xfff1df, 0xfffaf0, 0x2e338a][st === 2 && br === 'shadow' ? 1 : st] ?? 0xf08a3c), tails = [];
   const furC = st === 2 && br === 'shadow' ? toon(0x3a2a52) : fur, tipM = toon(0xfff6ea, { emissive: flameC, emissiveIntensity: st ? 0.5 : 0 });
@@ -226,27 +227,27 @@ function kitsune(o) {
     add(tg, S(), furC, { p: [0, 0.75 * k, -0.45 * k], s: [0.3 * k, 0.32 * k, 0.32 * k], ol: 0.006 });
     add(tg, S(), tipM, { p: [0, 1.12 * k, -0.5 * k], s: [0.22 * k, 0.26 * k, 0.22 * k], ol: 0.006 });
     if (st >= 1) add(tg, C(), glow(flameC, 0.8), { p: [0, 1.42 * k, -0.48 * k], s: [0.12 * k, 0.4 * k, 0.12 * k] });
-    tg.userData.a = a; tails.push(R.attach('Hips', tg, tail));
+    tg.userData.a = a; tails.push(R.attach(PB, tg, tail));
   }
   if (st >= 1) add(R.root, S(), glow(flameC, 0.9), { p: [tail.x, tail.y + 0.25 * sc, tail.z - 0.12], s: 0.045 }).userData.float = 1;
   const floaters = [];
   if (st === 1) for (const sd of [-1, 1]) floaters.push(add(R.root, S(), glow(0xffa040, 0.85), { p: [sd * 0.4, 0.8 * sc, -0.1], s: 0.05 }));
-  if (st === 2 && br === 'spirit') { const nk = new THREE.Group(); for (let i = 0; i < 7; i++) { const a = (i / 6 - 0.5) * 2.4; add(nk, S(), toon(i % 2 ? 0x3ad0ff : 0xffffff, { emissive: 0x3ad0ff, emissiveIntensity: 0.5 }), { p: [Math.sin(a) * 0.09 * sc, -Math.cos(a) * 0.03, Math.cos(a) * 0.06 * sc], s: 0.022 * sc }); } R.attach('Neck', nk, neck); }
-  if (st === 2 && br === 'shadow') R.attach('Head', mk(geo.torus(0.25), toon(0xc77bff, { emissive: 0x8a30ff, emissiveIntensity: 0.9 }), { s: 0.07 * sc, r: [0.3, 0, 0] }), head.clone().add(new THREE.Vector3(0, 0.1 * sc, 0.03)));
+  if (st === 2 && br === 'spirit') { const nk = new THREE.Group(); for (let i = 0; i < 7; i++) { const a = (i / 6 - 0.5) * 2.4; add(nk, S(), toon(i % 2 ? 0x3ad0ff : 0xffffff, { emissive: 0x3ad0ff, emissiveIntensity: 0.5 }), { p: [Math.sin(a) * 0.09 * sc, -Math.cos(a) * 0.03, Math.cos(a) * 0.06 * sc], s: 0.022 * sc }); } R.attach(NB, nk, neck); }
+  if (st === 2 && br === 'shadow') R.attach(HB, mk(geo.torus(0.25), toon(0xc77bff, { emissive: 0x8a30ff, emissiveIntensity: 0.9 }), { s: 0.07 * sc, r: [0.3, 0, 0] }), head.clone().add(new THREE.Vector3(0, 0.1 * sc, 0.03)));
   if (st >= 3) { // Shimenawa-Seil + Glocke am Hals
     const c = new THREE.Group(); add(c, geo.torus(0.22), toon(0xf2e6c8), { r: [PI / 2.2, 0, 0], s: 0.085 * sc, ol: 0.004 }); add(c, S(), toon(GOLD, { emissive: GOLD, emissiveIntensity: 0.35 }), { p: [0, -0.05 * sc, 0.08 * sc], s: 0.025 * sc, ol: 0.004 });
     for (const sd of [-1, 1]) add(c, B(), flat(0xffffff), { p: [sd * 0.05 * sc, -0.05 * sc, 0.07 * sc], r: [0, 0, sd * 0.3], s: [0.022, 0.06, 0.004].map(x => x * sc) });
-    R.attach('Neck', c, neck);
+    R.attach(NB, c, neck);
   }
   let halo = null, runes = null; const rings = [];
   if (st >= 4) {
-    halo = R.attach('Head', mk(geo.torus(0.07), glow(GOLD, 0.95), { s: 0.16 * sc }), head.clone().add(new THREE.Vector3(0, 0.12 * sc, -0.08 * sc)));
+    halo = R.attach(HB, mk(geo.torus(0.07), glow(GOLD, 0.95), { s: 0.16 * sc }), head.clone().add(new THREE.Vector3(0, 0.12 * sc, -0.08 * sc)));
     runes = new THREE.Group(); runes.position.y = 0.45 * sc; R.root.add(runes);
     for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2; add(runes, B(), glow(GOLD, 0.9), { p: [Math.cos(a) * 0.55, 0, Math.sin(a) * 0.55], r: [0, -a, 0], s: [0.08, 0.12, 0.01] }); }
   }
   if (st >= 5) for (let i = 0; i < 2; i++) rings.push(add(R.root, geo.torus(0.025), glow(i ? 0x9fe8ff : 0xc8a8ff, 0.8), { p: [0, 0.5 * sc, 0], r: [PI / 2 + i * 0.6, i * 0.8, 0], s: 0.7 + i * 0.12 }));
   // Pfad-Optik
-  if (tiers[2] >= 1) R.attach('Neck', mk(geo.torus(0.3), toon(0xc8283a), { r: [PI / 2.2, 0, 0], s: 0.08 * sc, ol: 0.004 }), neck);
+  if (tiers[2] >= 1) R.attach(NB, mk(geo.torus(0.3), toon(0xc8283a), { r: [PI / 2.2, 0, 0], s: 0.08 * sc, ol: 0.004 }), neck);
   if (tiers[0] >= 3) for (const sd of [-1, 1]) add(R.root, C(), glow(0xff8a2a, 0.75), { p: [sd * 0.13, 0.62 * sc, neck.z - 0.05], r: [0, 0, sd * 0.3], s: [0.05, 0.18, 0.05] });
   let ofuda = null;
   if (tiers[1] >= 3) { ofuda = new THREE.Group(); ofuda.position.y = 0.72 * sc; R.root.add(ofuda); for (let i = 0; i < 4; i++) { const a = i / 4 * PI * 2; const p = add(ofuda, B(), flat(0xfff8ec), { p: [Math.cos(a) * 0.42, 0, Math.sin(a) * 0.42], r: [0, -a, 0], s: [0.07, 0.15, 0.005] }); add(p, B(), flat(0xd8203a), { p: [0, 0, 0.6], s: [0.5, 0.6, 1] }); } }
@@ -266,7 +267,7 @@ function kitsune(o) {
 
 function deer(o) {
   const st = o.stage || 0, sc = [0.9, 1.0, 1.1][st] || 1;
-  const R = new Rig('stag', { h: 1.05 * sc, tint: [[0xd8f0ff, 0xf0fff4, 0xfff6d8][st], [0.35, 0.45, 0.55][st]], em: [0, 0x061a10, 0x201a06][st], ol: 0.014 });
+  const R = new Rig(st ? 'stag' : 'deer2', { h: (st ? 1.05 : 0.85) * sc, tint: [[0xd8f0ff, 0xf0fff4, 0xfff6d8][st], [0.35, 0.45, 0.55][st]], em: [0, 0x061a10, 0x201a06][st], ol: 0.014 });
   const head = R.bonePos(Object.keys(R.bones).find(k => /head/i.test(k)) || '');
   const hb = Object.keys(R.bones).find(k => /head/i.test(k));
   if (st >= 1) { const bl = new THREE.Group(); for (let i = 0; i < 6; i++) add(bl, S(), toon(st === 2 ? 0xfff2a8 : 0xffb0d0, { emissive: st === 2 ? 0xffd257 : 0xff6aa0, emissiveIntensity: 0.6 }), { p: [(i % 2 ? 1 : -1) * (0.06 + (i >> 1) * 0.03) * sc, (0.12 + (i >> 1) * 0.04) * sc, -0.02 * sc], s: 0.025 * sc }); R.attach(hb, bl, head); }
@@ -286,21 +287,27 @@ function raven(o) {
   add(root, geo.cyl(8), stone, { p: [0, 0.03, 0], s: [0.17, 0.06, 0.17], ol: 0.01 });
   add(root, geo.cyl(8), stone2, { p: [0, 0.2, 0], s: [0.065, 0.32, 0.065], ol: 0.01 });
   add(root, B(), stone, { p: [0, 0.4, 0], s: [0.24, 0.05, 0.24], ol: 0.01 });
-  const R = new Rig('owl', { h: 0.55 * sc, tint: [[0x7a5ac8, 0x6a5aa8, 0x8a4ae8][st], 0.82], em: [0x080418, 0x080418, 0x200a40][st], ol: 0.01 });
+  const R = new Rig(st ? 'owl' : 'pigeon', { h: (st ? 0.55 : 0.45) * sc, tint: [[0x3a3050, 0x6a5aa8, 0x8a4ae8][st], [0.85, 0.82, 0.82][st]], em: [0x06030e, 0x080418, 0x200a40][st], ol: 0.01 });
+  if (!st) R.root.position.y = 0.12;
   R.root.position.y = 0.42; root.add(R.root);
   const head = R.bonePos(Object.keys(R.bones).find(k => /head/i.test(k)) || ''), hb = Object.keys(R.bones).find(k => /head/i.test(k));
   if (st >= 1) R.attach(hb, mk(geo.sphere(10), toon(0xf4f0ea), { s: [0.1 * sc, 0.06 * sc, 0.05 * sc], ol: 0.006 }), head.clone().add(new THREE.Vector3(0, 0.02, 0.08 * sc)));
   const wisps = [];
   if (st >= 2) for (let i = 0; i < 4; i++) wisps.push(add(root, S(), glow(0xb07bff, 0.7), { s: 0.05 }));
+  const vw = [];
+  if (st >= 2) for (const sd of [-1, 1]) for (let j = 0; j < 2; j++) { // vier Schwingen aus Leere
+    const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(sd * 0.55, 0.3 - j * 0.12); sh.lineTo(sd * 0.48, 0.02 - j * 0.1); sh.lineTo(sd * 0.3, -0.12); sh.lineTo(0, 0);
+    const w = new THREE.Mesh(new THREE.ShapeGeometry(sh), toon(0x2a1a4a, { side: THREE.DoubleSide, emissive: 0x5a20a0, emissiveIntensity: 0.5 })); w.position.set(sd * 0.08, 0.72 - j * 0.1, -0.05); w.userData.sd = sd; w.userData.j = j; root.add(w); vw.push(w);
+  }
   const pg = pathGear(R, o.tiers, sc, { noHead: true });
-  const tick = (t, dt, s) => { R.update(dt, s); pg(t); wisps.forEach((w, i) => { const a = t * 1.6 + i * PI / 2; w.position.set(Math.cos(a) * 0.38, 0.75 + Math.sin(t * 3 + i) * 0.05, Math.sin(a) * 0.38); }); };
+  const tick = (t, dt, s) => { R.update(dt, s); pg(t); vw.forEach(w => { w.rotation.z = w.userData.sd * (Math.sin(t * 2.4 + w.userData.j) * 0.25); w.rotation.x = -0.3; }); wisps.forEach((w, i) => { const a = t * 1.6 + i * PI / 2; w.position.set(Math.cos(a) * 0.38, 0.75 + Math.sin(t * 3 + i) * 0.05, Math.sin(a) * 0.38); }); };
   return { root, tick, height: 1.05 * sc, rig: R };
 }
 
 function dragonwolf(o) {
   const st = o.stage || 0, br = o.branch, sc = [0.9, 1.0, 1.12][st] || 1;
   const fire = br === 'fire';
-  const R = new Rig('husky', { h: 0.85 * sc, tint: [fire ? 0xff7040 : 0x9fd8ff, [0.35, 0.5, 0.6][st]], em: st >= 2 ? (fire ? 0x2a0800 : 0x061a2a) : 0, ol: 0.013 });
+  const R = new Rig(['shiba', 'husky', 'wolf'][st] || 'husky', { h: [0.7, 0.85, 0.95][st] * sc, tint: [fire ? 0xff7040 : 0x9fd8ff, [0.35, 0.5, 0.6][st]], em: st >= 2 ? (fire ? 0x2a0800 : 0x061a2a) : 0, ol: 0.013 });
   const hb = Object.keys(R.bones).find(k => /head/i.test(k)), head = R.bonePos(hb || '');
   const hornM = toon(fire ? 0xffb070 : 0xdff8ff, { emissive: fire ? 0xff5a10 : 0x5ad8ff, emissiveIntensity: 0.5 });
   if (st >= 1) for (const sd of [-1, 1]) R.attach(hb, mk(C(), hornM, { r: [-0.6, 0, -sd * 0.35], s: [0.035 * sc, 0.16 * sc, 0.035 * sc], ol: 0.006 }), head.clone().add(new THREE.Vector3(sd * 0.06 * sc, 0.12 * sc, -0.04 * sc)));
@@ -317,9 +324,12 @@ function dragonwolf(o) {
 
 function golem(o) {
   const st = o.stage || 0, sc = [0.95, 1.05, 1.2][st] || 1;
-  const R = new Rig('rockling', { h: 1.0 * sc, tint: [[0x9a8a78, 0x8ab8d8, 0x7a6a58][st], [0.25, 0.4, 0.35][st]], em: st === 1 ? 0x061620 : 0, ol: 0.014 });
+  const R = st ? new Rig('kk_golem', { h: [0, 1.0, 1.15][st] * sc, tint: [[0, 0x9fd8ff, 0x8a7a68][st], [0, 0.25, 0.75][st]], em: st === 1 ? 0x061a2a : 0x100804, ol: 0.014, anims: ['kk_large1', 'kk_large2'], alias: { attack: 'smash' } })
+    : new Rig('goleling', { h: 0.75 * sc, tint: [0x9a8a78, 0.3], ol: 0.014 });
+  if (st) R.play('idle');
   const crystals = [];
-  if (st >= 1) for (let i = 0; i < 5; i++) crystals.push(add(R.root, geo.oct(), toon(0x8ff6ff, { emissive: 0x3ad0ff, emissiveIntensity: 0.9 }), { p: [Math.cos(i * 1.26) * 0.3 * sc, 0.95 * sc + (i % 2) * 0.08, Math.sin(i * 1.26) * 0.3 * sc], s: [0.04, 0.09, 0.04] }));
+  if (st === 1) for (let i = 0; i < 5; i++) crystals.push(add(R.root, geo.oct(), toon(0x8ff6ff, { emissive: 0x3ad0ff, emissiveIntensity: 0.9 }), { p: [Math.cos(i * 1.26) * 0.32 * sc, 1.05 * sc + (i % 2) * 0.08, Math.sin(i * 1.26) * 0.32 * sc], s: [0.04, 0.09, 0.04] }));
+  if (st === 2) { const cb = boneBy(R, /chest/), cp = R.bonePos(cb); for (let i = 0; i < 6; i++) { const q = (i / 5 - 0.5) * 2.2; R.attach(cb, mk(geo.dodec(), toon(i % 2 ? 0x5a8a3a : 0x6a5a48), { r: [i, i * 2, 0], s: [0.09, 0.07, 0.08], ol: 0.006 }), cp.clone().add(new THREE.Vector3(Math.sin(q) * 0.3, 0.32 + Math.cos(q) * 0.06, -0.08))); } const lava = mk(geo.sphere(10), glow(0xff7a2a, 0.9), { s: 0.06 }); R.attach(cb, lava, cp.clone().add(new THREE.Vector3(0, 0.1, 0.28))); crystals.push(lava); }
   const pg = pathGear(R, o.tiers, sc, { noHead: true });
   const tick = (t, dt, s) => { R.update(dt, s); pg(t); crystals.forEach((c, i) => { c.rotation.y = t + i; }); };
   return { root: R.root, tick, height: 1.1 * sc, rig: R };
@@ -350,16 +360,28 @@ export function pathGear(R, tiers = [0, 0, 0], sc = 1, o = {}) {
   if (c >= 1) { const ring = mk(geo.torus(0.02), glow(PATH_COL[2], c >= 2 ? 0.75 : 0.4), { r: [PI / 2, 0, 0], s: W * 0.55 + 0.2 }); ring.position.y = 0.02; R.root.add(ring); anim.push(t => { ring.rotation.z = t * 0.5; }); }
   if (c >= 3) { const n = c >= 4 ? 5 : 3; for (let i = 0; i < n; i++) { const q = i / n * PI * 2, st = mk(geo.box(), toon(0x6a6478), { p: [Math.cos(q) * (W * 0.55 + 0.2), 0.08, Math.sin(q) * (W * 0.55 + 0.2)], r: [0, -q, 0], s: [0.05, 0.16, 0.03], ol: 0.004 }); R.root.add(st); st.add(mk(geo.box(), glow(PATH_COL[2], 0.9), { p: [0, 0.1, 0.6], s: [0.6, 0.4, 0.1] })); } }
   if (c >= 5) { const col = mk(geo.cyl(16), glow(PATH_COL[2], 0.18), { p: [0, 0.9, 0], s: [W * 0.5 + 0.1, 1.8, W * 0.5 + 0.1] }); R.root.add(col); anim.push(t => { col.material.opacity = 0.14 + Math.sin(t * 2.5) * 0.05; }); }
+  // Stufe 4/5: das Modell selbst verändert sich (Leuchten in Pfadfarbe, etwas größer)
+  const top = Math.max(a, b, c), pi = [a, b, c].indexOf(top);
+  if (top >= 4 && R.mats) { for (const m of R.mats) m.userData.u.uEm.value.lerp(new THREE.Color(PATH_COL[pi]), top >= 5 ? 0.22 : 0.1); R.norm.scale.multiplyScalar(top >= 5 ? 1.1 : 1.04); }
   return t => anim.forEach(f => f(t));
+}
+// Pfad-Ausrüstung auch für prozedurale Modelle (ohne Knochen): alles hängt am Wurzelobjekt
+export function gearOn(m, tiers) {
+  const bb = new THREE.Box3().setFromObject(m.root), size = bb.getSize(new THREE.Vector3());
+  const R = { root: m.root, bones: {}, size, bonePos: () => new THREE.Vector3(0, size.y * 0.85, 0), attach: (b, obj, at) => { m.root.add(obj); if (at) obj.position.add(at); return obj; } };
+  const g = pathGear(R, tiers, 1, { noHead: true }), tick = m.tick;
+  m.tick = (t, dt, s) => { tick(t, dt, s); g(t); };
+  return m;
 }
 
 function tiger(o) {
   const st = o.stage || 0, sc = [0.9, 1.0, 1.12][st] || 1;
-  const R = new Rig('cat', { h: 0.78 * sc, tint: [0xffa020, 0.7], em: st ? 0x0a0800 : 0, stripes: [0x24140e, 75, 0.9], ol: 0.012 });
+  const R = new Rig('cat', { h: [0.72, 0.85, 0.98][st] * sc, tint: [[0xffa020, 0xff8a20, 0xf4f0ff][st], [0.7, 0.75, 0.85][st]], em: [0, 0x0a0a20, 0x14100a][st], stripes: [[0x24140e, 0x1a3aa8, 0x2a1a50][st], 75, 0.9], ol: 0.012 });
   const hb = boneBy(R, /head/i), head = R.bonePos(hb), hornM = toon(0xfff27a, { emissive: 0xffd000, emissiveIntensity: 0.9 });
-  if (st >= 1) for (const sd of [-1, 1]) R.attach(hb, mk(C(4), hornM, { r: [-0.3, 0, -sd * 0.5], s: [0.04 * sc, 0.2 * sc, 0.04 * sc], ol: 0.005 }), head.clone().add(new THREE.Vector3(sd * 0.06 * sc, 0.12 * sc, -0.02)));
+  if (st >= 1) for (const sd of [-1, 1]) R.attach(hb, mk(C(4), hornM, { r: [-0.25, 0, -sd * 0.45], s: [0.05 * sc, 0.28 * sc, 0.05 * sc], ol: 0.005 }), head.clone().add(new THREE.Vector3(sd * 0.11 * sc, 0, 0.02)).setY(R.size.y * 0.97));
   const sparks = [];
-  if (st >= 2) { const mane = new THREE.Group(); for (let i = 0; i < 8; i++) { const q = i / 8 * PI * 2; mane.add(mk(C(4), glow(0xffe14d, 0.9), { p: [Math.cos(q) * 0.11 * sc, Math.sin(q) * 0.11 * sc, -0.04], r: [0, 0, q - PI / 2], s: [0.03, 0.1, 0.03] })); } R.attach(hb, mane, head.clone()); sparks.push(mane); }
+  if (st >= 1) { const bolts = new THREE.Group(); for (const sd of [-1, 1]) bolts.add(mk(C(4), glow(0x9fd8ff, 0.9), { p: [sd * 0.22 * sc, 0.45 * sc, -0.05], r: [0, 0, sd * 0.4], s: [0.025, 0.12, 0.025] })); R.root.add(bolts); sparks.push(bolts); }
+  if (st >= 2) { const mane = new THREE.Group(); for (let i = 0; i < 12; i++) { const q = i / 12 * PI * 2; mane.add(mk(C(4), toon(0xffd257, { emissive: 0xffa000, emissiveIntensity: 0.7 }), { p: [Math.cos(q) * 0.2 * sc, Math.sin(q) * 0.2 * sc, -0.06], r: [0, 0, q - PI / 2], s: [0.05, 0.16, 0.04], ol: 0.004 })); } mane.scale.setScalar(1.6); R.attach(hb, mane, head.clone().add(new THREE.Vector3(0, 0, -0.1 * sc)).setY(R.size.y * 0.66)); sparks.push(mane); }
   const g = pathGear(R, o.tiers, sc);
   const tick = (t, dt, s) => { R.update(dt, s); g(t); sparks.forEach(m => { m.rotation.z = Math.sin(t * 10) * 0.08; }); };
   return { root: R.root, tick, height: 0.8 * sc, rig: R };
@@ -379,9 +401,8 @@ function hero(model, o, look) {
 }
 const ear = (R, hb, head, sd, col) => R.attach(hb, mk(C(4), toon(col), { r: [0, PI / 4, -sd * 0.3], s: [0.09, 0.2, 0.06], ol: 0.006 }), head.clone().add(new THREE.Vector3(sd * 0.14, R.size.y - head.y + 0.04 + head.y - head.y, 0)).setY(R.size.y + 0.02));
 const HEROES3D = {
-  kairo: o => hero('kk_rogue', o, { tint: [0x2a3468, 0.88], em: 0x200a00, col: 0xff7a2a, atk: 'throw', build(R, head, hb, form, anim) {
+  kairo: o => hero('kk_ninja', o, { tint: [0x2a3468, 0.35], em: 0x200a00, col: 0xff7a2a, atk: 'throw', build(R, head, hb, form, anim) {
     for (const sd of [-1, 1]) { ear(R, hb, head, sd, 0xf08a3c); R.attach(hb, mk(C(4), toon(0xfff1dc), { r: [0, PI / 4, -sd * 0.3], s: [0.045, 0.11, 0.03] }), head.clone().add(new THREE.Vector3(sd * 0.14, 0, 0.025)).setY(R.size.y + 0.01)); }
-    R.attach(boneBy(R, /chest/), mk(geo.torus(0.3), toon(0xd8342c), { r: [PI / 2, 0, 0], s: 0.2, ol: 0.005 }), R.bonePos(boneBy(R, /chest/)).add(new THREE.Vector3(0, 0.13, 0)));
     if (form >= 2) for (let i = 0; i < 3; i++) { const tl = mk(geo.sphere(10), toon(0xf08a3c, { emissive: 0xff5a10, emissiveIntensity: 0.5 }), { s: [0.07, 0.07, 0.22], ol: 0.006 }); tl.position.set((i - 1) * 0.12, 0.38, -0.25); tl.rotation.x = -0.6; R.root.add(tl); anim.push(t => { tl.rotation.y = (i - 1) * 0.4 + Math.sin(t * 2 + i) * 0.15; }); }
   } }),
   raizen: o => hero('kk_raizen', o, { tint: [0x4a4a8a, 0.45], em: 0x1a1600, col: 0xffe14d, atk: 'magic', build(R, head, hb, form, anim) {
@@ -397,8 +418,8 @@ const HEROES3D = {
 };
 
 export const GLB_CREATURES = { kitsune, deer, raven, dragonwolf, golem, tiger, ...HEROES3D };
-const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', kairo: 'kk_rogue', raizen: 'kk_raizen', mika: 'kk_mage' };
-export function buildGlb(id, o) { return ready && GLB_CREATURES[id] && ASSETS[SRC[id]] ? GLB_CREATURES[id](o) : null; }
+const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', kairo: 'kk_ninja', raizen: 'kk_raizen', mika: 'kk_mage' };
+export function buildGlb(id, o) { if (!(ready && GLB_CREATURES[id] && ASSETS[SRC[id]])) return null; try { return GLB_CREATURES[id](o); } catch (e) { console.warn(e.message); return null; } }
 
 // ───────── Bosse / Mini-Bosse ─────────
 export function buildBig(kind) {

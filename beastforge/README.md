@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.6.0 – Masterplan Schritt B2: Helden + Tiger als Modelle, sichtbare Pfadstufen
+## Stand: v0.7.0 – Jede Entwicklung ein eigenes Modell
+**Neu in 0.7:** Entwicklungsformen nutzen eigene Grundmodelle (Übersicht `docs/evolutions.png`): Kitsune junger Vuena-Fuchs → ab Neunschweif erwachsene Quaternius-Füchsin · Geisthirsch Hirschkuh-Kitz → Hirsch → Himmelshirsch · Schattenrabe dunkler Rabe (Quaternius „Pigeon“) → Maskeneule → Leereneule mit vier Schwingen · Drachenwolf Shiba-Welpe → Husky → geflügelter Wolf · Felsgolem kleiner Goleling → KayKit-Frostgolem als Kristallgolem → Steintitan mit Moos + Lavakern (Stampf-Animation) · Donnertiger orange → Sturmtiger mit Leuchtstreifen + Blitzhörnern → weißer Donnerkönig mit Goldmähne. Kairo ist jetzt der KayKit-Ninja (mit Fuchsohren). Stufe 4/5 eines Pfads lässt das Modell selbst in Pfadfarbe glühen und wachsen; Schildkröte und Mantis (weiter prozedural – kein CC0-Modell im Stil gefunden; Codepawl-Voxel verworfen) tragen die Pfad-Ausrüstung über `gearOn`.
+
+## Stand v0.6.0 – Masterplan Schritt B2: Helden + Tiger als Modelle, sichtbare Pfadstufen
 **Neu in 0.6:** Helden Kairo (Kapuzen-Schurke mit Fuchsohren + rotem Schal), Raizen (Blitz-Stirnband, zuckende Blitze), Mika (Magierin mit Lotus + Geistkugel) als KayKit-Figuren (CC0) mit Leerlauf/Wurf/Zauber/Treffer; Stufe 15 Aura, Stufe 20 Lichtpartikel (Kairo: Fuchsschweife). Donnertiger = Vuena-Katze mit Tigerstreifen per Shader (`stripes` in `tintMat`), Blitzhörner, Sturmmähne. **Jede Pfadstufe ist am Modell sichtbar** (`pathGear` in `assets.js`, Farben wie die Pfad-Knöpfe): Pfad 1 Kopf (Stirnband → Juwel → Schulterflammen → Ring → Lichtkrone), Pfad 2 Rücken (Kragen → Wappen → 2/4 kreisende Kugeln → Heiligenschein), Pfad 3 Boden (Runenkreis → helle Runen → 3/5 Runensteine → Lichtsäule); Stufe 5 baut das Modell jetzt neu (`towerKey`). Noch prozedural: Eisenschildkröte, Mantisklinge (kein passendes CC0-Modell gefunden).
 - Animationen der KayKit-Figuren liegen getrennt (`kk_anim1–3.glb`) und werden im `Rig` über `anims`/`alias` zugeordnet.
 
