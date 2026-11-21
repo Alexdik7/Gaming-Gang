@@ -1,6 +1,19 @@
 // Renderer, Kamera, Licht, Nachbearbeitung (Bloom), Größenanpassung, Qualitätsstufen.
 import * as THREE from 'three';
 const PI_2 = Math.PI / 2;
+// Echte Bildfläche. iOS-Web-App (Home-Bildschirm) meldet nach dem Drehen oft eine veraltete/zu kleine
+// innerWidth/innerHeight → verzerrte Grafik + schwarzer Balken. Dort gelten die Bildschirmmaße.
+export function appSize() {
+  let w = innerWidth, h = innerHeight;
+  const standalone = navigator.standalone || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+  if (standalone && screen.width && screen.height) {
+    const land = typeof window.orientation === 'number' ? Math.abs(window.orientation) === 90 : matchMedia('(orientation: landscape)').matches;
+    const a = Math.max(screen.width, screen.height), b = Math.min(screen.width, screen.height);
+    [w, h] = land ? [a, b] : [b, a];
+  }
+  const r = document.documentElement.style; r.setProperty('--appW', w + 'px'); r.setProperty('--appH', h + 'px');
+  return [w, h];
+}
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -42,9 +55,9 @@ export class Stage {
     this.resize();
   }
   resize() {
-    const w = innerWidth, h = innerHeight, dpr = Math.min(devicePixelRatio || 1, [1, 1.5, 2][this.quality] || 1.5);
+    const [w, h] = appSize(), dpr = Math.min(devicePixelRatio || 1, [1, 1.5, 2][this.quality] || 1.5);
     this.w = w; this.h = h;
-    this.renderer.setPixelRatio(dpr); this.renderer.setSize(w, h, false);
+    this.renderer.setPixelRatio(dpr); this.renderer.setSize(w, h, true);
     this.composer.setPixelRatio(dpr); this.composer.setSize(w, h);
     this.bloom.resolution.set(w * dpr / 2, h * dpr / 2);
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
