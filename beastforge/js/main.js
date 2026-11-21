@@ -69,7 +69,9 @@ class App {
   showMenuScene(on) {
     this.menuRoot.visible = true;
     this.stage.setMode('menu');
-    this.menuFocus = on;
+    this.menuFocus = on === 'home';
+    // Kamerafahrt je Bildschirm: Titel weit, Hub nah, Unterseiten seitlich (Hintergrund ist dann abgedunkelt)
+    this.camT = { title: { r: 12.5, y: 6.2, ly: 0.7, ox: 0 }, home: { r: 7.6, y: 3.2, ly: 0.25, ox: 0 }, play: { r: 15, y: 9, ly: 0, ox: 0 } }[on] || { r: 5.6, y: 2.4, ly: 1.0, ox: 1.6 };
   }
 
   async boot() {
@@ -82,7 +84,7 @@ class App {
       ['Karten werden gezeichnet …', () => Promise.all(Object.keys(MAPS).map(id => mapThumb(id)))],
       ['Schriftrollen werden geöffnet …', () => document.fonts?.ready],
     ], 1400);
-    this.menus.show('home');
+    this.menus.show('title');
     this.loader.hide();
   }
   async startRun(map, diff) {
@@ -119,8 +121,10 @@ class App {
     } else if (this.menuMap) {
       for (const m of this.showModels || []) m.tick(this.t, dt, { atk: Math.max(0, Math.sin(this.t * 1.3 + m.root.position.x) - 0.92) * 12 });
       this.menuMap.update(dt, 1);
+      const T = this.camT || { r: 8.2, y: 4.1, ly: 1.05, ox: 0 }, C = this.camC ||= { ...T }, k = Math.min(1, dt * 2.2);
+      for (const key in T) C[key] += (T[key] - C[key]) * k;
       const a = this.t * 0.07, cam = this.stage.camera;
-      cam.position.set(Math.sin(a) * 8.2, 4.1, Math.cos(a) * 8.2); cam.lookAt(0, 1.05, 0);
+      cam.position.set(Math.sin(a) * C.r, C.y, Math.cos(a) * C.r); cam.lookAt(Math.cos(a) * C.ox, C.ly, -Math.sin(a) * C.ox);
     }
     if (this.game) this.stage.update(dt, this.t);
     this.stage.render();

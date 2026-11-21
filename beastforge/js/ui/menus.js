@@ -23,34 +23,83 @@ export class Menus {
   closePreview() { if (this.preview) { this.preview.dispose(); this.preview = null; } }
   render(html, after) {
     this.closePreview();
-    const m = $('menu'); m.innerHTML = html; m.scrollTop = 0; m.classList.toggle('dim', !html.includes('class="title"'));
-    m.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { this.click(); this.show(b.dataset.go); });
+    const m = $('menu'); m.innerHTML = html; m.scrollTop = 0; m.classList.toggle('dim', !/class="(title|hub)/.test(html));
+    m.querySelectorAll('[data-go]').forEach(b => b.onclick = e => { this.click(); this.go(b.dataset.go, b.dataset.arg, e); });
     after?.(m);
+    // Gestaffeltes Einfliegen (Vorbereitung → Bewegung → Nachschwingen)
+    m.querySelectorAll('.med, .grid > *, .list > .li, .evorow, .tiles > *, .scr > .box, .hubTop > *, .ccard').forEach((el, i) => { el.style.animationDelay = Math.min(i, 14) * 38 + 'ms'; el.classList.add('pop'); });
   }
-  show(name, arg) { this.app.showMenuScene(name === 'home'); this['s_' + name](arg); }
-  hdr(title) { return `<div class="hdr"><button class="back" data-go="home">‹ Zurück</button><h2>${title}</h2></div>`; }
+  show(name, arg) { this.cur = name; this.app.showMenuScene(name); this['s_' + name](arg); }
+  // Bildschirmwechsel mit Fuchsfeuer-Wipe: Kreis wächst vom Tipp-Punkt, Inhalt wechselt verdeckt, dann blendet er weg
+  go(name, arg, e) {
+    if (this.busy) return;
+    const w = $('wipe'); if (!w?.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) { this.show(name, arg); return; }
+    this.busy = true; this.app.audio.play('whoosh');
+    const x = e?.clientX ?? innerWidth / 2, y = e?.clientY ?? innerHeight / 2, R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 20;
+    w.classList.add('on');
+    w.animate([{ clipPath: `circle(0px at ${x}px ${y}px)` }, { clipPath: `circle(${R}px at ${x}px ${y}px)` }], { duration: 280, easing: 'cubic-bezier(.55,0,.85,.45)', fill: 'forwards' }).onfinish = () => {
+      this.show(name, arg);
+      w.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.08)' }], { duration: 320, easing: 'ease-out', fill: 'forwards' }).onfinish = () => { w.classList.remove('on'); w.getAnimations().forEach(a => a.cancel()); this.busy = false; };
+    };
+    setTimeout(() => { this.busy = false; }, 1500); // Sicherheitsnetz
+  }
+  hdr(title, back = 'home', label = 'Zurück') { return `<div class="hdr"><button class="back" data-go="${back}">‹ ${label}</button><h2>${title}</h2></div>`; }
 
-  // ───────── Titel ─────────
+  // ───────── Titelbildschirm (beim Öffnen der App) ─────────
+  s_title() {
+    const L = 'BEASTFORGE'.split('').map((c, i) => `<i style="--i:${i}" class="${i >= 5 ? 'o' : ''}">${c}</i>`).join('');
+    this.render(`<div class="titleScr title"><div class="tlogo">${L}</div><p class="tsub">SHINOBI CREATURE DEFENSE</p>
+      <div class="ttap">Tippe, um zu beginnen</div><small class="tver">v${VERSION}</small></div>`, m => {
+      const start = e => { if (this.busy) return; this.app.audio.init(); this.app.audio.play('start'); this.go('home', undefined, e); };
+      m.querySelector('.titleScr').addEventListener('pointerup', start, { once: true });
+    });
+    this.app.audio.playSong('menu');
+  }
+
+  // ───────── Hub: runde Medaillons rund um die 3D-Bühne ─────────
   s_home() {
     const P = this.P, a = P.account, need = accNeed(a.level);
     const newAch = ACHIEVEMENTS.some(x => !P.ach[x.id] && achValue(P, x) >= x.goal);
     const frame = FRAMES[a.frame] || FRAMES.none, k = P.chars.kitsune;
-    this.render(`
-      <div class="homeL title"><h1>BEAST<span>FORGE</span></h1><p>SHINOBI CREATURE DEFENSE</p></div>
-      <div class="homeR">
-        <button class="profile" data-go="account"><div class="fr" style="--fc:${frame}"><img src="${portrait('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch })}" alt=""></div>
-          <div class="pi"><b>Konto-Level ${a.level}</b> · ${esc(TITLES[a.title] || TITLES.none)}<div class="bar acc" style="margin-top:4px"><u style="width:${a.xp / need * 100}%"></u></div><small>${fmt(a.xp)} / ${fmt(need)} Konto-XP</small></div></button>
-        <button class="big" data-go="play">▶ SPIELEN</button>
-        <div class="tiles">
-          <button class="tile" data-go="collection"><span>🦊</span>Sammlung</button>
-          <button class="tile" data-go="hero"><span>🥷</span>Held</button>
-          <button class="tile" data-go="account"><span>🏯</span>Konto</button>
-          <button class="tile" data-go="ach"><span>🏆</span>Erfolge${newAch ? '<i class="dot"></i>' : ''}</button>
-          <button class="tile" data-go="stats"><span>📜</span>Statistik</button>
-          <button class="tile" data-go="settings"><span>⚙</span>Optionen</button>
-        </div>
-      </div>`);
+    const med = (go, img, label, cls = '', dot = false) => `<button class="med ${cls}" data-go="${go}"><span class="mc">${img}</span><b>${label}</b>${dot ? '<i class="dot"></i>' : ''}</button>`;
+    const pimg = (id, o) => `<img src="${portrait(id, o)}" alt="">`;
+    const hero = unlocked(P, 'hero', P.hero) ? P.hero : 'kairo';
+    this.render(`<div class="hub">
+      <div class="hubTop">
+        <button class="profile mini" data-go="account"><div class="fr" style="--fc:${frame}">${pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch })}</div>
+          <div class="pi"><b>Lv ${a.level}</b> <span>${esc(TITLES[a.title] || TITLES.none)}</span><div class="bar acc"><u style="width:${a.xp / need * 100}%"></u></div></div></button>
+        <div class="hubLogo">BEAST<span>FORGE</span></div>
+        <div class="rbtns">${med('ach', '🏆', 'Erfolge', 'sm', newAch)}${med('stats', '📜', 'Statistik', 'sm')}${med('settings', '⚙', 'Optionen', 'sm')}</div>
+      </div>
+      <div class="hubM">
+        ${med('collection', pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch }), 'Kreaturen')}
+        ${med('hero', pimg(hero, { hlvl: 1 }), 'Helden')}
+        ${med('play', '<span class="playI">▶</span>', 'SPIELEN', 'mbig')}
+        ${med('evo', pimg('golem', { stage: 2 }), 'Entwicklung')}
+        ${med('account', '🏯', 'Konto')}
+      </div></div>`);
     this.app.audio.playSong('menu');
+  }
+
+  // ───────── Entwicklungszentrum: alle Entwicklungsreihen auf einen Blick ─────────
+  s_evo() {
+    const P = this.P, ids = Object.keys(CREATURES).sort((a, b) => unlocked(P, 'creature', b) - unlocked(P, 'creature', a));
+    const rows = ids.map(id => {
+      const d = CREATURES[id], c = P.chars[id], ok = unlocked(P, 'creature', id);
+      const stages = [...new Set(d.forms.map(f => f.stage))].sort((a, b) => a - b);
+      const next = d.forms.filter(f => f.lvl > c.level).sort((a, b) => a.lvl - b.lvl)[0];
+      const chain = stages.map(st => {
+        const fs = d.forms.filter(f => f.stage === st);
+        return `<div class="estage">${fs.map(f => {
+          const got = ok && c.level >= f.lvl && (!f.branch || !c.branch || f.branch === c.branch || true), isNext = next && f.id === next.id;
+          return `<div class="eform ${got ? 'got' : ''} ${isNext ? 'next' : ''} ${ok ? '' : 'lock'}"><span class="ering"><img src="${portrait(id, { stage: f.stage, branch: f.branch || c.branch })}" alt=""></span><b>${esc(f.name)}</b><small>${got ? '✓ bereit' : 'Lv ' + f.lvl}</small></div>`;
+        }).join('<i class="eor">oder</i>')}</div>`;
+      }).join('<i class="earr">➜</i>');
+      const prog = !ok ? `🔒 Konto-Lv ${unlockLevel('creature', id)}` : next ? `Lv ${c.level} · noch <b>${next.lvl - c.level}</b> Level bis <b>${esc(next.name)}</b>` : '<b>Alle Formen erweckt!</b>';
+      const pct = !ok ? 0 : next ? Math.min(100, (c.level - 1 + (c.level >= 50 ? 0 : c.xp / charNeed(c.level))) / (next.lvl - 1) * 100) : 100;
+      return `<button class="evorow ${ok ? '' : 'locked'}" ${ok ? `data-go="creature" data-arg="${id}"` : ''} style="--cc:${d.color}"><div class="einfo"><b>${esc(d.name)}</b><small>${prog}</small><div class="bar"><u style="width:${pct}%"></u></div></div><div class="echain">${chain}</div></button>`;
+    }).join('');
+    this.render(`<div class="scr evoScr">${this.hdr('Entwicklungszentrum')}<p class="evohint">Kreaturen sammeln in jedem Run Charakter-XP. Erreichen sie das Level einer Form, kannst du sie <b>im Kampf</b> mit Münzen erwecken.</p>${rows}</div>`);
   }
 
   // ───────── Spielen: Weltkarte mit Kartenpunkten, wandernden Kreaturen, Seitenleiste ─────────
@@ -119,7 +168,7 @@ export class Menus {
           ${ok ? `<div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / charNeed(c.level) * 100}%"></u></div><div class="stars">${stars(c.mastery)}</div>` : ''}</button>`;
       }).join('')}</div>
       <div class="box"><b>Synergien</b><div class="list" style="margin-top:6px">${SYNERGIES.map(s => `<div class="li"><div class="d"><b>${esc(s.name)}</b><small>${esc(s.desc)}</small></div></div>`).join('')}</div><small style="color:var(--mut)">Aktiv, wenn beide Partner höchstens ${BAL.run.synergyRange} Felder auseinander stehen.</small></div></div>`,
-    m => m.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { this.click(); if (unlocked(this.P, 'creature', b.dataset.c)) this.s_creature(b.dataset.c); }));
+    m => m.querySelectorAll('[data-c]').forEach(b => b.onclick = e => { this.click(); if (unlocked(this.P, 'creature', b.dataset.c)) this.go('creature', b.dataset.c, e); }));
   }
   s_creature(id, tab = 'evo', view) {
     const P = this.P, d = CREATURES[id], c = P.chars[id], need = charNeed(c.level);
@@ -165,7 +214,7 @@ export class Menus {
       <div class="cdet"><div class="side"><div class="preview"><canvas id="pv"></canvas><div class="els">${d.elements.map(e => `<span style="color:${ELEMENT_COLORS[e]}">● ${ELEMENT_NAMES[e]}</span>`).join('')}<span>${esc(d.role)}</span></div><div class="pv"><b>${esc(selForm.name)}</b><small>Ziehen zum Drehen · Tippen = Angriff</small></div></div>
       <div class="charline"><b>Lv ${c.level}</b><div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / need * 100}%"></u></div><small>${c.level >= 50 ? 'MAX' : fmt(c.xp) + ' / ' + fmt(need) + ' XP'}${nx ? ' · ' + esc(nx.name) + ' bei Lv ' + nx.lvl : ''}</small></div><div class="stars" style="text-align:center;font-size:18px">${stars(c.mastery)}</div></div>
       <div style="display:grid;gap:10px;align-content:start"><div class="tabs">${tabs.map(([k, n]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${n}</button>`).join('')}</div>${body}</div></div></div>`, m => {
-      $('bk').onclick = () => { this.click(); this.s_collection(); };
+      $('bk').onclick = e => { this.click(); this.go('collection', undefined, e); };
       m.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { this.click(); this.s_creature(id, b.dataset.tab, view); });
       m.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { this.click(); this.s_creature(id, 'evo', b.dataset.f); });
       m.querySelectorAll('[data-branch]').forEach(b => b.onclick = () => { this.click(); c.branch = b.dataset.branch; saveProfile(P); this.s_creature(id, 'evo', view); });

@@ -78,6 +78,8 @@ export class Audio {
     const thr = THROTTLE[name]; if (thr) { if (now - (this.last[name] || 0) < thr) return; this.last[name] = now; }
     const p = 1 + (Math.random() - 0.5) * 0.08;
     switch (name) {
+      case 'whoosh': this.noiseHit(t, 0.32, 0.07, B, { f: 500, to: 3800, q: 1.2 }); this.osc('sine', 220 * p, t, 0.2, 0.04, B, { to: 520 }); break;
+      case 'start': this.taiko(t, 0.8, B, 0.9); [0, 7, 12, 16, 19].forEach((s, i) => this.koto(62 + s, t + 0.05 + i * 0.06, 0.15, B)); this.noiseHit(t, 0.5, 0.06, B, { f: 800, to: 5000, q: 1 }); break;
       case 'click': this.osc('triangle', 900 * p, t, 0.05, 0.12, B); break;
       case 'error': this.osc('square', 180, t, 0.12, 0.08, B, { lp: 800 }); this.osc('square', 140, t + 0.08, 0.14, 0.08, B, { lp: 800 }); break;
       case 'place': this.taiko(t, 0.35, B, 1.4); this.osc('triangle', 520 * p, t + 0.02, 0.15, 0.12, B); this.osc('triangle', 780 * p, t + 0.08, 0.2, 0.1, B, { rev: true }); break;
