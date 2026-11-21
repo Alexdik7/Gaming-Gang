@@ -10,6 +10,8 @@ export const ENEMIES = {
   healer: { name: 'Lotusmönch',    hp: 55,  speed: 0.95, coins: 25, xp: 6,  lives: 2, r: 0.3,  h: 0.9, heal: { every: 3, pct: 0.08, r: 1.6 }, desc: 'Heilt Verbündete in der Nähe.' },
   beetle: { name: 'Spaltkäfer',    hp: 42,  speed: 1.1,  coins: 14, xp: 5,  lives: 2, r: 0.32, h: 0.55, split: { kind: 'mite', n: 3 }, res: { phys: 0.8 }, desc: 'Zerfällt in drei Käferlinge.' },
   mite:   { name: 'Käferling',     hp: 9,   speed: 1.7,  coins: 3,  xp: 1,  lives: 1, r: 0.2,  h: 0.35, desc: 'Klein und flink.' },
+  demon:  { name: 'Feuerdämon',    hp: 26,  speed: 1.4,  coins: 12, xp: 3,  lives: 1, r: 0.28, h: 0.8, res: { fire: 0.15, ice: 1.5 }, blast: { r: 1.6, dur: 1.6 }, desc: 'Fast feuerimmun, Eis wirkt stark. Explodiert im Tod und legt eine nahe Kreatur kurz lahm.' },
+  bearer: { name: 'Schildträger',  hp: 64,  speed: 0.9,  coins: 22, xp: 6,  lives: 2, r: 0.32, h: 0.85, guard: { pct: 0.6, r: 1.4, red: 0.35 }, res: { phys: 0.8 }, desc: 'Großer Schild: schluckt zuerst Schaden und schützt Gegner in der Nähe (−35 %). Blitz und Erde brechen ihn doppelt.' },
   golem:  { name: 'Felskoloss',    hp: 620, speed: 0.5,  coins: 154, xp: 30, lives: 10, r: 0.5, h: 1.6, heavy: true, res: { phys: 0.75, earth: 0.4, lightning: 1.25 }, desc: 'Titan: riesige KP, kein Rückstoß.' },
   oni:    { name: 'Oni-Hauptmann', hp: 1600, speed: 0.62, coins: 490, xp: 120, lives: 10, r: 0.55, h: 1.8, heavy: true, miniboss: true, cry: { every: 6, r: 2.2, speed: 0.35, dur: 3 }, res: { phys: 0.8 }, desc: 'Mini-Boss: Kriegsschrei beschleunigt Verbündete.' },
 };

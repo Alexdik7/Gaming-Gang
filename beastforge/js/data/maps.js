@@ -1,5 +1,5 @@
 // Karten als Daten (Querformat). Das Raster wird aus Pfad + Merkmalen erzeugt.
-// Zeichen: . Gras  # Pfad  ~ Wasser  ^ Anhöhe (+Reichweite)  T Baum  R Fels (räumbar)  S Schrein
+// Zeichen: . Gras  # Pfad  ~ Wasser  ^ Anhöhe (+Reichweite)  T Baum  R Fels (räumbar)  S Schrein  L Lava (nur Flöße)
 // Kreaturen werden FREI platziert (Kreis-Fußabdruck); das Raster liefert nur Gelände und Höhe.
 export const PATH_HALF = 0.5;   // halbe Pfadbreite in Feldern
 
@@ -14,6 +14,12 @@ function build(m) {
     for (let k = 0; k <= n; k++) { const x = ax + (bx - ax) * k / n, y = ay + (by - ay) * k / n; set(Math.floor(x), Math.floor(y), '#'); }
   }
   return g.map(r => r.join(''));
+}
+
+// Basalt-Flöße treiben zwischen a und b hin und her (weich, Periode in s). Gleiche Formel für Simulation und Grafik.
+export function raftPos(r, t, out = {}) {
+  const f = 0.5 - 0.5 * Math.cos((t / r.period + (r.off || 0)) * Math.PI * 2);
+  out.x = r.a[0] + (r.b[0] - r.a[0]) * f; out.y = r.a[1] + (r.b[1] - r.a[1]) * f; return out;
 }
 
 export const MAPS = {
@@ -52,6 +58,36 @@ export const MAPS = {
     cells: [[0, 6, 'T'], [5, 6, 'T'], [5, 0, 'T'], [13, 12, 'T'], [20, 12, 'T'], [21, 12, 'T'], [21, 0, 'T'], [11, 0, 'T'], [4, 9, 'R'], [19, 6, 'R']],
     theme: { grass: 0x8fbf5a, grass2: 0xa0d06a, dirt: 0xc8a47a, cliff: 0x6a4a3a, high: 0x8a5a4a, water: 0x3fb4d8, fog: 0xd8c8b8, sky: 0xf0dcc8, blossom: 0xffb8d0, roof: true },
     music: 'forest',
+  },
+  glut: {
+    id: 'glut', name: 'Glutkrater', sub: 'Lava, Asche und treibender Basalt', level: 'Schwer', hpMul: 1.4,
+    desc: 'Lava-Spalten am Weg brechen regelmäßig aus und verbrennen Gegner. Auf den treibenden Basalt-Flößen stehen Kreaturen mitten im Lavasee (+15 % Schaden).',
+    w: 22, h: 13,
+    path: [[-1.6, 10.5], [4.5, 10.5], [4.5, 2.5], [9.5, 2.5], [9.5, 8.5], [15.5, 8.5], [15.5, 2.5], [19.5, 2.5], [19.5, 6.5], [21.2, 6.5]],
+    rects: [
+      [11, 1, 14, 6, 'L'],               // Lavasee in der Mittelschleife
+      [7, 10, 17, 12, 'L'],              // Lavastrom unten
+      [1, 4, 2, 6, '^'], [6, 4, 7, 5, '^'], [17, 4, 18, 7, '^'],   // Basalt-Anhöhen
+      [21, 5, 21, 7, 'S'],
+    ],
+    cells: [[5, 6, 'L'], [8, 7, 'L'], [16, 5, 'L'], [20, 4, 'L'],  // Lava-Spalten (brechen aus)
+      [0, 0, 'T'], [3, 0, 'T'], [0, 8, 'T'], [7, 0, 'T'], [19, 11, 'T'], [20, 12, 'T'], [21, 0, 'T'], [2, 12, 'T'],
+      [3, 1, 'R'], [13, 9, 'R'], [21, 11, 'R'], [6, 8, 'R']],
+    vents: [[5, 6], [8, 7], [16, 5], [20, 4]],
+    lava: { every: 14, warn: 1.6, r: 1.7, dmg: 16 },
+    rafts: [
+      { a: [12.95, 2.3], b: [12.95, 5.7], w: 2.0, h: 1.5, period: 18 },
+      { a: [8.6, 11.5], b: [16.4, 11.5], w: 2.0, h: 1.5, period: 24, off: 0.25 },
+    ],
+    theme: { grass: 0x5e4c48, grass2: 0x6e5650, grass3: 0x8a5a40, dirt: 0x9a7a62, cliff: 0x2e2224, high: 0x4a3c3e, water: 0x3fb4d8, fog: 0x7a4234, sky: 0x9a5a44,
+      blossom: 0xff8a3a, ground: 0x3e302e, ash: true, dead: true, rock: 0x5a5058 },
+    music: 'crater',
+    // Glutkrater-Wellen: Eisenkeiler werden zu Schildträgern, ab Welle 3 kommen Feuerdämonen dazu
+    mix(w, groups) {
+      const out = groups.map(g => g.e === 'boar' ? { ...g, e: 'bearer' } : g);
+      if (w >= 3 && !groups.some(g => g.e === 'vharox')) out.push({ e: 'demon', n: Math.min(30, 3 + Math.floor(w * 0.7)), gap: 0.85, delay: 2.5, mods: w > 20 ? out[0].mods : [] });
+      return { groups: out, tip: w === 1 ? 'Glutkrater: Lava-Spalten brechen alle 14 s aus und verbrennen Gegner. Basalt-Flöße tragen Kreaturen über den Lavasee (+15 % Schaden).' : null };
+    },
   },
 };
 for (const m of Object.values(MAPS)) { m.grid = build(m); m.path = (m.paths || [m.path])[0]; }

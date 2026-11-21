@@ -230,3 +230,36 @@ test('Helden Raizen und Mika: Fähigkeiten und Lebensheilung', () => {
   assert.ok(k.s.lifeRegen >= 4); m.lives = 100; m.wave = 1; m.waveEnd(); assert.ok(m.lives > 100, 'Leben geheilt');
   m.spawn('slime', [], 3); m.step(1 / 60); assert.ok(m.useAbility(k.id, 'ult').ok); assert.ok(m.enemies[0].slowPct >= 0.7);
 });
+
+test('Glutkrater: Lava sperrt, Flöße tragen und bewegen Kreaturen', () => {
+  const w = mkWorld(undefined, { map: 'glut' }).w; w.coins = 99999;
+  assert.equal(w.canPlace('kitsune', 12.5, 3.5).ok, false, 'Lava ist gesperrt');
+  const r = w.rafts[0];
+  const c = w.canPlace('kitsune', r.x, r.y); assert.ok(c.ok, c.why); assert.equal(c.raft, 0);
+  const t = w.place('kitsune', r.x, r.y).tower, y0 = t.y;
+  step(w, 4.5);
+  assert.ok(Math.abs(t.y - y0) > 1, 'Kreatur fährt mit'); assert.ok(Math.abs(t.y - w.rafts[0].y) < 1e-9);
+});
+
+test('Glutkrater: Ausbruch verbrennt Gegner, neue Wellen mit Dämonen und Schildträgern', () => {
+  const w = mkWorld(undefined, { map: 'glut' }).w;
+  const v = w.vents[0]; v.cd = 0.01;
+  const e = w.spawn('golem', [], 0); e.speed = 0; e.x = v.x + 0.6; e.y = v.y; e.d = 1e-6;
+  w.posAt = function (d, out) { return out; }; // Gegner bleibt an der Spalte stehen
+  w.step(1 / 60); w.step(1 / 60);
+  assert.ok(e.hp < e.maxHp, 'Lava trifft'); assert.ok(w.events.some(x => x.t === 'erupt'));
+  const w2 = mkWorld(undefined, { map: 'glut' }).w; w2.wave = 4; w2.startWave();
+  const kinds = new Set(w2.spawners.map(s => s.e));
+  assert.ok(kinds.has('demon'), 'Dämonen ab Welle 3'); assert.ok(kinds.has('bearer') && !kinds.has('boar'), 'Keiler → Schildträger');
+});
+
+test('Schildträger schützt, Feuerdämon legt beim Tod lahm', () => {
+  const w = mkWorld().w; w.coins = 99999;
+  const b = w.spawn('bearer', [], 3), s = w.spawn('slime', [], 3.3); w.step(1 / 60);
+  assert.ok(b.guard > 0 && s.guardT > 0);
+  const hp = s.hp; w.damage(s, 10, 'phys', null); assert.ok(Math.abs((hp - s.hp) - 6.5) < 1e-6, '−35 % durch Schild');
+  const g = b.guard, bh = b.hp; w.damage(b, 5, 'lightning', null); assert.equal(b.hp, bh); assert.ok(Math.abs(g - b.guard - 10) < 1e-6, 'Blitz bricht doppelt');
+  const t = w.place('kitsune', 3, 3.6).tower;
+  const d = w.spawn('demon', [], 3); d.x = 3; d.y = 2.5; w.damage(d, 1e6, 'phys', null);
+  assert.ok(t.disabledT > 0, 'Explosion legt Kreatur lahm');
+});

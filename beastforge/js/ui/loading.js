@@ -10,6 +10,8 @@ const TIPS = [
   'Früh gerufene Wellen bringen Bonus-Münzen.',
   'Ein Geistpriester-Hirsch bringt jede Welle Münzen – spare früh, ernte spät.',
   'Kreuzpfade: ein Pfad bis Stufe 5, ein zweiter bis Stufe 2.',
+  'Im Glutkrater tragen Basalt-Flöße deine Kreaturen über die Lava – dort machen sie 15 % mehr Schaden.',
+  'Feuerdämonen lachen über Feuer. Eis-Atem des Drachenwolfs wirkt dafür doppelt.',
   'Mastery-Sterne schalten Skins frei – gewinne mit deinen Lieblingen.',
   'Bosse haben Phasen: Achte auf Flug und Feueratem!',
 ];

@@ -31,10 +31,26 @@ Genre-Optik (Querformat, steile Kamera, freie Platzierung, Shop rechts, Upgrade-
 ## v0.3 erledigt
 Ladebildschirm, Weltkarte, Karte 2 (Mehrpfad), Kreaturen 6–8, Helden 2–3, Heldenwahl.
 
+## v0.4 erledigt
+Karte 3 Glutkrater (Lava-Spalten, Basalt-Flöße), Gegner Feuerdämon + Schildträger, Kartenmusik.
+
+## Masterplan „Bloons-Niveau“ (ab v0.5, je ein „Weiter“)
+Ziel: Spielgefühl und Umfang eines Top-Tower-Defense – mit eigener Welt, eigenen Namen, CC0-Modellen.
+- **B1 ✅ (v0.5)** Modell-Pipeline + echte animierte Gegner/Bosse + 5 Kreaturen als Skin-Modelle.
+- **B2 ✅ (v0.6)** Helden (KayKit) + Tiger (Katze mit Streifen) als Modelle, sichtbare Teile für **jede** Pfadstufe. Offen: Schildkröte, Mantis (kein CC0-Modell – evtl. prozedural aufwerten).
+- **A1** Schichten-Gegner: Hüllen platzen ab und setzen kleinere Gegner frei (Knall, Funken, Ton) – das Herz des Genres. Gegner-Eigenschaften als kombinierbare Merkmale (getarnt, gepanzert, regenerierend, verstärkt).
+- **A2** Leistung für 1.000+ Gegner: Simulation im Web Worker, Gruppen bündeln, Umriss + Pose in einem Draw-Call, LOD.
+- **A3** Wellen 1–60 neu (+ freies Weiterspielen), Wirtschafts-Kreatur (Bank/Farm-Prinzip), Super-Endausbau pro Kreatur.
+- **C1–C4** Kreaturen 9–16 (Schlangenmagier, Windmönch, Phönix, Leerenkatze …), Helden 4–6, Karten 4–10 in drei Schwierigkeitsgruppen, Bosse 2–5 mit Stufen.
+- **D** Herausforderungs-Modi (nur Grundkreaturen, halbes Geld, umgekehrter Weg, doppelte KP, „Seelenbrand“), tägliche Herausforderung, Boss-Events.
+- **E** Wissensbaum, Kräfte, Kosmetik-Shop, Quests, Wochen-Events.
+- **F** Koop 2–4 über Raumcode (Netzcode aus Cats TD übernehmen).
+- **G** Feinschliff: Balancing-Bot über alle Karten, Tutorials, Statistiken.
+
 ## Nächste Schritte (Content-Ausbau, je ein „Weiter“)
-1. **Echter Spieltest auf dem iPhone** → Balance (Boss, Welle 10/19), Lesbarkeit, Leistung.
+1. **Echter Spieltest auf dem iPhone** → Balance, Lesbarkeit, **Leistung mit den neuen Modellen**.
 2. ✅ Kreaturen 6–8 · ✅ Karte 2 · ✅ Helden Raizen + Mika
-3. **Karte 3 „Glutkrater“** (Lava-Felder, bewegliche Plattformen) + neue Gegner (Feuerdämonen, Schildträger).
+3. ✅ Karte 3 „Glutkrater“ + Feuerdämon/Schildträger
 4. **Kreaturen 9–12**: Schlangenmagier, Windmönch, Phönix (Wiederbelebung), Leerenkatze (Realitätsschaden).
 5. **Helden 4–5**: Akuma (Oni-Krieger), Sora (Himmelskriegerin).
 6. **Bosse 2–5**: Leerenkaiser (stört Türme), Titan, Seuchenkönigin (Adds), Himmelsbestie (sehr schnell).

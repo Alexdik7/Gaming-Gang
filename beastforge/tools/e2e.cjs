@@ -17,7 +17,7 @@ async function open(browser, q = '', vp = { width: 390, height: 844 }) {
 const LAND = { width: 844, height: 390 };
 const shot = async (p, n) => { if (shots) await p.screenshot({ path: `${shots}/${n}.png` }); };
 const S = {
-  async boot(b) { const p = await open(b); await shot(p, 'b1_home'); assert(!p.errs.length, p.errs.join(' | ')); await p.context().close(); },
+  async boot(b) { const p = await open(b); await shot(p, 'b1_home'); assert((await p.evaluate(() => BF.models().length)) >= 32, '3D-Modelle geladen'); assert(!p.errs.length, p.errs.join(' | ')); await p.context().close(); },
   async menus(b) {
     const p = await open(b, '', LAND);
     await p.evaluate(() => { BF.level(16); BF.profile.account.level = 8; BF.profile.chars.kitsune.mastery = 3; BF.app.refreshShowcase(); BF.menu('home'); });
@@ -65,6 +65,7 @@ const S = {
   },
   async run(b) {
     const p = await open(b, '', LAND);
+    await p.click('.titleScr'); await p.waitForTimeout(900);
     await p.click('text=SPIELEN'); await p.waitForTimeout(400); await p.click('[data-map=ahnenhain]'); await p.waitForTimeout(400);
     await p.click('#go'); await p.waitForFunction(() => window.BF.game && document.getElementById('boot').style.display === 'none', null, { timeout: 20000 }); await p.waitForTimeout(300);
     await shot(p, 'r1_start');

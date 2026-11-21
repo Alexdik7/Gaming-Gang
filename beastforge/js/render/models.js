@@ -2,6 +2,8 @@
 // buildModel(id, {stage, branch, tiers, skin}) → { root, tick(t, dt, st) }   st = { atk 0..1, dis, hlvl }
 import * as THREE from 'three';
 import { toon, glow, flat, mk, geo, merge, optimize, anim } from './toon.js';
+import { buildGlb, gearOn } from './assets.js';
+import { turtle as turtleX, mantis as mantisX } from './beasts.js';
 
 const PI = Math.PI;
 const S = () => geo.sphere(12), C = () => geo.cone(12), Y = () => geo.cyl(12), B = () => geo.box(), CP = () => geo.caps();
@@ -235,62 +237,6 @@ function tiger(o) {
 }
 
 // ───────────────────────── EISENSCHILDKRÖTE ─────────────────────────
-function turtle(o) {
-  const st = o.stage || 0, tiers = o.tiers || [0, 0, 0];
-  const P = skinPal({ fur: [0x6f96b0, 0x5d7fa0, 0x6d7a6a][st], cream: 0xd9b46a, sock: 0x3c8f80, inner: 0x6bbfa8 }, o.skin);
-  const root = new THREE.Group(), body = grp(root); const sc = [0.95, 1.08, 1.25][st]; body.scale.setScalar(sc);
-  const shell = toon(P.fur), rim = toon(P.cream), skin = toon(P.sock), skin2 = toon(lerpHex(P.sock, 0xffffff, 0.35)), claw = toon(0xe8e2d0);
-  add(body, new THREE.SphereGeometry(1, 20, 10, 0, PI * 2, 0, PI / 2), shell, { p: [0, 0.18, 0], s: [0.42, 0.34, 0.48] });
-  add(body, geo.torus(0.1), rim, { p: [0, 0.19, 0], r: [PI / 2, 0, 0], s: [0.43, 0.49, 0.5] });
-  for (let i = 0; i < 14; i++) { const a = i / 14 * PI * 2; add(body, B(), toon(lerpHex(P.cream, 0x6a4a2a, 0.3)), { p: [Math.cos(a) * 0.43, 0.2, Math.sin(a) * 0.49], r: [0, -a, 0], s: [0.012, 0.06, 0.07], ol: false }); }
-  const plate = toon(lerpHex(P.fur, 0xffffff, 0.25)), plateEdge = toon(lerpHex(P.fur, 0x000000, 0.35));
-  const plateAt = (x, y, z, rx, rz, s) => { add(body, geo.cyl(6), plateEdge, { p: [x, y, z], r: [rx, 0, rz], s: [s * 1.12, 0.025, s * 1.12], ol: false }); add(body, geo.cyl(6), plate, { p: [x, y + 0.012, z], r: [rx, 0, rz], s: [s, 0.03, s], ol: false }); };
-  plateAt(0, 0.51, 0, 0, 0, 0.13);
-  for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2 + PI / 6; plateAt(Math.cos(a) * 0.23, 0.43, Math.sin(a) * 0.27, Math.sin(a) * 0.5, -Math.cos(a) * 0.5, 0.1); }
-  for (let i = 0; i < 3; i++) add(body, C(4), toon(0xc8c4b8), { p: [0, 0.53 - i * 0.07, 0.14 - i * 0.22 + 0.1], r: [-0.3 + i * 0.3, 0, 0], s: [0.035, 0.08, 0.035], ol: 0.008 });
-  add(body, S(), skin, { p: [0, 0.15, 0.4], s: [0.14, 0.13, 0.16] });
-  for (let i = 0; i < 3; i++) add(body, geo.torus(0.25), skin2, { p: [0, 0.16, 0.36 + i * 0.05], s: 0.12 - i * 0.008, ol: false });
-  const head = grp(body, [0, 0.25, 0.53]);
-  add(head, S(), skin, { s: [0.15, 0.13, 0.16] });
-  add(head, S(), skin2, { p: [0, -0.04, 0.05], s: [0.12, 0.08, 0.12], ol: false });
-  add(head, C(4), toon(0xd8c890), { p: [0, -0.03, 0.15], r: [PI / 2, PI / 4, 0], s: [0.06, 0.07, 0.04], ol: 0.008 });
-  for (const sd of [-1, 1]) { eye(head, sd * 0.085, 0.045, 0.1, 0.036, 0x2a5a4a, { side: sd }); add(head, SM(), toon(0x1a2a24), { p: [sd * 0.02, 0.0, 0.16], s: 0.01, ol: false }); for (let i = 0; i < 2; i++) add(head, SM(), skin2, { p: [sd * (0.1 + i * 0.03), 0.09, -0.02 - i * 0.04], s: [0.03, 0.02, 0.03], ol: false }); }
-  for (const [x, z] of [[-0.3, 0.26], [0.3, 0.26], [-0.3, -0.26], [0.3, -0.26]]) {
-    add(body, S(), skin, { p: [x, 0.09, z], s: [0.1, 0.08, 0.12] });
-    for (let i = 0; i < 3; i++) add(body, SM(), skin2, { p: [x + (i - 1) * 0.04, 0.12, z + 0.02], s: [0.025, 0.015, 0.025], ol: false });
-    for (const k of [-1, 0, 1]) add(body, C(5), claw, { p: [x + k * 0.04, 0.03, z + (z > 0 ? 0.11 : -0.11)], r: [z > 0 ? PI / 2 : -PI / 2, 0, 0], s: [0.012, 0.035, 0.012], ol: false });
-  }
-  add(body, C(), skin, { p: [0, 0.12, -0.48], r: [-PI / 2, 0, 0], s: [0.05, 0.12, 0.05] });
-  if (st >= 1) {
-    for (let i = 0; i < 7; i++) { const a = i / 7 * PI * 2; add(body, C(), toon(0xe8e2d0), { p: [Math.cos(a) * 0.3, 0.42, Math.sin(a) * 0.34], r: [Math.sin(a) * 0.9, 0, -Math.cos(a) * 0.9], s: [0.045, 0.15, 0.045] }); }
-    for (let i = 0; i < 8; i++) { const a = i / 8 * PI * 2; add(body, SM(), toon(0x4a4f5a), { p: [Math.cos(a) * 0.4, 0.27, Math.sin(a) * 0.46], s: 0.02, ol: false }); }
-  }
-  if (st >= 2) {
-    add(body, S(), toon(0x5aa040), { p: [0, 0.48, -0.05], s: [0.3, 0.07, 0.32] });
-    for (let i = 0; i < 4; i++) { const a = i * 1.6; add(body, C(6), toon(0x2f7a46), { p: [Math.cos(a) * 0.2, 0.6, Math.sin(a) * 0.2 - 0.05], s: [0.05, 0.14, 0.05], ol: 0.008 }); }
-    add(body, B(), toon(0x9a9a92), { p: [0, 0.6, -0.05], s: [0.12, 0.14, 0.12] });
-    add(body, C(4), toon(0x5a4a4a), { p: [0, 0.74, -0.05], r: [0, PI / 4, 0], s: [0.16, 0.1, 0.16] });
-    add(body, S(), glow(0x9fffd0, 0.9), { p: [0, 0.6, 0.02], s: 0.03, ol: false });
-  }
-  let cannon = null;
-  if (tiers[1] >= 1) {
-    cannon = grp(body, [0, 0.55, -0.05]);
-    add(cannon, S(), toon(0x4a4f5a), { s: [0.12, 0.1, 0.12] });
-    add(cannon, Y(), toon(0x3a3e48), { p: [0, 0.07, 0.12], r: [PI / 2.6, 0, 0], s: [0.05 + tiers[1] * 0.008, 0.28, 0.05 + tiers[1] * 0.008] });
-    add(cannon, geo.torus(0.3), toon(0xc8a060), { p: [0, 0.12, 0.25], r: [PI / 2.6 - PI / 2, 0, 0], s: 0.06, ol: false });
-    if (tiers[1] >= 4) add(cannon, Y(), toon(0x3a3e48), { p: [0.09, 0.07, 0.12], r: [PI / 2.6, 0, 0], s: [0.04, 0.26, 0.04] });
-  }
-  if (tiers[2] >= 2) add(body, geo.torus(0.04), glow(0x9ff0ff, 0.5), { p: [0, 0.03, 0], r: [PI / 2, 0, 0], s: 0.62, ol: false });
-  anim(body, head, cannon);
-  const tick = (t, dt, s) => {
-    const a = s.atk || 0;
-    body.scale.set(sc * (1 + a * 0.08), sc * (1 - a * 0.12), sc * (1 + a * 0.08));
-    head.position.z = 0.53 - a * 0.08 + Math.sin(t * 1.2) * 0.01; head.rotation.x = Math.sin(t * 0.8) * 0.08;
-    if (cannon) cannon.rotation.y = s.cannon || 0;
-  };
-  return { root, tick, height: 0.7 * sc };
-}
-
 // ───────────────────────── GEISTHIRSCH ─────────────────────────
 function deer(o) {
   const st = o.stage || 0, tiers = o.tiers || [0, 0, 0];
@@ -529,49 +475,6 @@ function dragonwolf(o) {
 }
 
 // ───────────────────────── MANTISKLINGE ─────────────────────────
-function mantis(o) {
-  const st = o.stage || 0, tiers = o.tiers || [0, 0, 0];
-  const P = skinPal({ fur: [0x6ad85a, 0x4ac8a0, 0xa83a5a][st], cream: [0xc8f8a0, 0xa8f8e0, 0xf8a0c0][st], sock: 0x2a4a2a, inner: 0xffe14d }, o.skin);
-  const root = new THREE.Group(), body = grp(root); const sc = [0.95, 1.05, 1.15][st]; body.scale.setScalar(sc);
-  const shell = toon(P.fur), belly = toon(P.cream), blade = toon(0xcfeee0, { emissive: st === 2 ? 0xff2a5a : 0x000000, emissiveIntensity: st === 2 ? 0.6 : 0 }), dark = toon(0x1a2a1a);
-  for (const [x, z] of [[-0.1, 0.05], [0.1, 0.05], [-0.13, -0.18], [0.13, -0.18]]) { add(body, Y(6), shell, { p: [x, 0.13, z], r: [0, 0, Math.sign(x) * 0.5], s: [0.02, 0.26, 0.02], ol: 0.008 }); add(body, Y(6), dark, { p: [x * 1.6, 0.02, z], s: [0.02, 0.05, 0.02], ol: false }); }
-  add(body, S(), shell, { p: [0, 0.28, -0.18], r: [0.4, 0, 0], s: [0.08, 0.075, 0.18] });
-  for (let i = 0; i < 4; i++) add(body, geo.torus(0.2), dark, { p: [0, 0.29 - i * 0.025, -0.1 - i * 0.05], r: [PI / 2 + 0.4, 0, 0], s: [0.075 - i * 0.006, 0.075 - i * 0.006, 0.075], ol: false });
-  add(body, CP(), shell, { p: [0, 0.48, 0.02], r: [-0.5, 0, 0], s: [0.09, 0.26, 0.08] });
-  add(body, S(), belly, { p: [0, 0.46, 0.06], r: [-0.5, 0, 0], s: [0.06, 0.15, 0.05], ol: false });
-  const wings = [];
-  for (const sd of [-1, 1]) { const w = grp(body, [sd * 0.04, 0.38, -0.12], [0.35, 0, 0]); add(w, S(), glow(st === 2 ? 0xff8ab8 : 0xc8ffd8, 0.45), { p: [sd * 0.05, 0, -0.16], s: [0.07, 0.01, 0.2], ol: false }); w.userData.sd = sd; wings.push(w); }
-  const head = grp(body, [0, 0.66, 0.1]);
-  add(head, C(3), shell, { p: [0, -0.02, 0.04], r: [PI / 2 + 0.3, PI, 0], s: [0.11, 0.12, 0.08] });
-  add(head, S(), belly, { p: [0, -0.07, 0.08], s: [0.04, 0.03, 0.04], ol: false });
-  for (const sd of [-1, 1]) {
-    add(head, S(), toon(st === 2 ? 0xff3a6a : 0xffe14d, { emissive: st === 2 ? 0xff1a4a : 0xc8a000, emissiveIntensity: 0.6 }), { p: [sd * 0.085, 0.02, 0.02], s: [0.05, 0.06, 0.05], ol: 0.008 });
-    add(head, SM(), flat(0x1a1020), { p: [sd * 0.1, 0.025, 0.05], s: 0.018, ol: false });
-    add(head, SM(), flat(0xffffff), { p: [sd * 0.095, 0.045, 0.06], s: 0.009, ol: false });
-    add(head, Y(4), dark, { p: [sd * 0.03, 0.12, 0.0], r: [-0.5, 0, sd * 0.4], s: [0.006, 0.16, 0.006], ol: false });
-  }
-  const arms = [];
-  const nA = st >= 1 ? 2 : 1;
-  for (let k = 0; k < nA; k++) for (const sd of [-1, 1]) {
-    const a = grp(body, [sd * 0.07, 0.56 - k * 0.08, 0.1 - k * 0.04]);
-    add(a, CP(), shell, { p: [0, 0.02, 0.08], r: [PI / 2.2, 0, 0], s: [0.035, 0.12, 0.035] });
-    const fa = grp(a, [0, 0.06, 0.16], [-2.4, 0, 0]);
-    add(fa, B(), blade, { p: [0, 0.1, 0.01], s: [0.014, 0.2, 0.04], ol: 0.008 });
-    for (let i = 0; i < 4; i++) add(fa, C(4), blade, { p: [0, 0.03 + i * 0.04, 0.035], r: [-PI / 2, 0, 0], s: [0.008, 0.03, 0.008], ol: false });
-    a.userData = { sd, k }; arms.push(a);
-  }
-  if (tiers[2] >= 2) for (const sd of [-1, 1]) add(body, B(), toon(0x8a1a2a), { p: [sd * 0.05, 0.62, -0.02], r: [0.2, 0, sd * 0.3], s: [0.02, 0.12, 0.015], ol: false });
-  if (tiers[1] >= 3) add(root, geo.torus(0.04), glow(0xc8ffd8, 0.5), { p: [0, 0.04, 0], r: [PI / 2, 0, 0], s: 0.5, ol: false });
-  anim(body, head, ...arms, ...wings);
-  const tick = (t, dt, s) => {
-    const a = s.atk || 0;
-    body.rotation.x = Math.sin(t * 1.6) * 0.03 + a * 0.15;
-    arms.forEach((ar, i) => { ar.rotation.x = -0.3 + Math.sin(t * 2 + i) * 0.1 - a * (i % 2 ? 1.4 : 0.6); });
-    head.rotation.z = Math.sin(t * 0.9) * 0.2; head.rotation.y = Math.sin(t * 0.6) * 0.3;
-    wings.forEach(w => { w.rotation.z = w.userData.sd * (Math.sin(t * 30) * 0.05 * (a > 0.3 ? 4 : 0.3)); });
-  };
-  return { root, tick, height: 0.8 * sc };
-}
 
 // ───────────────────────── FELSGOLEM ─────────────────────────
 function golem(o) {
@@ -706,8 +609,8 @@ function mika(o) {
   return { root, tick, height: 1.1 };
 }
 
-const BUILDERS = { kitsune: fox, tiger, turtle, deer, raven, kairo, dragonwolf, mantis, golem, raizen, mika };
-export function buildModel(id, o = {}) { const m = (BUILDERS[id] || fox)(o); optimize(m.root); return m; }
+const BUILDERS = { kitsune: fox, tiger, turtle: turtleX, deer, raven, kairo, dragonwolf, mantis: mantisX, golem, raizen, mika };
+export function buildModel(id, o = {}) { const g = buildGlb(id, o); if (g) return g; const m = (BUILDERS[id] || fox)(o); optimize(m.root); return (id === 'turtle' || id === 'mantis') && o.tiers ? gearOn(m, o.tiers) : m; }
 
 // ───────────────────────── GEGNER (verschmolzen für Instancing) ─────────────────────────
 const sp = () => geo.sphere(12), cn = () => geo.cone(8), bx = () => geo.box(), cy = () => geo.cyl(8), cap = () => geo.caps();
@@ -742,6 +645,19 @@ export const ENEMY_GEO = {
   golem: () => merge([[bx(), 0x8a8478, [0, 0.85, 0], [0, 0, 0.05], [0.7, 0.62, 0.48]], [bx(), 0x9a9488, [0, 1.28, 0.08], 0, [0.36, 0.3, 0.32]], [bx(), 0x5aa040, [0, 1.18, -0.05], 0, [0.6, 0.08, 0.4]],
     [bx(), 0x7a7468, [-0.48, 0.72, 0.05], [0, 0, 0.15], [0.24, 0.6, 0.24]], [bx(), 0x7a7468, [0.48, 0.72, 0.05], [0, 0, -0.15], [0.24, 0.6, 0.24]], [bx(), 0x6a6458, [-0.18, 0.26, 0], 0, [0.24, 0.52, 0.26]], [bx(), 0x6a6458, [0.18, 0.26, 0], 0, [0.24, 0.52, 0.26]],
     [bx(), 0xffa040, [-0.08, 1.3, 0.25], 0, [0.07, 0.04, 0.02]], [bx(), 0xffa040, [0.08, 1.3, 0.25], 0, [0.07, 0.04, 0.02]], [bx(), 0xff8a2a, [0.1, 0.9, 0.245], [0, 0, 0.6], [0.02, 0.3, 0.01]]]),
+  demon: () => merge([[cn(), 0xc8321a, [0, 0.3, 0], 0, [0.24, 0.6, 0.24]], [sp(), 0xe04a20, [0, 0.62, 0.02], 0, [0.17, 0.16, 0.16]], [sp(), 0xff9a2a, [0, 0.36, 0.1], 0, [0.12, 0.14, 0.08]],
+    [cn(), 0x2a1a18, [-0.1, 0.78, 0], [0, 0, 0.5], [0.04, 0.16, 0.04]], [cn(), 0x2a1a18, [0.1, 0.78, 0], [0, 0, -0.5], [0.04, 0.16, 0.04]],
+    [cn(), 0xffb040, [0, 0.86, -0.06], [-0.3, 0, 0], [0.09, 0.22, 0.09]], [cn(), 0xffe080, [0, 0.92, -0.08], [-0.3, 0, 0], [0.05, 0.14, 0.05]],
+    [sp(), 0xfff27a, [-0.06, 0.65, 0.15], 0, 0.03], [sp(), 0xfff27a, [0.06, 0.65, 0.15], 0, 0.03], [bx(), 0x2a1a18, [0, 0.56, 0.16], 0, [0.08, 0.012, 0.01]],
+    [cy(), 0xc8321a, [-0.2, 0.4, 0.05], [0.3, 0, 0.9], [0.04, 0.26, 0.04]], [cy(), 0xc8321a, [0.2, 0.4, 0.05], [0.3, 0, -0.9], [0.04, 0.26, 0.04]],
+    [cn(), 0xff7a2a, [0, 0.2, -0.22], [-2.2, 0, 0], [0.05, 0.25, 0.05]]]),
+  bearer: () => merge([[cy(), 0x6a5a4a, [0, 0.36, 0], 0, [0.22, 0.5, 0.2]], [sp(), 0xd8b090, [0, 0.72, 0], 0, 0.12], [cn(), 0x4a4a52, [0, 0.84, 0], 0, [0.15, 0.12, 0.15]],
+    [bx(), 0x8a96a8, [0, 0.46, 0.27], 0, [0.52, 0.66, 0.06]], [bx(), 0xc8a050, [0, 0.46, 0.31], 0, [0.4, 0.06, 0.02]], [bx(), 0xc8a050, [0, 0.46, 0.31], 0, [0.06, 0.5, 0.02]],
+    [sp(), 0xd8342c, [0, 0.46, 0.32], 0, [0.07, 0.07, 0.02]], [cy(), 0x7a5a3a, [0.22, 0.5, -0.05], [0.2, 0, 0], [0.02, 0.9, 0.02]], [cn(), 0xd8dde6, [0.22, 0.98, -0.0], [0.2, 0, 0], [0.04, 0.14, 0.04]],
+    [cy(), 0x3a3030, [-0.08, 0.1, 0], 0, [0.06, 0.2, 0.06]], [cy(), 0x3a3030, [0.08, 0.1, 0], 0, [0.06, 0.2, 0.06]]]),
+  bearerX: () => merge([[cy(), 0x6a5a4a, [0, 0.36, 0], 0, [0.22, 0.5, 0.2]], [sp(), 0xd8b090, [0, 0.72, 0], 0, 0.12], [cn(), 0x4a4a52, [0, 0.84, 0], 0, [0.15, 0.12, 0.15]],
+    [bx(), 0x5a6474, [-0.12, 0.3, 0.27], [0, 0, 0.4], [0.2, 0.3, 0.05]], [cy(), 0x7a5a3a, [0.22, 0.5, -0.05], [0.2, 0, 0], [0.02, 0.9, 0.02]], [cn(), 0xd8dde6, [0.22, 0.98, -0.0], [0.2, 0, 0], [0.04, 0.14, 0.04]],
+    [cy(), 0x3a3030, [-0.08, 0.1, 0], 0, [0.06, 0.2, 0.06]], [cy(), 0x3a3030, [0.08, 0.1, 0], 0, [0.06, 0.2, 0.06]]]),
 };
 export const ENEMY_GLOW = { wisp: true };
 export const ENEMY_ALPHA = { shade: 0.62 };
