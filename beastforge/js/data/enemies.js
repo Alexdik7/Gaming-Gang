@@ -19,6 +19,9 @@ export const ENEMIES = {
   l4:     { name: 'Sturmschleim',  hp: 7,   speed: 1.62, coins: 2,  xp: 1,  lives: 2, r: 0.26, h: 0.46, layer: 4, split: { kind: 'l3', n: 1 }, desc: 'Schnell – platzt zu einem Glutschleim.' },
   l5:     { name: 'Sonnenschleim', hp: 7,   speed: 1.9,  coins: 3,  xp: 1,  lives: 3, r: 0.27, h: 0.5,  layer: 5, split: { kind: 'l4', n: 1 }, desc: 'Sehr schnell – fünf Schichten tief.' },
   kokon:  { name: 'Seelenkokon',   hp: 70,  speed: 0.8,  coins: 10, xp: 4,  lives: 6, r: 0.34, h: 0.7,  layer: 6, split: { kind: 'l5', n: 2 }, res: { phys: 0.6 }, desc: 'Gepanzerte Hülle – zerbricht in zwei Sonnenschleime.' },
+  // Großgegner-Klasse: schwebende Seelenwale – zerbrechen in Kokons
+  whale:  { name: 'Seelenwal',     hp: 520, speed: 0.42, coins: 45, xp: 14, lives: 20, r: 0.55, h: 1.0, layer: 7, hover: 0.55, heavy: true, big: true, split: { kind: 'kokon', n: 4 }, desc: 'Riesig und zäh – zerbricht in vier Seelenkokons.' },
+  whale2: { name: 'Sturmwal',      hp: 1500, speed: 0.34, coins: 90, xp: 30, lives: 50, r: 0.7, h: 1.3, layer: 8, hover: 0.7, heavy: true, big: true, split: { kind: 'whale', n: 2 }, res: { phys: 0.8 }, desc: 'Ein Sturm in Walgestalt – zerbricht in zwei Seelenwale.' },
   golem:  { name: 'Felskoloss',    hp: 620, speed: 0.5,  coins: 154, xp: 30, lives: 10, r: 0.5, h: 1.6, heavy: true, res: { phys: 0.75, earth: 0.4, lightning: 1.25 }, desc: 'Titan: riesige KP, kein Rückstoß.' },
   oni:    { name: 'Oni-Hauptmann', hp: 1600, speed: 0.62, coins: 490, xp: 120, lives: 10, r: 0.55, h: 1.8, heavy: true, miniboss: true, cry: { every: 6, r: 2.2, speed: 0.35, dur: 3 }, res: { phys: 0.8 }, desc: 'Mini-Boss: Kriegsschrei beschleunigt Verbündete.' },
 };

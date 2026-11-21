@@ -24,6 +24,7 @@ const LIST = {
   bee2:      ['glTF/Armabee_Evolved.gltf',  { Fast_Flying: 'walk' }, { simp: 0.4 }],
   rockling:  ['glTF/Goleling_Evolved.gltf', { Fast_Flying: 'walk', Flying_Idle: 'idle', Punch: 'attack', HitReact: 'hit' }],
   demon:     ['glTF/Demon.gltf',            { Flying_Idle: 'walk' }, { simp: 0.35 }],
+  whale:     ['glTF/Glub_Evolved.gltf',     { Flying_Idle: 'walk' }, { simp: 0.5 }],
   orc:       ['glTF/Orc.gltf',              { Walk: 'walk' }, { simp: 0.55 }],
   dragon:    ['glTF/Dragon_Evolved.gltf',   { Flying_Idle: 'walk', Fast_Flying: 'fly', Headbutt: 'attack', HitReact: 'hit', Death: 'death' }],
   // Tiere (Animated Animals)

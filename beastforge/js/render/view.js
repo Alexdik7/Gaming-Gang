@@ -33,7 +33,7 @@ export class GameView {
   ty(t) { return t.raft != null ? RAFT_TOP : this.hAt(t.cx, t.cy); }
 
   buildEnemyPools() {
-    this.pools = {}; const cap = { slime: 120, wolf: 140, boar: 90, wisp: 90, shade: 90, mage: 50, healer: 50, beetle: 90, mite: 200, golem: 24, demon: 120, bearer: 60, bearerX: 60, l1: 220, l2: 200, l3: 180, l4: 160, l5: 160, kokon: 60 };
+    this.pools = {}; const cap = { slime: 120, wolf: 140, boar: 90, wisp: 90, shade: 90, mage: 50, healer: 50, beetle: 90, mite: 200, golem: 24, demon: 120, bearer: 60, bearerX: 60, l1: 220, l2: 200, l3: 180, l4: 160, l5: 160, kokon: 60, whale: 30, whale2: 12 };
     // Echte Modelle: N vorgebackene Posen je Gegnerart (je Pose ein InstancedMesh). Ohne Modelle: alte Formen.
     const ENEMY_H = { ...Object.fromEntries(Object.entries(ENEMIES).map(([k, d]) => [k, d.h])), bearerX: ENEMIES.bearer.h };
     for (const k of new Set([...Object.keys(ENEMY_GEO), ...Object.keys(ENEMY_MODELS)])) {
@@ -170,19 +170,19 @@ export class GameView {
         const sq = old && e.kind === 'slime' ? 1 + Math.sin(this.t * 12 + e.id) * 0.08 : 1;
         const sc = (e.elite ? 1.25 : 1) * ENEMY_SCALE;
         this.E.set(0, PI / 2 - e.ang, old && (e.kind === 'wolf' || e.kind === 'boar') ? Math.sin(this.t * 14 + e.id) * 0.06 : 0, 'YXZ');
-        this.M.compose(this.V.set(x, (e.kind === 'wisp' ? 0.75 : 0) + fly + bob * 0.08, z), this.Q.setFromEuler(this.E), this.S.set(sc * sq, sc / sq, sc * sq));
+        this.M.compose(this.V.set(x, (e.kind === 'wisp' ? 0.75 : (e.def.hover || 0)) + fly + bob * 0.08, z), this.Q.setFromEuler(this.E), this.S.set(sc * sq, sc / sq, sc * sq));
         F.m.setMatrixAt(i, this.M);
         if (P.baked && blobs < 600) { const r = e.r * sc * 2.6 * (fly || e.kind === 'wisp' ? 0.7 : 1); this.M.compose(this.V.set(x, 0.015, z), this.Q.identity(), this.S.set(r, 1, r)); this.blobs.setMatrixAt(blobs++, this.M); this.Q.setFromEuler(this.E); }
         const T = e.hitT > 0 ? TINT.flash : e.stunT > 0 ? TINT.stun : e.burnT > 0 ? TINT.burn : e.slowT > 0 ? TINT.frost : e.shield > 0 ? TINT.shield : e.vulnT > 0 ? TINT.vuln : e.elite ? TINT.elite : TINT.none;
         F.tint.array.set(T, i * 4);
-        if (P.halo) { this.M.compose(this.V.set(x, (e.kind === 'wisp' ? 0.75 : 0) + fly + 0.3, z), this.Q, this.S.setScalar(0.33 + Math.sin(this.t * 8 + e.id) * 0.03)); P.halo.setMatrixAt(P.hn - 1, this.M); }
+        if (P.halo) { this.M.compose(this.V.set(x, (e.kind === 'wisp' ? 0.75 : (e.def.hover || 0)) + fly + 0.3, z), this.Q, this.S.setScalar(0.33 + Math.sin(this.t * 8 + e.id) * 0.03)); P.halo.setMatrixAt(P.hn - 1, this.M); }
         if (e.elite && crowns < 200) { this.M.compose(this.V.set(x, e.h * sc + fly + 0.12, z), this.Q.identity(), this.S.setScalar(1)); this.crowns.setMatrixAt(crowns++, this.M); }
         if (e.burnT > 0 && Math.random() < dt * 8) this.parts.spawn(x, 0.4 + fly, z, 0, 0.7, 0, 0xff7a2a, 0.14, 0.4);
         if (e.camo && e.revealT <= 0 && Math.random() < dt * 4) this.parts.spawn(x, 0.5, z, 0, 0.3, 0, 0x6a3aa0, 0.2, 0.6);
       }
       // KP-Balken
       if (e.hp < e.maxHp && bars < 400 && !e.boss) {
-        const w = Math.min(0.9, 0.35 + e.maxHp / 400), f = Math.max(0, e.hp / e.maxHp), y = (e.h || 0.6) * (e.elite ? 1.25 : 1) * ENEMY_SCALE + fly + 0.2 + (e.kind === 'wisp' ? 0.75 : 0);
+        const w = Math.min(0.9, 0.35 + e.maxHp / 400), f = Math.max(0, e.hp / e.maxHp), y = (e.h || 0.6) * (e.elite ? 1.25 : 1) * ENEMY_SCALE + fly + 0.2 + (e.kind === 'wisp' ? 0.75 : (e.def.hover || 0));
         this.M.compose(this.V.set(x, y, z), camQ, this.S.set(w + 0.04, 0.09, 1)); this.hpBg.setMatrixAt(bars, this.M);
         const off = new THREE.Vector3(-(w * (1 - f)) / 2, 0, 0.001).applyQuaternion(camQ);
         this.M.compose(this.V.set(x + off.x, y + off.y, z + off.z), camQ, this.S.set(Math.max(0.001, w * f), 0.055, 1)); this.hpFg.setMatrixAt(bars, this.M);
@@ -244,13 +244,14 @@ export class GameView {
       case 'blast': { const [x, z] = at(ev.x, ev.y); P.burst(x, 0.4, z, [0xff6a1a, 0xffc040, 0x2a1a18], 20, 3, 0.16, 0.6, { up: 2 }); this.rings.add(x, 0.05, z, 0.1, ev.r, 0xff5a1a, 0.4); break; }
       case 'guardBreak': { const [x, z] = at(ev.x, ev.y); P.burst(x, 0.5, z, [0xd8e0f0, 0x8a96a8, 0xffffff], 22, 3.2, 0.14, 0.5, { grav: 5, up: 1.5 }); this.floaters.add(x, 1.2, z, 'Schild gebrochen!', 'crit', 0.9); break; }
       case 'pop': { // Schicht platzt: Ring + Funken in Schichtfarbe, kleines „Plopp“-Wort
-        const [x, z] = at(ev.x, ev.y), col = [0, 0x6ff0ff, 0x5ad85a, 0xff8a2a, 0xa05aff, 0xffd23a, 0x8a7ab0][ev.layer] || 0xffffff;
+        const [x, z] = at(ev.x, ev.y), col = [0, 0x6ff0ff, 0x5ad85a, 0xff8a2a, 0xa05aff, 0xffd23a, 0x8a7ab0, 0x5a9aff, 0xb07bff][ev.layer] || 0xffffff;
+        if (ev.layer >= 7) { this.rings.add(x, 0.1, z, 0.3, 3, col, 0.6); P.burst(x, 0.8, z, [col, 0xffffff, 0x9fe8ff], 70, 5, 0.25, 0.9, { up: 2 }); this.stage.addShake(0.5); }
         this.rings.add(x, 0.3, z, 0.1, 0.55 + ev.layer * 0.06, col, 0.22); P.burst(x, 0.35, z, [col, 0xffffff], 8 + ev.layer * 2, 2.8, 0.1, 0.3, { up: 1.5 });
-        if (settings.dmgNums && this.numCount++ % 3 === 0) this.floaters.add(x, 0.8, z, ['', 'plopp', 'plopp!', 'PLOPP', 'PLOPP!', 'KRACH', 'KRACK!'][ev.layer], ev.layer >= 5 ? 'crit' : '', 0.6);
+        if (settings.dmgNums && this.numCount++ % 3 === 0) this.floaters.add(x, 0.8, z, ['', 'plopp', 'plopp!', 'PLOPP', 'PLOPP!', 'KRACH', 'KRACK!', 'WUMMS!', 'STURM!'][ev.layer], ev.layer >= 5 ? 'crit' : '', 0.6);
         break;
       }
       case 'kill': {
-        const [x, z] = at(ev.x, ev.y), e = ev.e, big = e.boss || e.miniboss || e.kind === 'golem';
+        const [x, z] = at(ev.x, ev.y), e = ev.e, big = e.boss || e.miniboss || e.kind === 'golem' || e.def.big;
         const col = { slime: 0x9af070, wolf: 0xb0a070, boar: 0xc0a090, wisp: 0x9ff6ff, shade: 0xa070ff, mage: 0xc0a0ff, healer: 0xffb070, beetle: 0x5ae8d8, mite: 0x5ae8d8, golem: 0xc0b8a8, demon: 0xff7a2a, bearer: 0xc8b8a0, l1: 0x6ff0ff, l2: 0x5ad85a, l3: 0xff8a2a, l4: 0xa05aff, l5: 0xffd23a, kokon: 0x8a7ab0 }[e.kind] || 0xffffff;
         P.burst(x, 0.35, z, [col, 0xffffff], big ? 60 : 12, big ? 4 : 2.4, big ? 0.3 : 0.16, big ? 0.9 : 0.5, { grav: 4, up: 1.4 });
         this.rings.add(x, 0.05, z, 0.1, big ? 2.5 : 0.7, col, big ? 0.7 : 0.35);

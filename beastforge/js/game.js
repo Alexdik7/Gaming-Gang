@@ -206,7 +206,8 @@ export class Game {
     this.app.audio.setIntensity(w.boss ? (w.boss.phase >= 3 ? 2 : 1) : w.waveRunning() ? 0.8 : 0.2);
     this.saveT += dt; if (this.saveT > 20) { this.saveT = 0; saveProfile(this.P); }
     if (w.over && !this.finished) {
-      if (this.endT < 0) { this.endT = 2.2; this.app.audio.play(w.won ? 'win' : 'lose'); this.hud.banner(w.won ? 'SIEG!' : 'NIEDERLAGE', w.won ? 'Der Schrein ist sicher' : 'Der Herzkristall ist erloschen', w.won ? 'evo' : 'boss'); }
+      if (w.won && !this.freeplay && !this.askedFree && this.diffKey !== 'endless') { this.askedFree = true; this.askFree(); return; }
+      if (this.endT < 0) { this.endT = 2.2; this.app.audio.play(w.won ? 'win' : 'lose'); this.hud.banner(w.won ? 'SIEG!' : this.freeplay ? 'FREIES SPIEL ENDE' : 'NIEDERLAGE', w.won ? 'Der Schrein ist sicher' : this.freeplay ? 'Bis Welle ' + w.doneWave + ' durchgehalten' : 'Der Herzkristall ist erloschen', w.won ? 'evo' : 'boss'); }
       this.endT -= dt; if (this.endT <= 0) { this.finished = true; this.finish(); }
     }
   }
@@ -236,7 +237,7 @@ export class Game {
       case 'bolt': A.play('zap'); break; case 'pulse': A.play('pulse'); break; case 'mortar': A.play('mortar'); break;
       case 'boom': A.play('boom'); break; case 'strike': A.play(e.kind === 'thunder' ? 'thunder' : 'boom'); break;
       case 'hit': if (e.crit) A.play('crit'); else A.play('hit'); break;
-      case 'kill': if (e.e.boss || e.e.miniboss || e.e.kind === 'golem') A.play('bigdie'); else { A.play('pop', { layer: e.e.def.layer || 0 }); A.play('coin'); } break;
+      case 'kill': if (e.e.boss || e.e.miniboss || e.e.kind === 'golem' || e.e.def.big) A.play('bigdie'); else { A.play('pop', { layer: e.e.def.layer || 0 }); A.play('coin'); } break;
       case 'leak': A.play('leak'); break; case 'react': A.play('react'); break;
       case 'upgrade': A.play(e.tier === 5 ? 'tier5' : 'upgrade', { tier: e.tier }); break;
       case 'evolve': A.play('evolve'); break; case 'sell': A.play('sell'); break; case 'rock': A.play('boom'); break;
@@ -249,8 +250,31 @@ export class Game {
   }
 
   // ───────── Abschluss: Ergebnisse, Boni, Speichern ─────────
-  finish() {
-    const P = this.P, w = this.world, won = w.won, d = this.diffKey, D = BAL.diff[d];
+  // Sieg: Abschließen oder im freien Spiel weiterkämpfen (der Sieg zählt sofort)
+  askFree() {
+    this.paused = true; this.app.audio.play('win');
+    const m = document.getElementById('modal'); m.classList.remove('hidden');
+    m.innerHTML = `<div class="mbox"><h3>🏆 Sieg!</h3><p>Der Schrein ist sicher. Willst du im <b>freien Spiel</b> weiterkämpfen? Die Wellen werden immer härter – XP gibt es weiter, dein Sieg ist schon gespeichert.</p>
+      <button class="btn pri" data-f>⚔ Weiterspielen</button><button class="btn" data-e>Abschließen</button></div>`;
+    m.querySelector('[data-e]').onclick = () => { m.classList.add('hidden'); this.paused = false; };
+    m.querySelector('[data-f]').onclick = () => {
+      m.classList.add('hidden'); this.winRes = this.finish(true);
+      const w = this.world; w.over = false; w.won = false; w.maxWave = Infinity; this.freeplay = true; this.paused = false;
+      this.hud.banner('FREIES SPIEL', 'Wie lange hältst du durch?', 'boss');
+    };
+  }
+  finish(silent = false) {
+    const P = this.P, w = this.world;
+    if (this.freeplay && this.winRes) { // Ende des freien Spiels: Sieg ist schon verbucht, nur Rekord + Ergebnis
+      const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, endless: 0 };
+      mp.free = Math.max(mp.free || 0, w.doneWave); P.stats.bestFree = Math.max(P.stats.bestFree || 0, w.doneWave);
+      for (const a of checkAchievements(P)) { this.achs.push(a); this.giveAcc(a.xp); }
+      saveProfile(P);
+      this.app.results({ ...this.winRes, wave: w.doneWave, freeplay: true, kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves,
+        xp: w.stats.xp, charUps: this.charUps, accGain: this.accGain, accUps: this.accUps, achs: this.achs, dmg: w.stats.dmg, lives: w.lives });
+      return;
+    }
+    const won = w.won, d = this.diffKey, D = BAL.diff[d];
     P.stats.runs++; if (won) P.stats.wins++; else P.stats.losses++;
     const perfect = won && w.lives >= w.maxLives;
     if (won && d === 'hard') P.stats.winsHard++;
@@ -282,12 +306,14 @@ export class Game {
     P.stats.coins = (P.stats.coins || 0) + w.stats.coins;
     saveProfile(P);
     const hero = w.towers.find(t => t.hero);
-    this.app.results({
+    const res = ({
       won, perfect, firstClear, map: w.map.name, mapId: this.mapId, diff: D.name, diffKey: d, wave: w.doneWave, maxWave: w.maxWave, lives: w.lives, maxLives: w.maxLives,
       kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves,
       used, xp: w.stats.xp, winBonus, snap: this.snap, charUps: this.charUps, accGain: this.accGain, accUps: this.accUps, achs: this.achs, masteryUps,
       hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg,
     });
+    if (silent) return res;
+    this.app.results(res);
   }
   quit() { this.world.over = true; this.finished = true; }
   destroy() {

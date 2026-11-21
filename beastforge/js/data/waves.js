@@ -21,17 +21,17 @@ export const WAVES = [
   /* 16 */ { groups: [g('boar', 10, 0.9, 0, ['armored']), g('mage', 6, 2, 3), g('l5', 18, 0.3, 4), g('kokon', 4, 1.6, 9)], mods: ['armored'] },
   /* 17 */ { groups: [g('golem', 2, 8), g('healer', 4, 2.4, 2), g('beetle', 10, 0.9, 4)] },
   /* 18 */ { groups: [g('wolf', 14, 0.5, 0, ['elite']), g('wisp', 8, 0.9, 2, ['elite']), g('mage', 6, 1.6, 4), g('shade', 14, 0.6, 6)], mods: ['elite'] },
-  /* 19 */ { groups: [g('golem', 2, 6), g('boar', 8, 0.9, 2, ['regen']), g('beetle', 8, 0.8, 5), g('healer', 4, 2, 6), g('shade', 10, 0.7, 8)], mods: ['regen'] },
+  /* 19 */ { groups: [g('whale', 1, 1, 10), g('golem', 2, 6), g('boar', 8, 0.9, 2, ['regen']), g('beetle', 8, 0.8, 5), g('healer', 4, 2, 6), g('shade', 10, 0.7, 8)], mods: ['regen'] },
   /* 20 */ { groups: [g('slime', 20, 0.4), g('wolf', 12, 0.45, 4), g('vharox', 1, 1, 9)], boss: 'vharox', tip: 'BOSS: Vharox, der Abgrunddrache!' },
 ];
 
 // Endlos ab Welle 21: Budget-Generator mit festem Seed pro Welle
-const POOL = [['slime', 1], ['wolf', 1], ['boar', 3], ['wisp', 2], ['shade', 3], ['mage', 4], ['healer', 4], ['beetle', 3], ['golem', 22], ['l5', 2], ['kokon', 6]];
+const POOL = [['slime', 1], ['wolf', 1], ['boar', 3], ['wisp', 2], ['shade', 3], ['mage', 4], ['healer', 4], ['beetle', 3], ['golem', 22], ['l5', 2], ['kokon', 6], ['whale', 40]];
 export function waveDef(w) {
   if (w <= WAVES.length) return WAVES[w - 1];
   let s = w * 9301 + 49297;
   const rnd = () => (s = (s * 233280 + 49297) % 2147483647) / 2147483647;
-  if (w % 10 === 0) return { groups: [g('wolf', 20 + w / 2, 0.3, 0, ['elite']), g('golem', Math.floor(w / 15), 4, 3), g('vharox', 1, 1, 8)], boss: 'vharox', mods: ['elite'] };
+  if (w % 10 === 0) return { groups: [g('wolf', 20 + w / 2, 0.3, 0, ['elite']), g('golem', Math.floor(w / 15), 4, 3), ...(w >= 30 ? [g(w >= 40 ? 'whale2' : 'whale', Math.floor(w / 30), 6, 5)] : []), g('vharox', 1, 1, 8)], boss: 'vharox', mods: ['elite'] };
   let budget = 60 + w * 9, groups = [], delay = 0;
   const mods = [];
   if (w % 4 === 1) mods.push('fast'); if (w % 5 === 2) mods.push('armored'); if (w % 6 === 3) mods.push('regen'); if (w % 7 === 4) mods.push('elite');

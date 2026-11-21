@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.11.0 – Glückskatze (Wirtschaft)
+## Stand: v0.12.0 – Seelenwale + freies Spiel
+**0.12:** **Großgegner-Klasse Seelenwale** (Quaternius „Glub Evolved“, schwebend `hover`, `big`): Seelenwal (520 KP, zerbricht in 4 Kokons) und Sturmwal (1.500 KP, zerbricht in 2 Seelenwale), großes Platz-Spektakel (`pop` ab Schicht 7: Ring, Funken, Wackeln, „WUMMS!“). Erster Wal in Welle 19, in freien Wellen im Pool und bei Boss-Wellen ab 30/40. **Freies Spiel:** Nach dem Sieg (Normal/Schwer) Auswahl „Weiterspielen“ oder „Abschließen“ (`game.askFree`); der Sieg wird sofort verbucht (`finish(true)`), danach laufen Endlos-Wellen (`maxWave = ∞`), am Ende Rekord `maps[id].free` und Ergebnis „Freies Spiel bis Welle N“.
+
+## Stand v0.11.0 – Glückskatze (Wirtschaft)
 **0.11:** Neue Kreatur **Glückskatze** (`neko`, Konto-Lv 4, 450 Münzen): sitzende Vuena-Katze (Animation `sit`, winkt mit `call`), Goldkoban, Formen Glückskätzchen → Goldene Glückskatze (Münzen kreisen) → Tempelkatze (Torii). Pfade: **Schatzkammer** = Zinsen auf gesparte Münzen je Welle (`interest`, Obergrenze `icap`), **Marktstand** = Einkommen (`income`), **Glücksbringer** = Münzen für jeden besiegten Gegner in Reichweite (`lucky`, `world.luckyT`) + Aura. Fähigkeit **Goldregen** (60 + 15 × Welle Münzen). Wirft Goldmünzen (`proj: 'coin'`). Pipeline: `ONLY=cat` erzeugt nur einzelne Modelle neu.
 
 ## Stand v0.10.0 – Shinobi-Akademie

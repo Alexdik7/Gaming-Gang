@@ -7,7 +7,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { gradTex, glow, toon, flat, mk, geo } from './toon.js';
 
 const PI = Math.PI;
-export const MODELS = ['blob', 'ghost', 'skull', 'wizard', 'mushking', 'bee', 'bee2', 'rockling', 'demon', 'orc', 'dragon', 'wolf', 'bull', 'husky', 'stag', 'fox', 'owl', 'cat', 'deer2', 'fox2', 'shiba', 'pigeon', 'goleling', 'kk_ninja', 'kk_golem', 'kk_large1', 'kk_large2', 'kk_raizen', 'kk_mage', 'kk_anim1', 'kk_anim2', 'kk_anim3'];
+export const MODELS = ['blob', 'ghost', 'skull', 'wizard', 'mushking', 'bee', 'bee2', 'rockling', 'demon', 'orc', 'dragon', 'whale', 'wolf', 'bull', 'husky', 'stag', 'fox', 'owl', 'cat', 'deer2', 'fox2', 'shiba', 'pigeon', 'goleling', 'kk_ninja', 'kk_golem', 'kk_large1', 'kk_large2', 'kk_raizen', 'kk_mage', 'kk_anim1', 'kk_anim2', 'kk_anim3'];
 export const ASSETS = {};
 let ready = false;
 export const assetsReady = () => ready;
@@ -104,6 +104,8 @@ export const ENEMY_MODELS = {
   demon:  { m: 'demon', cyc: 0, h: 1.0 },
   bearer: { m: 'orc', cyc: 0.9, h: 1.1, extra: bg => { addPart(bg, geo.box(), 0x8a96a8, shieldM); addPart(bg, geo.cyl(10), 0xc8a050, bossM.clone().premultiply(new THREE.Matrix4()).multiply(new THREE.Matrix4().makeRotationX(PI / 2))); } },
   bearerX:{ m: 'orc', cyc: 0.9, h: 1.1 },
+  whale:  { m: 'whale', cyc: 0, h: 2.1, fly: true, mix: [0x3a7ae0, 0.62] },
+  whale2: { m: 'whale', cyc: 0, h: 2.3, fly: true, mix: [0x8a3ae0, 0.68] },
   l1:     { m: 'blob', cyc: 0.7, h: 1.2, mix: [0x6ff0ff, 0.6] },
   l2:     { m: 'blob', cyc: 0.7, h: 1.2, mix: [0x5ad85a, 0.55] },
   l3:     { m: 'blob', cyc: 0.7, h: 1.2, mix: [0xff8a2a, 0.6] },

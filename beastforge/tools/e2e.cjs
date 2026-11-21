@@ -17,7 +17,7 @@ async function open(browser, q = '', vp = { width: 390, height: 844 }) {
 const LAND = { width: 844, height: 390 };
 const shot = async (p, n) => { if (shots) await p.screenshot({ path: `${shots}/${n}.png` }); };
 const S = {
-  async boot(b) { const p = await open(b); await shot(p, 'b1_home'); assert((await p.evaluate(() => BF.models().length)) >= 32, '3D-Modelle geladen'); assert(!p.errs.length, p.errs.join(' | ')); await p.context().close(); },
+  async boot(b) { const p = await open(b); await shot(p, 'b1_home'); assert((await p.evaluate(() => BF.models().length)) >= 33, '3D-Modelle geladen'); assert(!p.errs.length, p.errs.join(' | ')); await p.context().close(); },
   async menus(b) {
     const p = await open(b, '', LAND);
     await p.evaluate(() => { BF.level(16); BF.profile.account.level = 8; BF.profile.chars.kitsune.mastery = 3; BF.app.refreshShowcase(); BF.menu('home'); });
@@ -33,8 +33,11 @@ const S = {
     await p.click('[data-tab=mastery]'); await p.click('[data-skin="1"]'); assert(await p.evaluate(() => BF.profile.chars.kitsune.skin) === 1, 'Skin gewählt');
     await p.evaluate(() => { BF.start('normal'); BF.world.coins = 99999; BF.put('kitsune'); BF.put('raven'); BF.world.startWave(); });
     await p.evaluate(() => { const w = BF.world; for (let i = 0; i < 60 * 30; i++) w.step(1 / 60); w.wave = 20; w.doneWave = 19; w.spawners = []; w.enemies = []; });
+    await p.waitForSelector('[data-f]', { timeout: 8000 }); await shot(p, 'm_win_choice'); await p.click('[data-f]'); await p.waitForTimeout(400);
+    assert(await p.evaluate(() => BF.game.freeplay && BF.world.maxWave === Infinity && !BF.world.over && BF.profile.stats.wins === 1), 'Freies Spiel nach Sieg, Sieg gezählt');
+    await p.evaluate(() => { const w = BF.world; w.startWave(); w.lives = 0; w.over = true; w.won = false; });
     await p.waitForTimeout(3500); await p.waitForSelector('.res', { timeout: 8000 }); await p.waitForTimeout(1300); await shot(p, 'm_results');
-    assert(await p.evaluate(() => BF.profile.stats.wins) === 1, 'Sieg gezählt');
+    assert(await p.evaluate(() => BF.profile.stats.wins === 1 && document.querySelector('.res h1').textContent.includes('SIEG')), 'Ergebnis: Sieg + freies Spiel');
     assert(!p.errs.length, p.errs.join(' | '));
     await p.context().close();
   },

@@ -8,6 +8,7 @@ import { CREATURES } from '../js/data/creatures.js';
 import { defaultProfile, migrate, saveProfile, loadProfile } from '../js/meta/profile.js';
 import { addCharXp, addAccXp, dimFactor, maxStage, unlocked, checkAchievements, charNeed, formsFor, levelFx } from '../js/meta/progression.js';
 import { playRun } from './balance.mjs';
+import { waveDef } from '../js/data/waves.js';
 
 const step = (w, sec) => { for (let i = 0; i < sec * 60; i++) w.step(1 / 60); w.events.length = 0; };
 function mkWorld(P = defaultProfile(), o = {}) {
@@ -309,4 +310,14 @@ test('Glückskatze: Einkommen, Zinsen, Glückskopfgeld, Goldregen', () => {
   const e = w.spawn('slime', [], 0); e.x = t.x + 0.5; e.y = t.y; const c1 = w.coins; w.kill(e, null);
   assert.ok(w.coins - c1 >= Math.round(8 * w.diff.coins) + t.s.lucky, 'Glücksmünze beim Besiegen in Reichweite');
   w.evolve(t.id); w.wave = 4; t.abCd = 0; const c2 = w.coins; assert.ok(w.useAbility(t.id, 'ab').ok); assert.equal(w.coins - c2, 60 + 15 * 4);
+});
+
+test('Seelenwale: Sturmwal → 2 Wale → je 4 Kokons, freie Wellen erzeugen Wale', () => {
+  const w = mkWorld().w;
+  const s = w.spawn('whale2', [], 4); w.damage(s, s.hp + 1, 'astral', null);
+  const whales = w.enemies.filter(x => x.alive && x.kind === 'whale'); assert.equal(whales.length, 2);
+  w.damage(whales[0], whales[0].hp + 1, 'astral', null);
+  assert.equal(w.enemies.filter(x => x.alive && x.kind === 'kokon').length, 4);
+  let found = false; for (let n = 21; n < 60 && !found; n++) found = waveDef(n).groups.some(g => g.e === 'whale' || g.e === 'whale2');
+  assert.ok(found, 'Wale in freien Wellen');
 });
