@@ -5,15 +5,20 @@ import { HEROES } from '../data/heroes.js';
 import { MAPS } from '../data/maps.js';
 import { ELEMENT_NAMES } from '../data/enemies.js';
 import { ACCOUNT_REWARDS, ACHIEVEMENTS, FRAMES, TITLES, SYNERGIES } from '../data/meta.js';
+import { addAccXp } from '../meta/progression.js';
 import { charNeed, accNeed, formsFor, maxStage, perkList, unlocked, unlockLevel, unlockedCreatures, achValue, hasBranch, MASTERY_REWARDS, nextFormByLevel } from '../meta/progression.js';
 import { baseStats, dps } from '../sim/stats.js';
 import { portrait, Preview, mapThumb } from '../render/icons.js';
 import { ELEMENT_COLORS } from '../data/enemies.js';
 import { saveProfile, resetProfile } from '../meta/profile.js';
+import { CHALLENGES, CH, chUnlocked } from '../data/challenges.js';
+import { QUESTS, ensureDaily, dailyChallenge, questProgress, DAILY_XP, dayKey } from '../data/daily.js';
+import { SCHOOLS, ACADEMY, ACADEMY_BY_ID, shinobiPoints, canLearn, learn, resetAcademy } from '../data/academy.js';
 
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
 const esc = s => String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+const u0 = (id, P, sel) => { const c = CH[id || 'std']; return `${c.icon} <b>${esc(c.name)}:</b> ${esc(c.desc)}${chUnlocked(P, sel, c.id) ? '' : ` <i>(🔒 erst ${c.need === 'hard' ? 'auf Schwer' : ''} gewinnen)</i>`}`; };
 const stars = n => '★'.repeat(n) + `<i>${'★'.repeat(5 - n)}</i>`;
 
 export class Menus {
@@ -69,16 +74,62 @@ export class Menus {
         <button class="profile mini" data-go="account"><div class="fr" style="--fc:${frame}">${pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch })}</div>
           <div class="pi"><b>Lv ${a.level}</b> <span>${esc(TITLES[a.title] || TITLES.none)}</span><div class="bar acc"><u style="width:${a.xp / need * 100}%"></u></div></div></button>
         <div class="hubLogo">BEAST<span>FORGE</span></div>
-        <div class="rbtns">${med('ach', '🏆', 'Erfolge', 'sm', newAch)}${med('stats', '📜', 'Statistik', 'sm')}${med('settings', '⚙', 'Optionen', 'sm')}</div>
+        <div class="rbtns">${med('daily', '📅', 'Täglich', 'sm', this.dailyDot())}${med('ach', '🏆', 'Erfolge', 'sm', newAch)}${med('stats', '📜', 'Statistik', 'sm')}${med('settings', '⚙', 'Optionen', 'sm')}</div>
       </div>
       <div class="hubM">
         ${med('collection', pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch }), 'Kreaturen')}
         ${med('hero', pimg(hero, { hlvl: 1 }), 'Helden')}
         ${med('play', '<span class="playI">▶</span>', 'SPIELEN', 'mbig')}
         ${med('evo', pimg('golem', { stage: 2 }), 'Entwicklung')}
-        ${med('account', '🏯', 'Konto')}
+        ${med('academy', '<span class="acI">⛩</span>', 'Akademie', 'acad', shinobiPoints(P).free > 0)}
       </div></div>`);
     this.app.audio.playSong('menu');
+  }
+
+  // ───────── Täglich: Tageskampf + Tagesaufgaben ─────────
+  dailyDot() { const P = this.P, D = ensureDaily(P); return !D.won || D.quests.some(id => { const q = QUESTS.find(x => x.id === id); return !D.claimed[id] && questProgress(P, q) >= q.goal; }); }
+  s_daily() {
+    const P = this.P, D = ensureDaily(P), dc = dailyChallenge(P, id => unlocked(P, 'map', id)), map = MAPS[dc.map];
+    const qs = D.quests.map(id => {
+      const q = QUESTS.find(x => x.id === id), v = Math.min(q.goal, questProgress(P, q)), done = v >= q.goal, got = D.claimed[id];
+      return `<div class="dq ${got ? 'got' : done ? 'done' : ''}"><div><b>${esc(q.text)}</b><div class="bar"><u style="width:${v / q.goal * 100}%"></u></div><small>${fmt(v)} / ${fmt(q.goal)} · ✦ ${q.xp} Konto-XP</small></div>
+        ${got ? '<span class="aok">✓</span>' : `<button class="btn ${done ? 'pri' : ''}" data-q="${id}" ${done ? '' : 'disabled'}>Abholen</button>`}</div>`;
+    }).join('');
+    const [y, m, d] = dayKey().split('-');
+    this.render(`<div class="scr dailyScr">${this.hdr('Täglich <small style="color:var(--mut);font-size:14px">' + d + '.' + m + '.' + y + '</small>')}
+      <div class="dgrid"><div class="dkcard ${D.won ? 'won' : ''}"><img data-thumb="${dc.map}" alt=""><div class="dct"><small>⚔ TAGESKAMPF</small><b>${esc(map.name)} · ${dc.diff === 'hard' ? '🔥 Schwer' : '🌿 Normal'}</b>
+        <div class="dmods">${dc.mods.map(id => `<span title="${esc(CH[id].desc)}">${CH[id].icon} ${esc(CH[id].name)}</span>`).join('')}</div>
+        <small class="mut">Belohnung beim ersten Sieg heute: <b style="color:#ffd257">+1 Shinobi-Punkt</b> · ✦ ${DAILY_XP} Konto-XP</small>
+        ${D.won ? '<div class="aok">✓ Heute geschafft – morgen gibt es einen neuen Kampf</div>' : '<button class="big" id="dgo">⚔ Antreten</button>'}</div></div>
+      <div class="dqs"><div class="wlabel">Tagesaufgaben</div>${qs}<small class="mut">Neue Aufgaben gibt es jeden Tag um Mitternacht.</small></div></div></div>`, m2 => {
+      this.thumbs(m2);
+      $('dgo')?.addEventListener('click', () => { this.app.audio.init(); this.app.startRun(dc.map, dc.diff, 'daily'); });
+      m2.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { const q = QUESTS.find(x => x.id === b.dataset.q); if (D.claimed[q.id] || questProgress(P, q) < q.goal) return; D.claimed[q.id] = 1; addAccXp(P, q.xp); saveProfile(P); this.app.audio.play('levelup'); this.s_daily(); });
+    });
+  }
+
+  // ───────── Shinobi-Akademie: Wissensbaum mit Shinobi-Punkten ─────────
+  s_academy(sel) {
+    const P = this.P, pts = shinobiPoints(P), own = P.academy.owned, keep = sel ? $('menu').scrollTop : 0;
+    const rows = SCHOOLS.map(sc => {
+      const nodes = ACADEMY.filter(n => n.school === sc.id).map(n => {
+        const st = own[n.id] ? 'own' : canLearn(P, n.id).ok ? 'can' : (n.tier === 1 || own[ACADEMY.find(x => x.school === n.school && x.tier === n.tier - 1).id]) ? 'poor' : 'lock';
+        return `<button class="anode ${st} ${sel === n.id ? 'sel' : ''}" data-n="${n.id}" style="--sc:${sc.color}"><span>${st === 'lock' ? '🔒' : st === 'own' ? '✓' : n.tier}</span><i>${n.cost}</i></button>`;
+      }).join('<b class="alink"></b>');
+      return `<div class="arow"><div class="ahead" style="--sc:${sc.color}"><b>${sc.icon} ${esc(sc.name)}</b><small>${esc(sc.desc)}</small></div><div class="anodes">${nodes}</div></div>`;
+    }).join('');
+    const n = sel && ACADEMY_BY_ID[sel], c = n && canLearn(P, n.id);
+    const info = n ? `<div class="ainfo" style="--sc:${SCHOOLS.find(s => s.id === n.school).color}"><div><b>${esc(n.name)}</b> <small>Stufe ${n.tier} · ${n.cost} Punkt${n.cost > 1 ? 'e' : ''}</small><p>${esc(n.desc)}</p></div>
+      ${own[n.id] ? '<span class="aok">✓ Erlernt</span>' : `<button class="btn pri" id="alearn" ${c.ok ? '' : 'disabled'}>${c.ok ? 'Erlernen' : esc(c.why)}</button>`}</div>`
+      : '<div class="ainfo"><p>Tippe auf einen Knoten. Shinobi-Punkte gibt es für jedes Konto-Level und für jeden ersten Sieg auf einer Karte (Normal und Schwer).</p></div>';
+    this.render(`<div class="scr acadScr">${this.hdr('Shinobi-Akademie')}
+      <div class="apts"><span class="spi">✦</span><b>${pts.free}</b> freie Shinobi-Punkte <small>· ${pts.earned} verdient · ${pts.spent} eingesetzt</small>${pts.spent ? '<button class="aReset" id="areset">↺ Neu verteilen</button>' : ''}</div>
+      <div class="atree">${rows}</div>${info}</div>`, m => {
+      m.scrollTop = keep;
+      m.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { this.click(); this.s_academy(b.dataset.n); });
+      const L = $('alearn'); if (L) L.onclick = () => { if (learn(P, sel).ok) { saveProfile(P); this.app.audio.play('levelup'); this.s_academy(sel); } };
+      const R = $('areset'); if (R) R.onclick = () => { if (confirm('Alle Shinobi-Punkte zurückholen und neu verteilen?')) { resetAcademy(P); saveProfile(P); this.click(); this.s_academy(); } };
+    });
   }
 
   // ───────── Entwicklungszentrum: alle Entwicklungsreihen auf einen Blick ─────────
@@ -125,6 +176,7 @@ export class Menus {
       panel = `<aside class="wpanel"><button class="x" id="wx">✕</button><img class="wthumb" data-thumb="${sel}" alt="">
         <b class="wname">${esc(map.name)}</b><small class="mut">${esc(map.level)} · ${map.paths ? map.paths.length + ' Eingänge' : '1 Eingang'}</small><p>${esc(map.desc)}</p>
         ${ok ? `<div class="wlabel">Modus</div><div class="pills">${modes.map(([k, ic, n]) => { const u = unlocked(P, 'mode', k); return `<button data-d="${k}" class="${this.diff === k ? 'on' : ''}" ${u ? '' : 'disabled'}>${u ? ic : '🔒'} ${n}<small>${u ? 'Beste: ' + (best[k] || 0) : 'Lv ' + unlockLevel('mode', k)}</small></button>`; }).join('')}</div>
+        ${this.diff !== 'endless' ? `<div class="wlabel">Herausforderung <small class="mut">· 🏅 ${Object.keys(best.medals || {}).length}/${CHALLENGES.length - 1}</small></div><div class="chs">${CHALLENGES.map(c => { const u = chUnlocked(P, sel, c.id), m = best.medals?.[c.id]; return `<button data-ch="${c.id}" class="${(this.ch || 'std') === c.id ? 'on' : ''}" ${u ? '' : 'disabled'} title="${esc(c.desc)}"><span>${u ? c.icon : '🔒'}</span>${esc(c.name)}${m ? '<i>🏅</i>' : ''}</button>`; }).join('')}</div><p class="chdesc">${u0(this.ch, P, sel)}</p>` : ''}
         <div class="wlabel">Held</div><div class="heroes">${heroes.map(h => { const u = unlocked(P, 'hero', h.id); return `<button class="hpick ${P.hero === h.id ? 'on' : ''}" data-hero="${h.id}" ${u ? '' : 'disabled'} title="${esc(h.name)}"><img src="${portrait(h.id, { hlvl: 1 })}" alt=""><span>${u ? esc(h.name) : '🔒 ' + unlockLevel('hero', h.id)}</span></button>`; }).join('')}</div>
         <div class="wlabel">Team <small class="mut">· ${team.length} Kreaturen im Shop</small></div><div class="teamrow">${team.map(id => `<img src="${portrait(id, { stage: 0, branch: P.chars[id].branch })}" title="${esc(CREATURES[id].name)}" alt="">`).join('')}</div>
         <button class="big" id="go">⚔ LOS GEHT'S</button>` : `<div class="wlock">🔒 Erreiche Konto-Level ${unlockLevel('map', sel)}, um diese Karte zu betreten.</div>`}</aside>`;
@@ -149,9 +201,10 @@ export class Menus {
       ${critters}${fog}${nodes}${panel}</div>`, m => {
       m.querySelectorAll('[data-map]').forEach(b => b.onclick = () => { this.click(); this.s_play(b.dataset.map); });
       m.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { this.click(); this.diff = b.dataset.d; this.s_play(sel); });
+      m.querySelectorAll('[data-ch]').forEach(b => b.onclick = () => { this.click(); this.ch = b.dataset.ch; this.s_play(sel); });
       m.querySelectorAll('[data-hero]').forEach(b => b.onclick = () => { this.click(); P.hero = b.dataset.hero; saveProfile(P); this.s_play(sel); });
       $('wx')?.addEventListener('click', () => { this.click(); this.s_play(); });
-      const go = $('go'); if (go) go.onclick = () => { this.app.audio.init(); this.app.startRun(sel, this.diff); };
+      const go = $('go'); if (go) go.onclick = () => { this.app.audio.init(); const ch = chUnlocked(P, sel, this.ch || 'std') ? this.ch || 'std' : 'std'; this.app.startRun(sel, CH[ch].diff || this.diff, ch); };
       this.thumbs(m);
     });
   }
@@ -323,12 +376,13 @@ export class Menus {
     }).join('') || '<small style="color:var(--mut)">Keine Kreatur eingesetzt.</small>';
     const a = P.account, need = accNeed(a.level);
     this.render(`<div class="scr res">
-      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>
+      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.daily ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">📅 Tageskampf geschafft! +1 Shinobi-Punkt</p>` : ''}${r.medal ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">🏅 Neue Medaille: ${esc(r.medal.name)} · +1 Shinobi-Punkt</p>` : r.ch && r.ch.id !== 'std' ? `<p style="margin:0;color:var(--mut)">${r.ch.icon} ${esc(r.ch.name)}</p>` : ''}${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
       <p style="text-align:center;margin:0;color:var(--mut)">${esc(r.map)} · ${esc(r.diff)} · Welle ${r.wave}${r.maxWave === Infinity ? '' : '/' + r.maxWave}${r.perfect ? ' · <b style="color:var(--run)">PERFEKT!</b>' : ''}</p>
       <div class="rgrid"><div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.hero ? `<span>${esc(HEROES[r.hero.id]?.name || 'Held')} erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>
       <div class="sect char"><h3>CHARAKTER-XP</h3>${xpRows}${r.won ? '<small style="color:var(--mut)">inkl. +25 % Siegbonus</small>' : '<small style="color:var(--mut)">Alle verdienten XP bleiben erhalten.</small>'}
         ${r.masteryUps.map(m => `<div class="newform">★ ${esc(CREATURES[m.cid].name)}: Meisterschaft ${m.m}!</div>`).join('')}</div>
       <div class="sect acc"><h3>KONTO</h3><div class="xprow" style="grid-template-columns:1fr auto"><div><b>Level ${a.level}</b>${r.accUps.length ? ` <span class="up2" style="color:var(--acc)">⬆ +${r.accUps.length}</span>` : ''}<div class="bar acc"><u data-w="${a.xp / need * 100}" style="width:0%"></u></div></div><span class="gain" style="color:var(--acc)">+${fmt(r.accGain)}</span></div>
+        ${r.accUps.length ? `<div class="newform" style="background:linear-gradient(90deg,rgba(255,210,87,.25),transparent);color:#ffe9a0">✦ +${r.accUps.length} Shinobi-Punkt${r.accUps.length > 1 ? 'e' : ''} – ab in die Akademie!</div>` : ''}
         ${r.accUps.flatMap(u => u.rewards).map(x => `<div class="newform" style="background:linear-gradient(90deg,rgba(185,140,255,.25),transparent);color:#e0ccff">🔓 ${esc(x.text)}</div>`).join('')}
         ${r.achs.map(x => `<div class="newform">🏆 ${esc(x.name)} <small>+${x.xp}</small></div>`).join('')}</div>
       </div><div class="seg" style="grid-template-columns:1fr 1fr;max-width:520px;margin:0 auto;width:100%"><button class="btn" data-go="home">Menü</button><button class="big" id="again" style="font-size:18px;padding:12px">↻ Nochmal</button></div>

@@ -38,11 +38,11 @@ Karte 3 Glutkrater (Lava-Spalten, Basalt-Flöße), Gegner Feuerdämon + Schildtr
 Ziel: Spielgefühl und Umfang eines Top-Tower-Defense – mit eigener Welt, eigenen Namen, CC0-Modellen.
 - **B1 ✅ (v0.5)** Modell-Pipeline + echte animierte Gegner/Bosse + 5 Kreaturen als Skin-Modelle.
 - **B2 ✅ (v0.6)** Helden (KayKit) + Tiger (Katze mit Streifen) als Modelle, sichtbare Teile für **jede** Pfadstufe. Offen: Schildkröte, Mantis (kein CC0-Modell – evtl. prozedural aufwerten).
-- **A1** Schichten-Gegner: Hüllen platzen ab und setzen kleinere Gegner frei (Knall, Funken, Ton) – das Herz des Genres. Gegner-Eigenschaften als kombinierbare Merkmale (getarnt, gepanzert, regenerierend, verstärkt).
+- **A1 ✅ (v0.9, Grundform)** Schichten-Gegner: Hüllen platzen ab und setzen kleinere Gegner frei (Knall, Funken, Ton) – das Herz des Genres. Gegner-Eigenschaften als kombinierbare Merkmale (getarnt, gepanzert, regenerierend, verstärkt).
 - **A2** Leistung für 1.000+ Gegner: Simulation im Web Worker, Gruppen bündeln, Umriss + Pose in einem Draw-Call, LOD.
 - **A3** Wellen 1–60 neu (+ freies Weiterspielen), Wirtschafts-Kreatur (Bank/Farm-Prinzip), Super-Endausbau pro Kreatur.
 - **C1–C4** Kreaturen 9–16 (Schlangenmagier, Windmönch, Phönix, Leerenkatze …), Helden 4–6, Karten 4–10 in drei Schwierigkeitsgruppen, Bosse 2–5 mit Stufen.
-- **D** Herausforderungs-Modi (nur Grundkreaturen, halbes Geld, umgekehrter Weg, doppelte KP, „Seelenbrand“), tägliche Herausforderung, Boss-Events.
+- **D ✅ (v0.13, Grundform)** Herausforderungs-Modi (nur Grundkreaturen, halbes Geld, umgekehrter Weg, doppelte KP, „Seelenbrand“), tägliche Herausforderung, Boss-Events.
 - **E** Wissensbaum, Kräfte, Kosmetik-Shop, Quests, Wochen-Events.
 - **F** Koop 2–4 über Raumcode (Netzcode aus Cats TD übernehmen).
 - **G** Feinschliff: Balancing-Bot über alle Karten, Tutorials, Statistiken.

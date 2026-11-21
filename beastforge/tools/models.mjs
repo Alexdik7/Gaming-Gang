@@ -24,6 +24,7 @@ const LIST = {
   bee2:      ['glTF/Armabee_Evolved.gltf',  { Fast_Flying: 'walk' }, { simp: 0.4 }],
   rockling:  ['glTF/Goleling_Evolved.gltf', { Fast_Flying: 'walk', Flying_Idle: 'idle', Punch: 'attack', HitReact: 'hit' }],
   demon:     ['glTF/Demon.gltf',            { Flying_Idle: 'walk' }, { simp: 0.35 }],
+  whale:     ['glTF/Glub_Evolved.gltf',     { Flying_Idle: 'walk' }, { simp: 0.5 }],
   orc:       ['glTF/Orc.gltf',              { Walk: 'walk' }, { simp: 0.55 }],
   dragon:    ['glTF/Dragon_Evolved.gltf',   { Flying_Idle: 'walk', Fast_Flying: 'fly', Headbutt: 'attack', HitReact: 'hit', Death: 'death' }],
   // Tiere (Animated Animals)
@@ -39,7 +40,7 @@ const LIST = {
   // Vuena (Textur, Mobil-LOD)
   fox:       ['vuena/animal_fox.glb',       { idle: 'idle', attack: 'attack', hit: 'hit', call: 'call' }, { lod: true }],
   owl:       ['vuena/animal_owl.glb',       { idle: 'idle', attack: 'attack', hit: 'hit', call: 'call' }, { lod: true }],
-  cat:       ['vuena/animal_cat.glb',       { idle: 'idle', attack: 'attack', hit: 'hit', call: 'call' }, { lod: true }],
+  cat:       ['vuena/animal_cat.glb',       { idle: 'idle', attack: 'attack', hit: 'hit', call: 'call', sit: 'sit' }, { lod: true }],
   // Helden (KayKit): Figuren ohne Animation, Animationen getrennt (gleiches Skelett „Rig_Medium“)
   kk_ninja:  ['kk2/Ninja.glb', {}, { tex: 256 }],
   kk_golem:  ['kk2/FrostGolem.glb', {}, { simp: 0.6 }],
@@ -53,7 +54,9 @@ const LIST = {
 };
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 let total = 0;
+const ONLY = process.env.ONLY?.split(',');   // z. B. ONLY=cat → nur dieses Modell neu erzeugen
 for (const [name, [file, clips, o = {}]] of Object.entries(LIST)) {
+  if (ONLY && !ONLY.includes(name)) continue;
   const doc = await io.read(path.join(SRC, file)), root = doc.getRoot();
   for (const a of root.listAnimations()) { const n = clips[a.getName()]; if (n) a.setName(n); else { a.listSamplers().forEach(x => x.dispose()); a.listChannels().forEach(x => x.dispose()); a.dispose(); } }
   if (o.lod) for (const n of root.listNodes()) if (/_LOD0$/.test(n.getName())) { n.getMesh()?.dispose(); n.dispose(); }

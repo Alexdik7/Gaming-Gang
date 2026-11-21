@@ -177,9 +177,9 @@ export class Hud {
         else {
           const nt = t.tiers.slice(); nt[i]++;
           const img = this.icon(t, nt.map(x => Math.min(x, 4)));
-          const poor = w.coins < next.cost;
+          const poor = w.coins < w.upCost(next.cost);
           right = !chk.ok ? `<div class="up lock"><img src="${img}" alt=""><div><b>${esc(next.name)}</b><small>🔒 ${esc(chk.why)}</small></div></div>`
-            : `<button class="up ${poor ? 'poor' : ''}" data-up="${i}"><img src="${img}" alt=""><div><b>${esc(next.name)}</b><small>${esc(next.desc)}</small></div><span class="price">◈ ${fmt(next.cost)}</span></button>`;
+            : `<button class="up ${poor ? 'poor' : ''}" data-up="${i}"><img src="${img}" alt=""><div><b>${esc(next.name)}</b><small>${esc(next.desc)}</small></div><span class="price">◈ ${fmt(w.upCost(next.cost))}</span></button>`;
         }
         return `<div class="prow2" style="--pc:${PATH_COLORS[i]}"><div class="pl"><b>${p.icon} ${esc(p.name)}</b><div class="pips">${pips}</div><small>${esc(cur)}</small></div>${right}</div>`;
       }).join('');

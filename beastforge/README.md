@@ -5,7 +5,25 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.8.3 – iOS-Fix Bildgröße
+## Stand: v0.14.0 – Täglich
+**0.14:** Neuer Hub-Knopf 📅 **Täglich** (`menus.s_daily`, Daten `js/data/daily.js`): **Tageskampf** – für jedes Datum feste Bedingungen (Karte aus den freigeschalteten, Normal/Schwer, 2 kombinierte Herausforderungen, `dailyChallenge`), erster Sieg am Tag = +1 Shinobi-Punkt (`daily.sp`) + 500 Konto-XP; **3 Tagesaufgaben** aus 12 (`QUESTS`, `ensureDaily`), Fortschritt = Statistik seit Tagesbeginn (`daily.snap`), Belohnung Konto-XP zum Abholen. Neuer Zähler `stats.pops` (geplatzte Schichten). Roter Punkt am Knopf, wenn etwas offen ist.
+
+## Stand v0.13.0 – Herausforderungen
+**0.13:** Pro Karte 6 **Herausforderungen** (`data/challenges.js`, Auswahl in der Kartenwahl, `World({ mods })`): Nur Grundformen (`basic`, kein Erwecken), Halbes Gold (`halfCash` in `gain`), Umgekehrt (`reversedMap`, Schrein/Torii wandern mit), Doppelte KP (`dblHp`), Apokalypse (`apoc`, Wellen ohne Pause), Seelenbrand (`soulburn`: Schwer, 1 Leben, kein Verkaufen, kein Einkommen). Freigeschaltet nach Sieg auf der Karte (Seelenbrand nach Sieg auf Schwer). Sieg = **Medaille** 🏅 (`maps[id].medals`), Konto-XP und +1 Shinobi-Punkt.
+
+## Stand v0.12.0 – Seelenwale + freies Spiel
+**0.12:** **Großgegner-Klasse Seelenwale** (Quaternius „Glub Evolved“, schwebend `hover`, `big`): Seelenwal (520 KP, zerbricht in 4 Kokons) und Sturmwal (1.500 KP, zerbricht in 2 Seelenwale), großes Platz-Spektakel (`pop` ab Schicht 7: Ring, Funken, Wackeln, „WUMMS!“). Erster Wal in Welle 19, in freien Wellen im Pool und bei Boss-Wellen ab 30/40. **Freies Spiel:** Nach dem Sieg (Normal/Schwer) Auswahl „Weiterspielen“ oder „Abschließen“ (`game.askFree`); der Sieg wird sofort verbucht (`finish(true)`), danach laufen Endlos-Wellen (`maxWave = ∞`), am Ende Rekord `maps[id].free` und Ergebnis „Freies Spiel bis Welle N“.
+
+## Stand v0.11.0 – Glückskatze (Wirtschaft)
+**0.11:** Neue Kreatur **Glückskatze** (`neko`, Konto-Lv 4, 450 Münzen): sitzende Vuena-Katze (Animation `sit`, winkt mit `call`), Goldkoban, Formen Glückskätzchen → Goldene Glückskatze (Münzen kreisen) → Tempelkatze (Torii). Pfade: **Schatzkammer** = Zinsen auf gesparte Münzen je Welle (`interest`, Obergrenze `icap`), **Marktstand** = Einkommen (`income`), **Glücksbringer** = Münzen für jeden besiegten Gegner in Reichweite (`lucky`, `world.luckyT`) + Aura. Fähigkeit **Goldregen** (60 + 15 × Welle Münzen). Wirft Goldmünzen (`proj: 'coin'`). Pipeline: `ONLY=cat` erzeugt nur einzelne Modelle neu.
+
+## Stand v0.10.0 – Shinobi-Akademie
+**0.10:** **Shinobi-Akademie** (Hub-Medaillon ⛩, `menus.s_academy`, Daten `js/data/academy.js`): Wissensbaum mit 4 Schulen × 6 Stufen – Kampfkunst (Schaden, Tempo, Reichweite, Krit, Bossschaden), Elementarwissen (Brand, Frost, Reaktionen, Element-Schaden), Handelshaus (Startmünzen, günstigere Kreaturen/Upgrades, Wellenlohn, Verkauf, Einkommen), Ahnenschrein (Leben, Helden-Startlevel, Charakter-/Konto-XP, Fähigkeits-Abklingzeit). **Shinobi-Punkte** ✦ = 1 je Konto-Level + 1 je erstem Sieg (Karte × Normal/Schwer), rückwirkend; Kosten 1/1/1/2/2/3, jede Stufe braucht die vorige, kostenlos neu verteilbar. Boni gehen als `academy` an die Welt (`world.ac`: `costOf`, `upCost`, `sell`, `refresh`, `waveEnd`, `react`, Fähigkeiten) bzw. an die Hooks in `game.js` (XP, Held). Ergebnisbildschirm meldet neue Punkte.
+
+## Stand v0.9.0 – Ziehen wie im Genre + Schichten-Gegner
+**0.9:** **Platzieren:** ziehen → loslassen; auf ungültigem Platz bleibt die Kreatur **rot** liegen (Modell rot getönt, Ring rot), dann von **irgendwo** auf der Karte weiterziehen (relativ zur Fingerbewegung, `game.rel`), Loslassen auf freiem Platz setzt sie, zurück auf den Shop = abbrechen (`releaseGhost`, `groundRaw`, Einrasten nur noch 0,35 Felder). **Schichten-Gegner (Masterplan A1):** Seelenschleime `l1`–`l5` (Tau, Moos, Glut, Sturm, Sonne – jede Schicht schneller) platzen in die nächstkleinere (`split` + `layer`), **Überschussschaden** reißt mehrere Schichten auf einmal durch (`kill(e, src, over, type)`), Seelenkokon `kokon` (gepanzert) zerbricht in 2 Sonnenschleime; Ereignis `pop` mit Ring, Funken in Schichtfarbe, „plopp/KRACH“, Ton steigt mit der Schicht. Eingestreut in Wellen 2/4/7/9/11/16 + Endlos; Glutkrater-Dämonen leicht reduziert (Bot: alle Karten 12/12).
+
+## Stand v0.8.3 – iOS-Fix Bildgröße
 **0.8.3:** iOS-Web-App (Home-Bildschirm) meldet nach dem Drehen eine veraltete/zu kleine Fenstergröße → Grafik war verzerrt, Karte winzig, unten ein schwarzer Balken. `appSize()` in `render/stage.js` nimmt im Web-App-Modus die echten Bildschirmmaße (`screen` + `window.orientation`), setzt `--appW/--appH` für alle Vollbild-Ebenen; `main.js` berechnet nach Drehen/Größenänderung sofort und nach 0,1/0,35/0,8/1,5 s neu (`relayout`).
 
 ## Stand v0.8.2 – nur Querformat

@@ -8,33 +8,38 @@ import { Hud } from './ui/hud.js';
 import { BAL } from './config.js';
 import { CREATURES } from './data/creatures.js';
 import { MAPS } from './data/maps.js';
+import { academyFx } from './data/academy.js';
+import { CH, reversedMap } from './data/challenges.js';
+import { ensureDaily, dailyChallenge, DAILY_XP } from './data/daily.js';
 import { HEROES } from './data/heroes.js';
 import { addCharXp, addAccXp, addHeroRankXp, heroStartLevel, unlocked, unlockedCreatures, addMastery, checkAchievements, formsFor } from './meta/progression.js';
 import { saveProfile } from './meta/profile.js';
 
 export class Game {
-  constructor(app, { map = 'ahnenhain', diff = 'normal' }) {
+  constructor(app, { map = 'ahnenhain', diff = 'normal', ch = 'std' }) {
     this.app = app; const P = this.P = app.profile;
-    this.mapId = map; this.diffKey = diff; this.music = MAPS[map]?.music || 'forest';
+    this.mapId = map; this.diffKey = diff; this.ch = CH[ch] || ch === 'daily' ? ch : 'std'; this.music = MAPS[map]?.music || 'forest';
     this.loadout = unlockedCreatures(P);
     if (!this.loadout.length) this.loadout = ['kitsune'];
     this.heroId = unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
     this.snap = { acc: { ...P.account }, chars: Object.fromEntries(Object.entries(P.chars).map(([k, c]) => [k, { level: c.level, xp: c.xp }])) };
     this.accGain = 0; this.charUps = []; this.accUps = []; this.achs = [];
+    this.ac = academyFx(P);
     const hooks = {
       level: cid => P.chars[cid]?.level ?? 1,
       branch: cid => P.chars[cid]?.branch || 'spirit',
       charXp: (cid, raw, wave) => {
-        const r = addCharXp(P, cid, raw, { wave, diff });
+        const r = addCharXp(P, cid, raw * (1 + (this.ac.charXp || 0)), { wave, diff });
         for (const up of r.ups) this.onCharUp(up);
         return r.xp;
       },
       accXp: amt => this.giveAcc(amt),
       stat: (k, n, max) => { P.stats[k] = max ? Math.max(P.stats[k] || 0, n) : (P.stats[k] || 0) + n; },
       heroXp: amt => { if (this.heroId) addHeroRankXp(P, this.heroId, amt * 0.5); },
-      heroStart: () => heroStartLevel(P.heroes[this.heroId]?.rank || 1),
+      heroStart: () => Math.min(20, heroStartLevel(P.heroes[this.heroId]?.rank || 1) + (this.ac.heroLvl || 0)),
     };
-    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, seed: (Date.now() % 1e6) | 0 });
+    const mods = this.ch === 'daily' ? Object.assign({}, ...dailyChallenge(P, id => unlocked(P, 'map', id)).mods.map(id => CH[id].mods)) : CH[this.ch].mods || {};
+    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, academy: this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: (Date.now() % 1e6) | 0 });
     if (app.devGod) this.world.god = true;
     app.stage.setMode('game');
     this.view = new GameView(app.stage, this.world, { branch: hooks.branch, skin: cid => this.skinOf(cid) });
@@ -51,7 +56,7 @@ export class Game {
 
   // ───────── Fortschritt ─────────
   giveAcc(amt) {
-    const r = addAccXp(this.P, amt); this.accGain += r.xp;
+    const r = addAccXp(this.P, amt * (1 + (this.ac?.accXp || 0))); this.accGain += r.xp;
     for (const up of r.ups) {
       this.accUps.push(up);
       this.hud.toast('acc', `Konto-Level ${up.lvl}!`, up.rewards.map(x => 'Neu: ' + x.text).join(' · ') || 'Weiter so!');
@@ -75,20 +80,28 @@ export class Game {
   bindInput() {
     const cv = this.app.stage.canvas;
     let down = null;
+    // Platzieren wie im Genre üblich: ziehen → loslassen. Ungültig = Kreatur bleibt rot liegen;
+    // dann von irgendwo auf der Karte weiterziehen (relativ zur Fingerbewegung), Loslassen auf freiem Platz setzt sie.
     this.onDown = e => {
       this.app.audio.init(); down = { x: e.clientX, y: e.clientY, type: e.pointerType }; this.touchDrag = e.pointerType !== 'mouse';
-      if (this.placing) { const p = this.groundAt(e.clientX, e.clientY); if (p) this.setGhost(p); }
+      if (!this.placing) return;
+      const g0 = this.groundRaw(e.clientX, e.clientY);
+      if (this.ghostPos && g0) this.rel = { sx: g0.x, sy: g0.y, gx: this.ghostPos.x, gy: this.ghostPos.y };   // liegende Kreatur verschieben
+      else { const p = this.groundAt(e.clientX, e.clientY); if (p) this.setGhost(p); }                        // erster Tipp setzt die Vorschau
     };
     this.onMove = e => {
       if (!this.placing) return;
-      if (this.dragging) this.touchDrag = e.pointerType !== 'mouse';
-      if (e.pointerType === 'mouse' || down || this.dragging) { const p = this.groundAt(e.clientX, e.clientY); if (p) this.setGhost(p); }
+      if (this.dragging) { this.touchDrag = e.pointerType !== 'mouse'; const p = this.groundAt(e.clientX, e.clientY); if (p) this.setGhost(p); return; }
+      if (this.rel && down) { const g = this.groundRaw(e.clientX, e.clientY); if (g) this.setGhost({ x: this.rel.gx + g.x - this.rel.sx, y: this.rel.gy + g.y - this.rel.sy }); return; }
+      if (e.pointerType === 'mouse' && !this.ghostLocked) { const p = this.groundAt(e.clientX, e.clientY); if (p) this.setGhost(p); }
     };
     this.onUp = e => {
-      const d = down; down = null;
-      if (this.dragging) { this.dragging = false; const p = this.groundAt(e.clientX, e.clientY); if (p && document.elementFromPoint(e.clientX, e.clientY) === cv) { this.setGhost(p); this.tryPlace(); } else this.cancelPlace(); return; }
-      if (!d || e.target !== cv) return;
-      if (this.placing) { const p = this.groundAt(e.clientX, e.clientY); if (p) { this.setGhost(p); this.tryPlace(); } return; }
+      const d = down; down = null; const rel = this.rel; this.rel = null;
+      const onMap = document.elementFromPoint(e.clientX, e.clientY) === cv;
+      if (this.dragging) { this.dragging = false; if (!onMap) { this.cancelPlace(); return; } const p = this.groundAt(e.clientX, e.clientY); if (p) this.setGhost(p); this.releaseGhost(); return; }
+      if (!d) return;
+      if (this.placing) { if (rel && !onMap) { this.cancelPlace(); return; } this.releaseGhost(); return; }
+      if (e.target !== cv) return;
       if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 14) return;
       this.tap(e.clientX, e.clientY);
     };
@@ -101,6 +114,7 @@ export class Game {
     };
     addEventListener('keydown', this.onKey);
   }
+  groundRaw(cx, cy) { const p = this.app.stage.ground(cx, cy, 0); return p ? { x: p.x + this.world.W / 2, y: p.z + this.world.H / 2 } : null; }
   groundAt(cx, cy) {
     if (this.dragging && this.touchDrag) cy -= 46; // beim Ziehen mit dem Finger: Vorschau sichtbar über dem Finger
     const st = this.app.stage, W = this.world.W, H = this.world.H;
@@ -131,13 +145,16 @@ export class Game {
   }
   setGhost(p) {
     const w = this.world, cid = this.placing; if (!cid) return;
-    const n = w.nearestPlace(cid, p.x, p.y); p = { x: n.x, y: n.y };
+    p = { x: Math.max(0.3, Math.min(w.W - 0.3, p.x)), y: Math.max(0.3, Math.min(w.H - 0.3, p.y)) };
+    const n = w.nearestPlace(cid, p.x, p.y, 0.35); p = { x: n.x, y: n.y };
     this.ghostPos = p;
     const ok = n.c;
     if (!this.ghost || this.ghost.cid !== cid) {
       if (this.ghost) this.view.root.remove(this.ghost.m.root);
       const m = buildModel(cid, { stage: 0, branch: this.P.chars[cid]?.branch, skin: this.skinOf(cid), hlvl: 1 });
-      this.view.root.add(m.root); this.ghost = { cid, m };
+      // eigene Materialien, damit die Rot-Tönung nur die Vorschau trifft
+      const mats = []; m.root.traverse(o => { if (o.isMesh && o.material?.emissive) { const orig = o.material; o.material = orig.clone(); o.material.onBeforeCompile = orig.onBeforeCompile; o.material.customProgramCacheKey = orig.customProgramCacheKey; mats.push(o.material); } });
+      this.view.root.add(m.root); this.ghost = { cid, m, mats };
     }
     const h = this.view.hAt(Math.floor(p.x), Math.floor(p.y)), [x, z] = this.view.toW(p.x, p.y);
     this.ghost.m.root.position.set(x, h, z); this.ghost.m.root.scale.setScalar(1.75); this.ghost.m.root.visible = true;
@@ -147,7 +164,15 @@ export class Game {
     this.view.showRange(p.x, p.y, r, ok.ok ? 0xffffff : 0xff5a6a, h);
     this.view.showFoot(p.x, p.y, ok.ok, h);
     this.ghostOk = ok;
-    this.hud.hint(ok.ok ? (w.terrainAt(p.x, p.y) === '^' ? 'Anhöhe: +15 % Reichweite' : w.terrainAt(p.x, p.y) === '~' ? 'Wasser: +20 % Tempo' : 'Loslassen zum Platzieren') : '⚠ ' + ok.why);
+    for (const mt of this.ghost.mats) { mt.emissive.setHex(ok.ok ? 0x000000 : 0xff1a2a); mt.emissiveIntensity = ok.ok ? 0 : 0.85; }
+    this.hud.hint(ok.ok ? (w.terrainAt(p.x, p.y) === '^' ? 'Anhöhe: +15 % Reichweite – loslassen' : w.terrainAt(p.x, p.y) === '~' ? 'Wasser: +20 % Tempo – loslassen' : 'Loslassen zum Platzieren') : '⚠ ' + ok.why + ' – irgendwo ziehen zum Verschieben');
+  }
+  // Finger losgelassen: freier Platz → setzen, sonst bleibt die Kreatur rot liegen
+  releaseGhost() {
+    if (!this.placing || !this.ghostPos) return;
+    if (this.ghostOk?.ok) { this.tryPlace(); return; }
+    this.app.audio.play('error'); this.ghostLocked = true;
+    this.hud.hint('⚠ ' + (this.ghostOk?.why || 'Hier ist kein Platz') + ' – <b>irgendwo auf der Karte ziehen</b> zum Verschieben, zurück auf den Shop = abbrechen');
   }
   tryPlace() {
     const p = this.ghostPos; if (!p || !this.placing) return;
@@ -160,7 +185,7 @@ export class Game {
     this.hud.coachEvent('placed');
   }
   cancelPlace() {
-    this.placing = null; this.ghostPos = null; this.dragging = false;
+    this.placing = null; this.ghostPos = null; this.dragging = false; this.ghostLocked = false; this.rel = null;
     if (this.ghost) { this.view.root.remove(this.ghost.m.root); this.ghost = null; }
     this.view.hideRange(); this.view.hideFoot(); this.hud.hint(null); this.hud.buildTray();
   }
@@ -184,7 +209,8 @@ export class Game {
     this.app.audio.setIntensity(w.boss ? (w.boss.phase >= 3 ? 2 : 1) : w.waveRunning() ? 0.8 : 0.2);
     this.saveT += dt; if (this.saveT > 20) { this.saveT = 0; saveProfile(this.P); }
     if (w.over && !this.finished) {
-      if (this.endT < 0) { this.endT = 2.2; this.app.audio.play(w.won ? 'win' : 'lose'); this.hud.banner(w.won ? 'SIEG!' : 'NIEDERLAGE', w.won ? 'Der Schrein ist sicher' : 'Der Herzkristall ist erloschen', w.won ? 'evo' : 'boss'); }
+      if (w.won && !this.freeplay && !this.askedFree && this.diffKey !== 'endless') { this.askedFree = true; this.askFree(); return; }
+      if (this.endT < 0) { this.endT = 2.2; this.app.audio.play(w.won ? 'win' : 'lose'); this.hud.banner(w.won ? 'SIEG!' : this.freeplay ? 'FREIES SPIEL ENDE' : 'NIEDERLAGE', w.won ? 'Der Schrein ist sicher' : this.freeplay ? 'Bis Welle ' + w.doneWave + ' durchgehalten' : 'Der Herzkristall ist erloschen', w.won ? 'evo' : 'boss'); }
       this.endT -= dt; if (this.endT <= 0) { this.finished = true; this.finish(); }
     }
   }
@@ -214,7 +240,7 @@ export class Game {
       case 'bolt': A.play('zap'); break; case 'pulse': A.play('pulse'); break; case 'mortar': A.play('mortar'); break;
       case 'boom': A.play('boom'); break; case 'strike': A.play(e.kind === 'thunder' ? 'thunder' : 'boom'); break;
       case 'hit': if (e.crit) A.play('crit'); else A.play('hit'); break;
-      case 'kill': if (e.e.boss || e.e.miniboss || e.e.kind === 'golem') A.play('bigdie'); else { A.play('pop'); A.play('coin'); } break;
+      case 'kill': if (e.e.boss || e.e.miniboss || e.e.kind === 'golem' || e.e.def.big) A.play('bigdie'); else { A.play('pop', { layer: e.e.def.layer || 0 }); A.play('coin'); } break;
       case 'leak': A.play('leak'); break; case 'react': A.play('react'); break;
       case 'upgrade': A.play(e.tier === 5 ? 'tier5' : 'upgrade', { tier: e.tier }); break;
       case 'evolve': A.play('evolve'); break; case 'sell': A.play('sell'); break; case 'rock': A.play('boom'); break;
@@ -227,8 +253,31 @@ export class Game {
   }
 
   // ───────── Abschluss: Ergebnisse, Boni, Speichern ─────────
-  finish() {
-    const P = this.P, w = this.world, won = w.won, d = this.diffKey, D = BAL.diff[d];
+  // Sieg: Abschließen oder im freien Spiel weiterkämpfen (der Sieg zählt sofort)
+  askFree() {
+    this.paused = true; this.app.audio.play('win');
+    const m = document.getElementById('modal'); m.classList.remove('hidden');
+    m.innerHTML = `<div class="mbox"><h3>🏆 Sieg!</h3><p>Der Schrein ist sicher. Willst du im <b>freien Spiel</b> weiterkämpfen? Die Wellen werden immer härter – XP gibt es weiter, dein Sieg ist schon gespeichert.</p>
+      <button class="btn pri" data-f>⚔ Weiterspielen</button><button class="btn" data-e>Abschließen</button></div>`;
+    m.querySelector('[data-e]').onclick = () => { m.classList.add('hidden'); this.paused = false; };
+    m.querySelector('[data-f]').onclick = () => {
+      m.classList.add('hidden'); this.winRes = this.finish(true);
+      const w = this.world; w.over = false; w.won = false; w.maxWave = Infinity; this.freeplay = true; this.paused = false;
+      this.hud.banner('FREIES SPIEL', 'Wie lange hältst du durch?', 'boss');
+    };
+  }
+  finish(silent = false) {
+    const P = this.P, w = this.world;
+    if (this.freeplay && this.winRes) { // Ende des freien Spiels: Sieg ist schon verbucht, nur Rekord + Ergebnis
+      const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, endless: 0 };
+      mp.free = Math.max(mp.free || 0, w.doneWave); P.stats.bestFree = Math.max(P.stats.bestFree || 0, w.doneWave);
+      for (const a of checkAchievements(P)) { this.achs.push(a); this.giveAcc(a.xp); }
+      saveProfile(P);
+      this.app.results({ ...this.winRes, wave: w.doneWave, freeplay: true, kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves,
+        xp: w.stats.xp, charUps: this.charUps, accGain: this.accGain, accUps: this.accUps, achs: this.achs, dmg: w.stats.dmg, lives: w.lives });
+      return;
+    }
+    const won = w.won, d = this.diffKey, D = BAL.diff[d];
     P.stats.runs++; if (won) P.stats.wins++; else P.stats.losses++;
     const perfect = won && w.lives >= w.maxLives;
     if (won && d === 'hard') P.stats.winsHard++;
@@ -238,6 +287,10 @@ export class Game {
     if (d === 'endless') P.stats.bestEndless = Math.max(P.stats.bestEndless || 0, w.doneWave);
     const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, endless: 0 };
     const firstClear = won && !(mp[d] >= w.maxWave);
+    let medal = null;
+    let daily = false;
+    if (won && this.ch === 'daily') { const D0 = ensureDaily(P); if (!D0.won) { D0.won = true; D0.sp = (D0.sp || 0) + 1; daily = true; this.giveAcc(DAILY_XP); } }
+    if (won && CH[this.ch] && this.ch !== 'std') { mp.medals ||= {}; if (!mp.medals[this.ch]) { mp.medals[this.ch] = 1; medal = CH[this.ch]; this.giveAcc(BAL.acc.firstMapClear); } }
     mp[d] = Math.max(mp[d] || 0, w.doneWave);
     const used = [...w.stats.used].filter(c => CREATURES[c]);
     const winBonus = {}, masteryUps = [];
@@ -260,12 +313,14 @@ export class Game {
     P.stats.coins = (P.stats.coins || 0) + w.stats.coins;
     saveProfile(P);
     const hero = w.towers.find(t => t.hero);
-    this.app.results({
+    const res = ({
       won, perfect, firstClear, map: w.map.name, mapId: this.mapId, diff: D.name, diffKey: d, wave: w.doneWave, maxWave: w.maxWave, lives: w.lives, maxLives: w.maxLives,
       kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves,
       used, xp: w.stats.xp, winBonus, snap: this.snap, charUps: this.charUps, accGain: this.accGain, accUps: this.accUps, achs: this.achs, masteryUps,
-      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg,
+      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch], daily,
     });
+    if (silent) return res;
+    this.app.results(res);
   }
   quit() { this.world.over = true; this.finished = true; }
   destroy() {

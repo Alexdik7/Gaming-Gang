@@ -22,7 +22,8 @@ function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Ma
 
 export class World {
   constructor(o) {
-    this.mapId = o.map || 'ahnenhain'; this.map = MAPS[this.mapId];
+    this.mapId = o.map || 'ahnenhain'; this.map = o.mapObj || MAPS[this.mapId];
+    this.mods = o.mods || {};   // Herausforderung (data/challenges.js)
     this.diffKey = o.diff || 'normal'; this.diff = BAL.diff[this.diffKey];
     this.hooks = o.hooks || {};
     this.loadout = o.loadout || Object.keys(CREATURES);
@@ -32,7 +33,9 @@ export class World {
     this.H = this.grid.length; this.W = this.grid[0].length;
     this.paths = (this.map.paths || [this.map.path]).map(pts => this.buildPath(pts));
     ({ pts: this.pts, cum: this.cum, len: this.len } = this.paths[0]); this.spawnPi = 0;
-    this.coins = this.diff.start; this.lives = this.diff.lives; this.maxLives = this.diff.lives;
+    this.ac = o.academy || {};   // Shinobi-Akademie: dauerhafte Boni (data/academy.js)
+    this.coins = this.diff.start + (this.ac.startCoins || 0); this.lives = this.diff.lives + (this.ac.lives || 0); this.maxLives = this.lives;
+    if (this.mods.soulburn) this.lives = this.maxLives = 1;
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
     this.t = 0; this.acc = 0; this.nid = 1; this.over = false; this.won = false; this.god = false;
@@ -100,7 +103,8 @@ export class World {
     }
     return best;
   }
-  costOf(cid) { return cid === this.heroId ? BAL.hero.cost : CREATURES[cid].cost; }
+  costOf(cid) { return cid === this.heroId ? BAL.hero.cost : Math.round(CREATURES[cid].cost * (1 - (this.ac.cost || 0))); }
+  upCost(c) { return Math.round(c * (1 - (this.ac.upCost || 0))); }
   // Bester freier Platz (max. Pfadlänge in Reichweite) – für Bot, Tests und Hinweise
   suggestSpot(cid, range = 3, preferEnd = false) {
     let best = null, bv = -1;
@@ -160,8 +164,9 @@ export class World {
     if (t.hero) return { ok: false, why: 'Helden steigen durch Kämpfen auf' };
     const tier = CREATURES[t.cid].paths[p].tiers[t.tiers[p]];
     const r = canTier(t.tiers, p); if (!r.ok) return r;
-    if (this.coins < tier.cost) return { ok: false, why: 'Zu wenig Münzen', cost: tier.cost };
-    return { ok: true, cost: tier.cost };
+    const cost = this.upCost(tier.cost);
+    if (this.coins < cost) return { ok: false, why: 'Zu wenig Münzen', cost };
+    return { ok: true, cost };
   }
   upgrade(id, p) {
     const t = this.tower(id); if (!t) return { ok: false, why: 'Kein Turm' };
@@ -183,6 +188,7 @@ export class World {
   }
   evolve(id) {
     const t = this.tower(id); if (!t) return { ok: false, why: 'Kein Turm' };
+    if (this.mods.basic && !t.hero) return { ok: false, why: 'Herausforderung: nur Grundformen' };
     const n = this.nextEvo(t);
     if (!n) return { ok: false, why: 'Höchste Form' };
     if (!n.unlocked) return { ok: false, why: `Ab Charakter-Level ${n.form.lvl}` };
@@ -195,8 +201,9 @@ export class World {
     return { ok: true };
   }
   sell(id) {
+    if (this.mods.soulburn) return { ok: false, why: 'Seelenbrand: kein Verkaufen' };
     const i = this.towers.findIndex(t => t.id === id); if (i < 0) return { ok: false };
-    const t = this.towers[i], v = Math.floor(t.spent * BAL.run.sellRefund);
+    const t = this.towers[i], v = Math.floor(t.spent * (BAL.run.sellRefund + (this.ac.sell || 0)));
     this.coins += v; this.towers.splice(i, 1); this.dirty = true; this.refresh();
     this.emit({ t: 'sell', tower: t, value: v });
     return { ok: true, value: v };
@@ -234,7 +241,7 @@ export class World {
     const def = ENEMIES[kind] || BOSSES[kind]; if (!def) return null;
     const boss = !!def.boss, elite = mods.includes('elite');
     const scale = BAL.endlessScale(wave);
-    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * scale * (boss || def.miniboss ? 1 : BAL.hpScale(wave));
+    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * scale * (boss || def.miniboss ? 1 : BAL.hpScale(wave));
     if (elite) hp *= 2.2;
     const res = { ...(def.res || {}) };
     if (mods.includes('armored')) res.phys = Math.max(0.25, (res.phys ?? 1) * 0.6);
@@ -268,6 +275,7 @@ export class World {
     this.spawners = this.spawners.filter(s => s.left > 0);
     if (this.rafts.length) this.updRafts();
     this.updVents(dt);
+    if (this.mods.apoc && this.wave > 0 && this.canStartWave()) this.startWave();   // Apokalypse: Wellen ohne Pause
     let buffChange = false;
     for (const t of this.towers) {
       if (t.buffs.length) { const before = t.buffs.length; t.buffs = t.buffs.filter(b => (b.t -= dt) > 0); if (t.buffs.length !== before) buffChange = true; }
@@ -390,14 +398,14 @@ export class World {
       }
       e.elem = type; e.elemT = BAL.elem.mark;
     }
-    if (e.hp <= 0) this.kill(e, src);
+    if (e.hp <= 0) this.kill(e, src, -e.hp, type);
     return real;
   }
   react(e, r, dmg, src) {
     e.reactT = BAL.elem.reactCd; this.stats.reactions++; this.hooks.stat?.('reactions', 1);
     this.emit({ t: 'react', e, x: e.x, y: e.y, name: r.name, color: r.color });
     const base = Math.max(6, dmg);
-    if (r.bonus) this.damage(e, base * r.bonus, 'astral', src, { noReact: true });
+    if (r.bonus) this.damage(e, base * r.bonus * (1 + (this.ac.react || 0)), 'astral', src, { noReact: true });
     if (r.brk) e.brkT = r.brk;
     if (r.slow) { e.slowPct = Math.max(e.slowPct, r.slow[0]); e.slowT = Math.max(e.slowT, r.slow[1]); }
     if (r.stun && !e.boss) e.stunT = Math.max(e.stunT, r.stun);
@@ -413,13 +421,14 @@ export class World {
     if (s.mark > 0) { e.vuln = Math.max(e.vuln, s.mark); e.vulnT = Math.max(e.vulnT, 3); }
     if (s.brk > 0) e.brkT = Math.max(e.brkT, s.brk);
   }
-  kill(e, src) {
+  kill(e, src, over = 0, type = 'phys') {
     if (!e.alive) return; e.alive = false;
     const def = e.def;
     const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul);
     this.gain(coins);
     this.stats.kills++; this.hooks.stat?.('kills', 1);
     if (src) { src.kills++; if (src.s?.bounty) this.gain(src.s.bounty); }
+    for (const t of this.luckyT || []) if (Math.hypot(t.x - e.x, t.y - e.y) <= t.s.range) { this.gain(t.s.lucky); this.stats.income += t.s.lucky; }
     // Charakter-XP nach Schadensanteil verteilen (mehrere Kreaturen am selben Gegner teilen fair)
     const base = (def.xp || 1) * (e.elite ? 2.5 : 1) * (1 + BAL.char.waveScale * this.wave) * (e.boss ? BAL.char.bossMul : 1);
     const total = Object.values(e.dmgBy).reduce((a, b) => a + b, 0);
@@ -436,14 +445,19 @@ export class World {
       if (tb) tb.disabledT = Math.max(tb.disabledT, def.blast.dur);
       this.emit({ t: 'blast', x: e.x, y: e.y, r: def.blast.r, tower: tb });
     }
-    if (def.split) for (let i = 0; i < def.split.n; i++) { const m = this.spawn(def.split.kind, e.elite ? ['elite'] : [], Math.max(0, e.d - 0.25 * i), e.wave, e.pi); if (m) m.coinMul = 1; }
+    if (def.split) {
+      const kids = [], mods = e.mods.filter(m => m !== 'elite');
+      for (let i = 0; i < def.split.n; i++) { const m = this.spawn(def.split.kind, e.elite ? ['elite', ...mods] : mods, Math.max(0, e.d - (def.layer ? 0.18 : 0.25) * i), e.wave, e.pi); if (m) { m.coinMul = 1; kids.push(m); } }
+      if (def.layer) { this.emit({ t: 'pop', x: e.x, y: e.y, layer: def.layer, n: kids.length }); this.hooks.stat?.('pops', 1); }
+      if (over > 0.5 && kids[0]) this.damage(kids[0], over, type, src, { noReact: true, ignoreRes: true });   // Treffer reißt mehrere Schichten durch
+    }
     this.emit({ t: 'kill', e, x: e.x, y: e.y, coins, src });
   }
   charXp(cid, raw) {
     const got = this.hooks.charXp ? this.hooks.charXp(cid, raw, this.wave) : raw;
     this.stats.xp[cid] = (this.stats.xp[cid] || 0) + (got || 0);
   }
-  gain(c) { if (c > 0) { this.coins += c; this.stats.coins += c; } }
+  gain(c) { if (c > 0) { if (this.mods.halfCash) c *= 0.5; this.coins += c; this.stats.coins += c; } }
 
   // ───────── Held ─────────
   heroXp(t, amt) {
@@ -470,7 +484,16 @@ export class World {
   // ───────── Werte neu berechnen: Basis → Synergien → Auren → Buffs ─────────
   refresh() {
     this.dirty = false;
-    for (const t of this.towers) t.s = t.hero ? baseStats(t) : baseStats(t, this.levelOf(t.cid), this.branchOf(t.cid));
+    const A = this.ac;
+    for (const t of this.towers) {
+      const s = t.s = t.hero ? baseStats(t) : baseStats(t, this.levelOf(t.cid), this.branchOf(t.cid));
+      s.dmg *= (1 + (A.dmg || 0)) * (s.dmgType && s.dmgType !== 'phys' ? 1 + (A.elem || 0) : 1); s.rate *= 1 + (A.rate || 0); s.range *= 1 + (A.range || 0);
+      if (A.crit) s.crit.ch += A.crit; if (A.boss) s.bossMul *= 1 + A.boss;
+      if (A.burn) s.burn.dps *= 1 + A.burn; if (A.slow) s.slow.pct = Math.min(0.85, s.slow.pct * (1 + A.slow));
+      if (A.income && s.income) s.income *= 1 + A.income;
+      if (this.mods.soulburn) { s.income = 0; s.interest = 0; s.lucky = 0; }
+    }
+    this.luckyT = this.towers.filter(t => t.s.lucky > 0);
     const R = BAL.run.synergyRange, act = [];
     for (const sy of SYNERGIES) {
       const A = this.towers.filter(t => t.cid === sy.a), B = this.towers.filter(t => t.cid === sy.b);
@@ -748,6 +771,7 @@ export class World {
         }
         break;
       }
+      case 'goldrain': { const c = 60 + 15 * this.wave; this.gain(c); this.stats.income += c; this.emit({ t: 'ability', id: 'goldrain', tower: t, coins: c }); break; }
       case 'blessing': {
         this.emit({ t: 'ability', id: 'blessing', tower: t, r: 3.5 });
         for (const o of this.towers) if (Math.hypot(o.x - t.x, o.y - t.y) <= 3.5) o.buffs.push({ id: 'blessing', t: 8, fx: { mul: { rate: 1.4, dmg: 1.2 } } });
@@ -802,7 +826,7 @@ export class World {
       default: ok = false;
     }
     if (!ok) return { ok: false, why: 'Keine Ziele' };
-    if (slot === 'ab') t.abCd = info.cd * (1 - cdr); else t.ultCd = info.cd * (1 - cdr);
+    const acd = 1 - (this.ac.abCd || 0); if (slot === 'ab') t.abCd = info.cd * (1 - cdr) * acd; else t.ultCd = info.cd * (1 - cdr) * acd;
     this.stats.abilities++; this.hooks.stat?.('abilities', 1);
     this.timeScale = 1;
     return { ok: true };
@@ -813,8 +837,8 @@ export class World {
     if (this.over) return;
     while (this.doneWave < this.wave) {
       this.doneWave++;
-      const w = this.doneWave, bonus = Math.round(BAL.run.waveBonus(w) * this.diff.coins);
-      let income = 0, heal = 0; for (const t of this.towers) { income += t.s?.income || 0; heal += t.s?.lifeRegen || 0; }
+      const w = this.doneWave, bonus = Math.round(BAL.run.waveBonus(w) * this.diff.coins * (1 + (this.ac.waveBonus || 0)));
+      let income = 0, heal = 0; for (const t of this.towers) { income += t.s?.income || 0; heal += t.s?.lifeRegen || 0; if (t.s?.interest) income += Math.min(t.s.icap, Math.floor(this.coins * t.s.interest)); }
       if (heal && this.lives < this.maxLives) { this.lives = Math.min(this.maxLives, this.lives + heal); this.emit({ t: 'heal2', lives: heal }); }
       this.gain(bonus + income); this.stats.income += income; if (income) this.hooks.stat?.('income', income);
       const used = new Set(this.towers.filter(t => !t.hero).map(t => t.cid));

@@ -8,6 +8,7 @@ import { CREATURES } from '../js/data/creatures.js';
 import { defaultProfile, migrate, saveProfile, loadProfile } from '../js/meta/profile.js';
 import { addCharXp, addAccXp, dimFactor, maxStage, unlocked, checkAchievements, charNeed, formsFor, levelFx } from '../js/meta/progression.js';
 import { playRun } from './balance.mjs';
+import { waveDef } from '../js/data/waves.js';
 
 const step = (w, sec) => { for (let i = 0; i < sec * 60; i++) w.step(1 / 60); w.events.length = 0; };
 function mkWorld(P = defaultProfile(), o = {}) {
@@ -262,4 +263,91 @@ test('Schildträger schützt, Feuerdämon legt beim Tod lahm', () => {
   const t = w.place('kitsune', 3, 3.6).tower;
   const d = w.spawn('demon', [], 3); d.x = 3; d.y = 2.5; w.damage(d, 1e6, 'phys', null);
   assert.ok(t.disabledT > 0, 'Explosion legt Kreatur lahm');
+});
+
+test('Schichten-Gegner: platzen Schicht für Schicht, Überschussschaden reißt durch', () => {
+  const w = mkWorld().w;
+  const e = w.spawn('l5', [], 3); e.speed = 0;
+  w.damage(e, e.hp + 0.1, 'phys', null);
+  assert.equal(e.alive, false);
+  let kinds = w.enemies.filter(x => x.alive).map(x => x.kind);
+  assert.deepEqual(kinds, ['l4'], 'Sonne → Sturm');
+  assert.ok(w.events.some(x => x.t === 'pop' && x.layer === 5));
+  // großer Treffer: Sturm (7) + Glut (6) + Moos (6) durch, Tau bleibt mit Rest
+  const l4 = w.enemies.find(x => x.alive);
+  w.damage(l4, l4.hp + 6 + 6 + 1, 'phys', null, { ignoreRes: true });
+  kinds = w.enemies.filter(x => x.alive).map(x => x.kind);
+  assert.deepEqual(kinds, ['l1'], 'drei Schichten auf einmal');
+  const k = w.spawn('kokon', [], 5); w.damage(k, 1e4, 'fire', null);
+  assert.ok(w.enemies.filter(x => x.alive && x.kind === 'l1').length >= 1, 'Kokon zerbricht bis nach unten');
+});
+
+test('Shinobi-Akademie: Punkte, Reihenfolge, Boni in der Welt', async () => {
+  const { shinobiPoints, canLearn, learn, academyFx } = await import('../js/data/academy.js');
+  const P = defaultProfile(); P.account.level = 6; P.maps.ahnenhain.normal = 20;
+  assert.equal(shinobiPoints(P).earned, 6, '5 Level + 1 erster Sieg');
+  assert.equal(canLearn(P, 'k2').ok, false, 'Stufe 2 braucht Stufe 1');
+  for (const id of ['h1', 'h2', 'k1', 's1']) assert.ok(learn(P, id).ok, id);
+  assert.equal(shinobiPoints(P).free, 2);
+  const fx = academyFx(P);
+  const base = new World({ map: 'ahnenhain', diff: 'normal', loadout: ['kitsune'], hooks: {} });
+  const w = new World({ map: 'ahnenhain', diff: 'normal', loadout: ['kitsune'], hooks: {}, academy: fx });
+  assert.equal(w.coins, base.coins + 100); assert.equal(w.lives, base.lives + 15);
+  assert.ok(w.costOf('kitsune') < base.costOf('kitsune'), 'Feilschen');
+  w.coins = 9999; base.coins = 9999; const t = w.place('kitsune', 3, 4.5).tower, tb = base.place('kitsune', 3, 4.5).tower;
+  assert.ok(Math.abs(t.s.dmg / tb.s.dmg - 1.04) < 1e-6, '+4 % Schaden');
+});
+
+test('Glückskatze: Einkommen, Zinsen, Glückskopfgeld, Goldregen', () => {
+  const P = defaultProfile(); P.chars.neko.level = 12;
+  const w = mkWorld(P).w; w.coins = 99999;
+  const t = w.place('neko', 3, 4.5).tower;
+  w.upgrade(t.id, 0); w.upgrade(t.id, 2);           // Spardose (2 % Zinsen) + Glückspfote
+  assert.ok(t.s.interest >= 0.02 && t.s.lucky >= 1 && t.s.income >= 25);
+  w.coins = 1000; w.wave = 1; const c0 = w.coins; w.waveEnd();
+  const interest = Math.min(t.s.icap, Math.floor(c0 * t.s.interest));
+  assert.ok(w.coins - c0 >= t.s.income + interest, 'Einkommen + Zinsen am Wellenende');
+  const e = w.spawn('slime', [], 0); e.x = t.x + 0.5; e.y = t.y; const c1 = w.coins; w.kill(e, null);
+  assert.ok(w.coins - c1 >= Math.round(8 * w.diff.coins) + t.s.lucky, 'Glücksmünze beim Besiegen in Reichweite');
+  w.evolve(t.id); w.wave = 4; t.abCd = 0; const c2 = w.coins; assert.ok(w.useAbility(t.id, 'ab').ok); assert.equal(w.coins - c2, 60 + 15 * 4);
+});
+
+test('Seelenwale: Sturmwal → 2 Wale → je 4 Kokons, freie Wellen erzeugen Wale', () => {
+  const w = mkWorld().w;
+  const s = w.spawn('whale2', [], 4); w.damage(s, s.hp + 1, 'astral', null);
+  const whales = w.enemies.filter(x => x.alive && x.kind === 'whale'); assert.equal(whales.length, 2);
+  w.damage(whales[0], whales[0].hp + 1, 'astral', null);
+  assert.equal(w.enemies.filter(x => x.alive && x.kind === 'kokon').length, 4);
+  let found = false; for (let n = 21; n < 60 && !found; n++) found = waveDef(n).groups.some(g => g.e === 'whale' || g.e === 'whale2');
+  assert.ok(found, 'Wale in freien Wellen');
+});
+
+test('Herausforderungen: Regeln greifen, Medaillen geben Shinobi-Punkte', async () => {
+  const { CH, reversedMap, chUnlocked } = await import('../js/data/challenges.js');
+  const { shinobiPoints } = await import('../js/data/academy.js');
+  const { MAPS } = await import('../js/data/maps.js');
+  const W = mods => new World({ map: 'ahnenhain', diff: 'normal', loadout: ['kitsune'], hooks: {}, mods, mapObj: mods.reverse ? reversedMap(MAPS.ahnenhain) : null });
+  const base = W({}), half = W(CH.half.mods); base.gain(100); half.gain(100);
+  assert.equal(half.coins - half.diff.start, 50, 'halbes Gold');
+  const a = base.spawn('slime'), b = W(CH.dbl.mods).spawn('slime'); assert.equal(b.maxHp, a.maxHp * 2, 'doppelte KP');
+  const s = W(CH.soul.mods); assert.equal(s.lives, 1); s.coins = 9999; const t = s.place('kitsune', 3, 4.5).tower; assert.equal(s.sell(t.id).ok, false, 'kein Verkaufen');
+  const bw = W(CH.basic.mods); bw.coins = 99999; const k = bw.place('kitsune', 3, 4.5).tower; assert.equal(bw.evolve(k.id).ok, false, 'keine Erweckung');
+  const r = W(CH.rev.mods), e = r.spawn('slime'); assert.ok(e.x > 20, 'rückwärts: Start rechts'); assert.ok(r.paths[0].pts.at(-1).x < 2, 'Ende links');
+  const ap = W(CH.apoc.mods); ap.startWave(); for (let i = 0; i < 60 * 40 && ap.wave < 2; i++) ap.step(1 / 60); assert.ok(ap.wave >= 2, 'Apokalypse startet Wellen selbst');
+  const P = defaultProfile(); assert.equal(chUnlocked(P, 'ahnenhain', 'half'), false); P.maps.ahnenhain.normal = 20; assert.equal(chUnlocked(P, 'ahnenhain', 'half'), true);
+  const p0 = shinobiPoints(P).earned; P.maps.ahnenhain.medals = { half: 1, rev: 1 }; assert.equal(shinobiPoints(P).earned, p0 + 2);
+});
+
+test('Täglich: Aufgaben je Tag, Fortschritt seit Tagesbeginn, Tageskampf gibt Shinobi-Punkt', async () => {
+  const { ensureDaily, questProgress, dailyChallenge, QUESTS } = await import('../js/data/daily.js');
+  const { shinobiPoints } = await import('../js/data/academy.js');
+  const P = defaultProfile(); P.stats.kills = 500;
+  const D = ensureDaily(P, new Date(2026, 10, 21)); assert.equal(D.quests.length, 3); assert.equal(new Set(D.quests).size, 3);
+  const q = QUESTS.find(x => x.id === D.quests[0]); assert.equal(questProgress(P, q), 0);
+  P.stats[q.stat] = (P.stats[q.stat] || 0) + 7; assert.equal(questProgress(P, q), 7);
+  assert.deepEqual(ensureDaily(P, new Date(2026, 10, 21)).quests, D.quests, 'gleicher Tag = gleiche Aufgaben');
+  const a = dailyChallenge(P, () => true, '2026-11-21'), b = dailyChallenge(P, () => true, '2026-11-21');
+  assert.deepEqual(a, b, 'Tageskampf ist für ein Datum fest'); assert.equal(a.mods.length, 2);
+  const p0 = shinobiPoints(P).earned; P.daily.sp = 2; assert.equal(shinobiPoints(P).earned, p0 + 2);
+  const D2 = ensureDaily(P, new Date(2026, 10, 22)); assert.equal(D2.sp, 2, 'Punkte bleiben am nächsten Tag'); assert.equal(D2.won, false);
 });

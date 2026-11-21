@@ -37,6 +37,7 @@ export const ACCOUNT_REWARDS = [
   { lvl: 2,  type: 'hero',     id: 'kairo',   text: 'Held: Kairo, der Fuchs-Shinobi' },
   { lvl: 3,  type: 'creature', id: 'tiger',   text: 'Donnertiger' },
   { lvl: 4,  type: 'creature', id: 'deer',    text: 'Geisthirsch' },
+  { lvl: 4,  type: 'creature', id: 'neko',    text: 'Glückskatze' },
   { lvl: 3,  type: 'map',      id: 'dorf',    text: 'Karte: Shinobi-Dorf' },
   { lvl: 6,  type: 'map',      id: 'glut',    text: 'Karte: Glutkrater' },
   { lvl: 5,  type: 'mode',     id: 'hard',    text: 'Schwierigkeit: Schwer' },

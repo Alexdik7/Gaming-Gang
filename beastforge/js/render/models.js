@@ -659,6 +659,7 @@ export const ENEMY_GEO = {
     [bx(), 0x5a6474, [-0.12, 0.3, 0.27], [0, 0, 0.4], [0.2, 0.3, 0.05]], [cy(), 0x7a5a3a, [0.22, 0.5, -0.05], [0.2, 0, 0], [0.02, 0.9, 0.02]], [cn(), 0xd8dde6, [0.22, 0.98, -0.0], [0.2, 0, 0], [0.04, 0.14, 0.04]],
     [cy(), 0x3a3030, [-0.08, 0.1, 0], 0, [0.06, 0.2, 0.06]], [cy(), 0x3a3030, [0.08, 0.1, 0], 0, [0.06, 0.2, 0.06]]]),
 };
+for (const k of ['l1', 'l2', 'l3', 'l4', 'l5', 'kokon', 'whale', 'whale2']) ENEMY_GEO[k] = ENEMY_GEO.slime; // Rückfall ohne 3D-Modelle
 export const ENEMY_GLOW = { wisp: true };
 export const ENEMY_ALPHA = { shade: 0.62 };
 

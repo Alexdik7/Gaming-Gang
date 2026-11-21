@@ -193,8 +193,8 @@ export class MapView {
   buildShrine() {
     const S = []; this.map.grid.forEach((r, y) => [...r].forEach((c, x) => { if (c === 'S') S.push([x, y]); }));
     const last = this.map.path[this.map.path.length - 1];
-    const cx = S.reduce((a, s) => a + s[0], 0) / S.length + 0.5, cy = last[1];
-    const g = new THREE.Group(); g.position.set(cx - this.W / 2 + 0.25, 0, cy - this.H / 2); g.rotation.y = -Math.PI / 2; g.scale.setScalar(0.9); this.root.add(g);
+    const rev = this.map.reversed, cx = rev ? last[0] : S.reduce((a, s) => a + s[0], 0) / S.length + 0.5, cy = last[1];
+    const g = new THREE.Group(); g.position.set(cx - this.W / 2 + (rev ? -0.25 : 0.25), 0, cy - this.H / 2); g.rotation.y = rev ? Math.PI / 2 : -Math.PI / 2; g.scale.setScalar(0.9); this.root.add(g);
     const stone = toon(0xd8d2c4), wood = toon(0xd8342c), roof = toon(0x3f9a86), gold = toon(0xffc94a, { emissive: 0x7a5a10, emissiveIntensity: 0.4 });
     g.add(mk(geo.box(), stone, { p: [0, 0.08, 0], s: [2.6, 0.16, 0.95] }));
     g.add(mk(geo.box(), stone, { p: [0, 0.2, -0.05], s: [2.2, 0.1, 0.8] }));
@@ -215,7 +215,7 @@ export class MapView {
   buildTorii() { for (const P of this.paths) this.torii(P); }
   torii(P) {
     const [px, py] = P[0], [qx, qy] = P[1], a = Math.atan2(qy - py, qx - px);
-    const g = new THREE.Group(); g.position.set(0.35 - this.W / 2, 0, py - this.H / 2); g.rotation.y = Math.PI / 2 - a; this.root.add(g);
+    const g = new THREE.Group(); g.position.set(Math.min(this.W - 0.35, Math.max(0.35, px)) - this.W / 2, 0, Math.min(this.H - 0.35, Math.max(0.35, py)) - this.H / 2); g.rotation.y = Math.PI / 2 - a; this.root.add(g);
     const red = toon(0xd8342c), blk = toon(0x2a2a36);
     for (const x of [-0.48, 0.48]) { g.add(mk(geo.cyl(10), red, { p: [x, 0.65, 0], s: [0.06, 1.3, 0.06] })); g.add(mk(geo.cyl(10), blk, { p: [x, 0.06, 0], s: [0.08, 0.12, 0.08] })); }
     g.add(mk(geo.box(), red, { p: [0, 1.06, 0], s: [1.15, 0.07, 0.08] }));
