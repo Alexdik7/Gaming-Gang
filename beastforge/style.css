@@ -400,3 +400,14 @@ b { font-weight: 800; }
 @keyframes nring { 50% { box-shadow: 0 0 0 5px rgba(95,230,255,.25), 0 0 16px rgba(95,230,255,.6); } }
 .eform:not(.got) img { filter: brightness(0) opacity(.55); } .eform.next img { filter: brightness(.25) sepia(1) hue-rotate(160deg) opacity(.85); }
 .earr { font-style: normal; color: #ffd257; font-size: 18px; } .eor { font-style: normal; font-size: 9px; color: var(--mut); }
+
+/* ───────── Nur Querformat: Dreh-Hinweis im Hochformat ───────── */
+#turn { display: none; position: fixed; inset: 0; z-index: 200; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 30px;
+  background: radial-gradient(circle at 50% 40%, #3a2470, #120e22 70%); }
+#turn b { font-size: 24px; letter-spacing: .5px; text-shadow: 0 3px 0 rgba(0,0,0,.4); }
+#turn small { color: var(--mut); font-size: 14px; line-height: 1.5; max-width: 300px; }
+.tphone { width: 70px; height: 124px; border-radius: 16px; border: 5px solid #ffd257; position: relative; box-shadow: 0 0 30px rgba(255,210,87,.35); animation: tturn 2.4s cubic-bezier(.6, 0, .3, 1) infinite; }
+.tphone i { position: absolute; left: 50%; top: 6px; width: 18px; height: 4px; margin-left: -9px; border-radius: 3px; background: #ffd257; }
+.tphone::after { content: '🦊'; position: absolute; inset: 0; display: grid; place-items: center; font-size: 30px; }
+@keyframes tturn { 0%, 20% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+@media (orientation: portrait) { #turn { display: flex; } }

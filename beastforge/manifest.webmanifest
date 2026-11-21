@@ -3,7 +3,7 @@
   "short_name": "Beastforge",
   "start_url": "./",
   "display": "fullscreen",
-  "orientation": "any",
+  "orientation": "landscape",
   "background_color": "#120e22",
   "theme_color": "#120e22",
   "icons": [

@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.8.1 – iPhone-Hochformat
+## Stand: v0.8.2 – nur Querformat
+**0.8.2:** Gespielt wird nur im Querformat (Wunsch des Spielers): Manifest `orientation: landscape`, im Hochformat Vollbild-Hinweis `#turn` mit drehendem Handy (CSS `@media (orientation: portrait)`), laufender Run pausiert automatisch (`resize`/`orientationchange` in `main.js`), `screen.orientation.lock` wo möglich (iOS kann nicht sperren). Die Hochformat-Kamera aus 0.8.1 bleibt als Rückfall im Code.
+
+## Stand v0.8.1 – iPhone-Hochformat
 **Fix 0.8.1** (Rückmeldung vom iPhone): Im Hochformat dreht sich die Kamera um 90° (`stage.portrait`, `fit()` mit Gierwinkel) – die Karte füllt den Bildschirm statt winzig zu sein; kein „Quer halten“-Hinweis mehr. Platzieren rastet auf den nächsten freien Platz ein (`world.nearestPlace`, bis 0,9 Felder), beim Ziehen mit dem Finger sitzt die Vorschau 46 px über dem Finger. Im Hochformat öffnet sich nach dem Platzieren nicht mehr das Upgrade-Fenster (Shop bleibt sichtbar), das Fenster ist dort max. 46 % hoch.
 
 ## Stand v0.8.0 – Menü wie ein fertiges Spiel

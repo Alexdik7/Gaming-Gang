@@ -29,7 +29,10 @@ class App {
     this.applySettings();
     this.loader = new Loader(); this.loader.show();
     this.boot();
-    addEventListener('pointerdown', () => this.audio.init(), { once: true });
+    addEventListener('pointerdown', () => { this.audio.init(); screen.orientation?.lock?.('landscape').catch(() => {}); }, { once: true });
+    // Nur Querformat: im Hochformat Vollbild-Hinweis (CSS #turn) und das Spiel pausiert automatisch
+    const turn = () => { const port = innerHeight > innerWidth; if (port && this.game && !this.game.paused && !this.game.world.over) this.game.hud.pause(); };
+    addEventListener('resize', turn); addEventListener('orientationchange', turn);
     const save = () => saveProfile(this.profile);
     document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); if (this.game && !this.game.paused && !this.game.world.over) this.game.hud.pause(); } });
     addEventListener('pagehide', save);
