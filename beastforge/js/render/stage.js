@@ -1,5 +1,6 @@
 // Renderer, Kamera, Licht, Nachbearbeitung (Bloom), Größenanpassung, Qualitätsstufen.
 import * as THREE from 'three';
+const PI_2 = Math.PI / 2;
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -55,20 +56,23 @@ export class Stage {
     const cam = this.camera;
     if (this.mode === 'menu') { cam.fov = 32; cam.clearViewOffset(); cam.aspect = this.w / this.h; cam.updateProjectionMatrix(); this.scene.fog.near = 14; this.scene.fog.far = 40; return; }
     // Genre-Kamera: steil von schräg oben (≈64°), wenig Perspektive, Karte füllt den freien Bereich
-    const I = this.insets, W = this.mapW + 0.2, H = this.mapH + 0.2, tilt = 1.12, tz = 0.3;
+    const I = this.insets, W = this.mapW + 0.2, H = this.mapH + 0.2, tilt = 1.12;
     cam.fov = 24;
-    const dir = new THREE.Vector3(0, Math.sin(tilt), Math.cos(tilt));
     const freeW = Math.max(120, this.w - I.left - I.right), freeH = Math.max(120, this.h - I.top - I.bottom);
+    // Hochformat: Kamera um 90° drehen, damit die lange Kartenseite senkrecht steht und den Bildschirm füllt
+    this.portrait = freeH > freeW * 1.1;
+    const yaw = this.portrait ? PI_2 : 0, dir = new THREE.Vector3(Math.sin(yaw) * Math.cos(tilt), Math.sin(tilt), Math.cos(yaw) * Math.cos(tilt));
+    const tzv = new THREE.Vector3(Math.sin(yaw) * 0.3, 0, Math.cos(yaw) * 0.3);
     cam.clearViewOffset(); cam.aspect = freeW / freeH; cam.updateProjectionMatrix();
     const corners = [[-W / 2, -H / 2], [W / 2, -H / 2], [-W / 2, H / 2], [W / 2, H / 2]].map(([x, z]) => new THREE.Vector3(x, 0, z));
-    const place = d => { cam.position.copy(dir).multiplyScalar(d).add(new THREE.Vector3(0, 0, tz)); cam.lookAt(0, 0, tz); cam.updateMatrixWorld(); };
+    const place = d => { cam.position.copy(dir).multiplyScalar(d).add(tzv); cam.lookAt(tzv); cam.updateMatrixWorld(); };
     const box = () => { let a = 9, b = -9, c = 9, e = -9; for (const k of corners) { const p = k.clone().project(cam); a = Math.min(a, p.x); b = Math.max(b, p.x); c = Math.min(c, p.y); e = Math.max(e, p.y); } return [a, b, c, e]; };
     let lo = 4, hi = 120;
     for (let it = 0; it < 34; it++) { const d = (lo + hi) / 2; place(d); const [a, b, c, e] = box(); if (b - a <= 1.99 && e - c <= 1.99) hi = d; else lo = d; }
     place(hi);
     const [a, b, c, e] = box(), cx = (a + b) / 2, cy = (c + e) / 2;
     cam.setViewOffset(freeW, freeH, -I.left + cx * freeW / 2, -I.top - cy * freeH / 2, this.w, this.h);
-    this.camBase.copy(cam.position); this.camLook.set(0, 0, tz);
+    this.camBase.copy(cam.position); this.camLook.copy(tzv);
     this.scene.fog.near = hi * 1.1; this.scene.fog.far = hi * 2.6;
   }
   setMode(m) { this.mode = m; this.fit(); }
@@ -80,7 +84,7 @@ export class Stage {
       const a = t * 0.08; cam.position.set(Math.sin(a) * 13, 7.5, Math.cos(a) * 13); cam.lookAt(0, 0.6, 0); return;
     }
     cam.position.copy(this.camBase);
-    if (this.zoomPunch > 0.001) { const f = this.focus || this.camLook; cam.position.lerp(f.clone().add(new THREE.Vector3(0, 3.5, 3)), this.zoomPunch * 0.25); this.zoomPunch *= Math.pow(0.04, dt); }
+    if (this.zoomPunch > 0.001) { const f = this.focus || this.camLook; cam.position.lerp(f.clone().add(this.portrait ? new THREE.Vector3(3, 3.5, 0) : new THREE.Vector3(0, 3.5, 3)), this.zoomPunch * 0.25); this.zoomPunch *= Math.pow(0.04, dt); }
     if (this.shake > 0.001) {
       const s = this.shake * this.shake * 0.25;
       cam.position.x += (Math.random() - 0.5) * s + this.shakeDir.x * s; cam.position.y += (Math.random() - 0.5) * s; cam.position.z += (Math.random() - 0.5) * s + this.shakeDir.y * s;

@@ -271,7 +271,7 @@ b { font-weight: 800; }
   .shead { display: none; } #tray { display: flex; overflow-x: auto; overflow-y: hidden; } .card { width: 68px; flex: none; } .card.hero { width: 68px; display: block; text-align: center; } .card.hero img { width: 100%; }
   .sfoot { width: 74px; } .play { height: 100%; min-height: 70px; } .early { position: absolute; bottom: calc(100% + 6px); right: 6px; }
   #abilities { bottom: calc(120px + var(--sb)); }
-  #panel { top: auto; width: auto; right: 0; max-height: 62vh; border-right: 0; border-top: 3px solid rgba(255,210,87,.45); border-radius: 22px 22px 0 0; animation: up .2s ease-out; }
+  #panel { top: auto; width: auto; right: 0; max-height: 46vh; border-right: 0; border-top: 3px solid rgba(255,210,87,.45); border-radius: 22px 22px 0 0; animation: up .2s ease-out; }
   @keyframes up { from { transform: translateY(40px); opacity: 0; } }
   #hud.psel .top, #hud.psel #toasts { left: calc(8px + var(--sl)); } #hud.psel #shop, #hud.psel #abilities { visibility: hidden; }
   .coach { bottom: calc(126px + var(--sb)); width: min(92vw, 420px); }

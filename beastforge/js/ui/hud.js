@@ -34,7 +34,7 @@ export class Hud {
     const panel = !$('panel').classList.contains('hidden') && land() ? $('panel').getBoundingClientRect().width : 0;
     if (land()) this.g.app.stage.setInsets({ top, right: innerWidth - sh.left + 2, bottom: 6, left: 6 + panel * 0 });
     else this.g.app.stage.setInsets({ top, right: 0, bottom: innerHeight - sh.top + 2, left: 0 });
-    $('rotate').classList.toggle('hidden', land());
+    $('rotate').classList.add('hidden'); // Hochformat wird jetzt unterstützt (Karte gedreht)
   }
   destroy() { $('hud').classList.add('hidden'); removeEventListener('resize', this.resizeObs); document.querySelector('.coach')?.remove(); $('bubbles').innerHTML = ''; }
 
