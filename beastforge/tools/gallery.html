@@ -29,7 +29,7 @@ if (mode === 'enemies') {
   cam.position.set(0, 4.5, 8); cam.lookAt(0, 1.4, 0);
 } else {
   const id = q.get('id') || 'kitsune', st = (q.get('st') || '0,1,2,3,4,5').split(',').map(Number), br = q.get('br') || 'spirit';
-  st.forEach((s, i) => { const m = buildModel(id, { stage: s, branch: br, tiers: (q.get('t') || '0,0,0').split(',').map(Number) }); m.root.position.x = (i - (st.length - 1) / 2) * 1.5; m.root.rotation.y = +(q.get('ry') || 0.6); m.root.scale.setScalar(1.6); sc.add(m.root); items.push(m); });
+  st.forEach((s, i) => { const tl = (q.get('t') || '0,0,0').split(';'); const m = buildModel(id, { stage: s, branch: br, hlvl: s, tiers: (tl[i] || tl[0]).split(',').map(Number) }); m.root.position.x = (i - (st.length - 1) / 2) * 1.5; m.root.rotation.y = +(q.get('ry') || 0.6); m.root.scale.setScalar(1.6); sc.add(m.root); items.push(m); });
   cam.position.set(0, 3.2, 7); cam.lookAt(0, 0.8, 0);
 }
 let last = performance.now(), t = 0; const at = +(q.get('atk') || 0);

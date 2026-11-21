@@ -1,7 +1,8 @@
 // Asset-Pipeline: CC0-Quellmodelle → schlanke GLBs in assets/models/ (nur benötigte Animationen, kleine Texturen).
 // Aufruf (ESM braucht die Pakete neben dem Skript): npm i @gltf-transform/core@4 @gltf-transform/extensions@4 @gltf-transform/functions@4 sharp meshoptimizer@0.21
 //   in einem Hilfsordner, Skript dorthin kopieren, dann: node <hilfsordner>/models.mjs <quellordner> beastforge/assets/models
-// Quellen (alle CC0): Quaternius „Ultimate Monsters“ (glTF/), Quaternius „Ultimate Animated Animals“ (animals/), Vuena „Free Low-Poly Animals“ (vuena/)
+// Quellen (alle CC0): Quaternius „Ultimate Monsters“ (glTF/), Quaternius „Ultimate Animated Animals“ (animals/), Vuena „Free Low-Poly Animals“ (vuena/),
+//   KayKit „Adventurers“ + „Character Animations“ (kaykit/, kkanim/; aus series-ai/jam-ready-assets, LFS über media.githubusercontent.com)
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { prune, dedup, resample, textureCompress, weld, simplify } from '@gltf-transform/functions';
@@ -34,6 +35,13 @@ const LIST = {
   fox:       ['vuena/animal_fox.glb',       { idle: 'idle', attack: 'attack', hit: 'hit', call: 'call' }, { lod: true }],
   owl:       ['vuena/animal_owl.glb',       { idle: 'idle', attack: 'attack', hit: 'hit', call: 'call' }, { lod: true }],
   cat:       ['vuena/animal_cat.glb',       { idle: 'idle', attack: 'attack', hit: 'hit', call: 'call' }, { lod: true }],
+  // Helden (KayKit): Figuren ohne Animation, Animationen getrennt (gleiches Skelett „Rig_Medium“)
+  kk_rogue:  ['kaykit/Rogue_Hooded.glb', {}, { tex: 256 }],
+  kk_raizen: ['kaykit/Rogue.glb', {}, { tex: 256 }],
+  kk_mage:   ['kaykit/Mage.glb', {}, { tex: 256 }],
+  kk_anim1:  ['kkanim/Rig_Medium_General.glb', { Idle_A: 'idle', Hit_A: 'hit', Throw: 'throw', Spawn_Ground: 'spawn' }, { noMesh: true }],
+  kk_anim2:  ['kkanim/Rig_Medium_CombatRanged.glb', { Ranged_Magic_Shoot: 'magic', Ranged_Magic_Spellcasting: 'cast' }, { noMesh: true }],
+  kk_anim3:  ['kkanim/Rig_Medium_CombatMelee.glb', { Melee_Dualwield_Attack_Slice: 'slash' }, { noMesh: true }],
 };
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 let total = 0;
@@ -44,6 +52,8 @@ for (const [name, [file, clips, o = {}]] of Object.entries(LIST)) {
   for (const m of root.listMaterials()) { m.setMetallicRoughnessTexture(null); m.setOcclusionTexture(null); m.setNormalTexture(null); m.setEmissiveTexture(null); }
   await doc.transform(prune(), dedup(), resample({ tolerance: 0.002 }));
   if (o.lod) await doc.transform(textureCompress({ encoder: sharp, targetFormat: 'jpeg', resize: [512, 512], quality: 82 }));
+  if (o.tex) await doc.transform(textureCompress({ encoder: sharp, targetFormat: 'png', resize: [o.tex, o.tex] }));
+  if (o.noMesh) { for (const n of root.listNodes()) if (n.getMesh()) { n.setSkin(null); n.getMesh().dispose(); n.dispose(); } for (const k of root.listSkins()) k.dispose(); for (const m of root.listMaterials()) m.dispose(); }
   if (o.simp) { for (const p of root.listMeshes().flatMap(m => m.listPrimitives())) p.setAttribute('NORMAL', null); await MeshoptSimplifier.ready; await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio: o.simp, error: 0.01 })); }
   await doc.transform(prune());
   const buf = await io.writeBinary(doc); fs.writeFileSync(path.join(OUT, name + '.glb'), buf); total += buf.length;

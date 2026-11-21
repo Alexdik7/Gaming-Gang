@@ -7,7 +7,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { gradTex, glow, toon, flat, mk, geo } from './toon.js';
 
 const PI = Math.PI;
-export const MODELS = ['blob', 'ghost', 'skull', 'wizard', 'mushking', 'bee', 'bee2', 'rockling', 'demon', 'orc', 'dragon', 'wolf', 'bull', 'husky', 'stag', 'fox', 'owl', 'cat'];
+export const MODELS = ['blob', 'ghost', 'skull', 'wizard', 'mushking', 'bee', 'bee2', 'rockling', 'demon', 'orc', 'dragon', 'wolf', 'bull', 'husky', 'stag', 'fox', 'owl', 'cat', 'kk_rogue', 'kk_raizen', 'kk_mage', 'kk_anim1', 'kk_anim2', 'kk_anim3'];
 export const ASSETS = {};
 let ready = false;
 export const assetsReady = () => ready;
@@ -108,23 +108,27 @@ export const ENEMY_MODELS = {
 
 // ───────── Skin-Modelle: Klon + Mixer + Knochen-Zubehör ─────────
 // Farbton-Verschiebung, die Helligkeit erhält (Textur oder Materialfarbe → Ziel-Farbe), optional Leuchten
-function tintMat(src, tint, em) {
+function tintMat(src, tint, em, stripes) {
   const m = new THREE.MeshToonMaterial({ map: src.map || null, color: src.color?.clone() || new THREE.Color(1, 1, 1), vertexColors: !!src.vertexColors, gradientMap: gradTex });
   if (src.map) src.map.colorSpace = THREE.SRGBColorSpace;
-  const u = { uTint: { value: new THREE.Vector4(...(tint ? [...new THREE.Color(tint[0]).toArray(), tint[1]] : [1, 1, 1, 0])) }, uEm: { value: new THREE.Color(em || 0) }, uFlash: { value: 0 } };
+  const u = { uTint: { value: new THREE.Vector4(...(tint ? [...new THREE.Color(tint[0]).toArray(), tint[1]] : [1, 1, 1, 0])) }, uEm: { value: new THREE.Color(em || 0) }, uFlash: { value: 0 },
+    uStripe: { value: new THREE.Vector4(...(stripes ? [...new THREE.Color(stripes[0]).toArray(), stripes[2]] : [0, 0, 0, 0])) }, uStripeF: { value: stripes ? stripes[1] : 1 } };
   m.userData.u = u;
   m.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec4 uTint; uniform vec3 uEm; uniform float uFlash;')
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vBfPos;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvBfPos = position;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec4 uTint; uniform vec3 uEm; uniform float uFlash; uniform vec4 uStripe; uniform float uStripeF; varying vec3 vBfPos;')
       .replace('#include <color_fragment>', `#include <color_fragment>
         float bfL = dot(diffuseColor.rgb, vec3(0.3, 0.55, 0.15));
-        diffuseColor.rgb = mix(diffuseColor.rgb, uTint.rgb * (0.35 + bfL * 1.3), uTint.a);`)
+        diffuseColor.rgb = mix(diffuseColor.rgb, uTint.rgb * (0.35 + bfL * 1.3), uTint.a);
+        float bfS = smoothstep(0.35, 0.75, sin(vBfPos.z * uStripeF + vBfPos.y * uStripeF * 0.35)) * smoothstep(0.3, 0.45, bfL);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uStripe.rgb, bfS * uStripe.a);`)
       .replace('#include <dithering_fragment>', `float bfRim = 1.0 - max(dot(normalize(vViewPosition), normal), 0.0);
         gl_FragColor.rgb += vec3(1.0, 0.96, 0.9) * smoothstep(0.6, 0.92, bfRim) * 0.25 + uEm;
         gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0), uFlash);
         #include <dithering_fragment>`);
   };
-  m.customProgramCacheKey = () => 'bftint';
+  m.customProgramCacheKey = () => 'bftint2';
   return m;
 }
 const olMats = new Map();
@@ -146,11 +150,12 @@ export class Rig {
     const skinned = [];
     model.traverse(c => {
       if (c.isBone) this.bones[c.name] = c;
-      if (c.isMesh) { if (!c.geometry.attributes.normal) c.geometry.computeVertexNormals(); c.material = tintMat(c.material, o.tint, o.em); this.mats.push(c.material); c.castShadow = true; c.frustumCulled = false; if (c.isSkinnedMesh) skinned.push(c); }
+      if (c.isMesh) { if (!c.geometry.attributes.normal) c.geometry.computeVertexNormals(); c.material = tintMat(c.material, o.tint, o.em, o.stripes); this.mats.push(c.material); c.castShadow = true; c.frustumCulled = false; if (c.isSkinnedMesh) skinned.push(c); }
     });
     // Normieren: Höhe o.h, Füße auf 0, mittig
     this.mixer = new THREE.AnimationMixer(model); this.clips = {};
-    for (const a of g.animations) this.clips[a.name] = this.mixer.clipAction(a);
+    for (const a of [...g.animations, ...(o.anims || []).flatMap(n => ASSETS[n]?.animations || [])]) this.clips[a.name] = this.mixer.clipAction(a);
+    for (const [k, v] of Object.entries(o.alias || {})) if (this.clips[v]) this.clips[k] = this.clips[v];
     (this.clips.idle || this.clips.walk)?.play(); this.mixer.update(0.01);
     model.updateMatrixWorld(true);
     const bb = new THREE.Box3(), v = new THREE.Vector3();
@@ -268,7 +273,8 @@ function deer(o) {
   let orb = null;
   if (st >= 2) orb = add(R.root, geo.oct(), toon(0xfff2a8, { emissive: 0xffd257, emissiveIntensity: 1 }), { p: [0, 1.25 * sc, 0], s: [0.06, 0.1, 0.06] });
   const aura = add(R.root, geo.torus(0.02), glow(st === 2 ? 0xffe9a0 : 0x9fffd0, 0.5), { p: [0, 0.03, 0], r: [PI / 2, 0, 0], s: 0.55 });
-  const tick = (t, dt, s) => { R.update(dt, s); aura.scale.setScalar(0.55 + Math.sin(t * 2) * 0.04); if (orb) { orb.rotation.y = t * 1.5; orb.position.y = 1.25 * sc + Math.sin(t * 2.2) * 0.05; } };
+  const pg = pathGear(R, o.tiers, sc);
+  const tick = (t, dt, s) => { R.update(dt, s); pg(t); aura.scale.setScalar(0.55 + Math.sin(t * 2) * 0.04); if (orb) { orb.rotation.y = t * 1.5; orb.position.y = 1.25 * sc + Math.sin(t * 2.2) * 0.05; } };
   return { root: R.root, tick, height: 1.15 * sc, rig: R };
 }
 
@@ -286,7 +292,8 @@ function raven(o) {
   if (st >= 1) R.attach(hb, mk(geo.sphere(10), toon(0xf4f0ea), { s: [0.1 * sc, 0.06 * sc, 0.05 * sc], ol: 0.006 }), head.clone().add(new THREE.Vector3(0, 0.02, 0.08 * sc)));
   const wisps = [];
   if (st >= 2) for (let i = 0; i < 4; i++) wisps.push(add(root, S(), glow(0xb07bff, 0.7), { s: 0.05 }));
-  const tick = (t, dt, s) => { R.update(dt, s); wisps.forEach((w, i) => { const a = t * 1.6 + i * PI / 2; w.position.set(Math.cos(a) * 0.38, 0.75 + Math.sin(t * 3 + i) * 0.05, Math.sin(a) * 0.38); }); };
+  const pg = pathGear(R, o.tiers, sc, { noHead: true });
+  const tick = (t, dt, s) => { R.update(dt, s); pg(t); wisps.forEach((w, i) => { const a = t * 1.6 + i * PI / 2; w.position.set(Math.cos(a) * 0.38, 0.75 + Math.sin(t * 3 + i) * 0.05, Math.sin(a) * 0.38); }); };
   return { root, tick, height: 1.05 * sc, rig: R };
 }
 
@@ -303,7 +310,8 @@ function dragonwolf(o) {
     const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(sd * 1.0, 0.55); sh.lineTo(sd * 0.9, -0.1); sh.lineTo(sd * 0.6, -0.35); sh.lineTo(sd * 0.25, -0.2); sh.lineTo(0, 0);
     const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), toon(fire ? 0xc84a2a : 0x5aa8d8, { side: THREE.DoubleSide })); m.rotation.x = -PI / 2.4; w.add(m); w.userData.sd = sd; wings.push(w);
   }
-  const tick = (t, dt, s) => { R.update(dt, s); wings.forEach(w => { w.rotation.z = w.userData.sd * (0.3 + Math.sin(t * 3) * 0.25); }); };
+  const pg = pathGear(R, o.tiers, sc);
+  const tick = (t, dt, s) => { R.update(dt, s); pg(t); wings.forEach(w => { w.rotation.z = w.userData.sd * (0.3 + Math.sin(t * 3) * 0.25); }); };
   return { root: R.root, tick, height: 0.95 * sc, rig: R };
 }
 
@@ -312,12 +320,85 @@ function golem(o) {
   const R = new Rig('rockling', { h: 1.0 * sc, tint: [[0x9a8a78, 0x8ab8d8, 0x7a6a58][st], [0.25, 0.4, 0.35][st]], em: st === 1 ? 0x061620 : 0, ol: 0.014 });
   const crystals = [];
   if (st >= 1) for (let i = 0; i < 5; i++) crystals.push(add(R.root, geo.oct(), toon(0x8ff6ff, { emissive: 0x3ad0ff, emissiveIntensity: 0.9 }), { p: [Math.cos(i * 1.26) * 0.3 * sc, 0.95 * sc + (i % 2) * 0.08, Math.sin(i * 1.26) * 0.3 * sc], s: [0.04, 0.09, 0.04] }));
-  const tick = (t, dt, s) => { R.update(dt, s); crystals.forEach((c, i) => { c.rotation.y = t + i; }); };
+  const pg = pathGear(R, o.tiers, sc, { noHead: true });
+  const tick = (t, dt, s) => { R.update(dt, s); pg(t); crystals.forEach((c, i) => { c.rotation.y = t + i; }); };
   return { root: R.root, tick, height: 1.1 * sc, rig: R };
 }
 
-export const GLB_CREATURES = { kitsune, deer, raven, dragonwolf, golem };
-export function buildGlb(id, o) { return ready && GLB_CREATURES[id] && ASSETS[{ kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling' }[id]] ? GLB_CREATURES[id](o) : null; }
+
+// ───────── Sichtbare Pfadstufen (für alle Modell-Kreaturen) ─────────
+// Pfad 1: Kopf (Stirnband → Juwel → Klingen/Flammen an den Schultern → Krone aus Licht)
+// Pfad 2: Rücken (Kragen → Wappen → kreisende Kugeln → Heiligenschein)
+// Pfad 3: Boden (Runenkreis → helle Runen → Runensteine → Lichtsäule)
+export const PATH_COL = [0xff7a3d, 0x5fd6ff, 0xc39bff];
+const boneBy = (R, re) => Object.keys(R.bones).find(k => re.test(k));
+export function pathGear(R, tiers = [0, 0, 0], sc = 1, o = {}) {
+  const anim = [], H = R.size.y, W = Math.max(R.size.x, R.size.z);
+  const hb = boneBy(R, /^head$|head/i), bb = boneBy(R, /chest|spine|neck/i);
+  const head = hb ? R.bonePos(hb) : new THREE.Vector3(0, H * 0.9, 0), back = bb ? R.bonePos(bb) : new THREE.Vector3(0, H * 0.6, 0);
+  const [a, b, c] = tiers, k = 0.5 + H * 0.5;
+  const gm = (col, i = 0.6) => toon(col, { emissive: col, emissiveIntensity: i });
+  if (a >= 1 && !o.noHead) { const band = mk(geo.torus(0.18), toon(PATH_COL[0]), { r: [PI / 2, 0, 0], s: 0.11 * k, ol: 0.004 }); R.attach(hb, band, head.clone().add(new THREE.Vector3(0, 0.03 * k, 0))); }
+  if (a >= 2 && !o.noHead) R.attach(hb, mk(geo.oct(), gm(0xffd257, 0.8), { s: [0.03 * k, 0.05 * k, 0.02 * k], ol: 0.004 }), head.clone().add(new THREE.Vector3(0, 0.05 * k, 0.11 * k)));
+  if (a >= 3) for (const sd of [-1, 1]) { const f = mk(C(), glow(PATH_COL[0], 0.85), { s: [0.05 * k, 0.2 * k, 0.05 * k] }); f.position.set(sd * (W * 0.32 + 0.08), H * 0.72, back.z); R.root.add(f); anim.push(t => { f.scale.y = 0.2 * k * (1 + Math.sin(t * 9 + sd) * 0.15); }); }
+  if (a >= 4) { const r = mk(geo.torus(0.05), glow(PATH_COL[0], 0.6), { r: [PI / 2, 0, 0], s: 0.18 * k }); r.position.set(head.x, head.y + 0.18 * k, head.z); R.root.add(r); anim.push(t => { r.rotation.z = t * 2; }); }
+  if (a >= 5) { const cr = new THREE.Group(); cr.position.set(head.x, head.y + 0.24 * k, head.z); R.root.add(cr); for (let i = 0; i < 5; i++) { const q = i / 5 * PI * 2; cr.add(mk(C(4), gm(0xffd257, 1.2), { p: [Math.cos(q) * 0.12 * k, 0, Math.sin(q) * 0.12 * k], s: [0.025 * k, 0.09 * k, 0.025 * k], ol: 0.004 })); } anim.push(t => { cr.rotation.y = t * 1.2; cr.position.y = head.y + 0.24 * k + Math.sin(t * 2) * 0.02; }); }
+  if (b >= 1) R.attach(bb, mk(geo.torus(0.3), toon(PATH_COL[1]), { r: [PI / 2.2, 0, 0], s: 0.13 * k * (o.collar || 1), ol: 0.004 }), back.clone());
+  if (b >= 2) R.attach(bb, mk(geo.cyl(10), gm(PATH_COL[1], 0.5), { r: [PI / 2, 0, 0], s: [0.07 * k, 0.015, 0.07 * k], ol: 0.004 }), back.clone().add(new THREE.Vector3(0, 0.06 * k, -0.1 * k)));
+  if (b >= 3) { const n = b >= 4 ? 4 : 2, orbs = []; for (let i = 0; i < n; i++) { const s = mk(geo.sphere(10), glow(PATH_COL[1], 0.9), { s: 0.045 * k }); R.root.add(s); orbs.push(s); } anim.push(t => orbs.forEach((s, i) => { const q = t * 2 + i * PI * 2 / n; s.position.set(Math.cos(q) * (W * 0.5 + 0.15), H * 0.55 + Math.sin(t * 3 + i) * 0.05, Math.sin(q) * (W * 0.5 + 0.15)); })); }
+  if (b >= 5) { const h = mk(geo.torus(0.04), glow(PATH_COL[1], 0.8), { s: 0.28 * k }); h.position.set(back.x, H * 0.75, back.z - 0.12 * k); R.root.add(h); anim.push(t => { h.rotation.z = t; }); }
+  if (c >= 1) { const ring = mk(geo.torus(0.02), glow(PATH_COL[2], c >= 2 ? 0.75 : 0.4), { r: [PI / 2, 0, 0], s: W * 0.55 + 0.2 }); ring.position.y = 0.02; R.root.add(ring); anim.push(t => { ring.rotation.z = t * 0.5; }); }
+  if (c >= 3) { const n = c >= 4 ? 5 : 3; for (let i = 0; i < n; i++) { const q = i / n * PI * 2, st = mk(geo.box(), toon(0x6a6478), { p: [Math.cos(q) * (W * 0.55 + 0.2), 0.08, Math.sin(q) * (W * 0.55 + 0.2)], r: [0, -q, 0], s: [0.05, 0.16, 0.03], ol: 0.004 }); R.root.add(st); st.add(mk(geo.box(), glow(PATH_COL[2], 0.9), { p: [0, 0.1, 0.6], s: [0.6, 0.4, 0.1] })); } }
+  if (c >= 5) { const col = mk(geo.cyl(16), glow(PATH_COL[2], 0.18), { p: [0, 0.9, 0], s: [W * 0.5 + 0.1, 1.8, W * 0.5 + 0.1] }); R.root.add(col); anim.push(t => { col.material.opacity = 0.14 + Math.sin(t * 2.5) * 0.05; }); }
+  return t => anim.forEach(f => f(t));
+}
+
+function tiger(o) {
+  const st = o.stage || 0, sc = [0.9, 1.0, 1.12][st] || 1;
+  const R = new Rig('cat', { h: 0.78 * sc, tint: [0xffa020, 0.7], em: st ? 0x0a0800 : 0, stripes: [0x24140e, 75, 0.9], ol: 0.012 });
+  const hb = boneBy(R, /head/i), head = R.bonePos(hb), hornM = toon(0xfff27a, { emissive: 0xffd000, emissiveIntensity: 0.9 });
+  if (st >= 1) for (const sd of [-1, 1]) R.attach(hb, mk(C(4), hornM, { r: [-0.3, 0, -sd * 0.5], s: [0.04 * sc, 0.2 * sc, 0.04 * sc], ol: 0.005 }), head.clone().add(new THREE.Vector3(sd * 0.06 * sc, 0.12 * sc, -0.02)));
+  const sparks = [];
+  if (st >= 2) { const mane = new THREE.Group(); for (let i = 0; i < 8; i++) { const q = i / 8 * PI * 2; mane.add(mk(C(4), glow(0xffe14d, 0.9), { p: [Math.cos(q) * 0.11 * sc, Math.sin(q) * 0.11 * sc, -0.04], r: [0, 0, q - PI / 2], s: [0.03, 0.1, 0.03] })); } R.attach(hb, mane, head.clone()); sparks.push(mane); }
+  const g = pathGear(R, o.tiers, sc);
+  const tick = (t, dt, s) => { R.update(dt, s); g(t); sparks.forEach(m => { m.rotation.z = Math.sin(t * 10) * 0.08; }); };
+  return { root: R.root, tick, height: 0.8 * sc, rig: R };
+}
+
+// ───────── Helden (KayKit-Figuren, Animationen aus kk_anim*) ─────────
+function hero(model, o, look) {
+  const lvl = o.hlvl || 1, form = lvl >= 20 ? 2 : lvl >= 15 ? 1 : 0;
+  const R = new Rig(model, { h: 0.95, tint: look.tint, em: form === 2 ? look.em : 0, ol: 0.012, anims: ['kk_anim1', 'kk_anim2', 'kk_anim3'], alias: { attack: look.atk, ...(look.alias || {}) } });
+  R.play('idle');
+  const hb = boneBy(R, /^head$/i), head = R.bonePos(hb), anim = [];
+  look.build(R, head, hb, form, anim);
+  if (form >= 1) { const a = mk(geo.torus(0.02), glow(look.col, 0.7), { r: [PI / 2, 0, 0], s: 0.42 }); a.position.y = 0.03; R.root.add(a); anim.push(t => { a.scale.setScalar(0.42 + Math.sin(t * 3) * 0.03); }); }
+  if (form >= 2) { const n = 6, ps = []; for (let i = 0; i < n; i++) { const p = mk(geo.sphere(8), glow(look.col, 0.9), { s: 0.035 }); R.root.add(p); ps.push(p); } anim.push(t => ps.forEach((p, i) => { const q = t * 1.5 + i * PI * 2 / n; p.position.set(Math.cos(q) * 0.42, 0.5 + Math.sin(t * 2 + i) * 0.25, Math.sin(q) * 0.42); })); }
+  const tick = (t, dt, s) => { R.update(dt, s); anim.forEach(f => f(t)); };
+  return { root: R.root, tick, height: 1.1, rig: R };
+}
+const ear = (R, hb, head, sd, col) => R.attach(hb, mk(C(4), toon(col), { r: [0, PI / 4, -sd * 0.3], s: [0.09, 0.2, 0.06], ol: 0.006 }), head.clone().add(new THREE.Vector3(sd * 0.14, R.size.y - head.y + 0.04 + head.y - head.y, 0)).setY(R.size.y + 0.02));
+const HEROES3D = {
+  kairo: o => hero('kk_rogue', o, { tint: [0x2a3468, 0.88], em: 0x200a00, col: 0xff7a2a, atk: 'throw', build(R, head, hb, form, anim) {
+    for (const sd of [-1, 1]) { ear(R, hb, head, sd, 0xf08a3c); R.attach(hb, mk(C(4), toon(0xfff1dc), { r: [0, PI / 4, -sd * 0.3], s: [0.045, 0.11, 0.03] }), head.clone().add(new THREE.Vector3(sd * 0.14, 0, 0.025)).setY(R.size.y + 0.01)); }
+    R.attach(boneBy(R, /chest/), mk(geo.torus(0.3), toon(0xd8342c), { r: [PI / 2, 0, 0], s: 0.2, ol: 0.005 }), R.bonePos(boneBy(R, /chest/)).add(new THREE.Vector3(0, 0.13, 0)));
+    if (form >= 2) for (let i = 0; i < 3; i++) { const tl = mk(geo.sphere(10), toon(0xf08a3c, { emissive: 0xff5a10, emissiveIntensity: 0.5 }), { s: [0.07, 0.07, 0.22], ol: 0.006 }); tl.position.set((i - 1) * 0.12, 0.38, -0.25); tl.rotation.x = -0.6; R.root.add(tl); anim.push(t => { tl.rotation.y = (i - 1) * 0.4 + Math.sin(t * 2 + i) * 0.15; }); }
+  } }),
+  raizen: o => hero('kk_raizen', o, { tint: [0x4a4a8a, 0.45], em: 0x1a1600, col: 0xffe14d, atk: 'magic', build(R, head, hb, form, anim) {
+    R.attach(hb, mk(geo.torus(0.12), toon(0xffe14d, { emissive: 0xffc000, emissiveIntensity: 0.6 }), { r: [PI / 2, 0, 0], s: 0.24, ol: 0.005 }), head.clone().add(new THREE.Vector3(0, 0.2, 0)));
+    const bolts = []; for (const sd of [-1, 1]) { const b = mk(C(4), glow(0xfff27a, 0.9), { s: [0.03, 0.14, 0.03] }); b.position.set(sd * 0.28, 0.7, 0); R.root.add(b); bolts.push(b); }
+    anim.push(t => bolts.forEach((b, i) => { b.visible = Math.sin(t * 13 + i * 2) > -0.3; b.rotation.z = Math.sin(t * 20 + i) * 0.4; }));
+  } }),
+  mika: o => hero('kk_mage', o, { tint: [0xffc8e4, 0.5], em: 0x1a0a18, col: 0xff9ac8, atk: 'cast', build(R, head, hb, form, anim) {
+    const lotus = new THREE.Group(); for (let i = 0; i < 6; i++) { const q = i / 6 * PI * 2; lotus.add(mk(geo.sphere(8), toon(0xffb0d0, { emissive: 0xff6aa0, emissiveIntensity: 0.4 }), { p: [Math.cos(q) * 0.06, 0, Math.sin(q) * 0.06], s: [0.035, 0.015, 0.02], r: [0, -q, 0.4] })); }
+    R.attach(hb, lotus, head.clone().add(new THREE.Vector3(0.1, 0.33, 0)));
+    const orb = mk(geo.sphere(12), glow(0xff9ac8, 0.85), { s: 0.06 }); R.root.add(orb); anim.push(t => { orb.position.set(0.32 + Math.sin(t) * 0.03, 0.75 + Math.sin(t * 2) * 0.05, 0.12); });
+  } }),
+};
+
+export const GLB_CREATURES = { kitsune, deer, raven, dragonwolf, golem, tiger, ...HEROES3D };
+const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', kairo: 'kk_rogue', raizen: 'kk_raizen', mika: 'kk_mage' };
+export function buildGlb(id, o) { return ready && GLB_CREATURES[id] && ASSETS[SRC[id]] ? GLB_CREATURES[id](o) : null; }
 
 // ───────── Bosse / Mini-Bosse ─────────
 export function buildBig(kind) {

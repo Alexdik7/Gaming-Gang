@@ -37,7 +37,7 @@ Karte 3 Glutkrater (Lava-Spalten, Basalt-Flöße), Gegner Feuerdämon + Schildtr
 ## Masterplan „Bloons-Niveau“ (ab v0.5, je ein „Weiter“)
 Ziel: Spielgefühl und Umfang eines Top-Tower-Defense – mit eigener Welt, eigenen Namen, CC0-Modellen.
 - **B1 ✅ (v0.5)** Modell-Pipeline + echte animierte Gegner/Bosse + 5 Kreaturen als Skin-Modelle.
-- **B2** Restliche Kreaturen (Tiger, Schildkröte, Mantis) und Helden (Kairo, Raizen, Mika) auf Modelle (KayKit-/Quaternius-Figuren, CC0), sichtbare Teile für **jede** Pfadstufe (wie im Genre üblich).
+- **B2 ✅ (v0.6)** Helden (KayKit) + Tiger (Katze mit Streifen) als Modelle, sichtbare Teile für **jede** Pfadstufe. Offen: Schildkröte, Mantis (kein CC0-Modell – evtl. prozedural aufwerten).
 - **A1** Schichten-Gegner: Hüllen platzen ab und setzen kleinere Gegner frei (Knall, Funken, Ton) – das Herz des Genres. Gegner-Eigenschaften als kombinierbare Merkmale (getarnt, gepanzert, regenerierend, verstärkt).
 - **A2** Leistung für 1.000+ Gegner: Simulation im Web Worker, Gruppen bündeln, Umriss + Pose in einem Draw-Call, LOD.
 - **A3** Wellen 1–60 neu (+ freies Weiterspielen), Wirtschafts-Kreatur (Bank/Farm-Prinzip), Super-Endausbau pro Kreatur.

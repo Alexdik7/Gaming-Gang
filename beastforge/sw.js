@@ -1,5 +1,5 @@
 // Offline-Cache für Beastforge. Bei jeder Änderung CACHE erhöhen!
-const CACHE = 'beastforge-v0.5.0';
+const CACHE = 'beastforge-v0.6.0';
 const FILES = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',
   'js/main.js', 'js/game.js', 'js/audio.js', 'js/config.js',
   'js/data/creatures.js', 'js/data/enemies.js', 'js/data/heroes.js', 'js/data/maps.js', 'js/data/meta.js', 'js/data/waves.js',
@@ -10,7 +10,7 @@ const FILES = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icon-19
   'lib/addons/postprocessing/Pass.js', 'lib/addons/postprocessing/MaskPass.js', 'lib/addons/postprocessing/UnrealBloomPass.js',
   'lib/addons/postprocessing/OutputPass.js', 'lib/addons/shaders/CopyShader.js', 'lib/addons/shaders/LuminosityHighPassShader.js', 'lib/addons/shaders/OutputShader.js',
   'lib/addons/loaders/GLTFLoader.js', 'lib/addons/utils/SkeletonUtils.js', 'lib/addons/utils/BufferGeometryUtils.js',
-  'assets/models/blob.glb', 'assets/models/ghost.glb', 'assets/models/skull.glb', 'assets/models/wizard.glb', 'assets/models/mushking.glb', 'assets/models/bee.glb', 'assets/models/bee2.glb', 'assets/models/rockling.glb', 'assets/models/demon.glb', 'assets/models/orc.glb', 'assets/models/dragon.glb', 'assets/models/wolf.glb', 'assets/models/bull.glb', 'assets/models/husky.glb', 'assets/models/stag.glb', 'assets/models/fox.glb', 'assets/models/owl.glb', 'assets/models/cat.glb'];
+  'assets/models/blob.glb', 'assets/models/ghost.glb', 'assets/models/skull.glb', 'assets/models/wizard.glb', 'assets/models/mushking.glb', 'assets/models/bee.glb', 'assets/models/bee2.glb', 'assets/models/rockling.glb', 'assets/models/demon.glb', 'assets/models/orc.glb', 'assets/models/dragon.glb', 'assets/models/wolf.glb', 'assets/models/bull.glb', 'assets/models/husky.glb', 'assets/models/stag.glb', 'assets/models/fox.glb', 'assets/models/owl.glb', 'assets/models/cat.glb', 'assets/models/kk_rogue.glb', 'assets/models/kk_raizen.glb', 'assets/models/kk_mage.glb', 'assets/models/kk_anim1.glb', 'assets/models/kk_anim2.glb', 'assets/models/kk_anim3.glb'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });
 self.addEventListener('fetch', e => {
