@@ -423,8 +423,32 @@ const HEROES3D = {
   } }),
 };
 
-export const GLB_CREATURES = { kitsune, deer, raven, dragonwolf, golem, tiger, ...HEROES3D };
-const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', kairo: 'kk_ninja', raizen: 'kk_raizen', mika: 'kk_mage' };
+// Glückskatze (Maneki-Neko): sitzt, winkt beim „Angriff“; Form = Fellfarbe + Schmuck
+function neko(o) {
+  const st = o.stage || 0, sc = [0.9, 1.0, 1.12][st] || 1;
+  const R = new Rig('cat', { h: 0.7 * sc, tint: [[0xfff8f0, 0xffd257, 0xfffaf0][st], [0.8, 0.7, 0.85][st]], em: [0, 0x1a1200, 0x140c00][st], ol: 0.012, alias: { idle: 'sit', attack: 'call' } });
+  R.play('idle');
+  const nb = boneBy(R, /^neck/i) || boneBy(R, /head/i), neck = R.bonePos(nb), hb = boneBy(R, /^head$/i) || boneBy(R, /head/i), head = R.bonePos(hb);
+  const gold = toon(0xffd257, { emissive: 0xa07010, emissiveIntensity: 0.45 }), red = toon(0xd8342c);
+  const col = new THREE.Group(); add(col, geo.torus(0.25), red, { r: [PI / 2, 0, 0], s: 0.075 * sc, ol: 0.004 }); add(col, S(12), gold, { p: [0, -0.03 * sc, 0.075 * sc], s: 0.024 * sc, ol: 0.004 });
+  R.attach(nb, col, neck);
+  // Goldkoban vor der Brust
+  const koban = mk(geo.cyl(16), gold, { r: [PI / 2, 0, 0], s: [0.07 * sc, 0.012, 0.1 * sc], ol: 0.005 }); koban.add(mk(geo.box(), toon(0x8a5a10), { p: [0, 0.6, 0], s: [0.5, 0.2, 0.08], ol: false }));
+  R.attach(nb, koban, neck.clone().add(new THREE.Vector3(0, -0.11 * sc, 0.09 * sc)));
+  const coins = [];
+  if (st >= 1) for (let i = 0; i < (st === 2 ? 8 : 4); i++) { const c = mk(geo.cyl(12), gold, { s: [0.04, 0.008, 0.04], ol: 0.003 }); R.root.add(c); coins.push(c); }
+  if (st === 2) { // kleines Torii im Rücken
+    const g = new THREE.Group(); g.position.set(0, 0, -0.32 * sc); R.root.add(g);
+    for (const x of [-0.17, 0.17]) add(g, geo.cyl(8), red, { p: [x * sc, 0.3 * sc, 0], s: [0.025 * sc, 0.6 * sc, 0.025 * sc], ol: 0.004 });
+    add(g, geo.box(), toon(0x2a2a36), { p: [0, 0.62 * sc, 0], s: [0.5 * sc, 0.04 * sc, 0.05 * sc], ol: 0.004 }); add(g, geo.box(), red, { p: [0, 0.54 * sc, 0], s: [0.42 * sc, 0.03 * sc, 0.04 * sc], ol: 0.004 });
+  }
+  const pg = pathGear(R, o.tiers, sc);
+  const tick = (t, dt, s) => { R.update(dt, s); pg(t); coins.forEach((c, i) => { const q = t * 1.4 + i * PI * 2 / coins.length; c.position.set(Math.cos(q) * 0.34 * sc, 0.45 * sc + Math.sin(t * 2 + i) * 0.04, Math.sin(q) * 0.34 * sc); c.rotation.set(PI / 2, 0, q); }); };
+  return { root: R.root, tick, height: 0.8 * sc, rig: R };
+}
+
+export const GLB_CREATURES = { kitsune, deer, raven, dragonwolf, golem, tiger, neko, ...HEROES3D };
+const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', neko: 'cat', kairo: 'kk_ninja', raizen: 'kk_raizen', mika: 'kk_mage' };
 export function buildGlb(id, o) { if (!(ready && GLB_CREATURES[id] && ASSETS[SRC[id]])) return null; try { return GLB_CREATURES[id](o); } catch (e) { console.warn(e.message); return null; } }
 
 // ───────── Bosse / Mini-Bosse ─────────

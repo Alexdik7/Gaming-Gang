@@ -364,6 +364,11 @@ export class GameView {
   ability(ev) {
     const P = this.parts, t = ev.tower, [tx, tz] = this.toW(t.x, t.y);
     switch (ev.id) {
+      case 'goldrain': {
+        this.rings.add(tx, 0.06, tz, 0.2, 2.6, 0xffd257, 0.7);
+        for (let i = 0; i < 40; i++) setTimeout(() => this.parts.spawn(tx + (Math.random() - 0.5) * 3, 3 + Math.random(), tz + (Math.random() - 0.5) * 3, 0, -3, 0, Math.random() < 0.7 ? 0xffd257 : 0xfff2b0, 0.12, 1.2, { grav: 2 }), i * 25);
+        this.floaters.add(tx, 1.4, tz, '+' + ev.coins, 'coin', 1.2); break;
+      }
       case 'foxstorm': {
         const [x, z] = this.toW(ev.x, ev.y);
         this.runGhost(this.ghostFire, 'leap', 0.55, 0xffa040, [tx, tz], [x, z]);

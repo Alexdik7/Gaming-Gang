@@ -296,3 +296,17 @@ test('Shinobi-Akademie: Punkte, Reihenfolge, Boni in der Welt', async () => {
   w.coins = 9999; base.coins = 9999; const t = w.place('kitsune', 3, 4.5).tower, tb = base.place('kitsune', 3, 4.5).tower;
   assert.ok(Math.abs(t.s.dmg / tb.s.dmg - 1.04) < 1e-6, '+4 % Schaden');
 });
+
+test('Glückskatze: Einkommen, Zinsen, Glückskopfgeld, Goldregen', () => {
+  const P = defaultProfile(); P.chars.neko.level = 12;
+  const w = mkWorld(P).w; w.coins = 99999;
+  const t = w.place('neko', 3, 4.5).tower;
+  w.upgrade(t.id, 0); w.upgrade(t.id, 2);           // Spardose (2 % Zinsen) + Glückspfote
+  assert.ok(t.s.interest >= 0.02 && t.s.lucky >= 1 && t.s.income >= 25);
+  w.coins = 1000; w.wave = 1; const c0 = w.coins; w.waveEnd();
+  const interest = Math.min(t.s.icap, Math.floor(c0 * t.s.interest));
+  assert.ok(w.coins - c0 >= t.s.income + interest, 'Einkommen + Zinsen am Wellenende');
+  const e = w.spawn('slime', [], 0); e.x = t.x + 0.5; e.y = t.y; const c1 = w.coins; w.kill(e, null);
+  assert.ok(w.coins - c1 >= Math.round(8 * w.diff.coins) + t.s.lucky, 'Glücksmünze beim Besiegen in Reichweite');
+  w.evolve(t.id); w.wave = 4; t.abCd = 0; const c2 = w.coins; assert.ok(w.useAbility(t.id, 'ab').ok); assert.equal(w.coins - c2, 60 + 15 * 4);
+});

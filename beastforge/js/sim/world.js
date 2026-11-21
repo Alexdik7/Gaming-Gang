@@ -423,6 +423,7 @@ export class World {
     this.gain(coins);
     this.stats.kills++; this.hooks.stat?.('kills', 1);
     if (src) { src.kills++; if (src.s?.bounty) this.gain(src.s.bounty); }
+    for (const t of this.luckyT || []) if (Math.hypot(t.x - e.x, t.y - e.y) <= t.s.range) { this.gain(t.s.lucky); this.stats.income += t.s.lucky; }
     // Charakter-XP nach Schadensanteil verteilen (mehrere Kreaturen am selben Gegner teilen fair)
     const base = (def.xp || 1) * (e.elite ? 2.5 : 1) * (1 + BAL.char.waveScale * this.wave) * (e.boss ? BAL.char.bossMul : 1);
     const total = Object.values(e.dmgBy).reduce((a, b) => a + b, 0);
@@ -486,6 +487,7 @@ export class World {
       if (A.burn) s.burn.dps *= 1 + A.burn; if (A.slow) s.slow.pct = Math.min(0.85, s.slow.pct * (1 + A.slow));
       if (A.income && s.income) s.income *= 1 + A.income;
     }
+    this.luckyT = this.towers.filter(t => t.s.lucky > 0);
     const R = BAL.run.synergyRange, act = [];
     for (const sy of SYNERGIES) {
       const A = this.towers.filter(t => t.cid === sy.a), B = this.towers.filter(t => t.cid === sy.b);
@@ -763,6 +765,7 @@ export class World {
         }
         break;
       }
+      case 'goldrain': { const c = 60 + 15 * this.wave; this.gain(c); this.stats.income += c; this.emit({ t: 'ability', id: 'goldrain', tower: t, coins: c }); break; }
       case 'blessing': {
         this.emit({ t: 'ability', id: 'blessing', tower: t, r: 3.5 });
         for (const o of this.towers) if (Math.hypot(o.x - t.x, o.y - t.y) <= 3.5) o.buffs.push({ id: 'blessing', t: 8, fx: { mul: { rate: 1.4, dmg: 1.2 } } });
@@ -829,7 +832,7 @@ export class World {
     while (this.doneWave < this.wave) {
       this.doneWave++;
       const w = this.doneWave, bonus = Math.round(BAL.run.waveBonus(w) * this.diff.coins * (1 + (this.ac.waveBonus || 0)));
-      let income = 0, heal = 0; for (const t of this.towers) { income += t.s?.income || 0; heal += t.s?.lifeRegen || 0; }
+      let income = 0, heal = 0; for (const t of this.towers) { income += t.s?.income || 0; heal += t.s?.lifeRegen || 0; if (t.s?.interest) income += Math.min(t.s.icap, Math.floor(this.coins * t.s.interest)); }
       if (heal && this.lives < this.maxLives) { this.lives = Math.min(this.maxLives, this.lives + heal); this.emit({ t: 'heal2', lives: heal }); }
       this.gain(bonus + income); this.stats.income += income; if (income) this.hooks.stat?.('income', income);
       const used = new Set(this.towers.filter(t => !t.hero).map(t => t.cid));

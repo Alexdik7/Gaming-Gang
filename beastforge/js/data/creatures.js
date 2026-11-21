@@ -13,6 +13,7 @@ export const BASE_STATS = {
   support: { range: 0, rate: 0, dmg: 0, rng: 0, camo: false, protect: false },
   income: 0, dash: { every: 0, mul: 0 }, multi: 0, mark: 0, brk: 0, water: 0,
   cone: 0.7, cleave: 0, bounty: 0, lifeRegen: 0,
+  interest: 0, icap: 0, lucky: 0,   // Glückskatze: Zinsen auf gesparte Münzen (max. icap je Welle), Münzen je besiegtem Gegner in Reichweite
 };
 
 export const CREATURES = {
@@ -370,6 +371,49 @@ CREATURES.golem = {
     50: { name: 'Urfels', desc: 'Meister: +15 % Schaden', fx: { mul: { dmg: 1.15 } } },
   },
   mastery: { title: 'Bergrufer', skins: [{ name: 'Marmorgolem', pal: 'moon' }, { name: 'Sternengolem', pal: 'star' }] },
+};
+
+// ───────────────────────── GLÜCKSKATZE (Wirtschaft) ─────────────────────────
+CREATURES.neko = {
+  id: 'neko', name: 'Glückskatze', role: 'Wirtschaft / Glück', elements: ['light'],
+  color: '#ffd257', cost: 450, place: ['ground', 'high'], model: 'neko',
+  lore: 'Die winkende Katze am Tempeltor. Wer sie ehrt, dem fällt das Gold von selbst in die Hände – sagen die Händler von Ahnenhain.',
+  base: { dmg: 3, rate: 0.8, range: 2.4, proj: 'coin', speed: 12, dmgType: 'light', income: 25, icap: 100 },
+  forms: [
+    { id: 'kitten', stage: 0, lvl: 1, cost: 0, name: 'Glückskätzchen', desc: 'Winkt Münzen herbei: +25 je Welle.' },
+    { id: 'golden', stage: 1, lvl: 10, cost: 500, name: 'Goldene Glückskatze', desc: 'Goldenes Fell. +40 je Welle, 1 % Zinsen.', fx: { add: { income: 40, interest: 0.01, icap: 100 } } },
+    { id: 'shrine', stage: 2, lvl: 25, cost: 2000, name: 'Tempelkatze', desc: 'Hüterin des Schreins. +120 je Welle, Glück +2.', fx: { add: { income: 120, lucky: 2, dmg: 4 } } },
+  ],
+  paths: [
+    { id: 'vault', name: 'Schatzkammer', icon: '🏦', tiers: [
+      { name: 'Spardose', cost: 250, desc: '2 % Zinsen auf deine Münzen je Welle', fx: { add: { interest: 0.02, icap: 100 } } },
+      { name: 'Tresor', cost: 600, desc: '+2 % Zinsen, höhere Obergrenze', fx: { add: { interest: 0.02, icap: 250 } } },
+      { name: 'Zinseszins', cost: 1500, desc: '+3 % Zinsen', fx: { add: { interest: 0.03, icap: 600 } } },
+      { name: 'Goldspeicher', cost: 3200, desc: '+4 % Zinsen, viel höhere Obergrenze', fx: { add: { interest: 0.04, icap: 1600 } } },
+      { name: 'Kaiserliche Schatzkammer', cost: 7500, desc: '+6 % Zinsen (bis 5.000 je Welle)', fx: { add: { interest: 0.06, icap: 3000 } } },
+    ] },
+    { id: 'market', name: 'Marktstand', icon: '🏮', tiers: [
+      { name: 'Bauchladen', cost: 250, desc: '+50 Münzen je Welle', fx: { add: { income: 50 } } },
+      { name: 'Teehaus', cost: 650, desc: '+110 Münzen je Welle', fx: { add: { income: 110 } } },
+      { name: 'Marktplatz', cost: 1500, desc: '+240 Münzen je Welle', fx: { add: { income: 240 } } },
+      { name: 'Handelskontor', cost: 3300, desc: '+520 Münzen je Welle', fx: { add: { income: 520 } } },
+      { name: 'Goldene Straße', cost: 7800, desc: '+1.250 Münzen je Welle', fx: { add: { income: 1250 } } },
+    ] },
+    { id: 'luck', name: 'Glücksbringer', icon: '🍀', tiers: [
+      { name: 'Glückspfote', cost: 200, desc: 'Besiegte Gegner in Reichweite: +1 Münze', fx: { add: { lucky: 1, range: 0.3 } } },
+      { name: 'Winkekatze', cost: 550, desc: 'Aura: +6 % Tempo für Nachbarn', fx: { add: { 'support.range': 2.4, 'support.rate': 0.06 } } },
+      { name: 'Goldregen-Pfote', cost: 1300, desc: 'Glück +2, Aura +6 % Schaden', fx: { add: { lucky: 2, 'support.dmg': 0.06 } } },
+      { name: 'Glücksstern', cost: 2900, desc: 'Glück +3, Aura +6 % Tempo/Schaden', fx: { add: { lucky: 3, 'support.rate': 0.06, 'support.dmg': 0.06, range: 0.4 } } },
+      { name: 'Fortuna', cost: 7000, desc: 'Glück +5, Aura +15 % Schaden, +10 % Tempo', fx: { add: { lucky: 5, 'support.dmg': 0.15, 'support.rate': 0.1 } } },
+    ] },
+  ],
+  ability: { id: 'goldrain', name: 'Goldregen', lvl: 8, stage: 1, cd: 60, desc: 'Ein Münzregen: sofort 60 + 15 × Welle Münzen.' },
+  passives: {
+    20: { name: 'Glänzendes Fell', desc: '+15 Münzen je Welle', fx: { add: { income: 15 } } },
+    40: { name: 'Sparsamkeit', desc: '+1 % Zinsen', fx: { add: { interest: 0.01, icap: 100 } } },
+    50: { name: 'Glücksgöttin', desc: 'Meister: Glück +1, +30 je Welle', fx: { add: { lucky: 1, income: 30 } } },
+  },
+  mastery: { title: 'Glückskind', skins: [{ name: 'Mondkatze', pal: 'moon' }, { name: 'Sternenkatze', pal: 'star' }] },
 };
 
 export const CREATURE_IDS = Object.keys(CREATURES);

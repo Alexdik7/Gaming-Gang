@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.10.0 – Shinobi-Akademie
+## Stand: v0.11.0 – Glückskatze (Wirtschaft)
+**0.11:** Neue Kreatur **Glückskatze** (`neko`, Konto-Lv 4, 450 Münzen): sitzende Vuena-Katze (Animation `sit`, winkt mit `call`), Goldkoban, Formen Glückskätzchen → Goldene Glückskatze (Münzen kreisen) → Tempelkatze (Torii). Pfade: **Schatzkammer** = Zinsen auf gesparte Münzen je Welle (`interest`, Obergrenze `icap`), **Marktstand** = Einkommen (`income`), **Glücksbringer** = Münzen für jeden besiegten Gegner in Reichweite (`lucky`, `world.luckyT`) + Aura. Fähigkeit **Goldregen** (60 + 15 × Welle Münzen). Wirft Goldmünzen (`proj: 'coin'`). Pipeline: `ONLY=cat` erzeugt nur einzelne Modelle neu.
+
+## Stand v0.10.0 – Shinobi-Akademie
 **0.10:** **Shinobi-Akademie** (Hub-Medaillon ⛩, `menus.s_academy`, Daten `js/data/academy.js`): Wissensbaum mit 4 Schulen × 6 Stufen – Kampfkunst (Schaden, Tempo, Reichweite, Krit, Bossschaden), Elementarwissen (Brand, Frost, Reaktionen, Element-Schaden), Handelshaus (Startmünzen, günstigere Kreaturen/Upgrades, Wellenlohn, Verkauf, Einkommen), Ahnenschrein (Leben, Helden-Startlevel, Charakter-/Konto-XP, Fähigkeits-Abklingzeit). **Shinobi-Punkte** ✦ = 1 je Konto-Level + 1 je erstem Sieg (Karte × Normal/Schwer), rückwirkend; Kosten 1/1/1/2/2/3, jede Stufe braucht die vorige, kostenlos neu verteilbar. Boni gehen als `academy` an die Welt (`world.ac`: `costOf`, `upCost`, `sell`, `refresh`, `waveEnd`, `react`, Fähigkeiten) bzw. an die Hooks in `game.js` (XP, Held). Ergebnisbildschirm meldet neue Punkte.
 
 ## Stand v0.9.0 – Ziehen wie im Genre + Schichten-Gegner
