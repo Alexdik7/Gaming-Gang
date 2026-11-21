@@ -1,0 +1,38 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Beastforge Modell-Galerie</title>
+<style>body{margin:0;background:#9fd0c0;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{ "imports": { "three": "../lib/three.module.min.js", "three/addons/": "../lib/addons/" } }</script></head>
+<body><canvas id="c"></canvas>
+<script type="module">
+// Entwickler-Galerie: ?mode=enemies | creatures  (Aufruf über den Test-Server: /tools/gallery.html)
+import * as THREE from 'three';
+import { loadAssets, bakeFrames, ENEMY_MODELS, buildBig } from '../js/render/assets.js';
+import { buildModel } from '../js/render/models.js';
+import { enemyMat, enemyOutline } from '../js/render/toon.js';
+import { ENEMIES } from '../js/data/enemies.js';
+const q = new URLSearchParams(location.search), mode = q.get('mode') || 'enemies';
+const R = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true }); R.setSize(innerWidth, innerHeight); R.setPixelRatio(devicePixelRatio); R.outputColorSpace = THREE.SRGBColorSpace;
+R.shadowMap.enabled = true;
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0x9fd0c0);
+sc.add(new THREE.HemisphereLight(0xdff4ff, 0x5a7a3a, 1.25)); const d = new THREE.DirectionalLight(0xfff0d8, 2.2); d.position.set(-4, 8, 6); d.castShadow = true; d.shadow.camera.left = d.shadow.camera.bottom = -10; d.shadow.camera.right = d.shadow.camera.top = 10; sc.add(d);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshToonMaterial({ color: 0x6fbf4a })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; sc.add(ground);
+const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.1, 100);
+await loadAssets('../assets/models/');
+const items = [];
+if (mode === 'enemies') {
+  const ks = Object.keys(ENEMY_MODELS); const f = +(q.get('f') || 0);
+  ks.forEach((k, i) => { const fr = bakeFrames({ ...ENEMY_MODELS[k], h: (ENEMIES[k] || ENEMIES.bearer).h * ENEMY_MODELS[k].h }); const g = fr[f % fr.length]; g.setAttribute('aTint', new THREE.InstancedBufferAttribute(new Float32Array(4), 4));
+    const m = new THREE.InstancedMesh(g, enemyMat(), 1); m.setMatrixAt(0, new THREE.Matrix4().compose(new THREE.Vector3((i % 7 - 3) * 1.25, 0, Math.floor(i / 7) * 1.6 - 0.8), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0.5, 0)), new THREE.Vector3(1.5, 1.5, 1.5))); m.castShadow = true; sc.add(m);
+    const o = new THREE.InstancedMesh(g, enemyOutline(0.016), 1); o.instanceMatrix = m.instanceMatrix; sc.add(o); });
+  cam.position.set(0, 6.5, 9.5); cam.lookAt(0, 0.4, 0);
+} else if (mode === 'bigs') {
+  ['vharox', 'oni'].forEach((k, i) => { const b = buildBig(k); b.root.position.x = i ? 2 : -1.5; b.root.scale.setScalar(1.5); b.root.rotation.y = 0.5; sc.add(b.root); items.push(b); });
+  cam.position.set(0, 4.5, 8); cam.lookAt(0, 1.4, 0);
+} else {
+  const id = q.get('id') || 'kitsune', st = (q.get('st') || '0,1,2,3,4,5').split(',').map(Number), br = q.get('br') || 'spirit';
+  st.forEach((s, i) => { const m = buildModel(id, { stage: s, branch: br, tiers: (q.get('t') || '0,0,0').split(',').map(Number) }); m.root.position.x = (i - (st.length - 1) / 2) * 1.5; m.root.rotation.y = +(q.get('ry') || 0.6); m.root.scale.setScalar(1.6); sc.add(m.root); items.push(m); });
+  cam.position.set(0, 3.2, 7); cam.lookAt(0, 0.8, 0);
+}
+let last = performance.now(), t = 0; const at = +(q.get('atk') || 0);
+function loop(n) { const dt = Math.min(0.05, (n - last) / 1000); last = n; t += dt; items.forEach(m => m.tick?.(t, dt, { atk: at, fly: q.get('fly') === '1' })); R.render(sc, cam); requestAnimationFrame(loop); }
+requestAnimationFrame(loop); window.galleryReady = true;
+</script></body></html>

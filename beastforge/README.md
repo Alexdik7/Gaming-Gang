@@ -5,7 +5,14 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.4.0
+## Stand: v0.5.0 – „Meisterwerk“ Schritt 1: echte 3D-Modelle
+**Neu in 0.5:** Echte animierte Modelle (alle **CC0**, siehe `assets/models/LIZENZEN.md`): Quaternius „Ultimate Monsters“ als Gegner (Schleim, Geist, Schädelgeist, Magier, Pilzkönig, Panzerbienen, Goleling, Dämon, Orc mit Schild, Drache als Vharox, roter Orc als Oni), Quaternius-Tiere (Wolf, Stier, Husky, Hirsch) und Vuena-Tiere (Fuchs, Eule, Katze). Kitsune, Geisthirsch, Schattenrabe, Drachenwolf, Felsgolem sind jetzt Skin-Modelle mit Leerlauf-/Angriffs-/Treffer-Animation, Farbton je Form und Zubehör an den Knochen (Zusatzschweife, Halsseil, Halo, Runen, Hörner, Flügel …). Tiger, Schildkröte, Mantis und Helden sind noch prozedural.
+- **Pipeline:** `tools/models.mjs` (gltf-transform + meshoptimizer): nur benötigte Animationen, Gegner-Netze vereinfacht (800–1.900 Dreiecke), Texturen 512 px → `assets/models/*.glb` (≈2,5 MB, vom Service Worker gecacht).
+- **Laufzeit:** `js/render/assets.js` – `loadAssets()` im Ladebildschirm; Gegner werden in 6 Posen **vorgebacken** (Farben aus Textur → Eckpunktfarben, `bakeFrames`), je Pose ein InstancedMesh, Pose folgt dem zurückgelegten Weg (`ENEMY_MODELS[k].cyc`) → Hunderte animierte Gegner ohne Skinning. Kreaturen/Bosse: `Rig` (Klon + AnimationMixer + Toon-Material mit Farbton `uTint`, Skin-Umriss, `attach(knochen, obj)`). Weiche Schattenscheiben statt Schattenwurf für Gegner.
+- **Rückfall:** ohne Modelle (oder mit `?models=0`) laufen die alten prozeduralen Formen. Entwickler-Galerie: `tools/gallery.html?mode=enemies|bigs|creatures&id=kitsune&st=0,1,2`.
+- Leistung (360 Gegner, Headless): 1,19 Mio. Dreiecke / 217 Draw-Calls (vorher 1,0 Mio. / 111).
+
+## Stand v0.4.0
 **Neu in 0.4:** **Karte 3 Glutkrater** (Konto-Lv 6, `hpMul` 1,4, Stufe „Schwer“): Lavafelder (`L`, nicht bebaubar, eigener Shader + Glutlicht), 4 **Lava-Spalten** am Weg brechen alle 14 s aus (Warnring 1,6 s vorher, Feuerschaden + Brand, Bosse nur 30 %; `map.vents`/`map.lava`, `world.updVents`), 2 **Basalt-Flöße** treiben über die Lava und tragen Kreaturen mit (+15 % Schaden; `map.rafts`, `raftPos()` in `data/maps.js` für Simulation *und* Grafik, `world.raftAt`, Turm hat `raft/ox/oy`). Wellen werden je Karte über `map.mix(w, groups)` angepasst. **Neue Gegner:** Feuerdämon (fast feuerimmun, Eis ×1,5, Explosion legt nahe Kreatur 1,6 s lahm – `blast`) und Schildträger (Schild = 60 % KP schluckt zuerst Schaden, Blitz/Erde ×2; schützt Gegner im Umkreis um 35 % – `guard`, `e.guardT`). Eigene Musik `crater`, Aschefunken statt Blüten, verkohlte Bäume. Fix: Wasser-/Lava-Shader beachten jetzt die Instanz-Matrix; „Nochmal“ startet die gespielte Karte.
 
 ## Stand v0.3.0
@@ -44,7 +51,7 @@ js/sim/stats.js         Werte = Basis → Formen → Pfadstufen → Level-Boni (
 js/meta/progression.js  Charakter-/Konto-XP, Formen, Boni, Mastery, Erfolge (ohne DOM)
 js/meta/profile.js      Spielstand (localStorage `beastforge.save`), Migration alter Stände
 js/render/              three.js: stage (Renderer, Kamera-Einpassung, Bloom, Wackeln), view (Welt → Szene), mapview, models
-                        (prozedurale Modelle), toon (Toon-Material, Umrisse, Verschmelzen/optimize), fx (Partikel, Ringe, Blitze,
+                        (prozedurale Modelle + Rückfall), assets (GLB laden, Gegner-Posen backen, Rig für Skin-Modelle), toon (Toon-Material, Umrisse, Verschmelzen/optimize), fx (Partikel, Ringe, Blitze,
                         Säulen, Projektil-Instanzen, Schadenszahlen), icons (Porträts + 3D-Vorschau)
 js/ui/hud.js, menus.js  Oberfläche (DOM)
 js/game.js              Ein Run: verbindet Welt, Ansicht, Eingabe, Hooks (XP live ins Profil), Zeitlupe, Abschluss

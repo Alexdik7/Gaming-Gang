@@ -3,9 +3,10 @@ import * as THREE from 'three';
 import { MapView, HEIGHT } from './mapview.js';
 import { Particles, Rings, Bolts, Pillars, Projectiles, Floaters, projStyle } from './fx.js';
 import { RAFT_TOP } from './mapview.js';
+import { ENEMY_MODELS, bakeFrames, buildBig } from './assets.js';
 import { buildModel, ENEMY_GEO, ENEMY_GLOW, ENEMY_ALPHA, buildOni, buildDragon } from './models.js';
 import { enemyMat, enemyOutline, glow, toon, geo } from './toon.js';
-import { ELEMENT_COLORS } from '../data/enemies.js';
+import { ELEMENT_COLORS, ENEMIES } from '../data/enemies.js';
 import { CREATURES } from '../data/creatures.js';
 
 const PI = Math.PI;
@@ -33,18 +34,29 @@ export class GameView {
 
   buildEnemyPools() {
     this.pools = {}; const cap = { slime: 120, wolf: 140, boar: 90, wisp: 90, shade: 90, mage: 50, healer: 50, beetle: 90, mite: 200, golem: 24, demon: 120, bearer: 60, bearerX: 60 };
-    for (const k in ENEMY_GEO) {
-      const g = ENEMY_GEO[k]();
-      const tint = new THREE.InstancedBufferAttribute(new Float32Array(cap[k] * 4), 4); tint.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aTint', tint);
-      const mat = ENEMY_GLOW[k] ? new THREE.MeshBasicMaterial({ vertexColors: true }) : enemyMat(ENEMY_ALPHA[k] ? { transparent: true, opacity: ENEMY_ALPHA[k] } : {});
-      const m = new THREE.InstancedMesh(g, mat, cap[k]); m.count = 0; m.castShadow = !ENEMY_GLOW[k]; m.frustumCulled = false;
-      this.root.add(m);
-      let ol = null;
-      if (!ENEMY_GLOW[k] && !ENEMY_ALPHA[k]) { ol = new THREE.InstancedMesh(g, enemyOutline(0.022), cap[k]); ol.instanceMatrix = m.instanceMatrix; ol.count = 0; ol.frustumCulled = false; this.root.add(ol); }
+    // Echte Modelle: N vorgebackene Posen je Gegnerart (je Pose ein InstancedMesh). Ohne Modelle: alte Formen.
+    const ENEMY_H = { ...Object.fromEntries(Object.entries(ENEMIES).map(([k, d]) => [k, d.h])), bearerX: ENEMIES.bearer.h };
+    for (const k of new Set([...Object.keys(ENEMY_GEO), ...Object.keys(ENEMY_MODELS)])) {
+      const spec = ENEMY_MODELS[k], baked = spec ? bakeFrames({ ...spec, h: (ENEMY_H[k] || 0.6) * spec.h }) : null;
+      const geos = baked || (ENEMY_GEO[k] ? [ENEMY_GEO[k]()] : null); if (!geos) continue;
+      const glowK = ENEMY_GLOW[k] && !baked, alpha = ENEMY_ALPHA[k];
+      const mat = glowK ? new THREE.MeshBasicMaterial({ vertexColors: true }) : enemyMat(alpha ? { transparent: true, opacity: alpha } : {});
+      const frames = geos.map(g => {
+        const tint = new THREE.InstancedBufferAttribute(new Float32Array(cap[k] * 4), 4); tint.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aTint', tint);
+        const m = new THREE.InstancedMesh(g, mat, cap[k]); m.count = 0; m.castShadow = !glowK && !baked; m.frustumCulled = false; this.root.add(m);
+        let ol = null;
+        if (!glowK && !alpha) { ol = new THREE.InstancedMesh(g, enemyOutline(baked ? 0.016 : 0.022), cap[k]); ol.instanceMatrix = m.instanceMatrix; ol.count = 0; ol.frustumCulled = false; this.root.add(ol); }
+        return { m, ol, tint };
+      });
       let halo = null;
-      if (ENEMY_GLOW[k]) { halo = new THREE.InstancedMesh(geo.sphere(10), glow(0x7df3ff, 0.35), cap[k]); halo.count = 0; halo.frustumCulled = false; this.root.add(halo); }
-      this.pools[k] = { m, ol, halo, tint, cap: cap[k] };
+      if (ENEMY_GLOW[k]) { halo = new THREE.InstancedMesh(geo.sphere(10), glow(0x7df3ff, baked ? 0.2 : 0.35), cap[k]); halo.count = 0; halo.frustumCulled = false; this.root.add(halo); }
+      this.pools[k] = { frames, halo, cap: cap[k], cyc: spec?.cyc ?? 1, baked: !!baked, hn: 0 };
     }
+    // Weiche Schattenscheiben unter Gegnern (ersetzt Schattenwurf: ein Draw-Call für alle)
+    const sc = document.createElement('canvas'); sc.width = sc.height = 64; const sg = sc.getContext('2d'), gr = sg.createRadialGradient(32, 32, 4, 32, 32, 31);
+    gr.addColorStop(0, 'rgba(0,0,0,0.42)'); gr.addColorStop(0.6, 'rgba(0,0,0,0.25)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); sg.fillStyle = gr; sg.fillRect(0, 0, 64, 64);
+    this.blobs = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-PI / 2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false }), 600);
+    this.blobs.count = 0; this.blobs.frustumCulled = false; this.blobs.renderOrder = -1; this.root.add(this.blobs);
     const crownG = new THREE.ConeGeometry(0.07, 0.12, 5);
     this.crowns = new THREE.InstancedMesh(crownG, toon(0xffd257, { emissive: 0xa07010, emissiveIntensity: 0.5 }), 200); this.crowns.count = 0; this.crowns.frustumCulled = false; this.root.add(this.crowns);
     const bar = new THREE.PlaneGeometry(1, 1);
@@ -132,7 +144,8 @@ export class GameView {
 
   // ───────── Gegner ─────────
   syncEnemies(dt) {
-    for (const k in this.pools) this.pools[k].m.count = 0;
+    for (const k in this.pools) { const P = this.pools[k]; P.hn = 0; for (const F of P.frames) F.m.count = 0; }
+    let blobs = 0;
     let crowns = 0, bars = 0;
     const camQ = this.stage.camera.quaternion;
     const seen = new Set();
@@ -142,24 +155,27 @@ export class GameView {
       if (e.boss || e.kind === 'oni') {
         seen.add(e.id);
         let b = this.bigs.get(e.id);
-        if (!b) { b = e.boss ? buildDragon() : buildOni(); this.root.add(b.root); b.rise = 0; this.bigs.set(e.id, b); }
+        if (!b) { b = buildBig(e.boss ? 'vharox' : 'oni') || (e.boss ? buildDragon() : buildOni()); this.root.add(b.root); b.rise = 0; this.bigs.set(e.id, b); }
         b.rise = Math.min(1, b.rise + dt * 0.8);
         b.root.position.set(x, -1.2 * (1 - b.rise) * (1 - b.rise), z); b.root.scale.setScalar(ENEMY_SCALE);
         const tr = PI / 2 - e.ang; let d = tr - b.root.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); b.root.rotation.y += d * Math.min(1, dt * 4);
         b.tick(this.t, dt, { fly: e.flying, breath: e.boss && e.roarT > 0 && e.phase >= 2, roar: e.roarT > 0, phase: e.phase, cry: e.cryT > 2.5 });
         b.flash = e.hitT > 0 ? 1 : 0;
       } else {
-        const P = this.pools[e.kind === 'bearer' && e.guard <= 0 ? 'bearerX' : e.kind]; if (!P || P.m.count >= P.cap) continue;
-        const i = P.m.count++;
-        const bob = e.kind === 'slime' ? Math.abs(Math.sin(this.t * 6 + e.id)) : 0;
-        const sq = e.kind === 'slime' ? 1 + Math.sin(this.t * 12 + e.id) * 0.08 : 1;
+        const P = this.pools[e.kind === 'bearer' && e.guard <= 0 ? 'bearerX' : e.kind]; if (!P || P.hn >= P.cap) continue;
+        // Pose: an zurückgelegten Weg gekoppelt (cyc Felder je Zyklus) oder zeitbasiert; betäubt = Standbild
+        const nF = P.frames.length, ph = P.cyc ? e.d / P.cyc : (e.stunT > 0 ? 0 : this.t * 1.6 * (e.speed || 1)), F = P.frames[nF > 1 ? (Math.floor((ph + e.id * 0.618) * nF) % nF + nF) % nF : 0];
+        const i = F.m.count++; P.hn++;
+        const old = !P.baked, bob = old && e.kind === 'slime' ? Math.abs(Math.sin(this.t * 6 + e.id)) : 0;
+        const sq = old && e.kind === 'slime' ? 1 + Math.sin(this.t * 12 + e.id) * 0.08 : 1;
         const sc = (e.elite ? 1.25 : 1) * ENEMY_SCALE;
-        this.E.set(0, PI / 2 - e.ang, e.kind === 'wolf' || e.kind === 'boar' ? Math.sin(this.t * 14 + e.id) * 0.06 : 0, 'YXZ');
+        this.E.set(0, PI / 2 - e.ang, old && (e.kind === 'wolf' || e.kind === 'boar') ? Math.sin(this.t * 14 + e.id) * 0.06 : 0, 'YXZ');
         this.M.compose(this.V.set(x, (e.kind === 'wisp' ? 0.75 : 0) + fly + bob * 0.08, z), this.Q.setFromEuler(this.E), this.S.set(sc * sq, sc / sq, sc * sq));
-        P.m.setMatrixAt(i, this.M);
+        F.m.setMatrixAt(i, this.M);
+        if (P.baked && blobs < 600) { const r = e.r * sc * 2.6 * (fly || e.kind === 'wisp' ? 0.7 : 1); this.M.compose(this.V.set(x, 0.015, z), this.Q.identity(), this.S.set(r, 1, r)); this.blobs.setMatrixAt(blobs++, this.M); this.Q.setFromEuler(this.E); }
         const T = e.hitT > 0 ? TINT.flash : e.stunT > 0 ? TINT.stun : e.burnT > 0 ? TINT.burn : e.slowT > 0 ? TINT.frost : e.shield > 0 ? TINT.shield : e.vulnT > 0 ? TINT.vuln : e.elite ? TINT.elite : TINT.none;
-        P.tint.array.set(T, i * 4);
-        if (P.halo) { this.M.compose(this.V, this.Q, this.S.setScalar(0.33 + Math.sin(this.t * 8 + e.id) * 0.03)); P.halo.setMatrixAt(i, this.M); }
+        F.tint.array.set(T, i * 4);
+        if (P.halo) { this.M.compose(this.V.set(x, (e.kind === 'wisp' ? 0.75 : 0) + fly + 0.3, z), this.Q, this.S.setScalar(0.33 + Math.sin(this.t * 8 + e.id) * 0.03)); P.halo.setMatrixAt(P.hn - 1, this.M); }
         if (e.elite && crowns < 200) { this.M.compose(this.V.set(x, e.h * sc + fly + 0.12, z), this.Q.identity(), this.S.setScalar(1)); this.crowns.setMatrixAt(crowns++, this.M); }
         if (e.burnT > 0 && Math.random() < dt * 8) this.parts.spawn(x, 0.4 + fly, z, 0, 0.7, 0, 0xff7a2a, 0.14, 0.4);
         if (e.camo && e.revealT <= 0 && Math.random() < dt * 4) this.parts.spawn(x, 0.5, z, 0, 0.3, 0, 0x6a3aa0, 0.2, 0.6);
@@ -174,11 +190,12 @@ export class GameView {
         bars++;
       }
     }
+    this.blobs.count = blobs; this.blobs.instanceMatrix.needsUpdate = true;
     for (const [id, b] of this.bigs) if (!seen.has(id)) { this.root.remove(b.root); this.bigs.delete(id); }
     for (const k in this.pools) {
-      const P = this.pools[k]; P.m.instanceMatrix.needsUpdate = true; P.tint.needsUpdate = true;
-      if (P.ol) P.ol.count = P.m.count; if (P.halo) { P.halo.count = P.m.count; P.halo.instanceMatrix.needsUpdate = true; }
-      P.m.visible = P.m.count > 0; if (P.ol) P.ol.visible = P.m.visible; if (P.halo) P.halo.visible = P.m.visible;
+      const P = this.pools[k];
+      for (const F of P.frames) { F.m.instanceMatrix.needsUpdate = true; F.tint.needsUpdate = true; F.m.visible = F.m.count > 0; if (F.ol) { F.ol.count = F.m.count; F.ol.visible = F.m.visible; } }
+      if (P.halo) { P.halo.count = P.hn; P.halo.instanceMatrix.needsUpdate = true; P.halo.visible = P.hn > 0; }
     }
     this.crowns.count = crowns; this.crowns.visible = crowns > 0; this.crowns.instanceMatrix.needsUpdate = true;
     this.hpBg.count = this.hpFg.count = bars; this.hpBg.visible = this.hpFg.visible = bars > 0; this.hpBg.instanceMatrix.needsUpdate = this.hpFg.instanceMatrix.needsUpdate = true; if (this.hpFg.instanceColor) this.hpFg.instanceColor.needsUpdate = true;

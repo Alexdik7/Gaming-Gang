@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Stage } from './render/stage.js';
 import { MapView } from './render/mapview.js';
 import { buildModel } from './render/models.js';
+import { loadAssets, ASSETS } from './render/assets.js';
 import { toon, glow, mk, geo } from './render/toon.js';
 import { Audio } from './audio.js';
 import { Menus } from './ui/menus.js';
@@ -74,6 +75,7 @@ class App {
   async boot() {
     const P = this.profile;
     await this.loader.run([
+      ['Kreaturen erwachen …', () => /[?&]models=0/.test(location.search) ? null : loadAssets()],
       ['Der Ahnenhain erwacht …', () => this.buildMenuScene()],
       ['Kreaturen werden beschworen …', () => { for (const id of unlockedCreatures(P)) portrait(id, { stage: 0, branch: P.chars[id].branch }); }],
       ['Fuchsfeuer wird entzündet …', () => { this.stage.setMode('menu'); this.stage.renderer.compile(this.stage.scene, this.stage.camera); }],
@@ -159,6 +161,7 @@ window.BF = {
   level: (L) => app.devLevel(L),
   charNeed,
   spot: (cid, r = 3) => app.game?.world.suggestSpot(cid, r),
+  models: () => Object.keys(ASSETS),
   put: (cid, r = 3) => { const w = app.game?.world, p = w?.suggestSpot(cid, r); return p ? w.place(cid, ...p) : { ok: false }; },
 };
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
