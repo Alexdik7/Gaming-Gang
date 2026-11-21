@@ -263,3 +263,20 @@ test('Schildträger schützt, Feuerdämon legt beim Tod lahm', () => {
   const d = w.spawn('demon', [], 3); d.x = 3; d.y = 2.5; w.damage(d, 1e6, 'phys', null);
   assert.ok(t.disabledT > 0, 'Explosion legt Kreatur lahm');
 });
+
+test('Schichten-Gegner: platzen Schicht für Schicht, Überschussschaden reißt durch', () => {
+  const w = mkWorld().w;
+  const e = w.spawn('l5', [], 3); e.speed = 0;
+  w.damage(e, e.hp + 0.1, 'phys', null);
+  assert.equal(e.alive, false);
+  let kinds = w.enemies.filter(x => x.alive).map(x => x.kind);
+  assert.deepEqual(kinds, ['l4'], 'Sonne → Sturm');
+  assert.ok(w.events.some(x => x.t === 'pop' && x.layer === 5));
+  // großer Treffer: Sturm (7) + Glut (6) + Moos (6) durch, Tau bleibt mit Rest
+  const l4 = w.enemies.find(x => x.alive);
+  w.damage(l4, l4.hp + 6 + 6 + 1, 'phys', null, { ignoreRes: true });
+  kinds = w.enemies.filter(x => x.alive).map(x => x.kind);
+  assert.deepEqual(kinds, ['l1'], 'drei Schichten auf einmal');
+  const k = w.spawn('kokon', [], 5); w.damage(k, 1e4, 'fire', null);
+  assert.ok(w.enemies.filter(x => x.alive && x.kind === 'l1').length >= 1, 'Kokon zerbricht bis nach unten');
+});

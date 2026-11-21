@@ -390,7 +390,7 @@ export class World {
       }
       e.elem = type; e.elemT = BAL.elem.mark;
     }
-    if (e.hp <= 0) this.kill(e, src);
+    if (e.hp <= 0) this.kill(e, src, -e.hp, type);
     return real;
   }
   react(e, r, dmg, src) {
@@ -413,7 +413,7 @@ export class World {
     if (s.mark > 0) { e.vuln = Math.max(e.vuln, s.mark); e.vulnT = Math.max(e.vulnT, 3); }
     if (s.brk > 0) e.brkT = Math.max(e.brkT, s.brk);
   }
-  kill(e, src) {
+  kill(e, src, over = 0, type = 'phys') {
     if (!e.alive) return; e.alive = false;
     const def = e.def;
     const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul);
@@ -436,7 +436,12 @@ export class World {
       if (tb) tb.disabledT = Math.max(tb.disabledT, def.blast.dur);
       this.emit({ t: 'blast', x: e.x, y: e.y, r: def.blast.r, tower: tb });
     }
-    if (def.split) for (let i = 0; i < def.split.n; i++) { const m = this.spawn(def.split.kind, e.elite ? ['elite'] : [], Math.max(0, e.d - 0.25 * i), e.wave, e.pi); if (m) m.coinMul = 1; }
+    if (def.split) {
+      const kids = [], mods = e.mods.filter(m => m !== 'elite');
+      for (let i = 0; i < def.split.n; i++) { const m = this.spawn(def.split.kind, e.elite ? ['elite', ...mods] : mods, Math.max(0, e.d - (def.layer ? 0.18 : 0.25) * i), e.wave, e.pi); if (m) { m.coinMul = 1; kids.push(m); } }
+      if (def.layer) this.emit({ t: 'pop', x: e.x, y: e.y, layer: def.layer, n: kids.length });
+      if (over > 0.5 && kids[0]) this.damage(kids[0], over, type, src, { noReact: true, ignoreRes: true });   // Treffer reißt mehrere Schichten durch
+    }
     this.emit({ t: 'kill', e, x: e.x, y: e.y, coins, src });
   }
   charXp(cid, raw) {

@@ -111,7 +111,7 @@ export class Audio {
       case 'shuriken': this.noiseHit(t, 0.1, 0.06, B, { f: 6000 * p, q: 6 }); break;
       case 'hit': this.osc('triangle', 260 * p, t, 0.05, 0.06, B, { to: 140 }); break;
       case 'crit': this.osc('square', 1300 * p, t, 0.06, 0.06, B, { lp: 5000 }); this.noiseHit(t, 0.1, 0.1, B, { f: 3500, q: 1 }); break;
-      case 'pop': this.osc('sine', 500 * p, t, 0.08, 0.08, B, { to: 900 }); break;
+      case 'pop': { const L = o.layer || 0; this.osc('sine', (500 + L * 110) * p, t, 0.07, 0.08, B, { to: 900 + L * 220 }); if (L) this.noiseHit(t, 0.04, 0.04, B, { f: 2500 + L * 600, q: 2 }); break; }
       case 'bigdie': this.noiseHit(t, 0.9, 0.25, B, { type: 'lowpass', f: 2000, to: 100, rev: true }); this.taiko(t, 0.8, B, 0.7); break;
       case 'leak': this.osc('sawtooth', 220, t, 0.3, 0.1, B, { to: 110, lp: 1200 }); this.osc('sine', 110, t, 0.35, 0.2, B, { to: 55 }); break;
       case 'react': this.osc('triangle', 880 * p, t, 0.15, 0.08, B, { to: 1760 }); this.noiseHit(t, 0.15, 0.06, B, { f: 5000 }); break;

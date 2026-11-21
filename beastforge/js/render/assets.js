@@ -104,6 +104,12 @@ export const ENEMY_MODELS = {
   demon:  { m: 'demon', cyc: 0, h: 1.0 },
   bearer: { m: 'orc', cyc: 0.9, h: 1.1, extra: bg => { addPart(bg, geo.box(), 0x8a96a8, shieldM); addPart(bg, geo.cyl(10), 0xc8a050, bossM.clone().premultiply(new THREE.Matrix4()).multiply(new THREE.Matrix4().makeRotationX(PI / 2))); } },
   bearerX:{ m: 'orc', cyc: 0.9, h: 1.1 },
+  l1:     { m: 'blob', cyc: 0.7, h: 1.2, mix: [0x6ff0ff, 0.6] },
+  l2:     { m: 'blob', cyc: 0.7, h: 1.2, mix: [0x5ad85a, 0.55] },
+  l3:     { m: 'blob', cyc: 0.7, h: 1.2, mix: [0xff8a2a, 0.6] },
+  l4:     { m: 'blob', cyc: 0.7, h: 1.2, mix: [0xa05aff, 0.6] },
+  l5:     { m: 'blob', cyc: 0.7, h: 1.2, mix: [0xffd23a, 0.65] },
+  kokon:  { m: 'blob', cyc: 0.9, h: 1.15, mix: [0x4a3a6a, 0.55], extra: bg => { for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2; addPart(bg, geo.oct(), 0x8a7ab0, new THREE.Matrix4().compose(new THREE.Vector3(Math.cos(a) * 0.26, 0.42, Math.sin(a) * 0.26), new THREE.Quaternion().setFromEuler(new THREE.Euler(0.4, a, 0.3)), new THREE.Vector3(0.1, 0.2, 0.1))); } addPart(bg, geo.oct(), 0xffd23a, new THREE.Matrix4().compose(new THREE.Vector3(0, 0.78, 0), new THREE.Quaternion(), new THREE.Vector3(0.09, 0.14, 0.09))); } },
 };
 
 // ───────── Skin-Modelle: Klon + Mixer + Knochen-Zubehör ─────────

@@ -85,7 +85,7 @@ export const MAPS = {
     // Glutkrater-Wellen: Eisenkeiler werden zu Schildträgern, ab Welle 3 kommen Feuerdämonen dazu
     mix(w, groups) {
       const out = groups.map(g => g.e === 'boar' ? { ...g, e: 'bearer' } : g);
-      if (w >= 3 && !groups.some(g => g.e === 'vharox')) out.push({ e: 'demon', n: Math.min(30, 3 + Math.floor(w * 0.7)), gap: 0.85, delay: 2.5, mods: w > 20 ? out[0].mods : [] });
+      if (w >= 3 && !groups.some(g => g.e === 'vharox')) out.push({ e: 'demon', n: Math.min(24, 2 + Math.floor(w * 0.55)), gap: 0.85, delay: 2.5, mods: w > 20 ? out[0].mods : [] });
       return { groups: out, tip: w === 1 ? 'Glutkrater: Lava-Spalten brechen alle 14 s aus und verbrennen Gegner. Basalt-Flöße tragen Kreaturen über den Lavasee (+15 % Schaden).' : null };
     },
   },

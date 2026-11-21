@@ -33,7 +33,7 @@ export class GameView {
   ty(t) { return t.raft != null ? RAFT_TOP : this.hAt(t.cx, t.cy); }
 
   buildEnemyPools() {
-    this.pools = {}; const cap = { slime: 120, wolf: 140, boar: 90, wisp: 90, shade: 90, mage: 50, healer: 50, beetle: 90, mite: 200, golem: 24, demon: 120, bearer: 60, bearerX: 60 };
+    this.pools = {}; const cap = { slime: 120, wolf: 140, boar: 90, wisp: 90, shade: 90, mage: 50, healer: 50, beetle: 90, mite: 200, golem: 24, demon: 120, bearer: 60, bearerX: 60, l1: 220, l2: 200, l3: 180, l4: 160, l5: 160, kokon: 60 };
     // Echte Modelle: N vorgebackene Posen je Gegnerart (je Pose ein InstancedMesh). Ohne Modelle: alte Formen.
     const ENEMY_H = { ...Object.fromEntries(Object.entries(ENEMIES).map(([k, d]) => [k, d.h])), bearerX: ENEMIES.bearer.h };
     for (const k of new Set([...Object.keys(ENEMY_GEO), ...Object.keys(ENEMY_MODELS)])) {
@@ -243,9 +243,15 @@ export class GameView {
       }
       case 'blast': { const [x, z] = at(ev.x, ev.y); P.burst(x, 0.4, z, [0xff6a1a, 0xffc040, 0x2a1a18], 20, 3, 0.16, 0.6, { up: 2 }); this.rings.add(x, 0.05, z, 0.1, ev.r, 0xff5a1a, 0.4); break; }
       case 'guardBreak': { const [x, z] = at(ev.x, ev.y); P.burst(x, 0.5, z, [0xd8e0f0, 0x8a96a8, 0xffffff], 22, 3.2, 0.14, 0.5, { grav: 5, up: 1.5 }); this.floaters.add(x, 1.2, z, 'Schild gebrochen!', 'crit', 0.9); break; }
+      case 'pop': { // Schicht platzt: Ring + Funken in Schichtfarbe, kleines „Plopp“-Wort
+        const [x, z] = at(ev.x, ev.y), col = [0, 0x6ff0ff, 0x5ad85a, 0xff8a2a, 0xa05aff, 0xffd23a, 0x8a7ab0][ev.layer] || 0xffffff;
+        this.rings.add(x, 0.3, z, 0.1, 0.55 + ev.layer * 0.06, col, 0.22); P.burst(x, 0.35, z, [col, 0xffffff], 8 + ev.layer * 2, 2.8, 0.1, 0.3, { up: 1.5 });
+        if (settings.dmgNums && this.numCount++ % 3 === 0) this.floaters.add(x, 0.8, z, ['', 'plopp', 'plopp!', 'PLOPP', 'PLOPP!', 'KRACH', 'KRACK!'][ev.layer], ev.layer >= 5 ? 'crit' : '', 0.6);
+        break;
+      }
       case 'kill': {
         const [x, z] = at(ev.x, ev.y), e = ev.e, big = e.boss || e.miniboss || e.kind === 'golem';
-        const col = { slime: 0x9af070, wolf: 0xb0a070, boar: 0xc0a090, wisp: 0x9ff6ff, shade: 0xa070ff, mage: 0xc0a0ff, healer: 0xffb070, beetle: 0x5ae8d8, mite: 0x5ae8d8, golem: 0xc0b8a8, demon: 0xff7a2a, bearer: 0xc8b8a0 }[e.kind] || 0xffffff;
+        const col = { slime: 0x9af070, wolf: 0xb0a070, boar: 0xc0a090, wisp: 0x9ff6ff, shade: 0xa070ff, mage: 0xc0a0ff, healer: 0xffb070, beetle: 0x5ae8d8, mite: 0x5ae8d8, golem: 0xc0b8a8, demon: 0xff7a2a, bearer: 0xc8b8a0, l1: 0x6ff0ff, l2: 0x5ad85a, l3: 0xff8a2a, l4: 0xa05aff, l5: 0xffd23a, kokon: 0x8a7ab0 }[e.kind] || 0xffffff;
         P.burst(x, 0.35, z, [col, 0xffffff], big ? 60 : 12, big ? 4 : 2.4, big ? 0.3 : 0.16, big ? 0.9 : 0.5, { grav: 4, up: 1.4 });
         this.rings.add(x, 0.05, z, 0.1, big ? 2.5 : 0.7, col, big ? 0.7 : 0.35);
         if (ev.coins && settings.dmgNums !== false) this.floaters.add(x, 0.9, z, '+' + ev.coins, 'coin', 0.8);

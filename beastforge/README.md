@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.8.3 – iOS-Fix Bildgröße
+## Stand: v0.9.0 – Ziehen wie im Genre + Schichten-Gegner
+**0.9:** **Platzieren:** ziehen → loslassen; auf ungültigem Platz bleibt die Kreatur **rot** liegen (Modell rot getönt, Ring rot), dann von **irgendwo** auf der Karte weiterziehen (relativ zur Fingerbewegung, `game.rel`), Loslassen auf freiem Platz setzt sie, zurück auf den Shop = abbrechen (`releaseGhost`, `groundRaw`, Einrasten nur noch 0,35 Felder). **Schichten-Gegner (Masterplan A1):** Seelenschleime `l1`–`l5` (Tau, Moos, Glut, Sturm, Sonne – jede Schicht schneller) platzen in die nächstkleinere (`split` + `layer`), **Überschussschaden** reißt mehrere Schichten auf einmal durch (`kill(e, src, over, type)`), Seelenkokon `kokon` (gepanzert) zerbricht in 2 Sonnenschleime; Ereignis `pop` mit Ring, Funken in Schichtfarbe, „plopp/KRACH“, Ton steigt mit der Schicht. Eingestreut in Wellen 2/4/7/9/11/16 + Endlos; Glutkrater-Dämonen leicht reduziert (Bot: alle Karten 12/12).
+
+## Stand v0.8.3 – iOS-Fix Bildgröße
 **0.8.3:** iOS-Web-App (Home-Bildschirm) meldet nach dem Drehen eine veraltete/zu kleine Fenstergröße → Grafik war verzerrt, Karte winzig, unten ein schwarzer Balken. `appSize()` in `render/stage.js` nimmt im Web-App-Modus die echten Bildschirmmaße (`screen` + `window.orientation`), setzt `--appW/--appH` für alle Vollbild-Ebenen; `main.js` berechnet nach Drehen/Größenänderung sofort und nach 0,1/0,35/0,8/1,5 s neu (`relayout`).
 
 ## Stand v0.8.2 – nur Querformat

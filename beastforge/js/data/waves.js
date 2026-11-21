@@ -4,21 +4,21 @@ const g = (e, n, gap, delay = 0, mods = []) => ({ e, n, gap, delay, mods });
 
 export const WAVES = [
   /* 1 */ { groups: [g('slime', 12, 0.95)] },
-  /* 2 */ { groups: [g('slime', 18, 0.7)] },
+  /* 2 */ { groups: [g('slime', 12, 0.7), g('l2', 10, 0.5, 3)], tip: 'Seelenschleime platzen in kleinere Schichten – Tau, Moos, Glut, Sturm, Sonne.' },
   /* 3 */ { groups: [g('slime', 10, 0.8), g('wolf', 6, 0.9, 4)] },
-  /* 4 */ { groups: [g('wolf', 14, 0.55), g('slime', 12, 0.55, 3)] },
+  /* 4 */ { groups: [g('wolf', 14, 0.55), g('l3', 12, 0.45, 3)] },
   /* 5 */ { groups: [g('boar', 5, 1.6), g('slime', 16, 0.5, 2)], tip: 'Eisenkeiler sind gepanzert – Feuer, Geist oder Blitz wirken besser.' },
   /* 6 */ { groups: [g('wisp', 10, 1.0), g('wolf', 12, 0.5, 5)], tip: 'Irrlichter fliegen: Schockwellen der Schildkröte treffen sie nicht.' },
-  /* 7 */ { groups: [g('boar', 6, 1.4), g('wisp', 8, 1.0, 4), g('slime', 14, 0.45, 8)] },
+  /* 7 */ { groups: [g('boar', 6, 1.4), g('wisp', 8, 1.0, 4), g('l4', 14, 0.4, 8)] },
   /* 8 */ { groups: [g('shade', 7, 1.3), g('wolf', 14, 0.45, 2)], tip: 'Getarnte Gegner! Du brauchst Erkennung: Schattenrabe, Geistsicht oder Sternenblick.' },
-  /* 9 */ { groups: [g('beetle', 8, 1.4), g('mage', 3, 3, 4), g('slime', 16, 0.4, 2)] },
+  /* 9 */ { groups: [g('beetle', 8, 1.4), g('mage', 3, 3, 4), g('l5', 14, 0.4, 2)] },
   /* 10 */ { groups: [g('slime', 22, 0.35), g('boar', 6, 1.2, 3), g('oni', 1, 1, 9)], miniboss: true, tip: 'Mini-Boss: Der Oni-Hauptmann treibt seine Truppen an.' },
-  /* 11 */ { groups: [g('healer', 4, 2.5), g('boar', 10, 0.9, 1), g('wolf', 18, 0.35, 6)] },
+  /* 11 */ { groups: [g('healer', 4, 2.5), g('boar', 10, 0.9, 1), g('wolf', 18, 0.35, 6), g('kokon', 4, 1.6, 3)], tip: 'Seelenkokons sind gepanzert und zerbrechen in zwei Sonnenschleime.' },
   /* 12 */ { groups: [g('wolf', 44, 0.24, 0, ['fast'])], mods: ['fast'], tip: 'Ein Rudel – sehr schnell!' },
   /* 13 */ { groups: [g('golem', 1, 1), g('beetle', 8, 1.1, 2), g('mage', 2, 2.5, 5)] },
   /* 14 */ { groups: [g('boar', 6, 1.6, 0, ['elite']), g('shade', 10, 0.8, 2), g('wisp', 14, 0.6, 5)], mods: ['elite'] },
   /* 15 */ { groups: [g('shade', 16, 0.6), g('wisp', 20, 0.45, 3), g('healer', 4, 2, 6)] },
-  /* 16 */ { groups: [g('boar', 10, 0.9, 0, ['armored']), g('mage', 6, 2, 3), g('slime', 30, 0.25, 4)], mods: ['armored'] },
+  /* 16 */ { groups: [g('boar', 10, 0.9, 0, ['armored']), g('mage', 6, 2, 3), g('l5', 18, 0.3, 4), g('kokon', 4, 1.6, 9)], mods: ['armored'] },
   /* 17 */ { groups: [g('golem', 2, 8), g('healer', 4, 2.4, 2), g('beetle', 10, 0.9, 4)] },
   /* 18 */ { groups: [g('wolf', 14, 0.5, 0, ['elite']), g('wisp', 8, 0.9, 2, ['elite']), g('mage', 6, 1.6, 4), g('shade', 14, 0.6, 6)], mods: ['elite'] },
   /* 19 */ { groups: [g('golem', 2, 6), g('boar', 8, 0.9, 2, ['regen']), g('beetle', 8, 0.8, 5), g('healer', 4, 2, 6), g('shade', 10, 0.7, 8)], mods: ['regen'] },
@@ -26,7 +26,7 @@ export const WAVES = [
 ];
 
 // Endlos ab Welle 21: Budget-Generator mit festem Seed pro Welle
-const POOL = [['slime', 1], ['wolf', 1], ['boar', 3], ['wisp', 2], ['shade', 3], ['mage', 4], ['healer', 4], ['beetle', 3], ['golem', 22]];
+const POOL = [['slime', 1], ['wolf', 1], ['boar', 3], ['wisp', 2], ['shade', 3], ['mage', 4], ['healer', 4], ['beetle', 3], ['golem', 22], ['l5', 2], ['kokon', 6]];
 export function waveDef(w) {
   if (w <= WAVES.length) return WAVES[w - 1];
   let s = w * 9301 + 49297;
