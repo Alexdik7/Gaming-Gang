@@ -32,7 +32,10 @@ class App {
     addEventListener('pointerdown', () => { this.audio.init(); screen.orientation?.lock?.('landscape').catch(() => {}); }, { once: true });
     // Nur Querformat: im Hochformat Vollbild-Hinweis (CSS #turn) und das Spiel pausiert automatisch
     const turn = () => { const port = innerHeight > innerWidth; if (port && this.game && !this.game.paused && !this.game.world.over) this.game.hud.pause(); };
-    addEventListener('resize', turn); addEventListener('orientationchange', turn);
+    const relayout = () => { this.stage.resize(); this.game?.hud?.insets?.(); turn(); };
+    let rt = []; const later = () => { rt.forEach(clearTimeout); scrollTo(0, 0); relayout(); rt = [100, 350, 800, 1500].map(ms => setTimeout(relayout, ms)); };
+    addEventListener('resize', later); addEventListener('orientationchange', later); visualViewport?.addEventListener('resize', later);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) later(); });
     const save = () => saveProfile(this.profile);
     document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); if (this.game && !this.game.paused && !this.game.world.over) this.game.hud.pause(); } });
     addEventListener('pagehide', save);

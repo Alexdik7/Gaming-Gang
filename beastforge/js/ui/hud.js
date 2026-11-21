@@ -9,11 +9,12 @@ import { TARGETS, TARGET_NAMES } from '../sim/world.js';
 import { canTier } from '../sim/stats.js';
 import { charNeed, accNeed, nextFormByLevel, formAt } from '../meta/progression.js';
 import { portrait } from '../render/icons.js';
+import { appSize } from '../render/stage.js';
 
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
 const esc = s => String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
-const land = () => innerWidth > innerHeight;
+const land = () => { const [w, h] = appSize(); return w > h; };
 
 export class Hud {
   constructor(game) {
@@ -32,8 +33,8 @@ export class Hud {
   insets() {
     const top = $('hud').querySelector('.top').getBoundingClientRect().bottom + 4, sh = $('shop').getBoundingClientRect();
     const panel = !$('panel').classList.contains('hidden') && land() ? $('panel').getBoundingClientRect().width : 0;
-    if (land()) this.g.app.stage.setInsets({ top, right: innerWidth - sh.left + 2, bottom: 6, left: 6 + panel * 0 });
-    else this.g.app.stage.setInsets({ top, right: 0, bottom: innerHeight - sh.top + 2, left: 0 });
+    if (land()) this.g.app.stage.setInsets({ top, right: appSize()[0] - sh.left + 2, bottom: 6, left: 6 + panel * 0 });
+    else this.g.app.stage.setInsets({ top, right: 0, bottom: appSize()[1] - sh.top + 2, left: 0 });
     $('rotate').classList.add('hidden'); // Hochformat wird jetzt unterstützt (Karte gedreht)
   }
   destroy() { $('hud').classList.add('hidden'); removeEventListener('resize', this.resizeObs); document.querySelector('.coach')?.remove(); $('bubbles').innerHTML = ''; }

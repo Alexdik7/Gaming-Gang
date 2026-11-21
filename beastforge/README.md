@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.8.2 – nur Querformat
+## Stand: v0.8.3 – iOS-Fix Bildgröße
+**0.8.3:** iOS-Web-App (Home-Bildschirm) meldet nach dem Drehen eine veraltete/zu kleine Fenstergröße → Grafik war verzerrt, Karte winzig, unten ein schwarzer Balken. `appSize()` in `render/stage.js` nimmt im Web-App-Modus die echten Bildschirmmaße (`screen` + `window.orientation`), setzt `--appW/--appH` für alle Vollbild-Ebenen; `main.js` berechnet nach Drehen/Größenänderung sofort und nach 0,1/0,35/0,8/1,5 s neu (`relayout`).
+
+## Stand v0.8.2 – nur Querformat
 **0.8.2:** Gespielt wird nur im Querformat (Wunsch des Spielers): Manifest `orientation: landscape`, im Hochformat Vollbild-Hinweis `#turn` mit drehendem Handy (CSS `@media (orientation: portrait)`), laufender Run pausiert automatisch (`resize`/`orientationchange` in `main.js`), `screen.orientation.lock` wo möglich (iOS kann nicht sperren). Die Hochformat-Kamera aus 0.8.1 bleibt als Rückfall im Code.
 
 ## Stand v0.8.1 – iPhone-Hochformat
