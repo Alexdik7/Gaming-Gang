@@ -22,7 +22,8 @@ function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Ma
 
 export class World {
   constructor(o) {
-    this.mapId = o.map || 'ahnenhain'; this.map = MAPS[this.mapId];
+    this.mapId = o.map || 'ahnenhain'; this.map = o.mapObj || MAPS[this.mapId];
+    this.mods = o.mods || {};   // Herausforderung (data/challenges.js)
     this.diffKey = o.diff || 'normal'; this.diff = BAL.diff[this.diffKey];
     this.hooks = o.hooks || {};
     this.loadout = o.loadout || Object.keys(CREATURES);
@@ -34,6 +35,7 @@ export class World {
     ({ pts: this.pts, cum: this.cum, len: this.len } = this.paths[0]); this.spawnPi = 0;
     this.ac = o.academy || {};   // Shinobi-Akademie: dauerhafte Boni (data/academy.js)
     this.coins = this.diff.start + (this.ac.startCoins || 0); this.lives = this.diff.lives + (this.ac.lives || 0); this.maxLives = this.lives;
+    if (this.mods.soulburn) this.lives = this.maxLives = 1;
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
     this.t = 0; this.acc = 0; this.nid = 1; this.over = false; this.won = false; this.god = false;
@@ -186,6 +188,7 @@ export class World {
   }
   evolve(id) {
     const t = this.tower(id); if (!t) return { ok: false, why: 'Kein Turm' };
+    if (this.mods.basic && !t.hero) return { ok: false, why: 'Herausforderung: nur Grundformen' };
     const n = this.nextEvo(t);
     if (!n) return { ok: false, why: 'Höchste Form' };
     if (!n.unlocked) return { ok: false, why: `Ab Charakter-Level ${n.form.lvl}` };
@@ -198,6 +201,7 @@ export class World {
     return { ok: true };
   }
   sell(id) {
+    if (this.mods.soulburn) return { ok: false, why: 'Seelenbrand: kein Verkaufen' };
     const i = this.towers.findIndex(t => t.id === id); if (i < 0) return { ok: false };
     const t = this.towers[i], v = Math.floor(t.spent * (BAL.run.sellRefund + (this.ac.sell || 0)));
     this.coins += v; this.towers.splice(i, 1); this.dirty = true; this.refresh();
@@ -237,7 +241,7 @@ export class World {
     const def = ENEMIES[kind] || BOSSES[kind]; if (!def) return null;
     const boss = !!def.boss, elite = mods.includes('elite');
     const scale = BAL.endlessScale(wave);
-    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * scale * (boss || def.miniboss ? 1 : BAL.hpScale(wave));
+    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * scale * (boss || def.miniboss ? 1 : BAL.hpScale(wave));
     if (elite) hp *= 2.2;
     const res = { ...(def.res || {}) };
     if (mods.includes('armored')) res.phys = Math.max(0.25, (res.phys ?? 1) * 0.6);
@@ -271,6 +275,7 @@ export class World {
     this.spawners = this.spawners.filter(s => s.left > 0);
     if (this.rafts.length) this.updRafts();
     this.updVents(dt);
+    if (this.mods.apoc && this.wave > 0 && this.canStartWave()) this.startWave();   // Apokalypse: Wellen ohne Pause
     let buffChange = false;
     for (const t of this.towers) {
       if (t.buffs.length) { const before = t.buffs.length; t.buffs = t.buffs.filter(b => (b.t -= dt) > 0); if (t.buffs.length !== before) buffChange = true; }
@@ -452,7 +457,7 @@ export class World {
     const got = this.hooks.charXp ? this.hooks.charXp(cid, raw, this.wave) : raw;
     this.stats.xp[cid] = (this.stats.xp[cid] || 0) + (got || 0);
   }
-  gain(c) { if (c > 0) { this.coins += c; this.stats.coins += c; } }
+  gain(c) { if (c > 0) { if (this.mods.halfCash) c *= 0.5; this.coins += c; this.stats.coins += c; } }
 
   // ───────── Held ─────────
   heroXp(t, amt) {
@@ -486,6 +491,7 @@ export class World {
       if (A.crit) s.crit.ch += A.crit; if (A.boss) s.bossMul *= 1 + A.boss;
       if (A.burn) s.burn.dps *= 1 + A.burn; if (A.slow) s.slow.pct = Math.min(0.85, s.slow.pct * (1 + A.slow));
       if (A.income && s.income) s.income *= 1 + A.income;
+      if (this.mods.soulburn) { s.income = 0; s.interest = 0; s.lucky = 0; }
     }
     this.luckyT = this.towers.filter(t => t.s.lucky > 0);
     const R = BAL.run.synergyRange, act = [];

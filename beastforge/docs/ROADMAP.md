@@ -42,7 +42,7 @@ Ziel: Spielgefühl und Umfang eines Top-Tower-Defense – mit eigener Welt, eige
 - **A2** Leistung für 1.000+ Gegner: Simulation im Web Worker, Gruppen bündeln, Umriss + Pose in einem Draw-Call, LOD.
 - **A3** Wellen 1–60 neu (+ freies Weiterspielen), Wirtschafts-Kreatur (Bank/Farm-Prinzip), Super-Endausbau pro Kreatur.
 - **C1–C4** Kreaturen 9–16 (Schlangenmagier, Windmönch, Phönix, Leerenkatze …), Helden 4–6, Karten 4–10 in drei Schwierigkeitsgruppen, Bosse 2–5 mit Stufen.
-- **D** Herausforderungs-Modi (nur Grundkreaturen, halbes Geld, umgekehrter Weg, doppelte KP, „Seelenbrand“), tägliche Herausforderung, Boss-Events.
+- **D ✅ (v0.13, Grundform)** Herausforderungs-Modi (nur Grundkreaturen, halbes Geld, umgekehrter Weg, doppelte KP, „Seelenbrand“), tägliche Herausforderung, Boss-Events.
 - **E** Wissensbaum, Kräfte, Kosmetik-Shop, Quests, Wochen-Events.
 - **F** Koop 2–4 über Raumcode (Netzcode aus Cats TD übernehmen).
 - **G** Feinschliff: Balancing-Bot über alle Karten, Tutorials, Statistiken.

@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.12.0 – Seelenwale + freies Spiel
+## Stand: v0.13.0 – Herausforderungen
+**0.13:** Pro Karte 6 **Herausforderungen** (`data/challenges.js`, Auswahl in der Kartenwahl, `World({ mods })`): Nur Grundformen (`basic`, kein Erwecken), Halbes Gold (`halfCash` in `gain`), Umgekehrt (`reversedMap`, Schrein/Torii wandern mit), Doppelte KP (`dblHp`), Apokalypse (`apoc`, Wellen ohne Pause), Seelenbrand (`soulburn`: Schwer, 1 Leben, kein Verkaufen, kein Einkommen). Freigeschaltet nach Sieg auf der Karte (Seelenbrand nach Sieg auf Schwer). Sieg = **Medaille** 🏅 (`maps[id].medals`), Konto-XP und +1 Shinobi-Punkt.
+
+## Stand v0.12.0 – Seelenwale + freies Spiel
 **0.12:** **Großgegner-Klasse Seelenwale** (Quaternius „Glub Evolved“, schwebend `hover`, `big`): Seelenwal (520 KP, zerbricht in 4 Kokons) und Sturmwal (1.500 KP, zerbricht in 2 Seelenwale), großes Platz-Spektakel (`pop` ab Schicht 7: Ring, Funken, Wackeln, „WUMMS!“). Erster Wal in Welle 19, in freien Wellen im Pool und bei Boss-Wellen ab 30/40. **Freies Spiel:** Nach dem Sieg (Normal/Schwer) Auswahl „Weiterspielen“ oder „Abschließen“ (`game.askFree`); der Sieg wird sofort verbucht (`finish(true)`), danach laufen Endlos-Wellen (`maxWave = ∞`), am Ende Rekord `maps[id].free` und Ergebnis „Freies Spiel bis Welle N“.
 
 ## Stand v0.11.0 – Glückskatze (Wirtschaft)

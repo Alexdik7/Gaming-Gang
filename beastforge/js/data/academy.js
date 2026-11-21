@@ -39,7 +39,7 @@ const owned = P => (P.academy ||= { owned: {} }).owned;
 // Verdiente Punkte: 1 je Konto-Level ab Level 2, +1 je erstem Sieg (Karte × Normal/Schwer)
 export function shinobiPoints(P) {
   let earned = Math.max(0, (P.account?.level || 1) - 1);
-  for (const m of Object.values(P.maps || {})) { if ((m.normal || 0) >= 20) earned++; if ((m.hard || 0) >= 20) earned++; }
+  for (const m of Object.values(P.maps || {})) { if ((m.normal || 0) >= 20) earned++; if ((m.hard || 0) >= 20) earned++; earned += Object.keys(m.medals || {}).length; }
   const spent = Object.keys(owned(P)).reduce((a, id) => a + (ACADEMY_BY_ID[id]?.cost || 0), 0);
   return { earned, spent, free: earned - spent };
 }

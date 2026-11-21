@@ -321,3 +321,19 @@ test('Seelenwale: Sturmwal → 2 Wale → je 4 Kokons, freie Wellen erzeugen Wal
   let found = false; for (let n = 21; n < 60 && !found; n++) found = waveDef(n).groups.some(g => g.e === 'whale' || g.e === 'whale2');
   assert.ok(found, 'Wale in freien Wellen');
 });
+
+test('Herausforderungen: Regeln greifen, Medaillen geben Shinobi-Punkte', async () => {
+  const { CH, reversedMap, chUnlocked } = await import('../js/data/challenges.js');
+  const { shinobiPoints } = await import('../js/data/academy.js');
+  const { MAPS } = await import('../js/data/maps.js');
+  const W = mods => new World({ map: 'ahnenhain', diff: 'normal', loadout: ['kitsune'], hooks: {}, mods, mapObj: mods.reverse ? reversedMap(MAPS.ahnenhain) : null });
+  const base = W({}), half = W(CH.half.mods); base.gain(100); half.gain(100);
+  assert.equal(half.coins - half.diff.start, 50, 'halbes Gold');
+  const a = base.spawn('slime'), b = W(CH.dbl.mods).spawn('slime'); assert.equal(b.maxHp, a.maxHp * 2, 'doppelte KP');
+  const s = W(CH.soul.mods); assert.equal(s.lives, 1); s.coins = 9999; const t = s.place('kitsune', 3, 4.5).tower; assert.equal(s.sell(t.id).ok, false, 'kein Verkaufen');
+  const bw = W(CH.basic.mods); bw.coins = 99999; const k = bw.place('kitsune', 3, 4.5).tower; assert.equal(bw.evolve(k.id).ok, false, 'keine Erweckung');
+  const r = W(CH.rev.mods), e = r.spawn('slime'); assert.ok(e.x > 20, 'rückwärts: Start rechts'); assert.ok(r.paths[0].pts.at(-1).x < 2, 'Ende links');
+  const ap = W(CH.apoc.mods); ap.startWave(); for (let i = 0; i < 60 * 40 && ap.wave < 2; i++) ap.step(1 / 60); assert.ok(ap.wave >= 2, 'Apokalypse startet Wellen selbst');
+  const P = defaultProfile(); assert.equal(chUnlocked(P, 'ahnenhain', 'half'), false); P.maps.ahnenhain.normal = 20; assert.equal(chUnlocked(P, 'ahnenhain', 'half'), true);
+  const p0 = shinobiPoints(P).earned; P.maps.ahnenhain.medals = { half: 1, rev: 1 }; assert.equal(shinobiPoints(P).earned, p0 + 2);
+});

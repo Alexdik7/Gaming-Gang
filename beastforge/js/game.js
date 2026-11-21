@@ -9,14 +9,15 @@ import { BAL } from './config.js';
 import { CREATURES } from './data/creatures.js';
 import { MAPS } from './data/maps.js';
 import { academyFx } from './data/academy.js';
+import { CH, reversedMap } from './data/challenges.js';
 import { HEROES } from './data/heroes.js';
 import { addCharXp, addAccXp, addHeroRankXp, heroStartLevel, unlocked, unlockedCreatures, addMastery, checkAchievements, formsFor } from './meta/progression.js';
 import { saveProfile } from './meta/profile.js';
 
 export class Game {
-  constructor(app, { map = 'ahnenhain', diff = 'normal' }) {
+  constructor(app, { map = 'ahnenhain', diff = 'normal', ch = 'std' }) {
     this.app = app; const P = this.P = app.profile;
-    this.mapId = map; this.diffKey = diff; this.music = MAPS[map]?.music || 'forest';
+    this.mapId = map; this.diffKey = diff; this.ch = CH[ch] ? ch : 'std'; this.music = MAPS[map]?.music || 'forest';
     this.loadout = unlockedCreatures(P);
     if (!this.loadout.length) this.loadout = ['kitsune'];
     this.heroId = unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
@@ -36,7 +37,8 @@ export class Game {
       heroXp: amt => { if (this.heroId) addHeroRankXp(P, this.heroId, amt * 0.5); },
       heroStart: () => Math.min(20, heroStartLevel(P.heroes[this.heroId]?.rank || 1) + (this.ac.heroLvl || 0)),
     };
-    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, academy: this.ac, seed: (Date.now() % 1e6) | 0 });
+    const mods = CH[this.ch].mods || {};
+    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, academy: this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: (Date.now() % 1e6) | 0 });
     if (app.devGod) this.world.god = true;
     app.stage.setMode('game');
     this.view = new GameView(app.stage, this.world, { branch: hooks.branch, skin: cid => this.skinOf(cid) });
@@ -284,6 +286,8 @@ export class Game {
     if (d === 'endless') P.stats.bestEndless = Math.max(P.stats.bestEndless || 0, w.doneWave);
     const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, endless: 0 };
     const firstClear = won && !(mp[d] >= w.maxWave);
+    let medal = null;
+    if (won && this.ch !== 'std') { mp.medals ||= {}; if (!mp.medals[this.ch]) { mp.medals[this.ch] = 1; medal = CH[this.ch]; this.giveAcc(BAL.acc.firstMapClear); } }
     mp[d] = Math.max(mp[d] || 0, w.doneWave);
     const used = [...w.stats.used].filter(c => CREATURES[c]);
     const winBonus = {}, masteryUps = [];
@@ -310,7 +314,7 @@ export class Game {
       won, perfect, firstClear, map: w.map.name, mapId: this.mapId, diff: D.name, diffKey: d, wave: w.doneWave, maxWave: w.maxWave, lives: w.lives, maxLives: w.maxLives,
       kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves,
       used, xp: w.stats.xp, winBonus, snap: this.snap, charUps: this.charUps, accGain: this.accGain, accUps: this.accUps, achs: this.achs, masteryUps,
-      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg,
+      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch],
     });
     if (silent) return res;
     this.app.results(res);

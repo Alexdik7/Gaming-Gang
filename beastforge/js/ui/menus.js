@@ -10,11 +10,13 @@ import { baseStats, dps } from '../sim/stats.js';
 import { portrait, Preview, mapThumb } from '../render/icons.js';
 import { ELEMENT_COLORS } from '../data/enemies.js';
 import { saveProfile, resetProfile } from '../meta/profile.js';
+import { CHALLENGES, CH, chUnlocked } from '../data/challenges.js';
 import { SCHOOLS, ACADEMY, ACADEMY_BY_ID, shinobiPoints, canLearn, learn, resetAcademy } from '../data/academy.js';
 
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
 const esc = s => String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+const u0 = (id, P, sel) => { const c = CH[id || 'std']; return `${c.icon} <b>${esc(c.name)}:</b> ${esc(c.desc)}${chUnlocked(P, sel, c.id) ? '' : ` <i>(🔒 erst ${c.need === 'hard' ? 'auf Schwer' : ''} gewinnen)</i>`}`; };
 const stars = n => '★'.repeat(n) + `<i>${'★'.repeat(5 - n)}</i>`;
 
 export class Menus {
@@ -150,6 +152,7 @@ export class Menus {
       panel = `<aside class="wpanel"><button class="x" id="wx">✕</button><img class="wthumb" data-thumb="${sel}" alt="">
         <b class="wname">${esc(map.name)}</b><small class="mut">${esc(map.level)} · ${map.paths ? map.paths.length + ' Eingänge' : '1 Eingang'}</small><p>${esc(map.desc)}</p>
         ${ok ? `<div class="wlabel">Modus</div><div class="pills">${modes.map(([k, ic, n]) => { const u = unlocked(P, 'mode', k); return `<button data-d="${k}" class="${this.diff === k ? 'on' : ''}" ${u ? '' : 'disabled'}>${u ? ic : '🔒'} ${n}<small>${u ? 'Beste: ' + (best[k] || 0) : 'Lv ' + unlockLevel('mode', k)}</small></button>`; }).join('')}</div>
+        ${this.diff !== 'endless' ? `<div class="wlabel">Herausforderung <small class="mut">· 🏅 ${Object.keys(best.medals || {}).length}/${CHALLENGES.length - 1}</small></div><div class="chs">${CHALLENGES.map(c => { const u = chUnlocked(P, sel, c.id), m = best.medals?.[c.id]; return `<button data-ch="${c.id}" class="${(this.ch || 'std') === c.id ? 'on' : ''}" ${u ? '' : 'disabled'} title="${esc(c.desc)}"><span>${u ? c.icon : '🔒'}</span>${esc(c.name)}${m ? '<i>🏅</i>' : ''}</button>`; }).join('')}</div><p class="chdesc">${u0(this.ch, P, sel)}</p>` : ''}
         <div class="wlabel">Held</div><div class="heroes">${heroes.map(h => { const u = unlocked(P, 'hero', h.id); return `<button class="hpick ${P.hero === h.id ? 'on' : ''}" data-hero="${h.id}" ${u ? '' : 'disabled'} title="${esc(h.name)}"><img src="${portrait(h.id, { hlvl: 1 })}" alt=""><span>${u ? esc(h.name) : '🔒 ' + unlockLevel('hero', h.id)}</span></button>`; }).join('')}</div>
         <div class="wlabel">Team <small class="mut">· ${team.length} Kreaturen im Shop</small></div><div class="teamrow">${team.map(id => `<img src="${portrait(id, { stage: 0, branch: P.chars[id].branch })}" title="${esc(CREATURES[id].name)}" alt="">`).join('')}</div>
         <button class="big" id="go">⚔ LOS GEHT'S</button>` : `<div class="wlock">🔒 Erreiche Konto-Level ${unlockLevel('map', sel)}, um diese Karte zu betreten.</div>`}</aside>`;
@@ -174,9 +177,10 @@ export class Menus {
       ${critters}${fog}${nodes}${panel}</div>`, m => {
       m.querySelectorAll('[data-map]').forEach(b => b.onclick = () => { this.click(); this.s_play(b.dataset.map); });
       m.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { this.click(); this.diff = b.dataset.d; this.s_play(sel); });
+      m.querySelectorAll('[data-ch]').forEach(b => b.onclick = () => { this.click(); this.ch = b.dataset.ch; this.s_play(sel); });
       m.querySelectorAll('[data-hero]').forEach(b => b.onclick = () => { this.click(); P.hero = b.dataset.hero; saveProfile(P); this.s_play(sel); });
       $('wx')?.addEventListener('click', () => { this.click(); this.s_play(); });
-      const go = $('go'); if (go) go.onclick = () => { this.app.audio.init(); this.app.startRun(sel, this.diff); };
+      const go = $('go'); if (go) go.onclick = () => { this.app.audio.init(); const ch = chUnlocked(P, sel, this.ch || 'std') ? this.ch || 'std' : 'std'; this.app.startRun(sel, CH[ch].diff || this.diff, ch); };
       this.thumbs(m);
     });
   }
@@ -348,7 +352,7 @@ export class Menus {
     }).join('') || '<small style="color:var(--mut)">Keine Kreatur eingesetzt.</small>';
     const a = P.account, need = accNeed(a.level);
     this.render(`<div class="scr res">
-      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
+      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.medal ? `<p style="margin:0;color:#ffd257;font-weight:900">🏅 Neue Medaille: ${esc(r.medal.name)} · +1 Shinobi-Punkt</p>` : r.ch && r.ch.id !== 'std' ? `<p style="margin:0;color:var(--mut)">${r.ch.icon} ${esc(r.ch.name)}</p>` : ''}${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
       <p style="text-align:center;margin:0;color:var(--mut)">${esc(r.map)} · ${esc(r.diff)} · Welle ${r.wave}${r.maxWave === Infinity ? '' : '/' + r.maxWave}${r.perfect ? ' · <b style="color:var(--run)">PERFEKT!</b>' : ''}</p>
       <div class="rgrid"><div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.hero ? `<span>${esc(HEROES[r.hero.id]?.name || 'Held')} erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>
       <div class="sect char"><h3>CHARAKTER-XP</h3>${xpRows}${r.won ? '<small style="color:var(--mut)">inkl. +25 % Siegbonus</small>' : '<small style="color:var(--mut)">Alle verdienten XP bleiben erhalten.</small>'}
