@@ -280,3 +280,19 @@ test('Schichten-Gegner: platzen Schicht für Schicht, Überschussschaden reißt 
   const k = w.spawn('kokon', [], 5); w.damage(k, 1e4, 'fire', null);
   assert.ok(w.enemies.filter(x => x.alive && x.kind === 'l1').length >= 1, 'Kokon zerbricht bis nach unten');
 });
+
+test('Shinobi-Akademie: Punkte, Reihenfolge, Boni in der Welt', async () => {
+  const { shinobiPoints, canLearn, learn, academyFx } = await import('../js/data/academy.js');
+  const P = defaultProfile(); P.account.level = 6; P.maps.ahnenhain.normal = 20;
+  assert.equal(shinobiPoints(P).earned, 6, '5 Level + 1 erster Sieg');
+  assert.equal(canLearn(P, 'k2').ok, false, 'Stufe 2 braucht Stufe 1');
+  for (const id of ['h1', 'h2', 'k1', 's1']) assert.ok(learn(P, id).ok, id);
+  assert.equal(shinobiPoints(P).free, 2);
+  const fx = academyFx(P);
+  const base = new World({ map: 'ahnenhain', diff: 'normal', loadout: ['kitsune'], hooks: {} });
+  const w = new World({ map: 'ahnenhain', diff: 'normal', loadout: ['kitsune'], hooks: {}, academy: fx });
+  assert.equal(w.coins, base.coins + 100); assert.equal(w.lives, base.lives + 15);
+  assert.ok(w.costOf('kitsune') < base.costOf('kitsune'), 'Feilschen');
+  w.coins = 9999; base.coins = 9999; const t = w.place('kitsune', 3, 4.5).tower, tb = base.place('kitsune', 3, 4.5).tower;
+  assert.ok(Math.abs(t.s.dmg / tb.s.dmg - 1.04) < 1e-6, '+4 % Schaden');
+});

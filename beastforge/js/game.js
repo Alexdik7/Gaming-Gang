@@ -8,6 +8,7 @@ import { Hud } from './ui/hud.js';
 import { BAL } from './config.js';
 import { CREATURES } from './data/creatures.js';
 import { MAPS } from './data/maps.js';
+import { academyFx } from './data/academy.js';
 import { HEROES } from './data/heroes.js';
 import { addCharXp, addAccXp, addHeroRankXp, heroStartLevel, unlocked, unlockedCreatures, addMastery, checkAchievements, formsFor } from './meta/progression.js';
 import { saveProfile } from './meta/profile.js';
@@ -21,20 +22,21 @@ export class Game {
     this.heroId = unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
     this.snap = { acc: { ...P.account }, chars: Object.fromEntries(Object.entries(P.chars).map(([k, c]) => [k, { level: c.level, xp: c.xp }])) };
     this.accGain = 0; this.charUps = []; this.accUps = []; this.achs = [];
+    this.ac = academyFx(P);
     const hooks = {
       level: cid => P.chars[cid]?.level ?? 1,
       branch: cid => P.chars[cid]?.branch || 'spirit',
       charXp: (cid, raw, wave) => {
-        const r = addCharXp(P, cid, raw, { wave, diff });
+        const r = addCharXp(P, cid, raw * (1 + (this.ac.charXp || 0)), { wave, diff });
         for (const up of r.ups) this.onCharUp(up);
         return r.xp;
       },
       accXp: amt => this.giveAcc(amt),
       stat: (k, n, max) => { P.stats[k] = max ? Math.max(P.stats[k] || 0, n) : (P.stats[k] || 0) + n; },
       heroXp: amt => { if (this.heroId) addHeroRankXp(P, this.heroId, amt * 0.5); },
-      heroStart: () => heroStartLevel(P.heroes[this.heroId]?.rank || 1),
+      heroStart: () => Math.min(20, heroStartLevel(P.heroes[this.heroId]?.rank || 1) + (this.ac.heroLvl || 0)),
     };
-    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, seed: (Date.now() % 1e6) | 0 });
+    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, academy: this.ac, seed: (Date.now() % 1e6) | 0 });
     if (app.devGod) this.world.god = true;
     app.stage.setMode('game');
     this.view = new GameView(app.stage, this.world, { branch: hooks.branch, skin: cid => this.skinOf(cid) });
@@ -51,7 +53,7 @@ export class Game {
 
   // ───────── Fortschritt ─────────
   giveAcc(amt) {
-    const r = addAccXp(this.P, amt); this.accGain += r.xp;
+    const r = addAccXp(this.P, amt * (1 + (this.ac?.accXp || 0))); this.accGain += r.xp;
     for (const up of r.ups) {
       this.accUps.push(up);
       this.hud.toast('acc', `Konto-Level ${up.lvl}!`, up.rewards.map(x => 'Neu: ' + x.text).join(' · ') || 'Weiter so!');

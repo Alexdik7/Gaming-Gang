@@ -23,6 +23,7 @@ export function defaultProfile() {
       levelUps: 0, ninetail: 0, allFive: 0, hero10: 0, hero20: 0, playTime: 0, losses: 0 },
     settings: { music: 0.55, sfx: 0.8, quality: 'auto', dmgNums: true, shake: true, autoWave: false },
     seen: { intro: false, tips: {} },
+    academy: { owned: {} },   // Shinobi-Akademie: erlernte Knoten
   };
 }
 

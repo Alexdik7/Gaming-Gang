@@ -24,6 +24,8 @@ const S = {
     await p.waitForTimeout(500); await shot(p, 'm1_home');
     for (const s of ['collection', 'hero', 'account', 'ach', 'stats', 'settings', 'play']) { await p.evaluate(n => BF.menu(n), s); await p.waitForTimeout(700); await shot(p, 'm_' + s); }
     await p.click('[data-map=ahnenhain]'); await p.waitForTimeout(1200); await shot(p, 'm_diff');
+    await p.evaluate(() => BF.menu('academy')); await p.click('[data-n=k1]'); await p.click('#alearn'); await p.waitForTimeout(300); await shot(p, 'm_academy');
+    assert(await p.evaluate(() => !!BF.profile.academy.owned.k1), 'Akademie: Knoten erlernt');
     await p.evaluate(() => BF.menu('collection')); await p.click('[data-c=kitsune]'); await p.waitForTimeout(800); await shot(p, 'm_kitsune');
     await p.click('[data-f=shadow]'); await p.waitForTimeout(500);
     await p.click('[data-branch=shadow]'); assert(await p.evaluate(() => BF.profile.chars.kitsune.branch) === 'shadow', 'Zweig gewählt');
