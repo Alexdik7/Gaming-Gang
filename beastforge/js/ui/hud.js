@@ -10,6 +10,7 @@ import { canTier } from '../sim/stats.js';
 import { charNeed, accNeed, nextFormByLevel, formAt } from '../meta/progression.js';
 import { portrait } from '../render/icons.js';
 import { appSize } from '../render/stage.js';
+import { saveProfile } from '../meta/profile.js';
 
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
@@ -24,6 +25,7 @@ export class Hud {
     this.last = {}; this.abT = 0;
     $('bPause').onclick = () => this.pause();
     $('bPlay').onclick = () => this.playBtn();
+    $('bAuto').onclick = () => { const S = this.g.settings(); S.autoWave = !S.autoWave; saveProfile(this.P); this.g.app.audio.play('click'); this.last.auto = null; if (S.autoWave && !this.w.waveRunning() && !this.w.over) this.playBtn(); };
     $('bCancel').onclick = () => this.g.cancelPlace();
     $('bEarly').onclick = () => this.early();
     this.buildTray(); this.updAcc();
@@ -95,6 +97,10 @@ export class Hud {
       $('bEarly').classList.toggle('hidden', !(can && running));
       $('bEarly').innerHTML = `⏩ Nächste Welle <b>+◈${BAL.run.earlyCall(w.wave)}</b>`;
     }
+    // Auto-Start-Schalter + Vorschau der nächsten Welle
+    const auto = !!this.g.settings().autoWave; if (auto !== this.last.auto) { this.last.auto = auto; $('bAuto').classList.toggle('on', auto); }
+    const pk = !running ? w.peekWave() : null, pkKey = pk ? pk.n : 0;
+    if (pkKey !== this.last.prev) { this.last.prev = pkKey; $('wprev').innerHTML = pk ? this.wavePreview(pk) : ''; $('wprev').classList.toggle('hidden', !pk); }
     if (w.boss) {
       $('bossBar').classList.remove('hidden');
       $('bossFill').style.width = Math.max(0, w.boss.hp / w.boss.maxHp * 100) + '%';
@@ -104,6 +110,14 @@ export class Hud {
     if (this.sel !== this.g.sel) this.showPanel(this.g.sel);
     if (this.g.sel) { this.panelT = (this.panelT || 0) - dt; if (this.panelT <= 0) { this.panelT = 0.25; this.refreshPanel(true); } }
     this.updBubbles();
+  }
+  wavePreview(pk) {
+    const g = new Map(); for (const x of pk.def.groups) g.set(x.e, (g.get(x.e) || 0) + Math.round(x.n));
+    const tags = new Set(pk.def.mods || []);
+    const items = [...g].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => { const d = ENEMIES[k] || BOSSES[k]; if (!d) return ''; if (d.flying) tags.add('fly'); if (d.camo) tags.add('camo'); if (d.res?.phys < 0.7) tags.add('armor');
+      return `<span class="${d.boss ? 'bossT' : ''}"><b>${d.boss ? '👑' : n + '×'}</b> ${esc(d.name.split(',')[0])}</span>`; }).join('');
+    const T = { fly: '🪽 Fliegend', camo: '👁 Getarnt', armor: '🛡 Gepanzert', fast: '⚡ Schnell', regen: '✚ Regeneration', elite: '👑 Elite', armored: '🛡 Gepanzert' };
+    return `<small>WELLE ${pk.n}</small>${items}${[...tags].filter(t => T[t]).map(t => `<i>${T[t]}</i>`).join('')}`;
   }
   playBtn() {
     this.g.app.audio.init();

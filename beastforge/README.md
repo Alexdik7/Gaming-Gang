@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.31.0 – Ahnenform (Ultra-Entwicklung)
+## Stand: v0.32.0 – Spielgefühl: Wellen-Vorschau, Auto-Start, Bestenliste
+**0.32:** Über dem Start-Knopf zeigt `#wprev` die nächste Welle (`world.peekWave()` inkl. Karten-Mix: Anzahl je Gegnerart, Boss, Merkmale fliegend/getarnt/gepanzert/schnell/Elite). Runder AUTO-Schalter `#bAuto` neben dem Start-Knopf (Einstellung `autoWave`, gold = an, startet beim Einschalten sofort). Ergebnis-Bildschirm mit „Beste Kreaturen“ (Top 5 nach Schaden, Balken, Medaillen). Plopp-Klänge je Schicht gab es schon (`A.play('pop', {layer})`).
+
+## v0.31.0 – Ahnenform (Ultra-Entwicklung)
 **0.31:** Paragon-Prinzip: Stehen für jeden der 3 Pfade Kreaturen derselben Art mit Stufe 5 auf der Karte, kann man sie im Upgrade-Fenster zur **Ahnenform** verschmelzen (`world.ascendInfo`/`ascend`, Kosten Kaufpreis × `BAL.run.ascendCost` = 40). Alle Kreaturen dieser Art werden geopfert; **Ahnen-Grad 1–100** aus investierten Münzen, Siegen und Anzahl. Werte: alle drei Stufe-5-Pfade gleichzeitig (`tiers` = [5,5,5]), Schaden ×2 × (1 + Grad·2 %), +Tempo, +Reichweite, Erkennung, Bossschaden ×1,5 (`stats.baseStats` über `t.ascended`). Neue Ultimate „Ahnenzorn“ (`ancestral`, ganze Karte). Optik: alle drei Stufe-5-Optiken, Modell ×1,45, goldene Aura + Runenring + Lichtsäule; Zwischensequenz `ascend` (Lichtstrahlen von den Geopferten, Säulen, Zeitlupe, Zoom) + Vollbild-Einblendung `hud.ascendSplash`. Eine Ahnenform pro Kreaturart.
 
 ## v0.30.0 – Alle 20 Kreaturen mit sichtbaren Upgrades

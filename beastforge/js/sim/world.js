@@ -316,6 +316,8 @@ export class World {
     if (def.boss) this.emit({ t: 'bossWarn', boss: def.boss });
     return { ok: true };
   }
+  // Vorschau: Definition der nächsten Welle (für die HUD-Vorschau)
+  peekWave() { const n = this.wave + 1; if (n > this.maxWave) return null; let def = waveDef(n); const mx = this.map.mix?.(n, def.groups); if (mx) def = { ...def, groups: mx.groups, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) }; return { n, def }; }
   waveRunning() { return this.spawners.length > 0 || this.enemies.length > 0; }
 
   spawn(kind, mods = [], d = 0, wave = this.wave, pi = null) {
