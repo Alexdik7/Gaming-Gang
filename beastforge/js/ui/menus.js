@@ -33,7 +33,7 @@ export class Menus {
     m.querySelectorAll('[data-go]').forEach(b => b.onclick = e => { this.click(); this.go(b.dataset.go, b.dataset.arg, e); });
     after?.(m);
     // Gestaffeltes Einfliegen (Vorbereitung → Bewegung → Nachschwingen)
-    m.querySelectorAll('.med, .grid > *, .list > .li, .evorow, .tiles > *, .scr > .box, .hubTop > *, .ccard').forEach((el, i) => { el.style.animationDelay = Math.min(i, 14) * 38 + 'ms'; el.classList.add('pop'); });
+    m.querySelectorAll('.med, .btile, .bTop > *, .grid > *, .list > .li, .evorow, .tiles > *, .scr > .box, .hubTop > *, .ccard').forEach((el, i) => { el.style.animationDelay = Math.min(i, 14) * 38 + 'ms'; el.classList.add('pop'); });
   }
   show(name, arg) { this.cur = name; this.app.showMenuScene(name); this['s_' + name](arg); }
   // Bildschirmwechsel mit Fuchsfeuer-Wipe: Kreis wächst vom Tipp-Punkt, Inhalt wechselt verdeckt, dann blendet er weg
@@ -70,20 +70,18 @@ export class Menus {
     const med = (go, img, label, cls = '', dot = false) => `<button class="med ${cls}" data-go="${go}"><span class="mc">${img}</span><b>${label}</b>${dot ? '<i class="dot"></i>' : ''}</button>`;
     const pimg = (id, o) => `<img src="${portrait(id, o)}" alt="">`;
     const hero = unlocked(P, 'hero', P.hero) ? P.hero : 'kairo';
-    this.render(`<div class="hub">
-      <div class="hubTop">
-        <button class="profile mini" data-go="account"><div class="fr" style="--fc:${frame}">${pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch })}</div>
-          <div class="pi"><b>Lv ${a.level}</b> <span>${esc(TITLES[a.title] || TITLES.none)}</span><div class="bar acc"><u style="width:${a.xp / need * 100}%"></u></div></div></button>
-        <div class="hubLogo">BEAST<span>FORGE</span></div>
-        <div class="rbtns">${med('daily', '📅', 'Täglich', 'sm', this.dailyDot())}${med('ach', '🏆', 'Erfolge', 'sm', newAch)}${med('stats', '📜', 'Statistik', 'sm')}${med('settings', '⚙', 'Optionen', 'sm')}</div>
+    const tile = (go, img, label, cls = '', dot = false) => `<button class="btile ${cls}" data-go="${go}"><span class="bti">${img}</span><b>${label}</b>${dot ? '<i class="dot"></i>' : ''}</button>`;
+    const sp = shinobiPoints(P);
+    this.render(`<div class="hub bhub">
+      <div class="bTop">
+        <button class="bLevel" data-go="account"><span class="bStar"><b>${a.level}</b></span><span class="bName"><b>${esc(TITLES[a.title] || TITLES.none)}</b><i class="bXp"><u style="width:${a.xp / need * 100}%"></u></i></span></button>
+        <div class="bLogo">BEAST<span>FORGE</span></div>
+        <div class="bRight"><button class="bCur" data-go="academy" title="Shinobi-Punkte"><span>⛩</span><b>${sp.free}</b></button><button class="bGear" data-go="settings" aria-label="Optionen">⚙</button></div>
       </div>
-      <div class="hubM">
-        ${med('collection', pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch }), 'Kreaturen')}
-        ${med('hero', pimg(hero, { hlvl: 1 }), 'Helden')}
-        ${med('play', '<span class="playI">▶</span>', 'SPIELEN', 'mbig')}
-        ${med('evo', pimg('golem', { stage: 2 }), 'Entwicklung')}
-        ${med('academy', '<span class="acI">⛩</span>', 'Akademie', 'acad', shinobiPoints(P).free > 0)}
-      </div></div>`);
+      <div class="bLeft">${tile('collection', pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch }), 'Kreaturen', 'big')}${tile('hero', pimg(hero, { hlvl: 1 }), 'Helden', 'big')}${tile('evo', pimg('golem', { stage: 2 }), 'Entwicklung', 'big')}</div>
+      <div class="bRightCol">${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('stats', '📜', 'Statistik', 'sq')}</div>
+      <button class="bPlay" data-go="play"><span>SPIELEN</span></button>
+    </div>`);
     this.app.audio.playSong('menu');
   }
 

@@ -83,7 +83,7 @@ const S = {
   async run(b) {
     const p = await open(b, '', LAND);
     await p.click('.titleScr'); await p.waitForTimeout(900);
-    await p.click('text=SPIELEN'); await p.waitForTimeout(400); await p.click('[data-map=ahnenhain]'); await p.waitForTimeout(400);
+    await p.click('text=SPIELEN', { force: true }); await p.waitForTimeout(400); await p.click('[data-map=ahnenhain]'); await p.waitForTimeout(400);
     await p.click('#go'); await p.waitForFunction(() => window.BF.game && document.getElementById('boot').style.display === 'none', null, { timeout: 20000 }); await p.waitForTimeout(300);
     await shot(p, 'r1_start');
     // Kitsune: Karte antippen, dann auf der Karte tippen

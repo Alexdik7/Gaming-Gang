@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.25.0 – HUD im Genre-Stil
+## Stand: v0.26.0 – Hauptmenü im Genre-Stil
+**0.26:** Hub `menus.s_home` neu: Konto-Level als Stern `.bStar` + Titel/XP oben links, Logo in Comic-Schrift, oben rechts Shinobi-Punkte `.bCur` und runder Optionen-Knopf `.bGear`; links große Kacheln (Kreaturen, Helden, Entwicklung), rechts orange Kacheln (Täglich, Erfolge, Akademie, Statistik) mit roten Hinweis-Punkten, unten mittig großer grüner SPIELEN-Knopf `.bPlay`. Titel, Bildschirmköpfe, Zurück-Knopf und Sammlungs-Karten im gleichen Comic-Stil (`--cartoon`, `--ol`).
+
+## v0.25.0 – HUD im Genre-Stil
 **0.25:** Spielerwunsch: HUD wie im Genre-Vorbild. Leben/Münzen/Runde als große umrandete Comic-Zahlen ohne Kästen (Schrift „Luckiest Guy“, Umriss über `--ol`), blaues Shop-Panel mit hellen Karten und umrandeten Preisen, runder grüner Start-/Tempo-Knopf, runder Pause-Knopf. Upgrade-Fenster wieder als Seitenleiste (Landscape): drei Pfadreihen untereinander mit grünen Kauf-Knöpfen (grau = zu teuer, gold = MAX), darunter Erwecken/Fusion, Werte, unten Ziel + roter Verkaufen-Knopf; es öffnet auf der Seite, auf der die Kreatur NICHT steht (`.atright`, `#hud.pright`). Reihenfolge per CSS `order` (`.pinfo`/`.pmain` als `display: contents`). Geister-Tipp-Sperre bleibt.
 
 ## v0.24.0 – Kappa, Kirin, Komainu, Sora und Ren
