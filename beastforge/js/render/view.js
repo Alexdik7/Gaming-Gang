@@ -193,7 +193,7 @@ export class GameView {
         let b = this.bigs.get(e.id);
         if (!b) { b = buildBig(e.boss ? 'vharox' : 'oni') || (e.boss ? buildDragon() : buildOni()); this.root.add(b.root); b.rise = 0; this.bigs.set(e.id, b); }
         b.rise = Math.min(1, b.rise + dt * 0.8);
-        b.root.position.set(x, -1.2 * (1 - b.rise) * (1 - b.rise), z); b.root.scale.setScalar(ENEMY_SCALE);
+        b.root.position.set(x, -1.2 * (1 - b.rise) * (1 - b.rise), z); b.root.scale.setScalar(ENEMY_SCALE * (e.def.scale || 1));
         const tr = PI / 2 - e.ang; let d = tr - b.root.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); b.root.rotation.y += d * Math.min(1, dt * 4);
         b.tick(this.t, dt, { fly: e.flying, breath: e.boss && e.roarT > 0 && e.phase >= 2, roar: e.roarT > 0, phase: e.phase, cry: e.cryT > 2.5 });
         b.flash = e.hitT > 0 ? 1 : 0;

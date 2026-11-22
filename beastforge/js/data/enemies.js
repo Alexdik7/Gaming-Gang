@@ -7,7 +7,7 @@ export const ENEMIES = {
   wisp:   { name: 'Irrlicht',      hp: 20,  speed: 1.55, coins: 13,  xp: 3,  lives: 1, r: 0.26, h: 1.25, flying: true, res: { fire: 0.6, spirit: 0.5 }, desc: 'Fliegt – Bodenwellen treffen nicht.' },
   shade:  { name: 'Schattenschleicher', hp: 30, speed: 1.45, coins: 17, xp: 4, lives: 1, r: 0.28, h: 0.8, camo: true, res: { shadow: 0.5 }, desc: 'Getarnt – nur Türme mit Erkennung sehen ihn.' },
   mage:   { name: 'Nebelmagier',   hp: 60,  speed: 0.95, coins: 25, xp: 6,  lives: 2, r: 0.3,  h: 0.95, shield: { every: 5, pct: 0.25, r: 1.6 }, res: { spirit: 0.7 }, desc: 'Gibt Verbündeten Schilde.' },
-  healer: { name: 'Lotusmönch',    hp: 55,  speed: 0.95, coins: 25, xp: 6,  lives: 2, r: 0.3,  h: 0.9, heal: { every: 3, pct: 0.08, r: 1.6 }, desc: 'Heilt Verbündete in der Nähe.' },
+  healer: { name: 'Lotusmönch',    hp: 55,  speed: 0.95, coins: 25, xp: 6,  lives: 2, r: 0.3,  h: 0.9, heal: { every: 3, pct: 0.08, r: 1.6 }, desc: 'Heilt Verbündete in der Nähe (aber keine anderen Mönche).' },
   beetle: { name: 'Spaltkäfer',    hp: 42,  speed: 1.1,  coins: 14, xp: 5,  lives: 2, r: 0.32, h: 0.55, split: { kind: 'mite', n: 3 }, res: { phys: 0.8 }, desc: 'Zerfällt in drei Käferlinge.' },
   mite:   { name: 'Käferling',     hp: 9,   speed: 1.7,  coins: 3,  xp: 1,  lives: 1, r: 0.2,  h: 0.35, desc: 'Klein und flink.' },
   demon:  { name: 'Feuerdämon',    hp: 26,  speed: 1.4,  coins: 12, xp: 3,  lives: 1, r: 0.28, h: 0.8, res: { fire: 0.15, ice: 1.5 }, blast: { r: 1.6, dur: 1.6 }, desc: 'Fast feuerimmun, Eis wirkt stark. Explodiert im Tod und legt eine nahe Kreatur kurz lahm.' },
@@ -39,6 +39,13 @@ export const BOSSES = {
     ],
   },
 };
+// Stärkere Varianten für Schwer (Welle 40) und Meister (Welle 60): gleicher Drache, größer, mehr KP, stärkere Phasen
+BOSSES.vharox2 = { ...BOSSES.vharox, name: 'Vharox, Erwacht', title: 'Zorn der Aschetiefe', hp: 26000, speed: 0.38, xp: 1400, scale: 1.2, warn: 'Vharox ist erwacht – sein Zorn brennt heißer!',
+  phases: BOSSES.vharox.phases.map(p => p.adds ? { ...p, adds: { every: 8, kind: 'boar', n: 4 } } : p.breath ? { ...p, breath: { every: 7, n: 4, dur: 4 } } : p) };
+BOSSES.vharox3 = { ...BOSSES.vharox, name: 'Vharox, Urfeuer', title: 'Das erste Feuer der Welt', hp: 120000, speed: 0.4, xp: 3000, scale: 1.45, res: { fire: 0.3, phys: 0.8, ice: 1.2 }, warn: 'Das Urfeuer steigt auf – der letzte Kampf!',
+  phases: [...BOSSES.vharox.phases.slice(0, 3).map(p => p.breath ? { ...p, breath: { every: 6, n: 5, dur: 4 } } : p),
+    { at: 0.25, name: 'Weltenbrand', desc: 'Raserei: ruft Seelenwale!', enrage: 1.7, adds: { every: 10, kind: 'whale', n: 1 } }] };
+BOSSES.vharox.warn = 'Vharox, der Abgrunddrache erwacht';
 
 export const ELEMENT_NAMES = {
   phys: 'Physisch', ice: 'Eis', fire: 'Feuer', lightning: 'Blitz', earth: 'Erde', spirit: 'Geist', shadow: 'Schatten', light: 'Licht', astral: 'Astral',

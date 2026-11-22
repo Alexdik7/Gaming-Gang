@@ -162,8 +162,8 @@ export class Menus {
     const FOG = [['Frosttempel', 84, 38, '❄'], ['Himmelsinseln', 64, 26, '☁']];
     const nodes = Object.values(MAPS).map(m => {
       const [x, y] = NODES[m.id] || [50, 50], ok = unlocked(P, 'map', m.id), b = P.maps[m.id] || {};
-      const st = (b.normal >= 20 ? 1 : 0) + (b.hard >= 20 ? 1 : 0) + ((b.endless || 0) >= 30 ? 1 : 0);
-      return `<button class="wnode ${ok ? '' : 'lock'} ${sel === m.id ? 'on' : ''}" data-map="${m.id}" style="left:${x}%;top:${y}%"><span class="ring"><img data-thumb="${m.id}" alt=""></span><b>${esc(m.name)}</b><small>${ok ? '★'.repeat(st) + '☆'.repeat(3 - st) : '🔒 Konto-Lv ' + unlockLevel('map', m.id)}</small></button>`;
+      const st = (b.normal >= 20 ? 1 : 0) + (b.hard >= BAL.diff.hard.waves ? 1 : 0) + ((b.master || 0) >= BAL.diff.master.waves ? 1 : 0) + ((b.endless || 0) >= 30 ? 1 : 0);
+      return `<button class="wnode ${ok ? '' : 'lock'} ${sel === m.id ? 'on' : ''}" data-map="${m.id}" style="left:${x}%;top:${y}%"><span class="ring"><img data-thumb="${m.id}" alt=""></span><b>${esc(m.name)}</b><small>${ok ? '★'.repeat(st) + '☆'.repeat(4 - st) : '🔒 Konto-Lv ' + unlockLevel('map', m.id)}</small></button>`;
     }).join('');
     const fog = FOG.map(([n, x, y, ic]) => `<div class="wnode fog" style="left:${x}%;top:${y}%"><span class="ring">${ic}</span><b>${n}</b><small>unerforscht</small></div>`).join('');
     const team = unlockedCreatures(P);
@@ -171,7 +171,7 @@ export class Menus {
     let panel = '';
     if (sel) {
       const map = MAPS[sel], ok = unlocked(P, 'map', sel), best = P.maps[sel] || {};
-      const modes = [['normal', '🌿', 'Normal'], ['hard', '🔥', 'Schwer'], ['endless', '∞', 'Endlos']];
+      const modes = [['normal', '🌿', 'Normal · 20'], ['hard', '🔥', 'Schwer · 40'], ['master', '👑', 'Meister · 60'], ['endless', '∞', 'Endlos']];
       const heroes = Object.values(HEROES);
       if (!unlocked(P, 'hero', P.hero)) P.hero = 'kairo';
       panel = `<aside class="wpanel"><button class="x" id="wx">✕</button><img class="wthumb" data-thumb="${sel}" alt="">

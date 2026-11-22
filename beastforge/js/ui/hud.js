@@ -4,7 +4,7 @@ import { BAL } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
 import { MOD_NAMES } from '../data/waves.js';
-import { ENEMIES, ELEMENT_NAMES, ELEMENT_COLORS } from '../data/enemies.js';
+import { ENEMIES, BOSSES, ELEMENT_NAMES, ELEMENT_COLORS } from '../data/enemies.js';
 import { TARGETS, TARGET_NAMES } from '../sim/world.js';
 import { canTier } from '../sim/stats.js';
 import { charNeed, accNeed, nextFormByLevel, formAt } from '../meta/progression.js';
@@ -232,7 +232,7 @@ export class Hud {
         this.coachEvent('wave');
         break;
       }
-      case 'bossWarn': this.banner('⚠ BOSS ⚠', 'Vharox, der Abgrunddrache erwacht', 'boss'); this.g.app.stage.addShake(0.5); break;
+      case 'bossWarn': this.banner('⚠ BOSS ⚠', BOSSES[e.boss]?.warn || 'Vharox erwacht', 'boss'); this.g.app.stage.addShake(0.5); break;
       case 'bossPhase': this.banner(e.name.toUpperCase(), e.desc, 'boss'); break;
       case 'bossDie': this.banner('BOSS BESIEGT!', 'Vharox fällt in die Tiefe', 'evo'); break;
       case 'waveEnd': this.toast('syn', `Welle ${e.wave} geschafft · +◈${fmt(e.bonus + e.income)}`, e.income ? `Wellenbonus ${fmt(e.bonus)} · Einkommen ${fmt(e.income)}` : ''); break;

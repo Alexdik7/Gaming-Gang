@@ -1,5 +1,5 @@
 // BEASTFORGE – alle Balance-Regler an EINEM Ort. Keine Zahlen in der Logik verstreuen.
-export const VERSION = '0.18.0';
+export const VERSION = '0.19.0';
 
 export const BAL = {
   tick: 1 / 60,               // fester Simulationsschritt (s)
@@ -13,6 +13,7 @@ export const BAL = {
     highRange: 0.15,          // Anhöhe: +15 % Reichweite
     synergyRange: 3.2,        // Abstand für Synergien (Felder)
     maxTowers: 40,
+    knockCap: 4,              // Rückstoß insgesamt pro Gegner (Felder)
     packR: 1.35,              // Rudel: Kreaturen bis zu diesem Abstand gelten als Nachbarn (zusammenhängende Gruppe)
     packDmg: 0.06, packRate: 0.025, // je weiterer Kreatur im Rudel: ×1,06 Schaden, ×1,025 Tempo – multiplikativ, OHNE Obergrenze
     dmgMul: 1.35,             // globaler Schaden aller Kreaturen/Helden (Spieltest v0.16: zu schwach)
@@ -21,11 +22,14 @@ export const BAL = {
   // Schwierigkeiten: Run-Werte und Fortschritts-Multiplikatoren getrennt
   diff: {
     normal:  { name: 'Normal',   start: 800, lives: 150, hp: 1.00, speed: 1.00, coins: 1.00, xp: 1.0, acc: 1.0, waves: 20 },
-    hard:    { name: 'Schwer',   start: 850, lives: 100, hp: 1.3, speed: 1.05, coins: 0.95, xp: 1.5, acc: 1.4, waves: 20 },
+    hard:    { name: 'Schwer',   start: 850, lives: 100, hp: 1.3, speed: 1.05, coins: 0.95, xp: 1.5, acc: 1.4, waves: 40 },
+    master:  { name: 'Meister',  start: 900, lives: 100, hp: 1.3, speed: 1.08, coins: 0.95, xp: 2.0, acc: 1.8, waves: 60 },
     endless: { name: 'Endlos',   start: 800, lives: 150, hp: 1.00, speed: 1.00, coins: 1.00, xp: 1.15, acc: 1.1, waves: Infinity },
   },
   hpScale: w => 1 + 0.085 * (w - 1) + 0.0034 * (w - 1) ** 2,   // Gegner-KP je Welle
-  endlessScale: w => w <= 20 ? 1 : 1 + 0.09 * (w - 20) + 0.004 * (w - 20) ** 2,
+  endlessScale: w => w <= 60 ? 1 : 1 + 0.09 * (w - 60) + 0.004 * (w - 60) ** 2,   // Endlos ab Welle 61
+  lateCoins: w => w <= 20 ? 1 : 1 + 0.035 * (w - 20),   // Spätspiel: Belohnungen wachsen mit (Welle 60: ×2,4)
+  miniScale: w => Math.max(1, (1 + 0.085 * (w - 1) + 0.0034 * (w - 1) ** 2) / 2.04),   // Mini-Bosse wachsen ab Welle 10 mit
 
   // Kreuzpfade: ein Pfad bis 5, ein zweiter bis 2, der dritte bleibt zu
   cross: { main: 5, second: 2 },

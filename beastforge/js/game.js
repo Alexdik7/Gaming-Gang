@@ -275,7 +275,7 @@ export class Game {
   finish(silent = false) {
     const P = this.P, w = this.world;
     if (this.freeplay && this.winRes) { // Ende des freien Spiels: Sieg ist schon verbucht, nur Rekord + Ergebnis
-      const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, endless: 0 };
+      const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, master: 0, endless: 0 };
       mp.free = Math.max(mp.free || 0, w.doneWave); P.stats.bestFree = Math.max(P.stats.bestFree || 0, w.doneWave);
       for (const a of checkAchievements(P)) { this.achs.push(a); this.giveAcc(a.xp); }
       saveProfile(P);
@@ -286,12 +286,12 @@ export class Game {
     const won = w.won, d = this.diffKey, D = BAL.diff[d];
     P.stats.runs++; if (won) P.stats.wins++; else P.stats.losses++;
     const perfect = won && w.lives >= w.maxLives;
-    if (won && d === 'hard') P.stats.winsHard++;
+    if (won && (d === 'hard' || d === 'master')) P.stats.winsHard++; if (won && d === 'master') P.stats.winsMaster = (P.stats.winsMaster || 0) + 1;
     if (won && this.mapId === 'dorf') P.stats.winDorf = (P.stats.winDorf || 0) + 1;
     if (won && this.mapId === 'glut') P.stats.winGlut = (P.stats.winGlut || 0) + 1;
     if (perfect) P.stats.perfect++; if (perfect && d === 'hard') P.stats.perfectHard++;
     if (d === 'endless') P.stats.bestEndless = Math.max(P.stats.bestEndless || 0, w.doneWave);
-    const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, endless: 0 };
+    const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, master: 0, endless: 0 };
     const firstClear = won && !(mp[d] >= w.maxWave);
     let medal = null;
     let daily = false;

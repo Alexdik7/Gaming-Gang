@@ -403,3 +403,16 @@ test('Neue Kreaturen: Gift der Schlangenmagierin, Wirbelsturm, Realitätsriss, n
   const e3 = near(v), hp3 = e3.hp; v.abCd = 0; w.useAbility(v.id); assert.ok(e3.hp < hp3 - v.s.dmg * 20 || !e3.alive, 'Realitätsriss');
   for (const id of ['hydra', 'tengu', 'cosmofox']) assert.ok(CREATURES[id]?.fusion && baseStats({ cid: id, stage: 0, tiers: [0, 0, 0] }).dmg > 5, id);
 });
+
+test('Wellen 1–60: Schwer 40, Meister 60 mit Boss-Varianten, Rückstoß-Grenze, Heiler heilen keine Heiler', () => {
+  assert.equal(BAL.diff.hard.waves, 40); assert.equal(BAL.diff.master.waves, 60);
+  for (let i = 1; i <= 70; i++) { const d = waveDef(i); assert.ok(d.groups.length > 0, 'Welle ' + i); }
+  assert.equal(waveDef(40).boss, 'vharox2'); assert.equal(waveDef(60).boss, 'vharox3');
+  const { w } = mkWorld(defaultProfile(), { diff: 'master' });
+  const b = w.spawn('vharox3', [], 2); assert.ok(b.boss && b.maxHp > 100000);
+  const e = w.spawn('wolf', [], 8); for (let i = 0; i < 10; i++) w.knock(e, 1); assert.ok(Math.abs(e.d - (8 - BAL.run.knockCap)) < 1e-9, 'Rückstoß gedeckelt');
+  const h1 = w.spawn('healer', [], 5), h2 = w.spawn('healer', [], 5.2), x = w.spawn('boar', [], 5.1);
+  h1.hp = h1.maxHp / 2; x.hp = x.maxHp / 2; for (let i = 0; i < 60 * 4; i++) w.step(1 / 60);
+  assert.ok(h1.hp <= h1.maxHp / 2 + 1e-6 && x.hp > x.maxHp / 2, 'Heiler heilen nur andere Gegner');
+  assert.ok(BAL.miniScale(30) > 2 && BAL.lateCoins(60) > 2);
+});

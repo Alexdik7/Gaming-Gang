@@ -209,6 +209,8 @@ export class World {
     this.emit({ t: 'sell', tower: t, value: v });
     return { ok: true, value: v };
   }
+  // Rückstoß: höchstens BAL.run.knockCap Felder pro Gegner insgesamt (verhindert endlose Pattsituationen)
+  knock(e, amt) { const a = Math.min(amt, BAL.run.knockCap - (e.kb || 0)); if (a <= 0) return; e.kb = (e.kb || 0) + a; e.d = Math.max(0, e.d - a); this.posAt(e.d, e, e.pi); }
   // ───────── Fusion ─────────
   fuseOptions(t) {
     if (!t || t.hero || CREATURES[t.cid]?.fusion) return [];
@@ -277,7 +279,7 @@ export class World {
     const def = ENEMIES[kind] || BOSSES[kind]; if (!def) return null;
     const boss = !!def.boss, elite = mods.includes('elite');
     const scale = BAL.endlessScale(wave);
-    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * scale * (boss || def.miniboss ? 1 : BAL.hpScale(wave));
+    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * scale * (boss ? 1 : def.miniboss ? BAL.miniScale(wave) : BAL.hpScale(wave));
     if (elite) hp *= 2.2;
     const res = { ...(def.res || {}) };
     if (mods.includes('armored')) res.phys = Math.max(0.25, (res.phys ?? 1) * 0.6);
@@ -347,7 +349,7 @@ export class World {
         const a = def.heal || def.shield || def.cry; e.abT = a.every;
         for (const o of this.enemies) {
           if (!o.alive || o === e && !def.cry || Math.hypot(o.x - e.x, o.y - e.y) > a.r) continue;
-          if (def.heal) o.hp = Math.min(o.maxHp, o.hp + o.maxHp * a.pct);
+          if (def.heal && !o.def.heal) o.hp = Math.min(o.maxHp, o.hp + o.maxHp * a.pct);   // Heiler heilen keine Heiler (sonst endlose Pattsituation)
           if (def.shield) o.shield = Math.max(o.shield, o.maxHp * a.pct);
           if (def.cry) o.cryT = a.dur;
         }
@@ -464,7 +466,7 @@ export class World {
   kill(e, src, over = 0, type = 'phys') {
     if (!e.alive) return; e.alive = false;
     const def = e.def;
-    const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul);
+    const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul * BAL.lateCoins(e.wave || this.wave));
     this.gain(coins);
     this.stats.kills++; this.hooks.stat?.('kills', 1);
     if (src) { src.kills++; if (src.s?.bounty) this.gain(src.s.bounty); }
@@ -653,7 +655,7 @@ export class World {
       for (const e of this.enemies) {
         if (!e.alive || !this.canSee(s, e) || Math.hypot(e.x - t.x, e.y - t.y) > s.range) continue;
         this.damage(e, s.dmg, s.dmgType, t); this.applyStatus(e, s, t);
-        if (s.knock && !e.heavy && e.alive) { e.d = Math.max(0, e.d - s.knock); this.posAt(e.d, e, e.pi); }
+        if (s.knock && !e.heavy && e.alive) this.knock(e, s.knock);
       }
       this.emit({ t: 'pulse', tower: t, r: s.range });
       return;
@@ -672,7 +674,7 @@ export class World {
         let da = Math.abs(Math.atan2(dy, dx) - aim); if (da > Math.PI) da = 2 * Math.PI - da;
         if (da > s.cone / 2 && d > 0.5) continue;
         this.damage(e, s.dmg, s.dmgType, t); this.applyStatus(e, s, t);
-        if (s.knock && !e.heavy && e.alive) { e.d = Math.max(0, e.d - s.knock * 0.3); this.posAt(e.d, e, e.pi); }
+        if (s.knock && !e.heavy && e.alive) this.knock(e, s.knock * 0.3);
       }
       this.emit({ t: 'cone', tower: t, ang: aim, r: s.range, cone: s.cone, type: s.dmgType });
       specials(tgt.x, tgt.y);
@@ -818,7 +820,7 @@ export class World {
         this.emit({ t: 'ability', id: 'fortress', tower: t, r: 3.5 });
         for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 3.5) {
           this.damage(e, s.dmg * 8, 'earth', t, { big: true });
-          if (e.alive) { if (!e.heavy) { e.d = Math.max(0, e.d - 1.5); this.posAt(e.d, e, e.pi); } e.slowPct = Math.max(e.slowPct, 0.6); e.slowT = 4; }
+          if (e.alive) { if (!e.heavy) this.knock(e, 1.5); e.slowPct = Math.max(e.slowPct, 0.6); e.slowT = 4; }
         }
         break;
       }
@@ -834,7 +836,7 @@ export class World {
         this.emit({ t: 'ability', id: 'tornado', tower: t, r: R });
         for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < R) {
           this.damage(e, s.dmg * 8, 'phys', t, { big: true });
-          if (e.alive) { if (!e.heavy && !e.boss) { e.d = Math.max(0, e.d - 2.2); this.posAt(e.d, e, e.pi); } e.slowPct = Math.max(e.slowPct, 0.5); e.slowT = Math.max(e.slowT, 3); }
+          if (e.alive) { if (!e.heavy && !e.boss) this.knock(e, 2.2); e.slowPct = Math.max(e.slowPct, 0.5); e.slowT = Math.max(e.slowT, 3); }
         }
         break;
       }

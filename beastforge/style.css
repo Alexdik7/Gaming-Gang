@@ -353,6 +353,7 @@ b { font-weight: 800; }
 .wthumb { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; border: 3px solid rgba(255,210,87,.6); }
 .wname { font-size: 22px; } .wpanel p { margin: 0; font-size: 12.5px; color: var(--mut); line-height: 1.35; }
 .wlabel { font-size: 11px; letter-spacing: 1.5px; color: var(--run); margin-top: 4px; font-weight: 800; }
+.wpanel .pills { grid-template-columns: repeat(2, 1fr) !important; }
 .pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } .pills button { padding: 8px 4px; border-radius: 12px; background: rgba(255,255,255,.08); border: 2px solid transparent; font-size: 12.5px; font-weight: 800; } .pills button small { display: block; font-weight: 500; font-size: 10px; color: var(--mut); } .pills button.on { border-color: var(--run); background: rgba(255,210,87,.15); } .pills button:disabled { opacity: .4; }
 .heroes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } .hpick { border-radius: 14px; padding: 4px; background: rgba(255,255,255,.06); border: 2px solid transparent; font-size: 11px; font-weight: 800; } .hpick img { width: 100%; aspect-ratio: 1; } .hpick span { display: block; } .hpick.on { border-color: #ff9b3d; background: rgba(255,155,61,.15); } .hpick:disabled { opacity: .4; }
 .teamrow { display: flex; flex-wrap: wrap; gap: 4px; } .teamrow img { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,.06); }

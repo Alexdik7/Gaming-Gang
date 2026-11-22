@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.18.0 – Drei neue Kreaturen
+## Stand: v0.19.0 – Wellen 1–60 und Meister-Modus
+**0.19:** Masterplan A3: 40 neue handgebaute Wellen 21–60 in `data/waves.js` (Endlos-Generator erst ab 61, `BAL.endlessScale` ab 60). Schwer jetzt 40 Wellen, neuer Modus **Meister** (60 Wellen, Konto-Lv 9, `BAL.diff.master`, XP ×2). Boss-Varianten `vharox2` (Welle 40, 26.000 KP, ×1,2 groß) und `vharox3` „Urfeuer“ (Welle 60, 120.000 KP, ruft Seelenwale) mit `scale` und eigenem `warn`-Text. Mini-Bosse wachsen ab Welle 10 mit (`BAL.miniScale`), Belohnungen ab Welle 21 (`BAL.lateCoins`, Welle 60 ×2,4). Fixes aus dem Balance-Bot: Rückstoß insgesamt ≤ 4 Felder pro Gegner (`world.knock`, `BAL.run.knockCap`) und Heiler heilen keine Heiler – beides verhinderte endlose Wellen. Weltkarte: 4 Sterne pro Karte (Normal 20, Schwer 40, Meister 60, Endlos 30). Erfolg „Großmeister“. Balance-Bot baut im Spätspiel bis Stufe 5 aus. Ergebnis: Schwer Lv 30 3/4 Siege, Meister Lv 40 scheitert am Endboss, Lv 50 3/3 Siege.
+
+## v0.18.0 – Drei neue Kreaturen
 **0.18:** Neue Grund-Kreaturen (prozedural in `render/beasts.js`, je 3 Formen, 3 Pfade × 5 Stufen): **Schlangenmagierin** `naga` (Konto-Lv 7, Gift über `poison` → Brand als Schattenschaden `e.burnType`, Verwundbarkeit `mark`, Fähigkeit `hex`), **Windmönch** `monk` (Lv 10, Windklingen mit Durchschlag + `knock`, Aura-Pfad, Fähigkeit `tornado`), **Leerenkatze** `voidcat` (Lv 13, Astralschaden mit Fläche, Sterne `orbs`, Fähigkeit `rift`). Neue Geschosse `venom`/`windblade` in fx.js. Drei neue Fusionen: Hydra (Schlangenmagierin + Schildkröte), Sturmtengu (Windmönch + Rabe), Kosmosfuchs (Leerenkatze + Kitsune) – jetzt 9 Fusionen.
 
 ## v0.17.0 – Rudel & Fusionen
