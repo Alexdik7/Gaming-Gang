@@ -5,7 +5,7 @@ import { Particles, Rings, Bolts, Pillars, Projectiles, Floaters, Flashes, Spark
 import { RAFT_TOP } from './mapview.js';
 import { ENEMY_MODELS, bakeFrames, buildBig } from './assets.js';
 import { buildModel, ENEMY_GEO, ENEMY_GLOW, ENEMY_ALPHA, buildOni, buildDragon } from './models.js';
-import { enemyMat, enemyOutline, glow, toon, geo } from './toon.js';
+import { enemyMat, enemyOutline, glow, toon, geo, lodGeo } from './toon.js';
 import { ELEMENT_COLORS, ENEMIES } from '../data/enemies.js';
 import { CREATURES } from '../data/creatures.js';
 
@@ -39,18 +39,7 @@ export class GameView {
     for (const k of new Set([...Object.keys(ENEMY_GEO), ...Object.keys(ENEMY_MODELS)])) {
       const spec = ENEMY_MODELS[k], baked = spec ? bakeFrames({ ...spec, h: (ENEMY_H[k] || 0.6) * spec.h }) : null;
       const geos = baked || (ENEMY_GEO[k] ? [ENEMY_GEO[k]()] : null); if (!geos) continue;
-      const glowK = ENEMY_GLOW[k] && !baked, alpha = ENEMY_ALPHA[k];
-      const mat = glowK ? new THREE.MeshBasicMaterial({ vertexColors: true }) : enemyMat(alpha ? { transparent: true, opacity: alpha } : {});
-      const frames = geos.map(g => {
-        const tint = new THREE.InstancedBufferAttribute(new Float32Array(cap[k] * 4), 4); tint.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aTint', tint);
-        const m = new THREE.InstancedMesh(g, mat, cap[k]); m.count = 0; m.castShadow = !glowK && !baked; m.frustumCulled = false; this.root.add(m);
-        let ol = null;
-        if (!glowK && !alpha) { ol = new THREE.InstancedMesh(g, enemyOutline(baked ? 0.016 : 0.022), cap[k]); ol.instanceMatrix = m.instanceMatrix; ol.count = 0; ol.frustumCulled = false; this.root.add(ol); }
-        return { m, ol, tint };
-      });
-      let halo = null;
-      if (ENEMY_GLOW[k]) { halo = new THREE.InstancedMesh(geo.sphere(10), glow(0x7df3ff, baked ? 0.2 : 0.35), cap[k]); halo.count = 0; halo.frustumCulled = false; this.root.add(halo); }
-      this.pools[k] = { frames, halo, cap: cap[k], cyc: spec?.cyc ?? 1, baked: !!baked, hn: 0 };
+      this.pools[k] = this.makePool(k, geos, !!baked, spec, cap[k]);
     }
     // Weiche Schattenscheiben unter Gegnern (ersetzt Schattenwurf: ein Draw-Call für alle)
     const sc = document.createElement('canvas'); sc.width = sc.height = 64; const sg = sc.getContext('2d'), gr = sg.createRadialGradient(32, 32, 4, 32, 32, 31);
@@ -178,9 +167,38 @@ export class GameView {
     }
   }
 
+  // Ein Instanz-Puffer je Gegnerart und Pose (Körper + Umriss teilen die Matrizen)
+  makePool(k, geos, baked, spec, N) {
+    const glowK = ENEMY_GLOW[k] && !baked, alpha = ENEMY_ALPHA[k];
+    const mat = glowK ? new THREE.MeshBasicMaterial({ vertexColors: true }) : enemyMat(alpha ? { transparent: true, opacity: alpha } : {});
+    const frames = geos.map(g => {
+      const tint = new THREE.InstancedBufferAttribute(new Float32Array(N * 4), 4); tint.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aTint', tint);
+      const m = new THREE.InstancedMesh(g, mat, N); m.count = 0; m.castShadow = !glowK && !baked; m.frustumCulled = false; this.root.add(m);
+      let ol = null;
+      // Massen-LOD: vereinfachte Form, teilt Matrizen und Tönung mit dem vollen Modell
+      let lod = null, tintL = null;
+      if (baked) { g.userData.lod ||= lodGeo(g, 9); tintL = new THREE.InstancedBufferAttribute(tint.array, 4); tintL.setUsage(THREE.DynamicDrawUsage); g.userData.lod.setAttribute('aTint', tintL); lod = new THREE.InstancedMesh(g.userData.lod, mat, N); lod.instanceMatrix = m.instanceMatrix; lod.count = 0; lod.visible = false; lod.frustumCulled = false; this.root.add(lod); }
+      if (!glowK && !alpha) { ol = new THREE.InstancedMesh(g, enemyOutline(baked ? 0.016 : 0.022), N); ol.instanceMatrix = m.instanceMatrix; ol.count = 0; ol.frustumCulled = false; this.root.add(ol); }
+      return { m, ol, tint, lod, tintL };
+    });
+    let halo = null;
+    if (ENEMY_GLOW[k]) { halo = new THREE.InstancedMesh(geo.sphere(10), glow(0x7df3ff, baked ? 0.2 : 0.35), N); halo.count = 0; halo.frustumCulled = false; this.root.add(halo); }
+    return { frames, halo, cap: N, cyc: spec?.cyc ?? 1, baked: !!baked, hn: 0, geos, spec };
+  }
+  // Puffer zu klein (z. B. 150 Wölfe in Welle 56) → mit doppelter Größe neu anlegen, Geometrien bleiben
+  growPool(k) {
+    const P = this.pools[k]; if (!P) return;
+    for (const F of P.frames) { for (const x of [F.m, F.ol, F.lod]) if (x) { this.root.remove(x); x.dispose(); } }
+    if (P.halo) { this.root.remove(P.halo); P.halo.dispose(); }
+    this.pools[k] = this.makePool(k, P.geos, P.baked, P.spec, P.cap * 2);
+  }
+
   // ───────── Gegner ─────────
   syncEnemies(dt) {
+    if (this.grow?.size) { for (const k of this.grow) this.growPool(k); this.grow.clear(); }
     for (const k in this.pools) { const P = this.pools[k]; P.hn = 0; for (const F of P.frames) F.m.count = 0; }
+    // Massenmodus: ab vielen Gegnern keine Umrisse (halbiert die Dreiecke), weniger Funken
+    const nE = this.world.enemies.length, crowd = this.crowd = this.forceCrowd ?? nE > (this.stage.quality >= 2 ? 260 : 140);
     let blobs = 0;
     let crowns = 0, bars = 0;
     const camQ = this.stage.camera.quaternion;
@@ -198,7 +216,8 @@ export class GameView {
         b.tick(this.t, dt, { fly: e.flying, breath: e.boss && e.roarT > 0 && e.phase >= 2, roar: e.roarT > 0, phase: e.phase, cry: e.cryT > 2.5 });
         b.flash = e.hitT > 0 ? 1 : 0;
       } else {
-        const P = this.pools[e.kind === 'bearer' && e.guard <= 0 ? 'bearerX' : e.kind]; if (!P || P.hn >= P.cap) continue;
+        const pk = e.kind === 'bearer' && e.guard <= 0 ? 'bearerX' : e.kind, P = this.pools[pk]; if (!P) continue;
+        if (P.hn >= P.cap) { (this.grow ||= new Set()).add(pk); continue; }
         // Pose: an zurückgelegten Weg gekoppelt (cyc Felder je Zyklus) oder zeitbasiert; betäubt = Standbild
         const nF = P.frames.length, ph = P.cyc ? e.d / P.cyc : (e.stunT > 0 ? 0 : this.t * 1.6 * (e.speed || 1)), F = P.frames[nF > 1 ? (Math.floor((ph + e.id * 0.618) * nF) % nF + nF) % nF : 0];
         const i = F.m.count++; P.hn++;
@@ -213,16 +232,16 @@ export class GameView {
         F.tint.array.set(T, i * 4);
         if (P.halo) { this.M.compose(this.V.set(x, (e.kind === 'wisp' ? 0.75 : (e.def.hover || 0)) + fly + 0.3, z), this.Q, this.S.setScalar(0.33 + Math.sin(this.t * 8 + e.id) * 0.03)); P.halo.setMatrixAt(P.hn - 1, this.M); }
         if (e.elite && crowns < 200) { this.M.compose(this.V.set(x, e.h * sc + fly + 0.12, z), this.Q.identity(), this.S.setScalar(1)); this.crowns.setMatrixAt(crowns++, this.M); }
-        if (e.burnT > 0 && Math.random() < dt * 8) this.parts.spawn(x, 0.4 + fly, z, 0, 0.7, 0, 0xff7a2a, 0.14, 0.4);
-        if (e.camo && e.revealT <= 0 && Math.random() < dt * 4) this.parts.spawn(x, 0.5, z, 0, 0.3, 0, 0x6a3aa0, 0.2, 0.6);
+        if (e.burnT > 0 && Math.random() < dt * (crowd ? 2 : 8)) this.parts.spawn(x, 0.4 + fly, z, 0, 0.7, 0, 0xff7a2a, 0.14, 0.4);
+        if (e.camo && e.revealT <= 0 && Math.random() < dt * (crowd ? 1 : 4)) this.parts.spawn(x, 0.5, z, 0, 0.3, 0, 0x6a3aa0, 0.2, 0.6);
       }
       // KP-Balken
       if (e.hp < e.maxHp && bars < 400 && !e.boss) {
         const w = Math.min(0.9, 0.35 + e.maxHp / 400), f = Math.max(0, e.hp / e.maxHp), y = (e.h || 0.6) * (e.elite ? 1.25 : 1) * ENEMY_SCALE + fly + 0.2 + (e.kind === 'wisp' ? 0.75 : (e.def.hover || 0));
         this.M.compose(this.V.set(x, y, z), camQ, this.S.set(w + 0.04, 0.09, 1)); this.hpBg.setMatrixAt(bars, this.M);
-        const off = new THREE.Vector3(-(w * (1 - f)) / 2, 0, 0.001).applyQuaternion(camQ);
+        const off = (this.OFF ||= new THREE.Vector3()).set(-(w * (1 - f)) / 2, 0, 0.001).applyQuaternion(camQ);
         this.M.compose(this.V.set(x + off.x, y + off.y, z + off.z), camQ, this.S.set(Math.max(0.001, w * f), 0.055, 1)); this.hpFg.setMatrixAt(bars, this.M);
-        this.hpFg.setColorAt(bars, this.C.setRGB(f > 0.5 ? (1 - f) * 2 : 1, f > 0.5 ? 1 : f * 2, 0.25).multiplyScalar(e.shield > 0 ? 0.6 : 1).add(e.shield > 0 ? new THREE.Color(0.3, 0.2, 0.5) : new THREE.Color(0, 0, 0)));
+        this.hpFg.setColorAt(bars, this.C.setRGB(f > 0.5 ? (1 - f) * 2 : 1, f > 0.5 ? 1 : f * 2, 0.25).multiplyScalar(e.shield > 0 ? 0.6 : 1)); if (e.shield > 0) { this.C.r += 0.3; this.C.g += 0.2; this.C.b += 0.5; } this.hpFg.setColorAt(bars, this.C);
         bars++;
       }
     }
@@ -230,7 +249,11 @@ export class GameView {
     for (const [id, b] of this.bigs) if (!seen.has(id)) { this.root.remove(b.root); this.bigs.delete(id); }
     for (const k in this.pools) {
       const P = this.pools[k];
-      for (const F of P.frames) { F.m.instanceMatrix.needsUpdate = true; F.tint.needsUpdate = true; F.m.visible = F.m.count > 0; if (F.ol) { F.ol.count = F.m.count; F.ol.visible = F.m.visible; } }
+      for (const F of P.frames) {
+        F.m.instanceMatrix.needsUpdate = true; F.tint.needsUpdate = true; const on = F.m.count > 0;
+        if (F.lod) { F.lod.count = F.m.count; F.lod.visible = on && crowd; F.tintL.needsUpdate = true; F.m.visible = on && !crowd; } else F.m.visible = on;
+        if (F.ol) { F.ol.count = F.m.count; F.ol.visible = on && !crowd; }
+      }
       if (P.halo) { P.halo.count = P.hn; P.halo.instanceMatrix.needsUpdate = true; P.halo.visible = P.hn > 0; }
     }
     this.crowns.count = crowns; this.crowns.visible = crowns > 0; this.crowns.instanceMatrix.needsUpdate = true;

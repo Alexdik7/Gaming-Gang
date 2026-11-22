@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.19.0 – Wellen 1–60 und Meister-Modus
+## Stand: v0.20.0 – Leistung für Gegner-Massen
+**0.20:** Masterplan A2. Messung (Desktop, 1.000 Gegner): Simulation 0,7 ms, Szene-Abgleich 1,8 ms, aber 1,8 Mio. Dreiecke pro Bild → Engpass ist die Grafik, nicht die Simulation (daher kein Web Worker nötig). Neu: **Massen-LOD** (`lodGeo` in toon.js bündelt Eckpunkte beim Laden, −40…85 % Dreiecke, Golem 5.864 → 915), **Massenmodus** `view.crowd` ab 260 Gegnern (Stufe Hoch) bzw. 140 (Mittel/Spar): LOD-Modelle statt voller Modelle, keine Umrisse, weniger Funken → 1.000 Gegner 0,74 Mio. statt 1,8 Mio. Dreiecke. **Mitwachsende Gegner-Puffer** (`makePool`/`growPool`, doppelte Größe bei Überlauf) – vorher waren z. B. Wolf Nr. 141+ unsichtbar (Welle 56 hat 150). KP-Balken ohne neue Objekte pro Bild. Automatische Grafikstufe regelt jetzt laufend nach (gleitender Schnitt, höchstens alle 8 s eine Stufe runter). Test: e2e-Szenario `crowd` (700 Gegner), `view.forceCrowd` zum Vergleichen.
+
+## v0.19.0 – Wellen 1–60 und Meister-Modus
 **0.19:** Masterplan A3: 40 neue handgebaute Wellen 21–60 in `data/waves.js` (Endlos-Generator erst ab 61, `BAL.endlessScale` ab 60). Schwer jetzt 40 Wellen, neuer Modus **Meister** (60 Wellen, Konto-Lv 9, `BAL.diff.master`, XP ×2). Boss-Varianten `vharox2` (Welle 40, 26.000 KP, ×1,2 groß) und `vharox3` „Urfeuer“ (Welle 60, 120.000 KP, ruft Seelenwale) mit `scale` und eigenem `warn`-Text. Mini-Bosse wachsen ab Welle 10 mit (`BAL.miniScale`), Belohnungen ab Welle 21 (`BAL.lateCoins`, Welle 60 ×2,4). Fixes aus dem Balance-Bot: Rückstoß insgesamt ≤ 4 Felder pro Gegner (`world.knock`, `BAL.run.knockCap`) und Heiler heilen keine Heiler – beides verhinderte endlose Wellen. Weltkarte: 4 Sterne pro Karte (Normal 20, Schwer 40, Meister 60, Endlos 30). Erfolg „Großmeister“. Balance-Bot baut im Spätspiel bis Stufe 5 aus. Ergebnis: Schwer Lv 30 3/4 Siege, Meister Lv 40 scheitert am Endboss, Lv 50 3/3 Siege.
 
 ## v0.18.0 – Drei neue Kreaturen

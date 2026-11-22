@@ -71,6 +71,15 @@ const S = {
     assert(!p.errs.length, p.errs.join(' | '));
     await p.context().close();
   },
+  async crowd(b) {   // A2: 400 Wölfe + 300 gemischte → Puffer wachsen mit, Massenmodus mit LOD, keine Fehler
+    const p = await open(b, '', LAND);
+    await p.evaluate(() => { BF.start('normal'); const w = BF.world; w.wave = 30; for (let i = 0; i < 400; i++) w.spawn('wolf', [], i * 0.09); for (let i = 0; i < 300; i++) w.spawn(['slime', 'boar', 'golem'][i % 3], [], i * 0.12); });
+    await p.waitForTimeout(1500); await shot(p, 'c1_crowd');
+    const r = await p.evaluate(() => { const v = BF.game.view; return { cap: v.pools.wolf.cap, drawn: v.pools.wolf.hn, crowd: v.crowd, lod: v.pools.wolf.frames.some(F => F.lod?.visible) }; });
+    assert(r.cap >= 400 && r.drawn >= 390 && r.crowd && r.lod, 'Massenmodus: ' + JSON.stringify(r));
+    assert(!p.errs.length, p.errs.join(' | '));
+    await p.context().close();
+  },
   async run(b) {
     const p = await open(b, '', LAND);
     await p.click('.titleScr'); await p.waitForTimeout(900);

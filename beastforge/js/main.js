@@ -123,7 +123,9 @@ class App {
     if (this.game) {
       this.game.update(dt);
       // Automatische Qualität: in den ersten Sekunden messen
-      if (!this.perf.checked) { this.perf.n++; this.perf.sum += dt; if (this.perf.n >= 150) { const avg = this.perf.sum / this.perf.n; this.perf.checked = true; if (avg > 0.026 && this.stage.quality > 0) { this.autoQ = this.stage.quality - 1; this.applySettings(); } } }
+      // Automatische Qualität: laufend messen (gleitender Schnitt); ruckelt es dauerhaft, eine Stufe runter (höchstens alle 8 s)
+      if (this.profile.settings.quality === 'auto' && this.game && !this.game.paused) { const P = this.perf; P.avg = (P.avg ?? 1 / 60) * 0.97 + dt * 0.03; P.n++; P.cool = (P.cool || 0) - dt;
+        if (P.n > 120 && P.cool <= 0 && P.avg > 0.027 && this.stage.quality > 0) { this.autoQ = this.stage.quality - 1; this.applySettings(); P.cool = 8; P.avg = 1 / 60; P.n = 0; } }
     } else if (this.menuMap) {
       for (const m of this.showModels || []) m.tick(this.t, dt, { atk: Math.max(0, Math.sin(this.t * 1.3 + m.root.position.x) - 0.92) * 12 });
       this.menuMap.update(dt, 1);

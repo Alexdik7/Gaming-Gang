@@ -167,3 +167,26 @@ export function optimize(root) {
   prune(root);
   return root;
 }
+
+// LOD durch Punkt-Bündelung: Eckpunkte in einem Raster zusammenlegen (Mittelwert von Lage, Farbe, Normale),
+// entartete Dreiecke verwerfen. Schnell genug zum Vorbereiten beim Laden; für Gegner-Massen aus der Ferne gedacht.
+export function lodGeo(g, cells = 9) {
+  const P = g.attributes.position, C = g.attributes.color, N = g.attributes.normal; if (!P) return g;
+  g.computeBoundingBox(); const bb = g.boundingBox, sz = Math.max(bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z) / cells || 1;
+  const map = new Map(), rep = new Int32Array(P.count), acc = [];
+  for (let i = 0; i < P.count; i++) {
+    const key = Math.floor((P.getX(i) - bb.min.x) / sz) + ',' + Math.floor((P.getY(i) - bb.min.y) / sz) + ',' + Math.floor((P.getZ(i) - bb.min.z) / sz) + (N ? ',' + (N.getX(i) > 0 ? 1 : 0) + (N.getY(i) > 0 ? 1 : 0) + (N.getZ(i) > 0 ? 1 : 0) : '');
+    let r = map.get(key); if (r === undefined) { r = acc.length; map.set(key, r); acc.push([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]); }
+    const a = acc[r]; a[0] += P.getX(i); a[1] += P.getY(i); a[2] += P.getZ(i); if (C) { a[3] += C.getX(i); a[4] += C.getY(i); a[5] += C.getZ(i); } if (N) { a[6] += N.getX(i); a[7] += N.getY(i); a[8] += N.getZ(i); } a[9]++; rep[i] = r;
+  }
+  const n = acc.length, pos = new Float32Array(n * 3), col = C ? new Float32Array(n * 3) : null, nor = N ? new Float32Array(n * 3) : null;
+  acc.forEach((a, r) => { const c = a[9]; pos.set([a[0] / c, a[1] / c, a[2] / c], r * 3); if (col) col.set([a[3] / c, a[4] / c, a[5] / c], r * 3); if (nor) { const l = Math.hypot(a[6], a[7], a[8]) || 1; nor.set([a[6] / l, a[7] / l, a[8] / l], r * 3); } });
+  const src = g.index ? g.index.array : [...Array(P.count).keys()], idx = [], seen = new Set();
+  for (let t = 0; t < src.length; t += 3) {
+    const a = rep[src[t]], b = rep[src[t + 1]], c = rep[src[t + 2]]; if (a === b || b === c || a === c) continue;
+    const k = [a, b, c].sort((x, y) => x - y).join(','); if (seen.has(k)) continue; seen.add(k); idx.push(a, b, c);
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3)); if (col) out.setAttribute('color', new THREE.BufferAttribute(col, 3)); if (nor) out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  out.setIndex(idx); return out;
+}
