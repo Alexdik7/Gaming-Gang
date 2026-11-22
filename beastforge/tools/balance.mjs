@@ -38,17 +38,19 @@ export function playRun({ map = 'ahnenhain', diff = 'normal', level = 1, seed = 
     for (const t of w.towers) {
       if (t.hero) continue;
       const order = plan[t.cid]; const step = t.tiers.reduce((a, b) => a + b, 0); const p = order[step];
-      if (p === undefined) continue;
-      const c = w.canUpgrade(t, p);
-      if (c.ok && (!best || c.cost < best.cost)) best = { t, p, cost: c.cost };
+      // Plan fertig → Hauptpfad bis Stufe 5 ausbauen (Endspiel)
+      const main = t.tiers.indexOf(Math.max(...t.tiers));
+      let q = p === undefined ? main : p, c = w.canUpgrade(t, q);
+      if (!c.ok && c.why !== 'Zu wenig Münzen' && q !== main) { q = main; c = w.canUpgrade(t, q); }
+      if (c.ok && (!best || c.cost < best.cost)) best = { t, p: q, cost: c.cost };
     }
     if (best) { w.upgrade(best.t.id, best.p); return; }
     // nichts mehr zu kaufen → weitere Kreatur nahe dem Pfadende
     const extra = ['kitsune', 'tiger', 'raven', 'kitsune', 'turtle'][w.towers.length % 5];
-    if (team.includes(extra) && w.coins >= w.costOf(extra) + 200 && w.towers.length < 16) { const sp = autoSpot(w, extra, RANGE[extra], 'end'); if (sp) w.place(extra, ...sp); }
+    if (team.includes(extra) && w.coins >= w.costOf(extra) + 200 && (w.towers.length < 16 || (w.wave > 20 && w.towers.length < 30 && w.coins > 8000))) { const sp = autoSpot(w, extra, RANGE[extra], 'end'); if (sp) w.place(extra, ...sp); }
   };
   let guard = 0;
-  while (!w.over && guard++ < 200000) {
+  while (!w.over && guard++ < 900000) {
     if (!w.waveRunning() && w.canStartWave()) { for (let i = 0; i < 6; i++) act(); w.startWave(); coinLog.push(w.coins); }
     for (let i = 0; i < 10; i++) w.tick(BAL.tick);
     if (guard % 30 === 0) act();

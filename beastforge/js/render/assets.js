@@ -423,6 +423,48 @@ const HEROES3D = {
     R.attach(hb, lotus, head.clone().add(new THREE.Vector3(0.1, 0.33, 0)));
     const orb = mk(geo.sphere(12), glow(0xff9ac8, 0.85), { s: 0.06 }); R.root.add(orb); anim.push(t => { orb.position.set(0.32 + Math.sin(t) * 0.03, 0.75 + Math.sin(t * 2) * 0.05, 0.12); });
   } }),
+  // Hana: Kunoichi in Kirschblüten-Rosa, Haarknoten mit Blüte, Katana auf dem Rücken, Blütenblätter umkreisen sie
+  hana: o => hero('kk_ninja', o, { tint: [0xff8ab8, 0.45], em: 0x200810, col: 0xff7ab0, atk: 'slash', build(R, head, hb, form, anim) {
+    R.attach(hb, mk(geo.sphere(10), toon(0x2a1a2a), { s: [0.09, 0.08, 0.09], ol: 0.005 }), head.clone().add(new THREE.Vector3(0, 0.27, -0.06)));
+    const fl = new THREE.Group(); for (let i = 0; i < 5; i++) { const q = i / 5 * PI * 2; fl.add(mk(geo.sphere(8), toon(0xffc8dc, { emissive: 0xff7ab0, emissiveIntensity: 0.3 }), { p: [Math.cos(q) * 0.04, Math.sin(q) * 0.04, 0], s: [0.035, 0.035, 0.012], ol: 0.003 })); } fl.add(mk(geo.sphere(6), toon(0xffe14d), { s: 0.018, ol: false }));
+    R.attach(hb, fl, head.clone().add(new THREE.Vector3(0.09, 0.28, 0.02)));
+    const sword = new THREE.Group(); sword.add(mk(geo.box(), toon(0xe8eef8, { emissive: 0x6a7a9a, emissiveIntensity: 0.3 }), { p: [0, 0.22, 0], s: [0.025, 0.42, 0.012], ol: 0.004 })); sword.add(mk(geo.box(), toon(0xd8342c), { p: [0, -0.04, 0], s: [0.03, 0.12, 0.03], ol: 0.004 })); sword.add(mk(geo.cyl(10), toon(0xffd257), { p: [0, 0.02, 0], s: [0.05, 0.012, 0.05], ol: 0.003 }));
+    sword.position.set(0.17, 0.42, -0.1); sword.rotation.set(0.2, 0, -0.9); R.root.add(sword);
+    const petals = []; for (let i = 0; i < (form ? 8 : 4); i++) { const p = mk(geo.sphere(6), toon(0xffb8d4, { emissive: 0xff6aa0, emissiveIntensity: 0.3 }), { s: [0.03, 0.008, 0.02], ol: false }); R.root.add(p); petals.push(p); }
+    anim.push(t => petals.forEach((p, i) => { const q = t * 1.2 + i * PI * 2 / petals.length; p.position.set(Math.cos(q) * 0.3, 0.3 + Math.sin(t * 2 + i) * 0.15, Math.sin(q) * 0.3); p.rotation.set(t * 3 + i, t * 2, 0); }));
+  } }),
+  // Gorō: breiter Steinmönch in Erdtönen, Gebetskette aus Felsperlen, schwebende Steine
+  goro: o => hero('kk_raizen', o, { tint: [0x9a7a58, 0.6], em: 0x1a1006, col: 0xc8a070, atk: 'magic', build(R, head, hb, form, anim) {
+    const beads = new THREE.Group(); for (let i = 0; i < 12; i++) { const q = i / 12 * PI * 2; beads.add(mk(geo.dodec(), toon(i % 4 ? 0x8a7a68 : 0xc8a070), { p: [Math.cos(q) * 0.16, 0, Math.sin(q) * 0.14], s: 0.03, ol: 0.004 })); }
+    beads.position.set(0, 0.52, 0.02); beads.rotation.x = 0.35; R.root.add(beads);
+    R.attach(hb, mk(geo.cyl(12), toon(0x6a5a48), { s: [0.17, 0.015, 0.17], ol: 0.004 }), head.clone().add(new THREE.Vector3(0, 0.25, 0)));
+    const rocks = []; for (let i = 0; i < (form ? 5 : 3); i++) { const r = mk(geo.dodec(), toon(0x9a8a78), { s: 0.045 + (i % 2) * 0.02, ol: 0.005 }); R.root.add(r); rocks.push(r); }
+    anim.push(t => rocks.forEach((r, i) => { const q = t * 0.7 + i * PI * 2 / rocks.length; r.position.set(Math.cos(q) * 0.36, 0.5 + Math.sin(t * 1.4 + i) * 0.08, Math.sin(q) * 0.36); r.rotation.set(t + i, t * 0.6, 0); }));
+  } }),
+  // Sora: Bogenschützin in Windgrün, Langbogen in der Hand, Köcher, Feder im Haar, Windbänder
+  sora: o => hero('kk_ninja', o, { tint: [0x6ac88a, 0.5], em: 0x061a0a, col: 0x8fe0a0, atk: 'throw', build(R, head, hb, form, anim) {
+    const bow = new THREE.Group(); bow.add(mk(new THREE.TorusGeometry(1, 0.06, 6, 20, PI * 0.9), toon(0x8a5a32), { r: [0, 0, PI * 0.55], s: 0.24, ol: 0.004 })); bow.add(mk(geo.cyl(4), toon(0xf0f0e8), { s: [0.004, 0.44, 0.004], ol: false, p: [-0.07, 0, 0] }));
+    bow.position.set(0.22, 0.42, 0.08); bow.rotation.y = PI / 2; R.root.add(bow);
+    const quiver = new THREE.Group(); quiver.add(mk(geo.cyl(10), toon(0x6a3a22), { s: [0.05, 0.22, 0.05], ol: 0.004 })); for (let i = 0; i < 3; i++) quiver.add(mk(C(4), toon(0xffffff), { p: [(i - 1) * 0.02, 0.14, 0], s: [0.02, 0.06, 0.008], ol: false }));
+    quiver.position.set(-0.1, 0.5, -0.14); quiver.rotation.z = 0.4; R.root.add(quiver);
+    R.attach(hb, mk(C(4), toon(0xffffff, { emissive: 0x8fe0a0, emissiveIntensity: 0.3 }), { r: [0, 0, -0.5], s: [0.03, 0.16, 0.01], ol: 0.003 }), head.clone().add(new THREE.Vector3(0.12, 0.28, -0.04)));
+    const winds = []; for (let i = 0; i < (form ? 3 : 2); i++) { const w = mk(geo.torus(0.02), glow(0xdff8ff, 0.5), { r: [PI / 2, 0, 0], s: 0.3 + i * 0.08, ol: false }); w.position.y = 0.25 + i * 0.2; R.root.add(w); winds.push(w); }
+    anim.push(t => winds.forEach((w, i) => { w.rotation.z = t * (i % 2 ? -1.5 : 1.8); w.scale.setScalar(0.3 + i * 0.08 + Math.sin(t * 2 + i) * 0.02); }));
+  } }),
+  // Ren: Puppenspieler in Violett-Schwarz, Fäden aus den Händen, eine kleine schwebende Schattenpuppe
+  ren: o => hero('kk_raizen', o, { tint: [0x3a1a5a, 0.85], em: 0x14061e, col: 0xb07bff, atk: 'magic', build(R, head, hb, form, anim) {
+    R.attach(hb, mk(geo.box(), toon(0xf0e8f8), { s: [0.16, 0.1, 0.03], ol: 0.004 }), head.clone().add(new THREE.Vector3(0, 0.12, 0.13)));   // Halbmaske
+    const pups = []; for (let i = 0; i < (form ? 3 : 1); i++) { const p = new THREE.Group(); p.add(mk(geo.sphere(10), toon(0x2a1a3a, { emissive: 0x6a2aa8, emissiveIntensity: 0.4 }), { p: [0, 0.07, 0], s: [0.045, 0.06, 0.04], ol: 0.004 })); p.add(mk(geo.sphere(10), toon(0xf0e8f8), { p: [0, 0.15, 0], s: 0.035, ol: 0.004 })); p.add(mk(geo.sphere(6), glow(0xb07bff, 0.9), { p: [0, 0.155, 0.03], s: [0.02, 0.008, 0.008], ol: false }));
+      const thread = mk(geo.cyl(3), glow(0xd8c8ff, 0.45), { p: [0, 0.4, 0], s: [0.003, 0.5, 0.003], ol: false }); p.add(thread); R.root.add(p); pups.push(p); }
+    anim.push(t => pups.forEach((p, i) => { const q = t * 0.8 + i * PI * 2 / pups.length; p.position.set(Math.cos(q) * 0.3, 0.25 + Math.abs(Math.sin(t * 3 + i)) * 0.08, Math.sin(q) * 0.3); p.rotation.y = -q; }));
+  } }),
+  // Yoru: Magierin in Nachtblau mit Mondsichel über dem Kopf und kreisenden Sternen
+  yoru: o => hero('kk_mage', o, { tint: [0x3a4a9a, 0.55], em: 0x0a0a20, col: 0x9fb4ff, atk: 'cast', build(R, head, hb, form, anim) {
+    const moon = mk(new THREE.TorusGeometry(1, 0.16, 8, 24, PI * 1.3), glow(0xe8ecff, 0.9), { r: [0, 0, PI * 0.35], s: 0.09, ol: false });
+    R.attach(hb, moon, head.clone().add(new THREE.Vector3(0.12, 0.52, 0.02)));
+    const stars = []; for (let i = 0; i < (form ? 7 : 4); i++) { const st = mk(geo.ico(0), glow(i % 2 ? 0xfff2a8 : 0x9fb4ff, 0.95), { s: 0.03, ol: false }); R.root.add(st); stars.push(st); }
+    anim.push(t => stars.forEach((st, i) => { const q = -t * 0.9 + i * PI * 2 / stars.length; st.position.set(Math.cos(q) * 0.32, 0.6 + Math.sin(t * 2.2 + i) * 0.1, Math.sin(q) * 0.32); st.rotation.y = t * 3; }));
+  } }),
 };
 
 // Glückskatze (Maneki-Neko): sitzt, winkt beim „Angriff“; Form = Fellfarbe + Schmuck
@@ -450,25 +492,30 @@ function neko(o) {
 }
 
 export const GLB_CREATURES = { kitsune, deer, raven, dragonwolf, golem, tiger, neko, ...HEROES3D };
-const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', neko: 'cat', kairo: 'kk_ninja', raizen: 'kk_raizen', mika: 'kk_mage' };
+const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', neko: 'cat', kairo: 'kk_ninja', raizen: 'kk_raizen', mika: 'kk_mage', hana: 'kk_ninja', goro: 'kk_raizen', yoru: 'kk_mage', sora: 'kk_ninja', ren: 'kk_raizen' };
 export function buildGlb(id, o) { if (!(ready && GLB_CREATURES[id] && ASSETS[SRC[id]])) return null; try { return GLB_CREATURES[id](o); } catch (e) { console.warn(e.message); return null; } }
 
 // ───────── Bosse / Mini-Bosse ─────────
-export function buildBig(kind) {
-  const isBoss = kind !== 'oni', name = isBoss ? 'dragon' : 'orc';
+const BIG_LOOK = { wolf: { h: 1.9, tint: [0xcfeaff, 0.7], em: 0x2a6a9a, ol: 0.02 }, owl: { h: 1.9, tint: [0x5a6aa8, 0.55], em: 0x3a3a10, ol: 0.02 } };
+const CLIP_ALIAS = { owl: { walk: 'idle', fly: 'idle', attack: 'call' } };
+export function buildBig(kind, model) {
+  const isBoss = kind !== 'oni', name = model || (isBoss ? 'dragon' : 'orc');
   if (!ready || !ASSETS[name]) return null;
-  const R = new Rig(name, isBoss ? { h: 2.2, tint: [0x4a2a6a, 0.45], ol: 0.02 } : { h: 1.6, tint: [0xd8402a, 0.6], ol: 0.02 });
+  const R = new Rig(name, BIG_LOOK[name] || (isBoss ? { h: 2.2, tint: [0x4a2a6a, 0.45], ol: 0.02 } : { h: 1.6, tint: [0xd8402a, 0.6], ol: 0.02 }));
+  if (name === 'owl') { const zap = glow(0xffe14d, 0.9); for (let i = 0; i < 5; i++) add(R.root, C(), zap, { p: [(i - 2) * 0.12, 1.95 + (2 - Math.abs(i - 2)) * 0.06, -0.05], r: [-0.2, 0, (i - 2) * 0.35], s: [0.05, 0.28, 0.05], ol: false }); }
+  if (name === 'wolf') { const ice = glow(0xbff4ff, 0.85); for (let i = 0; i < 7; i++) add(R.root, C(), ice, { p: [0, 1.05 + Math.sin(i * 0.9) * 0.08, 0.45 - i * 0.16], r: [-0.3, 0, (i % 2 ? 0.35 : -0.35)], s: [0.07, 0.32 - Math.abs(i - 3) * 0.04, 0.07], ol: false }); }
   if (!isBoss) { const hm = toon(0xf0e0c0); for (const sd of [-1, 1]) add(R.root, C(), hm, { p: [sd * 0.22, 1.62, 0.05], r: [0, 0, -sd * 0.35], s: [0.07, 0.26, 0.07], ol: 0.012 }); add(R.root, B(), toon(0xf0b030), { p: [0, 0.55, 0.36], s: [0.5, 0.08, 0.06], ol: 0.01 }); }
-  R.play(isBoss ? 'walk' : 'walk');
+  R.play(R.clips.walk ? 'walk' : 'idle');
   const aura = isBoss ? add(R.root, geo.torus(0.06), glow(0xff3a20, 0).clone(), { p: [0, 0.05, 0], r: [PI / 2, 0, 0], s: 1.1 }) : null;
   const big = { root: R.root, height: isBoss ? 2.4 : 1.9, flash: 0, rig: R };
   big.tick = (t, dt, s) => {
     let want = 'walk';
     if (isBoss) { if (s.roar || s.breath) want = 'attack'; else if (s.fly) want = 'fly'; }
     else if (s.cry) want = 'attack';
+    want = CLIP_ALIAS[name]?.[want] || want; if (!R.clips[want]) want = R.clips.walk ? 'walk' : 'idle';
     if (R.clips[want] && R.cur !== R.clips[want]) R.play(want, false, 0.2);
     R.mixer.update(dt * (isBoss && s.phase >= 3 ? 1.4 : 1));
-    R.root.position.y = isBoss && s.fly ? 0.8 + Math.sin(t * 2) * 0.1 : 0;
+    R.root.position.y = name === 'owl' ? 0.7 + Math.sin(t * 1.6) * 0.12 + (s.fly ? 1.0 : 0) : isBoss && s.fly ? (name === 'wolf' ? Math.abs(Math.sin(t * 3)) * 0.9 : 0.8 + Math.sin(t * 2) * 0.1) : 0;
     if (aura) { aura.material.opacity = s.phase >= 2 ? 0.3 + Math.sin(t * 6) * 0.1 : 0; aura.rotation.z = t; }
     R.flash(big.flash * 0.6);
   };

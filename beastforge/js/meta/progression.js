@@ -48,7 +48,7 @@ export function xpGainMul(level) { return 1 + LEVEL_PERKS.filter(p => p.xp && le
 
 // Abnehmender Ertrag: wer weit über dem Niveau der Welle liegt, bekommt weniger
 export function dimFactor(level, wave, diffKey) {
-  const dm = diffKey === 'hard' ? 1.3 : 1;
+  const dm = diffKey === 'master' ? 1.6 : diffKey === 'hard' ? 1.3 : 1;
   const over = level - BAL.char.expected(wave) * dm;
   return Math.max(BAL.char.dimFloor, Math.min(1, 1 - Math.max(0, over) * BAL.char.dimStep));
 }

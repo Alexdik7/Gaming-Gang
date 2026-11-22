@@ -9,6 +9,7 @@ import { MAPS, PATH_HALF, raftPos } from '../data/maps.js';
 import { waveDef } from '../data/waves.js';
 import { REACTIONS, SYNERGIES } from '../data/meta.js';
 import { baseStats, applyFx, canTier } from './stats.js';
+import { FUSE, fusionFor, fusionsWith } from '../data/fusions.js';
 import { maxStage, formAt } from '../meta/progression.js';
 
 const PLACE = { '.': 'ground', '^': 'high', '~': 'water' };
@@ -39,7 +40,7 @@ export class World {
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
     this.t = 0; this.acc = 0; this.nid = 1; this.over = false; this.won = false; this.god = false;
-    this.dirty = true; this.synergies = []; this.boss = null; this.timeScale = 1;
+    this.dirty = true; this.synergies = []; this.packs = []; this.boss = null; this.timeScale = 1;
     this.rafts = (this.map.rafts || []).map(r => ({ ...r, x: r.a[0], y: r.a[1] })); this.updRafts();
     const L = this.map.lava; this.vents = (this.map.vents || []).map(([x, y], i) => ({ x: x + 0.5, y: y + 0.5, cd: L.every * (0.45 + i * 0.22), warned: false }));
     this.stats = { kills: 0, coins: 0, leaks: 0, crits: 0, reactions: 0, evolves: 0, upgrades: 0, t5: 0, abilities: 0, ults: 0, income: 0, rocks: 0,
@@ -71,6 +72,22 @@ export class World {
   raftAt(x, y) {
     const m = TOWER_R * 0.8;
     return this.rafts.findIndex(r => Math.abs(x - r.x) <= r.w / 2 - m && Math.abs(y - r.y) <= r.h / 2 - m);
+  }
+  updGust(dt) {
+    const G = this.map.gust; if (!G) return;
+    if (this.gustT > 0) { this.gustT -= dt; return; }
+    if (!this.enemies.length) return;
+    this.gustCd = (this.gustCd ?? G.every * 0.5) - dt;
+    if (this.gustCd <= 0) { this.gustCd = G.every; this.gustT = G.dur; this.emit({ t: 'gust', dur: G.dur }); }
+  }
+  onIce(x, y) { const cx = Math.floor(x), cy = Math.floor(y); return this.map.ice.some(([a, b, c, d]) => cx >= a && cx <= c && cy >= b && cy <= d); }
+  // Schneesturm (Frosttempel): alle `every` s für `dur` s – Gegner langsamer, Eiskreaturen schneller, andere frieren etwas
+  updStorm(dt) {
+    const S = this.map.storm; if (!S) return;
+    if (this.stormT > 0) { this.stormT -= dt; if (this.stormT <= 0) { this.dirty = true; this.emit({ t: 'storm', on: false }); } return; }
+    if (!this.enemies.length) return;
+    this.stormCd = (this.stormCd ?? S.every * 0.6) - dt;
+    if (this.stormCd <= 0) { this.stormCd = S.every; this.stormT = S.dur; this.dirty = true; this.emit({ t: 'storm', on: true, dur: S.dur }); }
   }
   updVents(dt) {
     if (!this.vents.length || !this.enemies.length) return;
@@ -178,7 +195,7 @@ export class World {
     this.emit({ t: 'upgrade', tower: t, path: p, tier: t.tiers[p] });
     return { ok: true };
   }
-  levelOf(cid) { return this.hooks.level?.(cid) ?? 1; }
+  levelOf(cid) { const d = CREATURES[cid]; if (d?.fusion) return Math.max(...d.parents.map(p => this.levelOf(p))); return this.hooks.level?.(cid) ?? 1; }
   branchOf(cid) { return this.hooks.branch?.(cid) ?? 'spirit'; }
   nextEvo(t) {
     if (t.hero) return null;
@@ -208,6 +225,43 @@ export class World {
     this.emit({ t: 'sell', tower: t, value: v });
     return { ok: true, value: v };
   }
+  // Rückstoß: höchstens BAL.run.knockCap Felder pro Gegner insgesamt (verhindert endlose Pattsituationen)
+  knock(e, amt) { const a = Math.min(amt, BAL.run.knockCap - (e.kb || 0)); if (a <= 0) return; e.kb = (e.kb || 0) + a; e.d = Math.max(0, e.d - a); this.posAt(e.d, e, e.pi); }
+  // ───────── Fusion ─────────
+  fuseOptions(t) {
+    if (!t || t.hero || CREATURES[t.cid]?.fusion) return [];
+    return fusionsWith(t.cid).map(f => {
+      const other = f.a === t.cid ? f.b : f.a, def = CREATURES[f.id];
+      const ps = this.towers.filter(o => o !== t && o.cid === other).sort((p, q) => Math.hypot(p.x - t.x, p.y - t.y) - Math.hypot(q.x - t.x, q.y - t.y));
+      const p = ps[0], cost = f.cost;
+      let why = '';
+      if (!p) why = 'Platziere ' + CREATURES[other].name + ' daneben';
+      else if (Math.hypot(p.x - t.x, p.y - t.y) > FUSE.range) why = CREATURES[other].name + ' steht zu weit weg';
+      else if (t.stage < FUSE.minStage || p.stage < FUSE.minStage) why = 'Beide zuerst erwecken (Stufe 1)';
+      else if (this.mods.basic) why = 'Herausforderung: nur Grundformen';
+      else if (this.coins < cost) why = 'Zu wenig Münzen';
+      return { f, def, other, partner: p || null, cost, ok: !why, why };
+    });
+  }
+  fuse(id, fid) {
+    const t = this.tower(id); if (!t) return { ok: false, why: 'Kein Turm' };
+    const o = this.fuseOptions(t).find(x => x.f.id === fid); if (!o) return { ok: false, why: 'Keine Fusion' };
+    if (!o.ok) return { ok: false, why: o.why };
+    const p = o.partner, f = o.f, A = f.a === t.cid ? t : p, B = A === t ? p : t;
+    // Pfadstufen mitnehmen, wo die Fusion den Pfad der Eltern übernimmt
+    let tiers = f.paths.map(([w, i]) => (w === 'a' ? A : B).tiers[i]);
+    if (tiers.filter(x => x > 0).length > 2 || tiers.filter(x => x > BAL.cross.second).length > 1)
+      tiers = f.paths.map(([w, i]) => (w === 'a' ? A.tiers[i] : 0));
+    this.coins -= o.cost;
+    const keep = A, gone = B;   // die Fusion steht dort, wo der Körper (A) stand
+    keep.cid = f.id; keep.stage = 0; keep.tiers = tiers; keep.spent += gone.spent + o.cost; keep.kills += gone.kills; keep.dmg += gone.dmg;
+    keep.abCd = 0; keep.ultCd = 0; keep.buffs = [];
+    this.towers.splice(this.towers.indexOf(gone), 1);
+    this.stats.fusions = (this.stats.fusions || 0) + 1; this.hooks.stat?.('fusions', 1);
+    this.dirty = true; this.refresh();
+    this.emit({ t: 'fuse', tower: keep, gone: { x: gone.x, y: gone.y, cid: gone.cid }, def: o.def });
+    return { ok: true, tower: keep };
+  }
   setTarget(id, mode) { const t = this.tower(id); if (t && TARGETS.includes(mode)) { t.target = mode; return { ok: true }; } return { ok: false }; }
   clearRock(cx, cy) {
     if (this.cellType(cx, cy) !== 'R') return { ok: false, why: 'Kein Fels' };
@@ -228,7 +282,7 @@ export class World {
     if (this.enemies.length > 0 && this.wave > 0) { const b = BAL.run.earlyCall(this.wave); this.gain(b); this.emit({ t: 'early', coins: b }); }
     this.wave++;
     let def = waveDef(this.wave);
-    const mx = this.map.mix?.(this.wave, def.groups); if (mx) def = { ...def, groups: mx.groups, tip: mx.tip || def.tip };
+    const mx = this.map.mix?.(this.wave, def.groups); if (mx) def = { ...def, groups: mx.groups, tip: mx.tip || def.tip, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) };
     for (const g of def.groups) this.spawners.push({ e: g.e, left: Math.round(g.n), gap: g.gap, t: g.delay, mods: g.mods || [], wave: this.wave });
     this.emit({ t: 'wave', wave: this.wave, def });
     if (def.boss) this.emit({ t: 'bossWarn', boss: def.boss });
@@ -241,7 +295,7 @@ export class World {
     const def = ENEMIES[kind] || BOSSES[kind]; if (!def) return null;
     const boss = !!def.boss, elite = mods.includes('elite');
     const scale = BAL.endlessScale(wave);
-    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * scale * (boss || def.miniboss ? 1 : BAL.hpScale(wave));
+    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * scale * (boss ? 1 : def.miniboss ? BAL.miniScale(wave) : BAL.hpScale(wave));
     if (elite) hp *= 2.2;
     const res = { ...(def.res || {}) };
     if (mods.includes('armored')) res.phys = Math.max(0.25, (res.phys ?? 1) * 0.6);
@@ -274,7 +328,7 @@ export class World {
     }
     this.spawners = this.spawners.filter(s => s.left > 0);
     if (this.rafts.length) this.updRafts();
-    this.updVents(dt);
+    this.updVents(dt); this.updStorm(dt); this.updGust(dt);
     if (this.mods.apoc && this.wave > 0 && this.canStartWave()) this.startWave();   // Apokalypse: Wellen ohne Pause
     let buffChange = false;
     for (const t of this.towers) {
@@ -301,7 +355,7 @@ export class World {
     if (e.reactT > 0) e.reactT -= dt;
     if (e.cryT > 0) e.cryT -= dt;
     if (e.guardT > 0) e.guardT -= dt;
-    if (e.burnT > 0) { e.burnT -= dt; this.damage(e, e.burnDps * dt, 'fire', e.burnSrc, { dot: true }); if (!e.alive) return; }
+    if (e.burnT > 0) { e.burnT -= dt; this.damage(e, e.burnDps * dt, e.burnType || 'fire', e.burnSrc, { dot: true }); if (!e.alive) return; }
     if (e.regen && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * e.regen * dt);
     const def = e.def;
     if (def.guard && e.guard > 0) for (const o of this.enemies) if (o !== e && o.alive && Math.hypot(o.x - e.x, o.y - e.y) <= def.guard.r) o.guardT = 0.25;
@@ -311,7 +365,7 @@ export class World {
         const a = def.heal || def.shield || def.cry; e.abT = a.every;
         for (const o of this.enemies) {
           if (!o.alive || o === e && !def.cry || Math.hypot(o.x - e.x, o.y - e.y) > a.r) continue;
-          if (def.heal) o.hp = Math.min(o.maxHp, o.hp + o.maxHp * a.pct);
+          if (def.heal && !o.def.heal) o.hp = Math.min(o.maxHp, o.hp + o.maxHp * a.pct);   // Heiler heilen keine Heiler (sonst endlose Pattsituation)
           if (def.shield) o.shield = Math.max(o.shield, o.maxHp * a.pct);
           if (def.cry) o.cryT = a.dur;
         }
@@ -323,8 +377,11 @@ export class World {
     if (e.roarT > 0) { e.roarT -= dt; return; }
     let sp = e.speed * (1 - Math.min(0.75, e.slowPct * (e.heavy ? 0.5 : 1)));
     if (e.cryT > 0) sp *= 1 + (ENEMIES.oni.cry.speed);
+    if (this.map.ice && !e.flying && this.onIce(e.x, e.y)) sp *= 1.4;   // Eisbahn: rutschen
+    if (this.stormT > 0 && !e.boss) sp *= 1 - this.map.storm.slow;
+    if (this.gustT > 0 && !e.boss) { const G = this.map.gust; if (e.flying) sp *= G.fly; else if (this.terrainAt(e.x, e.y) === 'B' && !e.heavy) sp = -sp * G.back; }   // Böe: auf Brücken zurückgedrückt
     if (e.boss) { const ph = def.phases[e.phase]; if (e.flyT > 0) sp *= def.phases[1].fly.speed; if (e.phase >= 3) sp *= ph.enrage || 1; }
-    e.d += sp * dt;
+    e.d = Math.max(0, e.d + sp * dt);
     this.posAt(e.d, e, e.pi);
     if (e.d >= this.paths[e.pi].len) this.leak(e);
   }
@@ -342,7 +399,7 @@ export class World {
       if ((e.breathCd -= dt) <= 0) {
         e.breathCd = b.every;
         const ts = this.towers.filter(t => !t.prot).map(t => ({ t, d: Math.hypot(t.x - e.x, t.y - e.y) })).filter(o => o.d < 4).sort((a, c) => a.d - c.d).slice(0, b.n);
-        for (const o of ts) o.t.disabledT = b.dur;
+        for (const o of ts) { o.t.disabledT = b.dur; o.t.disCol = def.breathColor || 0; }
         e.roarT = Math.max(e.roarT, 0.9);
         this.emit({ t: 'breath', e, targets: ts.map(o => o.t) });
       }
@@ -419,7 +476,7 @@ export class World {
   }
   applyStatus(e, s, src) {
     if (!e.alive) return;
-    if (s.burn.dps > 0) { if (s.burn.dps >= e.burnDps || e.burnT <= 0) { e.burnDps = s.burn.dps; e.burnSrc = src; } e.burnT = Math.max(e.burnT, s.burn.dur); }
+    if (s.burn.dps > 0) { if (s.burn.dps >= e.burnDps || e.burnT <= 0) { e.burnDps = s.burn.dps; e.burnSrc = src; e.burnType = s.poison ? 'shadow' : 'fire'; } e.burnT = Math.max(e.burnT, s.burn.dur); }
     if (s.slow.pct > 0) { e.slowPct = Math.max(e.slowPct, s.slow.pct); e.slowT = Math.max(e.slowT, s.slow.dur); }
     if (s.stun.ch > 0 && !e.boss && this.rng() < s.stun.ch * (e.heavy ? 0.4 : 1)) { e.stunT = Math.max(e.stunT, s.stun.dur); this.emit({ t: 'stun', e }); }
     if (s.mark > 0) { e.vuln = Math.max(e.vuln, s.mark); e.vulnT = Math.max(e.vulnT, 3); }
@@ -428,7 +485,7 @@ export class World {
   kill(e, src, over = 0, type = 'phys') {
     if (!e.alive) return; e.alive = false;
     const def = e.def;
-    const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul);
+    const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul * BAL.lateCoins(e.wave || this.wave));
     this.gain(coins);
     this.stats.kills++; this.hooks.stat?.('kills', 1);
     if (src) { src.kills++; if (src.s?.bounty) this.gain(src.s.bounty); }
@@ -458,6 +515,7 @@ export class World {
     this.emit({ t: 'kill', e, x: e.x, y: e.y, coins, src });
   }
   charXp(cid, raw) {
+    const fd = CREATURES[cid]; if (fd?.fusion) { for (const p of fd.parents) this.charXp(p, raw * 0.6); return; }   // Fusion: XP für beide Eltern
     const got = this.hooks.charXp ? this.hooks.charXp(cid, raw, this.wave) : raw;
     this.stats.xp[cid] = (this.stats.xp[cid] || 0) + (got || 0);
   }
@@ -508,6 +566,16 @@ export class World {
       if (links.length) { act.push({ sy, links }); if (!this.stats.synergySeen.has(sy.id)) { this.stats.synergySeen.add(sy.id); this.hooks.stat?.('synergies', 1); this.emit({ t: 'synergy', sy }); } }
     }
     this.synergies = act;
+    // Rudel: zusammenhängende Gruppen benachbarter Kreaturen stärken sich gegenseitig – ohne Obergrenze
+    const PR = BAL.run.packR, seen = new Set(); this.packs = [];
+    for (const t0 of this.towers) {
+      if (seen.has(t0)) continue;
+      const grp = [t0], links = []; seen.add(t0);
+      for (let i = 0; i < grp.length; i++) for (const o of this.towers) if (o !== grp[i] && Math.hypot(o.x - grp[i].x, o.y - grp[i].y) <= PR) { if (!seen.has(o)) { seen.add(o); grp.push(o); } if (grp[i].id < o.id) links.push([grp[i], o]); }
+      for (const t of grp) t.pack = grp.length;
+      if (grp.length > 1) this.packs.push({ grp, links });
+    }
+    for (const t of this.towers) if (t.pack > 1) { const k = t.pack - 1, s = t.s; s.packMul = Math.pow(1 + BAL.run.packDmg, k); s.dmg *= s.packMul; s.rate *= Math.pow(1 + BAL.run.packRate, k); }
     // Auren: pro Wert gilt die stärkste Quelle (kein Stapeln)
     const aura = new Map();
     for (const src of this.towers) {
@@ -527,6 +595,7 @@ export class World {
       if (t.ground === 'high') { s.range *= 1 + BAL.run.highRange; s.mortar.range *= 1 + BAL.run.highRange; }
       if (t.ground === 'water' && s.water) s.rate *= 1 + s.water;
       if (t.raft != null) s.dmg *= 1 + RAFT_BONUS;
+      if (this.stormT > 0) { const S = this.map.storm, icy = s.dmgType === 'ice' || (!t.hero && CREATURES[t.cid]?.elements?.includes('ice')); s.rate *= icy ? S.ice : S.cold; s.storm = icy ? 1 : -1; }
     }
   }
 
@@ -606,7 +675,7 @@ export class World {
       for (const e of this.enemies) {
         if (!e.alive || !this.canSee(s, e) || Math.hypot(e.x - t.x, e.y - t.y) > s.range) continue;
         this.damage(e, s.dmg, s.dmgType, t); this.applyStatus(e, s, t);
-        if (s.knock && !e.heavy && e.alive) { e.d = Math.max(0, e.d - s.knock); this.posAt(e.d, e, e.pi); }
+        if (s.knock && !e.heavy && e.alive) this.knock(e, s.knock);
       }
       this.emit({ t: 'pulse', tower: t, r: s.range });
       return;
@@ -625,7 +694,7 @@ export class World {
         let da = Math.abs(Math.atan2(dy, dx) - aim); if (da > Math.PI) da = 2 * Math.PI - da;
         if (da > s.cone / 2 && d > 0.5) continue;
         this.damage(e, s.dmg, s.dmgType, t); this.applyStatus(e, s, t);
-        if (s.knock && !e.heavy && e.alive) { e.d = Math.max(0, e.d - s.knock * 0.3); this.posAt(e.d, e, e.pi); }
+        if (s.knock && !e.heavy && e.alive) this.knock(e, s.knock * 0.3);
       }
       this.emit({ t: 'cone', tower: t, ang: aim, r: s.range, cone: s.cone, type: s.dmgType });
       specials(tgt.x, tgt.y);
@@ -771,8 +840,32 @@ export class World {
         this.emit({ t: 'ability', id: 'fortress', tower: t, r: 3.5 });
         for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 3.5) {
           this.damage(e, s.dmg * 8, 'earth', t, { big: true });
-          if (e.alive) { if (!e.heavy) { e.d = Math.max(0, e.d - 1.5); this.posAt(e.d, e, e.pi); } e.slowPct = Math.max(e.slowPct, 0.6); e.slowT = 4; }
+          if (e.alive) { if (!e.heavy) this.knock(e, 1.5); e.slowPct = Math.max(e.slowPct, 0.6); e.slowT = 4; }
         }
+        break;
+      }
+      case 'hex': {   // Schlangenmagierin: Fluch – verwundbar, langsam, schweres Gift
+        const R = s.range * 1.4, ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) <= R);
+        if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'hex', tower: t, r: R, pts: ts.slice(0, 20).map(e => ({ x: e.x, y: e.y })) });
+        for (const e of ts) { e.vuln = Math.max(e.vuln, 0.4); e.vulnT = Math.max(e.vulnT, 8); e.slowPct = Math.max(e.slowPct, e.boss ? 0.25 : 0.5); e.slowT = Math.max(e.slowT, 4); e.burnDps = Math.max(e.burnDps || 0, s.dmg * 3); e.burnSrc = t; e.burnType = 'shadow'; e.burnT = Math.max(e.burnT || 0, 6); this.damage(e, s.dmg * 6, 'shadow', t, { big: true }); }
+        break;
+      }
+      case 'tornado': {   // Windmönch: Wirbelsturm wirft zurück
+        const R = 3.6;
+        this.emit({ t: 'ability', id: 'tornado', tower: t, r: R });
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < R) {
+          this.damage(e, s.dmg * 8, 'phys', t, { big: true });
+          if (e.alive) { if (!e.heavy && !e.boss) this.knock(e, 2.2); e.slowPct = Math.max(e.slowPct, 0.5); e.slowT = Math.max(e.slowT, 3); }
+        }
+        break;
+      }
+      case 'rift': {   // Leerenkatze: stärkster Gegner in Reichweite wird vom Riss verschluckt
+        let best = null; for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) <= s.range * 1.5 && (!best || e.hp > best.hp)) best = e;
+        if (!best) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'rift', tower: t, x: best.x, y: best.y });
+        this.damage(best, s.dmg * (best.boss ? 25 : 70), 'astral', t, { big: true, ignoreRes: true });
+        for (const o of this.enemies) if (o !== best && o.alive && Math.hypot(o.x - best.x, o.y - best.y) < 1.4) { this.damage(o, s.dmg * 6, 'astral', t); if (o.alive && !o.boss) o.stunT = Math.max(o.stunT, 1); }
         break;
       }
       case 'goldrain': { const c = 60 + 15 * this.wave; this.gain(c); this.stats.income += c; this.emit({ t: 'ability', id: 'goldrain', tower: t, coins: c }); break; }
@@ -826,6 +919,88 @@ export class World {
         this.emit({ t: 'ability', id: 'sanctuary', tower: t }); this.say(t, 'ult');
         for (const e of this.enemies) if (e.alive) { e.slowPct = Math.max(e.slowPct, 0.7); e.slowT = Math.max(e.slowT, 6); }
         this.lives = Math.min(this.maxLives, this.lives + 15); break;
+      }
+      case 'flood': {   // Kappa: Flutwelle
+        const R = 4; this.emit({ t: 'ability', id: 'flood', tower: t, r: R });
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < R) { this.damage(e, s.dmg * 6, 'phys', t, { big: true }); if (e.alive) { if (!e.heavy && !e.boss) this.knock(e, 2); e.slowPct = Math.max(e.slowPct, 0.55); e.slowT = Math.max(e.slowT, 4); } }
+        break;
+      }
+      case 'radiance': {   // Kirin: Himmelsglanz – Kreaturen stärken, Gegner verwundbar
+        const R = 4; this.emit({ t: 'ability', id: 'radiance', tower: t, r: R });
+        for (const o of this.towers) if (Math.hypot(o.x - t.x, o.y - t.y) <= R) o.buffs.push({ id: 'radiance', t: 8, fx: { mul: { dmg: 1.4 } } });
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < R) { e.vuln = Math.max(e.vuln, 0.3); e.vulnT = Math.max(e.vulnT, 8); this.damage(e, s.dmg * 8, 'light', t, { big: true }); }
+        this.dirty = true; break;
+      }
+      case 'guardbite': {   // Komainu: Biss in den stärksten Gegner in Reichweite
+        let best = null; for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) <= s.range + 1 && (!best || e.hp > best.hp)) best = e;
+        if (!best) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'guardbite', tower: t, x: best.x, y: best.y });
+        best.vuln = Math.max(best.vuln, 0.35); best.vulnT = Math.max(best.vulnT, 10);
+        this.damage(best, s.dmg * 30, 'phys', t, { big: true }); break;
+      }
+      case 'volley': {   // Sora: Pfeilregen auf die dichteste Gruppe
+        let best = null, bn = 0;
+        for (const e of this.enemies) { if (!e.alive) continue; let n = 0; for (const o of this.enemies) if (o.alive && Math.hypot(o.x - e.x, o.y - e.y) < 2.2) n++; if (n > bn) { bn = n; best = e; } }
+        if (!best) { ok = false; break; }
+        const x = best.x, y = best.y, A = HEROES[t.cid].abilities.volley; this.emit({ t: 'ability', id: 'volley', tower: t, x, y }); this.say(t, 'ability');
+        const ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - x, e.y - y) < 2.2);
+        for (let i = 0; i < 24; i++) { const e = ts[i % ts.length]; if (e?.alive) this.damage(e, s.dmg * A.mul, 'phys', t, { big: i < ts.length }); }
+        break;
+      }
+      case 'skyshot': {   // Sora: Himmelspfeil – jeder Gegner auf dem Pfad
+        const al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'skyshot', tower: t }); this.say(t, 'ult');
+        for (const e of al) { this.damage(e, s.dmg * HEROES[t.cid].abilities.skyshot.mul, 'phys', t, { big: true }); if (e.alive && !e.heavy && !e.boss) this.knock(e, 1); }
+        break;
+      }
+      case 'puppets': t.clonesT = HEROES[t.cid].abilities.puppets.dur; this.emit({ t: 'ability', id: 'puppets', tower: t }); this.say(t, 'ability'); break;
+      case 'bind': {   // Ren: Schattenbann – ganze Karte
+        const al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'bind', tower: t, targets: al.slice(0, 60).map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ult');
+        for (const e of al) { this.damage(e, s.dmg * HEROES[t.cid].abilities.bind.mul, 'shadow', t); if (!e.alive) continue; e.vuln = Math.max(e.vuln, 0.3); e.vulnT = Math.max(e.vulnT, 6); if (e.boss) { e.slowPct = Math.max(e.slowPct, 0.6); e.slowT = Math.max(e.slowT, 3); } else e.stunT = Math.max(e.stunT, 2.5); }
+        break;
+      }
+      case 'petals': {   // Hana: Klingenwirbel im Umkreis 3 + Blutung
+        const A = HEROES[t.cid].abilities.petals, ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 3);
+        if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'petals', tower: t, r: 3 }); this.say(t, 'ability');
+        for (const e of ts) { this.damage(e, s.dmg * A.mul, 'phys', t, { big: true }); if (e.alive) { e.burnDps = Math.max(e.burnDps, s.dmg * 1.5); e.burnT = Math.max(e.burnT, 4); e.burnSrc = t; e.burnType = 'phys'; } }
+        break;
+      }
+      case 'thousand': {   // Hana: 12 stärkste Gegner der Karte
+        const ts = this.enemies.filter(e => e.alive).sort((a, b) => b.hp - a.hp).slice(0, 12);
+        if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'thousand', tower: t, targets: ts.map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ult');
+        for (const e of ts) this.damage(e, s.dmg * HEROES[t.cid].abilities.thousand.mul, 'phys', t, { big: true });
+        break;
+      }
+      case 'wall': {   // Gorō: Steinwall – Erstarren im Umkreis
+        const A = HEROES[t.cid].abilities.wall;
+        this.emit({ t: 'ability', id: 'wall', tower: t, r: 3.2 }); this.say(t, 'ability');
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 3.2) { this.damage(e, s.dmg * A.mul, 'earth', t, { big: true }); if (e.alive) { if (e.boss) { e.slowPct = Math.max(e.slowPct, 0.5); e.slowT = Math.max(e.slowT, 3); } else e.stunT = Math.max(e.stunT, 3); } }
+        break;
+      }
+      case 'meteor': {   // Gorō: Meteor in die dichteste Gruppe
+        let best = null, bn = 0;
+        for (const e of this.enemies) { if (!e.alive) continue; let n = 0; for (const o of this.enemies) if (o.alive && Math.hypot(o.x - e.x, o.y - e.y) < 2.5) n += o.boss ? 5 : 1; if (n > bn) { bn = n; best = e; } }
+        if (!best) { ok = false; break; }
+        const x = best.x, y = best.y; this.emit({ t: 'ability', id: 'meteor', tower: t, x, y, r: 2.5 }); this.say(t, 'ult');
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - x, e.y - y) < 2.5) { this.damage(e, s.dmg * HEROES[t.cid].abilities.meteor.mul, 'earth', t, { big: true }); if (e.alive) { e.burnDps = Math.max(e.burnDps, s.dmg * 2); e.burnT = Math.max(e.burnT, 4); e.burnSrc = t; e.burnType = 'fire'; } }
+        break;
+      }
+      case 'veil': {   // Yoru: Mondschleier – enttarnen + verwundbar
+        const ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 4);
+        if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'veil', tower: t, r: 4 }); this.say(t, 'ability');
+        for (const e of ts) { e.vuln = Math.max(e.vuln, 0.5); e.vulnT = Math.max(e.vulnT, 8); e.revealT = Math.max(e.revealT, 8); }
+        break;
+      }
+      case 'starfall': {   // Yoru: 30 Sterne auf zufällige Gegner
+        const al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        const ts = []; for (let i = 0; i < 30; i++) ts.push(al[Math.floor(this.rng() * al.length)]);
+        this.emit({ t: 'ability', id: 'starfall', tower: t, targets: ts.map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ult');
+        for (const e of ts) if (e.alive) this.damage(e, s.dmg * HEROES[t.cid].abilities.starfall.mul, 'astral', t, { big: true });
+        break;
       }
       case 'whirl': {
         if (!this.enemies.length) { ok = false; break; }

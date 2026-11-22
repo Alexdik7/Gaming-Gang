@@ -5,7 +5,7 @@ import { Particles, Rings, Bolts, Pillars, Projectiles, Floaters, Flashes, Spark
 import { RAFT_TOP } from './mapview.js';
 import { ENEMY_MODELS, bakeFrames, buildBig } from './assets.js';
 import { buildModel, ENEMY_GEO, ENEMY_GLOW, ENEMY_ALPHA, buildOni, buildDragon } from './models.js';
-import { enemyMat, enemyOutline, glow, toon, geo } from './toon.js';
+import { enemyMat, enemyOutline, glow, toon, geo, lodGeo } from './toon.js';
 import { ELEMENT_COLORS, ENEMIES } from '../data/enemies.js';
 import { CREATURES } from '../data/creatures.js';
 
@@ -25,7 +25,7 @@ export class GameView {
     this.floaters = new Floaters(document.getElementById('floaters'));
     this.towers = new Map(); this.bigs = new Map(); this.t = 0; this.numCount = 0;
     this.buildEnemyPools(); this.buildHelpers();
-    this.petalT = 0; this.sky = world.map.theme.sky ?? 0xbfe6dc; this.ash = !!world.map.theme.ash;
+    this.petalT = 0; this.sky = world.map.theme.sky ?? 0xbfe6dc; this.ash = !!world.map.theme.ash; this.snow = !!world.map.theme.snow;
     this.stage.hemi.color.setHex(this.ash ? 0xffd8c0 : 0xdff4ff);
   }
   toW(x, y) { return [x - this.map.W / 2, y - this.map.H / 2]; }
@@ -39,18 +39,7 @@ export class GameView {
     for (const k of new Set([...Object.keys(ENEMY_GEO), ...Object.keys(ENEMY_MODELS)])) {
       const spec = ENEMY_MODELS[k], baked = spec ? bakeFrames({ ...spec, h: (ENEMY_H[k] || 0.6) * spec.h }) : null;
       const geos = baked || (ENEMY_GEO[k] ? [ENEMY_GEO[k]()] : null); if (!geos) continue;
-      const glowK = ENEMY_GLOW[k] && !baked, alpha = ENEMY_ALPHA[k];
-      const mat = glowK ? new THREE.MeshBasicMaterial({ vertexColors: true }) : enemyMat(alpha ? { transparent: true, opacity: alpha } : {});
-      const frames = geos.map(g => {
-        const tint = new THREE.InstancedBufferAttribute(new Float32Array(cap[k] * 4), 4); tint.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aTint', tint);
-        const m = new THREE.InstancedMesh(g, mat, cap[k]); m.count = 0; m.castShadow = !glowK && !baked; m.frustumCulled = false; this.root.add(m);
-        let ol = null;
-        if (!glowK && !alpha) { ol = new THREE.InstancedMesh(g, enemyOutline(baked ? 0.016 : 0.022), cap[k]); ol.instanceMatrix = m.instanceMatrix; ol.count = 0; ol.frustumCulled = false; this.root.add(ol); }
-        return { m, ol, tint };
-      });
-      let halo = null;
-      if (ENEMY_GLOW[k]) { halo = new THREE.InstancedMesh(geo.sphere(10), glow(0x7df3ff, baked ? 0.2 : 0.35), cap[k]); halo.count = 0; halo.frustumCulled = false; this.root.add(halo); }
-      this.pools[k] = { frames, halo, cap: cap[k], cyc: spec?.cyc ?? 1, baked: !!baked, hn: 0 };
+      this.pools[k] = this.makePool(k, geos, !!baked, spec, cap[k]);
     }
     // Weiche Schattenscheiben unter Gegnern (ersetzt Schattenwurf: ein Draw-Call für alle)
     const sc = document.createElement('canvas'); sc.width = sc.height = 64; const sg = sc.getContext('2d'), gr = sg.createRadialGradient(32, 32, 4, 32, 32, 31);
@@ -92,7 +81,7 @@ export class GameView {
   }
 
   // ───────── Türme ─────────
-  towerKey(t) { return t.hero ? 'h' + (t.hlvl >= 20 ? 2 : t.hlvl >= 15 ? 1 : 0) : t.stage + ':' + t.tiers.join('') + ':' + (this.opts.branch?.(t.cid) || '') + (this.opts.skin?.(t.cid) || ''); }
+  towerKey(t) { return t.cid + '|' + (t.hero ? 'h' + (t.hlvl >= 20 ? 2 : t.hlvl >= 15 ? 1 : 0) : t.stage + ':' + t.tiers.join('') + ':' + (this.opts.branch?.(t.cid) || '') + (this.opts.skin?.(t.cid) || '')); }
   makeTower(t) {
     const m = buildModel(t.cid, { stage: t.stage, tiers: t.tiers, branch: this.opts.branch?.(t.cid), skin: this.opts.skin?.(t.cid), hlvl: t.hlvl });
     const g = new THREE.Group(), pose = new THREE.Group(); pose.rotation.order = 'YXZ'; pose.add(m.root); g.add(pose); g.scale.setScalar(TOWER_SCALE);
@@ -149,7 +138,7 @@ export class GameView {
       if (t.raft != null) { const [x, z] = this.toW(t.x, t.y); v.g.position.set(x, RAFT_TOP, z); }
       const dis = t.disabledT > 0;
       v.m.tick(this.t, dt, { atk: v.atk, dis, cannon: v.rot, hlvl: t.hlvl });
-      if (dis && Math.random() < dt * 14) { const [x, z] = this.toW(t.x, t.y); this.parts.spawn(x + (Math.random() - 0.5) * 0.4, 0.4, z + (Math.random() - 0.5) * 0.4, 0, 0.8, 0, Math.random() < 0.5 ? 0xff6a20 : 0x3a3030, 0.22, 0.6, { drag: 1 }); }
+      if (dis && Math.random() < dt * 14) { const [x, z] = this.toW(t.x, t.y); this.parts.spawn(x + (Math.random() - 0.5) * 0.4, 0.4, z + (Math.random() - 0.5) * 0.4, 0, 0.8, 0, Math.random() < 0.5 ? (t.disCol || 0xff6a20) : (t.disCol ? 0xffffff : 0x3a3030), 0.22, 0.6, { drag: 1 }); }
     }
     for (const [id, v] of this.towers) if (!alive.has(id)) { this.root.remove(v.g); this.towers.delete(id); }
     // Orbs
@@ -165,6 +154,12 @@ export class GameView {
       }
     }
     this.orbMesh.count = this.orbHalo.count = n; this.orbMesh.visible = this.orbHalo.visible = n > 0; this.orbMesh.instanceMatrix.needsUpdate = this.orbHalo.instanceMatrix.needsUpdate = true;
+    // Rudel-Band: feine Lichtfunken zwischen benachbarten Kreaturen (mehr, je größer das Rudel)
+    for (const pk of this.world.packs || []) if (Math.random() < dt * (1.5 + pk.grp.length * 0.4)) {
+      const [a, b] = pk.links[Math.floor(Math.random() * pk.links.length)] || []; if (!a) continue;
+      const [ax, az] = this.toW(a.x, a.y), [bx, bz] = this.toW(b.x, b.y), f = Math.random(), c = pk.grp.length >= 6 ? 0xff9bf0 : pk.grp.length >= 4 ? 0xffd257 : 0x9ff6ff;
+      this.parts.spawn(ax + (bx - ax) * f, 0.12 + Math.sin(f * PI) * 0.18, az + (bz - az) * f, 0, 0.25, 0, c, 0.09, 0.7, { drag: 1 });
+    }
     // Synergie-Funken
     if (Math.random() < dt * 3) for (const s of this.world.synergies) for (const [a, b] of s.links) {
       const [ax, az] = this.toW(a.x, a.y), [bx, bz] = this.toW(b.x, b.y), f = Math.random();
@@ -172,9 +167,38 @@ export class GameView {
     }
   }
 
+  // Ein Instanz-Puffer je Gegnerart und Pose (Körper + Umriss teilen die Matrizen)
+  makePool(k, geos, baked, spec, N) {
+    const glowK = ENEMY_GLOW[k] && !baked, alpha = ENEMY_ALPHA[k];
+    const mat = glowK ? new THREE.MeshBasicMaterial({ vertexColors: true }) : enemyMat(alpha ? { transparent: true, opacity: alpha } : {});
+    const frames = geos.map(g => {
+      const tint = new THREE.InstancedBufferAttribute(new Float32Array(N * 4), 4); tint.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aTint', tint);
+      const m = new THREE.InstancedMesh(g, mat, N); m.count = 0; m.castShadow = !glowK && !baked; m.frustumCulled = false; this.root.add(m);
+      let ol = null;
+      // Massen-LOD: vereinfachte Form, teilt Matrizen und Tönung mit dem vollen Modell
+      let lod = null, tintL = null;
+      if (baked) { g.userData.lod ||= lodGeo(g, 9); tintL = new THREE.InstancedBufferAttribute(tint.array, 4); tintL.setUsage(THREE.DynamicDrawUsage); g.userData.lod.setAttribute('aTint', tintL); lod = new THREE.InstancedMesh(g.userData.lod, mat, N); lod.instanceMatrix = m.instanceMatrix; lod.count = 0; lod.visible = false; lod.frustumCulled = false; this.root.add(lod); }
+      if (!glowK && !alpha) { ol = new THREE.InstancedMesh(g, enemyOutline(baked ? 0.016 : 0.022), N); ol.instanceMatrix = m.instanceMatrix; ol.count = 0; ol.frustumCulled = false; this.root.add(ol); }
+      return { m, ol, tint, lod, tintL };
+    });
+    let halo = null;
+    if (ENEMY_GLOW[k]) { halo = new THREE.InstancedMesh(geo.sphere(10), glow(0x7df3ff, baked ? 0.2 : 0.35), N); halo.count = 0; halo.frustumCulled = false; this.root.add(halo); }
+    return { frames, halo, cap: N, cyc: spec?.cyc ?? 1, baked: !!baked, hn: 0, geos, spec };
+  }
+  // Puffer zu klein (z. B. 150 Wölfe in Welle 56) → mit doppelter Größe neu anlegen, Geometrien bleiben
+  growPool(k) {
+    const P = this.pools[k]; if (!P) return;
+    for (const F of P.frames) { for (const x of [F.m, F.ol, F.lod]) if (x) { this.root.remove(x); x.dispose(); } }
+    if (P.halo) { this.root.remove(P.halo); P.halo.dispose(); }
+    this.pools[k] = this.makePool(k, P.geos, P.baked, P.spec, P.cap * 2);
+  }
+
   // ───────── Gegner ─────────
   syncEnemies(dt) {
+    if (this.grow?.size) { for (const k of this.grow) this.growPool(k); this.grow.clear(); }
     for (const k in this.pools) { const P = this.pools[k]; P.hn = 0; for (const F of P.frames) F.m.count = 0; }
+    // Massenmodus: ab vielen Gegnern keine Umrisse (halbiert die Dreiecke), weniger Funken
+    const nE = this.world.enemies.length, crowd = this.crowd = this.forceCrowd ?? nE > (this.stage.quality >= 2 ? 260 : 140);
     let blobs = 0;
     let crowns = 0, bars = 0;
     const camQ = this.stage.camera.quaternion;
@@ -185,14 +209,15 @@ export class GameView {
       if (e.boss || e.kind === 'oni') {
         seen.add(e.id);
         let b = this.bigs.get(e.id);
-        if (!b) { b = buildBig(e.boss ? 'vharox' : 'oni') || (e.boss ? buildDragon() : buildOni()); this.root.add(b.root); b.rise = 0; this.bigs.set(e.id, b); }
+        if (!b) { b = buildBig(e.boss ? e.kind : 'oni', e.def.model) || (e.boss ? buildDragon() : buildOni()); this.root.add(b.root); b.rise = 0; this.bigs.set(e.id, b); }
         b.rise = Math.min(1, b.rise + dt * 0.8);
-        b.root.position.set(x, -1.2 * (1 - b.rise) * (1 - b.rise), z); b.root.scale.setScalar(ENEMY_SCALE);
+        b.root.position.set(x, -1.2 * (1 - b.rise) * (1 - b.rise), z); b.root.scale.setScalar(ENEMY_SCALE * (e.def.scale || 1));
         const tr = PI / 2 - e.ang; let d = tr - b.root.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); b.root.rotation.y += d * Math.min(1, dt * 4);
         b.tick(this.t, dt, { fly: e.flying, breath: e.boss && e.roarT > 0 && e.phase >= 2, roar: e.roarT > 0, phase: e.phase, cry: e.cryT > 2.5 });
         b.flash = e.hitT > 0 ? 1 : 0;
       } else {
-        const P = this.pools[e.kind === 'bearer' && e.guard <= 0 ? 'bearerX' : e.kind]; if (!P || P.hn >= P.cap) continue;
+        const pk = e.kind === 'bearer' && e.guard <= 0 ? 'bearerX' : e.kind, P = this.pools[pk]; if (!P) continue;
+        if (P.hn >= P.cap) { (this.grow ||= new Set()).add(pk); continue; }
         // Pose: an zurückgelegten Weg gekoppelt (cyc Felder je Zyklus) oder zeitbasiert; betäubt = Standbild
         const nF = P.frames.length, ph = P.cyc ? e.d / P.cyc : (e.stunT > 0 ? 0 : this.t * 1.6 * (e.speed || 1)), F = P.frames[nF > 1 ? (Math.floor((ph + e.id * 0.618) * nF) % nF + nF) % nF : 0];
         const i = F.m.count++; P.hn++;
@@ -207,16 +232,16 @@ export class GameView {
         F.tint.array.set(T, i * 4);
         if (P.halo) { this.M.compose(this.V.set(x, (e.kind === 'wisp' ? 0.75 : (e.def.hover || 0)) + fly + 0.3, z), this.Q, this.S.setScalar(0.33 + Math.sin(this.t * 8 + e.id) * 0.03)); P.halo.setMatrixAt(P.hn - 1, this.M); }
         if (e.elite && crowns < 200) { this.M.compose(this.V.set(x, e.h * sc + fly + 0.12, z), this.Q.identity(), this.S.setScalar(1)); this.crowns.setMatrixAt(crowns++, this.M); }
-        if (e.burnT > 0 && Math.random() < dt * 8) this.parts.spawn(x, 0.4 + fly, z, 0, 0.7, 0, 0xff7a2a, 0.14, 0.4);
-        if (e.camo && e.revealT <= 0 && Math.random() < dt * 4) this.parts.spawn(x, 0.5, z, 0, 0.3, 0, 0x6a3aa0, 0.2, 0.6);
+        if (e.burnT > 0 && Math.random() < dt * (crowd ? 2 : 8)) this.parts.spawn(x, 0.4 + fly, z, 0, 0.7, 0, 0xff7a2a, 0.14, 0.4);
+        if (e.camo && e.revealT <= 0 && Math.random() < dt * (crowd ? 1 : 4)) this.parts.spawn(x, 0.5, z, 0, 0.3, 0, 0x6a3aa0, 0.2, 0.6);
       }
       // KP-Balken
       if (e.hp < e.maxHp && bars < 400 && !e.boss) {
         const w = Math.min(0.9, 0.35 + e.maxHp / 400), f = Math.max(0, e.hp / e.maxHp), y = (e.h || 0.6) * (e.elite ? 1.25 : 1) * ENEMY_SCALE + fly + 0.2 + (e.kind === 'wisp' ? 0.75 : (e.def.hover || 0));
         this.M.compose(this.V.set(x, y, z), camQ, this.S.set(w + 0.04, 0.09, 1)); this.hpBg.setMatrixAt(bars, this.M);
-        const off = new THREE.Vector3(-(w * (1 - f)) / 2, 0, 0.001).applyQuaternion(camQ);
+        const off = (this.OFF ||= new THREE.Vector3()).set(-(w * (1 - f)) / 2, 0, 0.001).applyQuaternion(camQ);
         this.M.compose(this.V.set(x + off.x, y + off.y, z + off.z), camQ, this.S.set(Math.max(0.001, w * f), 0.055, 1)); this.hpFg.setMatrixAt(bars, this.M);
-        this.hpFg.setColorAt(bars, this.C.setRGB(f > 0.5 ? (1 - f) * 2 : 1, f > 0.5 ? 1 : f * 2, 0.25).multiplyScalar(e.shield > 0 ? 0.6 : 1).add(e.shield > 0 ? new THREE.Color(0.3, 0.2, 0.5) : new THREE.Color(0, 0, 0)));
+        this.hpFg.setColorAt(bars, this.C.setRGB(f > 0.5 ? (1 - f) * 2 : 1, f > 0.5 ? 1 : f * 2, 0.25).multiplyScalar(e.shield > 0 ? 0.6 : 1)); if (e.shield > 0) { this.C.r += 0.3; this.C.g += 0.2; this.C.b += 0.5; } this.hpFg.setColorAt(bars, this.C);
         bars++;
       }
     }
@@ -224,7 +249,11 @@ export class GameView {
     for (const [id, b] of this.bigs) if (!seen.has(id)) { this.root.remove(b.root); this.bigs.delete(id); }
     for (const k in this.pools) {
       const P = this.pools[k];
-      for (const F of P.frames) { F.m.instanceMatrix.needsUpdate = true; F.tint.needsUpdate = true; F.m.visible = F.m.count > 0; if (F.ol) { F.ol.count = F.m.count; F.ol.visible = F.m.visible; } }
+      for (const F of P.frames) {
+        F.m.instanceMatrix.needsUpdate = true; F.tint.needsUpdate = true; const on = F.m.count > 0;
+        if (F.lod) { F.lod.count = F.m.count; F.lod.visible = on && crowd; F.tintL.needsUpdate = true; F.m.visible = on && !crowd; } else F.m.visible = on;
+        if (F.ol) { F.ol.count = F.m.count; F.ol.visible = on && !crowd; }
+      }
       if (P.halo) { P.halo.count = P.hn; P.halo.instanceMatrix.needsUpdate = true; P.halo.visible = P.hn > 0; }
     }
     this.crowns.count = crowns; this.crowns.visible = crowns > 0; this.crowns.instanceMatrix.needsUpdate = true;
@@ -333,7 +362,7 @@ export class GameView {
       case 'bolt': {
         this.atkStart(ev.tower, 0x9fe8ff);
         const pts = ev.pts.map((p, i) => { const [x, z] = at(p.x, p.y); return { x, z, y: i === 0 ? 0.8 : 0.45 }; });
-        this.bolts.add(pts, 0xffffff, 0.025, 0.12); this.bolts.add(pts, 0x5ab8ff, 0.07, 0.09);
+        const lt = ev.tower.s?.dmgType === 'light' || ev.tower.cid === 'kirin'; this.bolts.add(pts, 0xffffff, 0.025, 0.12); this.bolts.add(pts, lt ? 0xffd257 : 0x5ab8ff, 0.07, 0.09);
         for (const p of pts.slice(1)) { this.flashes.add(p.x, 0.45, p.z, 0x9fe8ff, 0.3, 0.09); this.sparks.fan(p.x, 0.45, p.z, 1, 0, [0xffffff, 0x9fe8ff], 3, 2.6, PI, { up: 0.8 }); }
         break;
       }
@@ -392,6 +421,29 @@ export class GameView {
         this.stage.focus = new THREE.Vector3(x, h, z); this.stage.zoomPunch = 1;
         break;
       }
+      case 'fuse': {
+        const t = ev.tower, [x, z] = at(t.x, t.y), [gx, gz] = at(ev.gone.x, ev.gone.y), h = this.ty(t), v = this.towers.get(t.id);
+        const cA = new THREE.Color(ev.def.color).getHex(), cB = new THREE.Color(CREATURES[ev.def.parents[1]].color).getHex();
+        // Essenz der zweiten Kreatur fliegt in einem Bogen hinüber
+        for (let i = 0; i < 40; i++) this.after(i * 0.012, () => { const f = Math.random(); P.spawn(gx + (x - gx) * f * 0.2, h + 0.5, gz + (z - gz) * f * 0.2, (x - gx) * 2.2, 1.6 + Math.random(), (z - gz) * 2.2, i % 2 ? cB : 0xffffff, 0.2, 0.5, { grav: 6, drag: 0.4 }); });
+        this.flashes.add(gx, h + 0.5, gz, cB, 1.4, 0.35);
+        this.after(0.45, () => {
+          if (v) v.evoT = 0.6;
+          this.pillars.add(x, z, 0.7, 10, cA, 1.6); this.pillars.add(x, z, 0.35, 10, cB, 1.3, 0.1);
+          this.flashes.add(x, h + 0.7, z, 0xffffff, 3, 0.4); this.flashes.add(x, h + 0.7, z, cB, 2.2, 0.6, { delay: 0.1 });
+          for (let i = 0; i < 80; i++) { const a = i * 0.4, r = 0.5 + (i % 7) * 0.06; P.spawn(x + Math.cos(a) * r, h + 0.1 + i * 0.015, z + Math.sin(a) * r, -Math.sin(a) * 1.8, 2.4, Math.cos(a) * 1.8, i % 2 ? cA : cB, 0.2, 1.1, { drag: 0.8 }); }
+        });
+        this.after(1.05, () => {
+          P.burst(x, h + 0.6, z, [0xffffff, cA, cB], 110, 5.5, 0.3, 1.0, { up: 1.2 });
+          this.rings.add(x, h + 0.06, z, 0.3, 4.5, cA, 0.8); this.rings.add(x, h + 0.08, z, 0.3, 3.2, cB, 0.6, { delay: 0.12 });
+          this.sparks.fan(x, h + 0.6, z, 0, 0, cB, 34, 7, PI, { up: 0.5 });
+          this.floaters.add(x, 1.6, z, 'FUSION! ' + ev.def.name, 'lvl', 1.6); this.stage.addShake(0.9);
+        });
+        this.stage.focus = new THREE.Vector3(x, h, z); this.stage.zoomPunch = 1;
+        break;
+      }
+      case 'gust': { for (let i = 0; i < 60; i++) this.after(i * 0.05, () => { const z = (Math.random() - 0.5) * 13; this.sparks.add(-12, 0.3 + Math.random() * 1.5, z, 16 + Math.random() * 6, 0, (Math.random() - 0.5) * 1.5, 0xffffff, 0.9, 0.025); }); break; }
+      case 'storm': { if (ev.on) { this.flashSky = 0.08; for (let i = 0; i < 40; i++) this.parts.spawn(-12, 1 + Math.random() * 3, (Math.random() - 0.5) * 14, 6 + Math.random() * 3, -0.5, 0.5, 0xffffff, 0.12, 3, { drag: 0.02 }); } break; }
       case 'sell': { const [x, z] = at(ev.tower.x, ev.tower.y); P.burst(x, 0.4, z, [0xffd257, 0xffffff], 20, 2.5, 0.16, 0.6, { grav: 3, up: 1.5 }); this.floaters.add(x, 0.9, z, '+' + ev.value, 'coin', 0.9); break; }
       case 'rock': { this.map.removeRock(ev.cx, ev.cy); const [x, z] = at(ev.cx + 0.5, ev.cy + 0.5); P.burst(x, 0.3, z, [0x9a9aa0, 0xc8c0b0], 30, 3, 0.25, 0.7, { grav: 6, up: 1.5 }); this.stage.addShake(0.3); break; }
       case 'boss': case 'spawn': {
@@ -401,11 +453,11 @@ export class GameView {
       case 'bossPhase': { const [x, z] = at(ev.e.x, ev.e.y); this.rings.add(x, 0.06, z, 0.4, 5, 0xff3a20, 0.8); P.burst(x, 1.5, z, [0xff6a20, 0xffd27a], 60, 5, 0.3, 0.8); this.stage.addShake(1); this.stage.focus = new THREE.Vector3(x, 0, z); this.stage.zoomPunch = 0.8; break; }
       case 'bossFly': { const [x, z] = at(ev.e.x, ev.e.y); P.burst(x, 0.2, z, [0xc8b8a8, 0x8a7a6a], 40, 4, 0.3, 0.7, { flat: true }); break; }
       case 'breath': {
-        const [bx, bz] = at(ev.e.x, ev.e.y);
+        const [bx, bz] = at(ev.e.x, ev.e.y), bc = ev.e.def.breathColor;
         for (const t of ev.targets) {
           const [x, z] = at(t.x, t.y);
-          for (let i = 0; i < 40; i++) { const f = i / 40; P.spawn(bx + (x - bx) * f + (Math.random() - 0.5) * 0.3, 1.8 - f * 1.3, bz + (z - bz) * f + (Math.random() - 0.5) * 0.3, (x - bx) * 0.8, 0.5, (z - bz) * 0.8, f < 0.5 ? 0xffd27a : 0xff4a10, 0.35, 0.5 + f * 0.4); }
-          this.rings.add(x, 0.06, z, 0.2, 1, 0xff4a10, 0.6);
+          for (let i = 0; i < 40; i++) { const f = i / 40; P.spawn(bx + (x - bx) * f + (Math.random() - 0.5) * 0.3, 1.8 - f * 1.3, bz + (z - bz) * f + (Math.random() - 0.5) * 0.3, (x - bx) * 0.8, 0.5, (z - bz) * 0.8, f < 0.5 ? (bc ? 0xffffff : 0xffd27a) : (bc || 0xff4a10), 0.35, 0.5 + f * 0.4); }
+          this.rings.add(x, 0.06, z, 0.2, 1, bc || 0xff4a10, 0.6); if (bc) { this.flashes.add(x, 0.6, z, bc, 1.2, 0.4); P.burst(x, 0.5, z, [0xffffff, bc], 18, 2, 0.15, 0.8, { up: 0.6 }); }
         }
         this.stage.addShake(0.5);
         break;
@@ -430,6 +482,26 @@ export class GameView {
         for (let i = 0; i < 36; i++) { const a = i / 36 * PI * 2; this.sparks.add(tx, 0.5, tz, Math.cos(a) * 14, 1.5, Math.sin(a) * 14, i % 2 ? 0xffe27a : 0xff7a2a, 0.35, 0.05); }
         P.burst(tx, 0.4, tz, [0xffd27a, 0xff7a2a, 0xff3a10], 60, 5, 0.22, 0.8, { flat: true });
         this.flashSky = 0.35; this.stage.addShake(0.6); break;
+      }
+      case 'hex': { // Fluch: violetter Bannkreis, Giftnebel springt auf jedes Ziel
+        this.rings.add(tx, 0.06, tz, 0.3, ev.r, 0xc08aff, 0.7); this.rings.add(tx, 0.05, tz, 0.3, ev.r, 0x3fd06a, 0.9, { disc: true, alpha: 0.25 });
+        this.flashes.add(tx, 0.8, tz, 0xc08aff, 1.8, 0.3);
+        ev.pts.forEach((p, i) => this.after(0.05 + i * 0.02, () => { const [x, z] = this.toW(p.x, p.y); this.flashes.add(x, 0.5, z, 0x8aff6a, 0.9, 0.3); P.burst(x, 0.4, z, [0x8aff6a, 0xc08aff, 0x2a6a3a], 10, 1.4, 0.2, 0.9, { up: 0.8, drag: 1.5 }); this.floaters.add(x, 1, z, 'Fluch', 'react', 0.7); }));
+        this.stage.addShake(0.35); break;
+      }
+      case 'tornado': { // Wirbelsturm: drehende Windringe steigen auf, Funken kreisen nach außen
+        for (let i = 0; i < 5; i++) this.after(i * 0.07, () => this.rings.add(tx, 0.1 + i * 0.25, tz, 0.4 + i * 0.15, ev.r * (0.5 + i * 0.1), 0xdff8ff, 0.6));
+        for (let i = 0; i < 70; i++) { const a = i * 0.35, r = 0.3 + (i % 10) * 0.12; P.spawn(tx + Math.cos(a) * r, 0.1 + i * 0.025, tz + Math.sin(a) * r, -Math.sin(a) * 5, 1.5, Math.cos(a) * 5, i % 3 ? 0xdff8ff : 0x8fe0ff, 0.18, 0.9, { drag: 0.6 }); }
+        for (let i = 0; i < 30; i++) { const a = i / 30 * PI * 2; this.sparks.add(tx, 0.4, tz, Math.cos(a) * 11, 0.5, Math.sin(a) * 11, 0xffffff, 0.3, 0.04); }
+        this.stage.addShake(0.5); break;
+      }
+      case 'rift': { // Realitätsriss: Spalt öffnet sich über dem Ziel, Lichtstrahl, Sterne werden hineingesogen
+        const [x, z] = this.toW(ev.x, ev.y);
+        this.flashes.add(tx, 0.7, tz, 0xa070ff, 1.2, 0.25);
+        for (let i = 0; i < 40; i++) { const a = i / 40 * PI * 2, r = 1.4; P.spawn(x + Math.cos(a) * r, 0.5 + (i % 4) * 0.2, z + Math.sin(a) * r, -Math.cos(a) * 4, 0, -Math.sin(a) * 4, i % 2 ? 0xffffff : 0xa070ff, 0.14, 0.35, { drag: 0.2 }); }
+        this.after(0.3, () => { this.pillars.add(x, z, 0.5, 6, 0x6a20ff, 1.0); this.pillars.add(x, z, 0.22, 6, 0xffffff, 0.8, 0.05); this.flashes.add(x, 0.8, z, 0xffffff, 3, 0.4); this.flashes.add(x, 0.8, z, 0xa070ff, 2.2, 0.6, { delay: 0.08 });
+          this.rings.add(x, 0.06, z, 0.2, 2, 0xa070ff, 0.6); this.sparks.fan(x, 0.7, z, 0, 0, 0xcfb0ff, 26, 8, PI); this.flashSky = 0.3; this.stage.addShake(0.8); });
+        break;
       }
       case 'goldrain': {
         this.rings.add(tx, 0.06, tz, 0.2, 2.6, 0xffd257, 0.7);
@@ -463,6 +535,19 @@ export class GameView {
       case 'fortress': { this.rings.add(tx, 0.06, tz, 0.3, 3.5, 0xbfe8ff, 0.6); this.rings.add(tx, 0.05, tz, 0.3, 3.5, 0x6ab0d0, 0.7, { disc: true, alpha: 0.4 }); P.burst(tx, 0.2, tz, [0xc8b090, 0x8a7a68, 0xffffff], 90, 6, 0.3, 0.8, { flat: true }); this.stage.addShake(1); break; }
       case 'blessing': { this.rings.add(tx, 0.06, tz, 0.3, 3.5, 0x9aff9a, 1.0); for (let i = 0; i < 80; i++) { const a = Math.random() * PI * 2, r = Math.random() * 3.5; P.spawn(tx + Math.cos(a) * r, 0.1, tz + Math.sin(a) * r, 0, 1.2 + Math.random(), 0, i % 2 ? 0xffa8c8 : 0x9aff9a, 0.16, 1.4, { drag: 0.5 }); } break; }
       case 'eclipse': { this.darken = 2.2; for (const e of this.world.enemies) { const [x, z] = this.toW(e.x, e.y); P.burst(x, 0.6, z, 0xb07bff, 8, 1.5, 0.18, 0.6); } this.stage.addShake(0.4); break; }
+      case 'flood': { for (let i = 0; i < 3; i++) this.after(i * 0.1, () => this.rings.add(tx, 0.1, tz, 0.3, ev.r * (0.6 + i * 0.2), i ? 0x7ad8ff : 0xdff8ff, 0.6)); this.rings.add(tx, 0.05, tz, 0.3, ev.r, 0x3a9ad8, 0.9, { disc: true, alpha: 0.4 }); for (let i = 0; i < 100; i++) { const a = Math.random() * PI * 2, r = Math.random() * ev.r; P.spawn(tx + Math.cos(a) * r, 0.15, tz + Math.sin(a) * r, Math.cos(a) * 2.5, 1.5 + Math.random() * 1.5, Math.sin(a) * 2.5, i % 2 ? 0x9fe8ff : 0xffffff, 0.14, 0.8, { grav: 6 }); } this.stage.addShake(0.5); break; }
+      case 'radiance': { this.pillars.add(tx, tz, 0.5, 6, 0xffe27a, 1.0); this.flashes.add(tx, 1, tz, 0xfff2a8, 2.6, 0.35); this.rings.add(tx, 0.06, tz, 0.3, ev.r, 0xffd257, 0.9); for (let i = 0; i < 24; i++) { const a = i / 24 * PI * 2; this.sparks.add(tx, 0.6, tz, Math.cos(a) * 9, 2, Math.sin(a) * 9, 0xfff2a8, 0.35, 0.05); } for (const o of this.world.towers) if (Math.hypot(o.x - ev.tower.x, o.y - ev.tower.y) <= ev.r) { const [x, z] = this.toW(o.x, o.y); this.pillars.add(x, z, 0.25, 1.6, 0xffd257, 0.8); } this.flashSky = 0.3; break; }
+      case 'guardbite': { const [x, z] = this.toW(ev.x, ev.y); for (let k = 0; k < 2; k++) this.arcs.add(x, 0.6 - k * 0.2, z, Math.atan2(z - tz, x - tx) + (k ? PI : 0), 0xffd257, 0.6, 0.25, 0.2, k ? -1 : 1); this.flashes.add(x, 0.6, z, 0xffffff, 1.8, 0.25); P.burst(x, 0.5, z, [0xd8c8a8, 0xffd257, 0xffffff], 30, 3, 0.18, 0.6); this.stage.addShake(0.6); break; }
+      case 'volley': { const [x, z] = this.toW(ev.x, ev.y); for (let i = 0; i < 24; i++) this.after(i * 0.025, () => { const ox = (Math.random() - 0.5) * 3.4, oz = (Math.random() - 0.5) * 3.4; this.sparks.add(x + ox - 1, 4, z + oz - 0.5, 5, -20, 2.5, 0xf0e0c0, 0.2, 0.06); this.after(0.18, () => P.burst(x + ox, 0.1, z + oz, [0xd8c8a0, 0xffffff], 5, 1.5, 0.1, 0.3, { flat: true })); }); break; }
+      case 'skyshot': { this.runGhost(this.ghostFox, 'path', 1.0, 0x8fe0a0); this.flashSky = 0.4; this.stage.addShake(0.8); break; }
+      case 'puppets': { for (let i = 0; i < 3; i++) { const a = i * 2.1; P.burst(tx + Math.cos(a) * 0.9, 0.5, tz + Math.sin(a) * 0.9, [0x2a1a3a, 0xb07bff], 24, 2, 0.25, 0.7); this.flashes.add(tx + Math.cos(a) * 0.9, 0.6, tz + Math.sin(a) * 0.9, 0xb07bff, 0.9, 0.3); } break; }
+      case 'bind': { this.darken = 2; ev.targets.forEach((p, i) => this.after(i * 0.01, () => { const [x, z] = this.toW(p.x, p.y); this.bolts.add([{ x: tx, z: tz, y: 1.2 }, { x, z, y: 0.6 }], 0xb07bff, 0.02, 0.6); this.rings.add(x, 0.07, z, 0.2, 0.7, 0x6a2aa8, 1.0); })); this.stage.addShake(0.6); break; }
+      case 'petals': { for (let i = 0; i < 4; i++) this.after(i * 0.08, () => this.arcs.add(tx, 0.45, tz, i * 1.6, 0xffb8d4, 1.2 + i * 0.5, 0.25, 0.3, i % 2 ? 1 : -1)); for (let i = 0; i < 90; i++) { const a = Math.random() * PI * 2, r = Math.random() * 3; P.spawn(tx + Math.cos(a) * r, 0.3 + Math.random() * 0.6, tz + Math.sin(a) * r, -Math.sin(a) * 3, 0.6, Math.cos(a) * 3, i % 3 ? 0xffb8d4 : 0xffffff, 0.12, 1.0, { drag: 0.8 }); } this.stage.addShake(0.4); break; }
+      case 'thousand': { ev.targets.forEach((p, i) => this.after(i * 0.06, () => { const [x, z] = this.toW(p.x, p.y); for (let k = 0; k < 3; k++) this.arcs.add(x, 0.5, z, Math.random() * PI * 2, k ? 0xffb8d4 : 0xffffff, 0.7, 0.2, 0.6, k % 2 ? 1 : -1); this.flashes.add(x, 0.6, z, 0xffffff, 1.1, 0.2); })); this.darken = 0.8; this.stage.addShake(0.8); break; }
+      case 'wall': { this.rings.add(tx, 0.06, tz, 0.3, ev.r, 0xc8a070, 0.8); for (let i = 0; i < 18; i++) { const a = i / 18 * PI * 2, x = tx + Math.cos(a) * ev.r * 0.8, z = tz + Math.sin(a) * ev.r * 0.8; this.after(i * 0.02, () => { this.pillars.add(x, z, 0.18, 0.9, 0x9a8a78, 1.6); P.burst(x, 0.2, z, [0xc8b090, 0x8a7a68], 8, 2, 0.2, 0.6, { grav: 6, up: 1.5 }); }); } this.stage.addShake(0.7); break; }
+      case 'meteor': { const [x, z] = this.toW(ev.x, ev.y); for (let i = 0; i < 24; i++) this.after(i * 0.025, () => P.spawn(x - 4 + i * 0.16, 7 - i * 0.28, z - 2 + i * 0.08, 0, 0, 0, i % 2 ? 0xff8a2a : 0xffd27a, 0.5 - i * 0.012, 0.35)); this.after(0.65, () => { this.flashes.add(x, 0.8, z, 0xffd27a, 4, 0.45); this.rings.add(x, 0.06, z, 0.3, ev.r * 1.3, 0xff8a2a, 0.7); this.rings.add(x, 0.05, z, 0.3, ev.r, 0x8a5a3a, 0.9, { disc: true, alpha: 0.5 }); P.burst(x, 0.3, z, [0xff8a2a, 0xffd27a, 0x6a5a48], 140, 8, 0.3, 1.0, { up: 2, grav: 5 }); this.sparks.fan(x, 0.4, z, 0, 0, 0xffb050, 40, 10, PI); this.flashSky = 0.5; this.stage.addShake(1.4); }); break; }
+      case 'veil': { this.darken = 1.6; this.rings.add(tx, 0.06, tz, 0.3, ev.r, 0x9fb4ff, 1.0); this.rings.add(tx, 0.05, tz, 0.3, ev.r, 0x3a4a9a, 1.2, { disc: true, alpha: 0.35 }); for (const e of this.world.enemies) if (Math.hypot(e.x - ev.tower.x, e.y - ev.tower.y) < ev.r) { const [x, z] = this.toW(e.x, e.y); this.flashes.add(x, 0.6, z, 0x9fb4ff, 0.8, 0.4); } break; }
+      case 'starfall': { this.darken = 1.4; ev.targets.forEach((p, i) => this.after(i * 0.05, () => { const [x, z] = this.toW(p.x, p.y); this.sparks.add(x - 0.8, 4, z - 0.4, 6, -22, 3, 0xfff2a8, 0.2, 0.05); this.after(0.16, () => { this.flashes.add(x, 0.4, z, i % 2 ? 0x9fb4ff : 0xfff2a8, 1.1, 0.3); P.burst(x, 0.3, z, [0xffffff, 0x9fb4ff], 10, 2.5, 0.15, 0.5); }); })); this.flashSky = 0.3; break; }
       case 'clones': { for (let i = 0; i < 3; i++) { const a = i * 2.1; P.burst(tx + Math.cos(a) * 0.9, 0.5, tz + Math.sin(a) * 0.9, [0x3a3a48, 0xffffff], 20, 2, 0.25, 0.6); } break; }
       case 'whirl': { this.runGhost(this.ghostFire, 'path', 1.1, 0xff8a2a); this.stage.addShake(0.6); break; }
       case 'blizzard': { this.rings.add(tx, 0.06, tz, 0.3, ev.r, 0xbff4ff, 0.8); this.rings.add(tx, 0.05, tz, 0.3, ev.r, 0x7ad0ff, 0.9, { disc: true, alpha: 0.5 }); for (let i = 0; i < 120; i++) { const a = Math.random() * PI * 2, r = Math.random() * ev.r; P.spawn(tx + Math.cos(a) * r, 2 + Math.random() * 2, tz + Math.sin(a) * r, 0.5, -2, 0, i % 2 ? 0xffffff : 0xbff4ff, 0.14, 1.4, { drag: 0.3 }); } this.flashSky = 0.6; this.stage.addShake(0.7); break; }
@@ -512,6 +597,7 @@ export class GameView {
     if (this.petalT > 0.12 && this.stage.quality > 0) {
       this.petalT = 0;
       if (this.ash) this.parts.spawn((Math.random() - 0.5) * 20, 0.1, (Math.random() - 0.5) * 12, 0.15, 0.5 + Math.random() * 0.4, 0, Math.random() < 0.6 ? 0xff8a2a : 0x6a5a58, 0.07, 5, { drag: 0.05 });
+      else if (this.snow) { const st = this.world.stormT > 0; for (let i = 0; i < (st ? 7 : 2); i++) this.parts.spawn((Math.random() - 0.5) * 24, 2.5 + Math.random() * 2.5, (Math.random() - 0.5) * 14, st ? 3.5 : 0.3, st ? -1.4 : -0.45, st ? 0.6 : 0.1, Math.random() < 0.8 ? 0xffffff : 0xcfeaff, st ? 0.08 : 0.07, 5, { drag: 0.02 }); }
       else this.parts.spawn((Math.random() - 0.5) * 14, 3 + Math.random() * 2, (Math.random() - 0.5) * 18, 0.4, -0.35, 0.2, Math.random() < 0.7 ? 0xffb8d0 : 0xffffff, 0.09, 6, { drag: 0.05 });
     }
     this.parts.update(dt); this.rings.update(dt); this.bolts.update(dt); this.pillars.update(dt);

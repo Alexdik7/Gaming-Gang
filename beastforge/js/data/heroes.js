@@ -85,4 +85,134 @@ HEROES.mika = {
     win: ['Alle in Sicherheit. Gut gemacht!'], ascend: ['Die Lotusflügel tragen mich!'], master: ['Der Teich singt mit mir.'],
   },
 };
+HEROES.hana = {
+  id: 'hana', name: 'Hana', title: 'Blütenklinge', model: 'hana', color: '#ff7ab0',
+  personality: 'Fröhlich, schnell gelangweilt – und schneller mit dem Schwert als mit Worten.',
+  lore: 'Hana trainierte unter den Kirschbäumen des Dorfes, bis die Blüten nicht mehr fielen, ohne zerschnitten zu werden. Sie kämpft am liebsten mitten im Getümmel.',
+  place: ['ground', 'high'],
+  base: { atk: 'slash', dmg: 7, rate: 2.2, range: 1.6, dmgType: 'phys', cleave: 1 },
+  milestones: [
+    { lvl: 1,  name: 'Blütenklinge', desc: 'Schnelle Schwerthiebe treffen Gegner im Bogen.' },
+    { lvl: 3,  name: 'Tanz der Klingen', desc: 'Passiv: Tempo ×1,15.', fx: { mul: { rate: 1.15 } } },
+    { lvl: 5,  name: 'Blütensturm', desc: 'Fähigkeit: Ein Wirbel aus Klingen trifft alles im Umkreis schwer und lässt es bluten.', ability: 'petals' },
+    { lvl: 7,  name: 'Kirschblütenblick', desc: 'Erkennt Getarnte, +0,3 Reichweite.', fx: { set: { camo: true }, add: { range: 0.3 } } },
+    { lvl: 10, name: 'Tausend Schnitte', desc: 'Ultimate: Hana trifft die 12 stärksten Gegner auf der ganzen Karte.', ultimate: 'thousand' },
+    { lvl: 12, name: 'Meisterschnitt', desc: 'Breiterer Bogen, 20 % Krit.', fx: { add: { cleave: 1, 'crit.ch': 0.2 } } },
+    { lvl: 15, name: 'Aufstieg', desc: 'Blütenaura: Schaden ×1,3, Tempo ×1,15.', fx: { mul: { dmg: 1.3, rate: 1.15 } }, form: 1 },
+    { lvl: 20, name: 'Meisterform', desc: 'Sakura-Schwertheilige: Schaden ×1,6, Abklingzeiten −30 %.', fx: { mul: { dmg: 1.6 } }, form: 2, cdr: 0.3 },
+  ],
+  abilities: {
+    petals: { name: 'Blütensturm', cd: 35, mul: 10, desc: 'Alles im Umkreis von 3 Feldern: Schaden ×10 und Blutung.' },
+    thousand: { name: 'Tausend Schnitte', cd: 80, mul: 25, desc: 'Trifft die 12 stärksten Gegner (×25).' },
+  },
+  lines: {
+    place: ['Endlich was los!', 'Ich nehme die vorne!', 'Klinge bereit!'], level: ['Schneller!', 'Noch mal!'], boss: ['Großes Ziel – großer Spaß!'],
+    ability: ['Blütensturm!', 'Tanzt mit mir!'], ult: ['Tausend Schnitte!'], leak: ['Mist, zu langsam!'],
+    win: ['Das war ein Tanz!'], ascend: ['Die Kirschblüten tragen mich!'], master: ['Ein Schnitt – ein Frühling.'],
+  },
+};
+HEROES.goro = {
+  id: 'goro', name: 'Gorō', title: 'Steinmönch', model: 'goro', color: '#c8a070',
+  personality: 'Langsam, freundlich, unerschütterlich – wie ein Berg mit Humor.',
+  lore: 'Gorō meditierte dreißig Jahre auf einem Gipfel, bis der Berg begann, ihm zuzuhören. Wo er auf den Boden stampft, steht die Welt für einen Herzschlag still.',
+  place: ['ground', 'high'],
+  base: { atk: 'pulse', dmg: 14, rate: 0.6, range: 1.9, dmgType: 'earth', flying: false, 'stun.ch': 0.1, 'stun.dur': 0.6 },
+  milestones: [
+    { lvl: 1,  name: 'Erdstampfer', desc: 'Schockwellen um ihn herum betäuben manchmal (keine Fliegenden).' },
+    { lvl: 3,  name: 'Felshaut', desc: 'Passiv: Kreaturen in der Nähe können nicht gelähmt werden (Boss-Atem).', fx: { add: { 'support.range': 2.4 }, set: { 'support.protect': true } } },
+    { lvl: 5,  name: 'Steinwall', desc: 'Fähigkeit: Alle Gegner in der Nähe erstarren 3 s und nehmen schweren Erdschaden.', ability: 'wall' },
+    { lvl: 7,  name: 'Bergsicht', desc: 'Erkennt Getarnte, +0,3 Reichweite.', fx: { set: { camo: true }, add: { range: 0.3 } } },
+    { lvl: 10, name: 'Meteor', desc: 'Ultimate: Ein Meteor schlägt in die dichteste Gegnergruppe ein.', ultimate: 'meteor' },
+    { lvl: 12, name: 'Tiefes Beben', desc: '+10 % Betäubung, Schaden ×1,2.', fx: { add: { 'stun.ch': 0.1 }, mul: { dmg: 1.2 } } },
+    { lvl: 15, name: 'Aufstieg', desc: 'Granitaura: Schaden ×1,3, Aura +8 % Schaden.', fx: { mul: { dmg: 1.3 }, add: { 'support.dmg': 0.08 } }, form: 1 },
+    { lvl: 20, name: 'Meisterform', desc: 'Herr der Berge: Schaden ×1,6, Abklingzeiten −30 %.', fx: { mul: { dmg: 1.6 } }, form: 2, cdr: 0.3 },
+  ],
+  abilities: {
+    wall: { name: 'Steinwall', cd: 40, mul: 6, desc: 'Gegner im Umkreis 3,2: Schaden ×6, 3 s Erstarren (Bosse verlangsamt).' },
+    meteor: { name: 'Meteor', cd: 80, mul: 40, desc: 'Meteor in die dichteste Gruppe: ×40 Schaden im Umkreis 2,5 + Brand.' },
+  },
+  lines: {
+    place: ['Hmm. Guter Boden hier.', 'Ich bleibe stehen.', 'Der Berg ist da.'], level: ['Langsam, aber stetig.', 'Hoho!'], boss: ['Auch Berge fallen nicht.'],
+    ability: ['Steh still!', 'Steinwall!'], ult: ['Vom Himmel – ein Stein!'], leak: ['Hm. Das war ein Kiesel.'],
+    win: ['Der Berg hat gehalten.'], ascend: ['Granit in meinen Adern.'], master: ['Ich bin der Berg.'],
+  },
+};
+HEROES.yoru = {
+  id: 'yoru', name: 'Yoru', title: 'Mondmagierin', model: 'yoru', color: '#9fb4ff',
+  personality: 'Verträumt, leise, sieht Dinge, die andere übersehen.',
+  lore: 'Yoru liest die Sterne wie andere Leute Bücher. Wenn sie einen Gegner ansieht, weiß sie bereits, wo er verwundbar ist.',
+  place: ['ground', 'high', 'water'],
+  base: { proj: 'star', dmg: 7, rate: 1.0, range: 3.3, speed: 12, dmgType: 'astral', mark: 0.1 },
+  milestones: [
+    { lvl: 1,  name: 'Sternenschuss', desc: 'Astralsterne (ignorieren Widerstände), Getroffene nehmen +10 % Schaden.' },
+    { lvl: 3,  name: 'Mondlicht', desc: 'Passiv: Kreaturen in der Nähe +10 % Reichweite.', fx: { add: { 'support.range': 2.6, 'support.rng': 0.1 } } },
+    { lvl: 5,  name: 'Mondschleier', desc: 'Fähigkeit: Gegner in der Nähe werden enttarnt und nehmen 8 s lang +50 % Schaden.', ability: 'veil' },
+    { lvl: 7,  name: 'Zwillingssterne', desc: '+1 Stern pro Schuss, erkennt Getarnte.', fx: { add: { shots: 1 }, set: { camo: true } } },
+    { lvl: 10, name: 'Sternenfall', desc: 'Ultimate: 30 Sterne fallen auf zufällige Gegner der ganzen Karte.', ultimate: 'starfall' },
+    { lvl: 12, name: 'Tiefe Deutung', desc: 'Verwundbarkeit +10 %, Aura +5 % Schaden.', fx: { add: { mark: 0.1, 'support.dmg': 0.05 } } },
+    { lvl: 15, name: 'Aufstieg', desc: 'Sternenmantel: Schaden ×1,3, +1 Stern.', fx: { mul: { dmg: 1.3 }, add: { shots: 1 } }, form: 1 },
+    { lvl: 20, name: 'Meisterform', desc: 'Herrin der Nacht: Schaden ×1,6, Abklingzeiten −30 %.', fx: { mul: { dmg: 1.6 } }, form: 2, cdr: 0.3 },
+  ],
+  abilities: {
+    veil: { name: 'Mondschleier', cd: 40, desc: 'Gegner im Umkreis 4: enttarnt, +50 % Schaden für 8 s.' },
+    starfall: { name: 'Sternenfall', cd: 85, mul: 18, desc: '30 Sterne auf zufällige Gegner (×18).' },
+  },
+  lines: {
+    place: ['Die Sterne stehen günstig.', 'Ich sehe euren Weg.', 'Die Nacht ist mit uns.'], level: ['Klarer…', 'Ich sehe mehr.'], boss: ['Auch er hat einen Stern – und der fällt.'],
+    ability: ['Mondschleier.', 'Zeig dich.'], ult: ['Sternenfall!'], leak: ['Das stand nicht in den Sternen…'],
+    win: ['Wie vorhergesagt.'], ascend: ['Der Mond leuchtet durch mich.'], master: ['Ich bin die Nacht.'],
+  },
+};
+HEROES.sora = {
+  id: 'sora', name: 'Sora', title: 'Windbogenschützin', model: 'sora', color: '#8fe0a0',
+  personality: 'Ruhig, geduldig, lacht selten – aber wenn, dann laut.',
+  lore: 'Sora wuchs auf den Himmelsinseln auf, wo der Wind jedem Pfeil eine Richtung gibt. Sie trifft eine Kirsche auf hundert Schritt – im Sturm.',
+  place: ['ground', 'high'],
+  base: { proj: 'arrow', dmg: 8, rate: 1.2, range: 4.0, speed: 22, pierce: 3, dmgType: 'phys' },
+  milestones: [
+    { lvl: 1,  name: 'Windpfeil', desc: 'Sehr weite Reichweite, Pfeile durchbohren 3 Gegner.' },
+    { lvl: 3,  name: 'Adlerauge', desc: 'Erkennt Getarnte, +0,5 Reichweite.', fx: { set: { camo: true }, add: { range: 0.5 } } },
+    { lvl: 5,  name: 'Pfeilregen', desc: 'Fähigkeit: 24 Pfeile regnen auf die dichteste Gegnergruppe.', ability: 'volley' },
+    { lvl: 7,  name: 'Doppelsehne', desc: '+1 Pfeil pro Schuss.', fx: { add: { shots: 1, spread: 0.12 } } },
+    { lvl: 10, name: 'Himmelspfeil', desc: 'Ultimate: Ein riesiger Pfeil fliegt den ganzen Pfad entlang und trifft jeden Gegner darauf.', ultimate: 'skyshot' },
+    { lvl: 12, name: 'Sturmsehne', desc: '+20 % Krit, +2 Durchschlag.', fx: { add: { 'crit.ch': 0.2, pierce: 2 } } },
+    { lvl: 15, name: 'Aufstieg', desc: 'Windschwingen: Schaden ×1,3, Tempo ×1,15.', fx: { mul: { dmg: 1.3, rate: 1.15 } }, form: 1 },
+    { lvl: 20, name: 'Meisterform', desc: 'Herrin der Böen: Schaden ×1,6, +1 Pfeil, Abklingzeiten −30 %.', fx: { mul: { dmg: 1.6 }, add: { shots: 1 } }, form: 2, cdr: 0.3 },
+  ],
+  abilities: {
+    volley: { name: 'Pfeilregen', cd: 35, mul: 5, desc: '24 Pfeile (je ×5) auf die dichteste Gruppe.' },
+    skyshot: { name: 'Himmelspfeil', cd: 80, mul: 22, desc: 'Trifft jeden Gegner auf dem Pfad (×22) und wirft ihn zurück.' },
+  },
+  lines: {
+    place: ['Wind von links. Gut.', 'Ich sehe alles von hier.', 'Bereit.'], level: ['Weiter.', 'Schärfer!'], boss: ['Großes Ziel. Kein Problem.'],
+    ability: ['Pfeilregen!', 'Deckung!'], ult: ['Himmelspfeil!'], leak: ['Der Wind hat gedreht…'],
+    win: ['Kein Pfeil verschwendet.'], ascend: ['Der Wind trägt mich!'], master: ['Ich bin der Sturm über den Inseln.'],
+  },
+};
+HEROES.ren = {
+  id: 'ren', name: 'Ren', title: 'Schattenpuppenspieler', model: 'ren', color: '#b07bff',
+  personality: 'Höflich, rätselhaft, immer einen Schritt voraus – oder drei Puppen.',
+  lore: 'Ren zog als Puppenspieler von Dorf zu Dorf. Erst später merkten die Leute, dass seine Puppen auch ohne Fäden tanzen.',
+  place: ['ground', 'high'],
+  base: { proj: 'shadowkunai', dmg: 6, rate: 1.3, range: 3.0, speed: 15, dmgType: 'shadow', 'slow.pct': 0.15, 'slow.dur': 1 },
+  milestones: [
+    { lvl: 1,  name: 'Schattenfaden', desc: 'Schattenkunai verlangsamen leicht.' },
+    { lvl: 3,  name: 'Unsichtbare Fäden', desc: 'Passiv: Getroffene nehmen +10 % Schaden.', fx: { add: { mark: 0.1 } } },
+    { lvl: 5,  name: 'Schattenpuppen', desc: 'Fähigkeit: Drei Puppen kämpfen 8 s lang mit (×3 Angriffe).', ability: 'puppets' },
+    { lvl: 7,  name: 'Dunkelsicht', desc: 'Erkennt Getarnte, +1 Kunai.', fx: { set: { camo: true }, add: { shots: 1 } } },
+    { lvl: 10, name: 'Schattenbann', desc: 'Ultimate: Alle Gegner der Karte erstarren 2,5 s und werden verwundbar.', ultimate: 'bind' },
+    { lvl: 12, name: 'Marionettenmeister', desc: 'Verwundbarkeit +10 %, Tempo ×1,2.', fx: { add: { mark: 0.1 }, mul: { rate: 1.2 } } },
+    { lvl: 15, name: 'Aufstieg', desc: 'Schattenmantel: Schaden ×1,3, +1 Kunai.', fx: { mul: { dmg: 1.3 }, add: { shots: 1 } }, form: 1 },
+    { lvl: 20, name: 'Meisterform', desc: 'Herr der Fäden: Schaden ×1,6, Abklingzeiten −30 %.', fx: { mul: { dmg: 1.6 } }, form: 2, cdr: 0.3 },
+  ],
+  abilities: {
+    puppets: { name: 'Schattenpuppen', cd: 40, dur: 8, desc: 'Drei Puppen werfen mit (×3 Angriffe, 8 s).' },
+    bind: { name: 'Schattenbann', cd: 85, mul: 8, desc: 'Alle Gegner: Schaden ×8, 2,5 s Erstarren (Bosse verlangsamt), +30 % Verwundbarkeit.' },
+  },
+  lines: {
+    place: ['Der Vorhang hebt sich.', 'Darf ich vorstellen? Meine Puppen.', 'Pst…'], level: ['Applaus, bitte.', 'Ein neuer Akt.'], boss: ['Ein großer Gast. Wie schön.'],
+    ability: ['Tanzt, meine Puppen!'], ult: ['Schattenbann. Niemand rührt sich.'], leak: ['Ein Patzer im Stück…'],
+    win: ['Und – Vorhang.'], ascend: ['Die Schatten verneigen sich.'], master: ['Alle Fäden laufen bei mir zusammen.'],
+  },
+};
 export const HERO_IDS = Object.keys(HEROES);

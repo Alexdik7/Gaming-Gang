@@ -126,7 +126,10 @@ export class Game {
   }
   tap(cx, cy) {
     const p = this.groundAt(cx, cy), w = this.world; if (!p) { this.select(null); return; }
-    const t = w.towerNear(p.x, p.y, 0.6);
+    // Kreatur per Bildschirm-Abstand finden (Finger trifft meist den Körper, nicht den Boden darunter)
+    let t = null, bd = 40;
+    for (const o of w.towers) for (const h of [0.15, 0.6]) { const q = this.view.screenPos(o.x, o.y, h), d = Math.hypot(q[0] - cx, q[1] - cy); if (d < bd) { bd = d; t = o; } }
+    t = t || w.towerNear(p.x, p.y, 0.6);
     if (t) { this.select(t === this.sel ? null : t); this.app.audio.play('click'); return; }
     const c = { x: Math.floor(p.x), y: Math.floor(p.y) };
     if (w.cellType(c.x, c.y) === 'R') { this.hud.rockPrompt(c); return; }
@@ -146,9 +149,9 @@ export class Game {
   setGhost(p) {
     const w = this.world, cid = this.placing; if (!cid) return;
     p = { x: Math.max(0.3, Math.min(w.W - 0.3, p.x)), y: Math.max(0.3, Math.min(w.H - 0.3, p.y)) };
-    const n = w.nearestPlace(cid, p.x, p.y, 0.35); p = { x: n.x, y: n.y };
+    // kein Einrasten: die Vorschau steht genau unter dem Finger (auch rot), damit man bis an den Rand ziehen kann
     this.ghostPos = p;
-    const ok = n.c;
+    const ok = w.canPlace(cid, p.x, p.y);
     if (!this.ghost || this.ghost.cid !== cid) {
       if (this.ghost) this.view.root.remove(this.ghost.m.root);
       const m = buildModel(cid, { stage: 0, branch: this.P.chars[cid]?.branch, skin: this.skinOf(cid), hlvl: 1 });
@@ -217,6 +220,7 @@ export class Game {
   slow(scale, sec) { if (!this.settings().shake && scale < 1) return; this.world.timeScale = scale; this.slowT = sec; }
   react(e) {
     switch (e.t) {
+      case 'fuse': this.slow(0.25, 1.2); this.hud.banner(e.def.name.toUpperCase(), '⚭ Fusion!', 'evo'); setTimeout(() => this.hud.flash(0.6, e.def.color), 1000); break;
       case 'evolve': this.slow(0.2, 0.9); this.hud.banner(e.form.name.toUpperCase(), 'Evolution!', 'evo'); this.hud.flash(0.5); break;
       case 'ability': this.slow(0.35, 0.45); if (e.id === 'judgement') this.hud.flash(0.6); break;
       case 'bossDie': this.slow(0.25, 1.4); this.hud.flash(0.8); break;
@@ -244,6 +248,7 @@ export class Game {
       case 'leak': A.play('leak'); break; case 'react': A.play('react'); break;
       case 'upgrade': A.play(e.tier === 5 ? 'tier5' : 'upgrade', { tier: e.tier }); break;
       case 'rebirth': A.play('ult'); A.play('evolve'); break;
+      case 'fuse': A.play('ult'); setTimeout(() => A.play('evolve'), 900); break;
       case 'evolve': A.play('evolve'); break; case 'sell': A.play('sell'); break; case 'rock': A.play('boom'); break;
       case 'wave': A.play('wave'); break; case 'waveEnd': A.play('waveEnd'); break;
       case 'bossWarn': A.play('bossWarn'); break; case 'bossPhase': A.play('roar'); break; case 'breath': A.play('breath'); break; case 'bossDie': A.play('roar'); break;
@@ -270,7 +275,7 @@ export class Game {
   finish(silent = false) {
     const P = this.P, w = this.world;
     if (this.freeplay && this.winRes) { // Ende des freien Spiels: Sieg ist schon verbucht, nur Rekord + Ergebnis
-      const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, endless: 0 };
+      const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, master: 0, endless: 0 };
       mp.free = Math.max(mp.free || 0, w.doneWave); P.stats.bestFree = Math.max(P.stats.bestFree || 0, w.doneWave);
       for (const a of checkAchievements(P)) { this.achs.push(a); this.giveAcc(a.xp); }
       saveProfile(P);
@@ -281,12 +286,14 @@ export class Game {
     const won = w.won, d = this.diffKey, D = BAL.diff[d];
     P.stats.runs++; if (won) P.stats.wins++; else P.stats.losses++;
     const perfect = won && w.lives >= w.maxLives;
-    if (won && d === 'hard') P.stats.winsHard++;
+    if (won && (d === 'hard' || d === 'master')) P.stats.winsHard++; if (won && d === 'master') P.stats.winsMaster = (P.stats.winsMaster || 0) + 1;
     if (won && this.mapId === 'dorf') P.stats.winDorf = (P.stats.winDorf || 0) + 1;
     if (won && this.mapId === 'glut') P.stats.winGlut = (P.stats.winGlut || 0) + 1;
+    if (won && this.mapId === 'frost') P.stats.winFrost = (P.stats.winFrost || 0) + 1;
+    if (won && this.mapId === 'sky') P.stats.winSky = (P.stats.winSky || 0) + 1;
     if (perfect) P.stats.perfect++; if (perfect && d === 'hard') P.stats.perfectHard++;
     if (d === 'endless') P.stats.bestEndless = Math.max(P.stats.bestEndless || 0, w.doneWave);
-    const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, endless: 0 };
+    const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, master: 0, endless: 0 };
     const firstClear = won && !(mp[d] >= w.maxWave);
     let medal = null;
     let daily = false;

@@ -13,6 +13,7 @@ import { ELEMENT_COLORS } from '../data/enemies.js';
 import { saveProfile, resetProfile } from '../meta/profile.js';
 import { CHALLENGES, CH, chUnlocked } from '../data/challenges.js';
 import { QUESTS, ensureDaily, dailyChallenge, questProgress, DAILY_XP, dayKey } from '../data/daily.js';
+import { FUSIONS, FUSE } from '../data/fusions.js';
 import { SCHOOLS, ACADEMY, ACADEMY_BY_ID, shinobiPoints, canLearn, learn, resetAcademy } from '../data/academy.js';
 
 const $ = id => document.getElementById(id);
@@ -32,7 +33,7 @@ export class Menus {
     m.querySelectorAll('[data-go]').forEach(b => b.onclick = e => { this.click(); this.go(b.dataset.go, b.dataset.arg, e); });
     after?.(m);
     // Gestaffeltes Einfliegen (Vorbereitung → Bewegung → Nachschwingen)
-    m.querySelectorAll('.med, .grid > *, .list > .li, .evorow, .tiles > *, .scr > .box, .hubTop > *, .ccard').forEach((el, i) => { el.style.animationDelay = Math.min(i, 14) * 38 + 'ms'; el.classList.add('pop'); });
+    m.querySelectorAll('.med, .btile, .bTop > *, .grid > *, .list > .li, .evorow, .tiles > *, .scr > .box, .hubTop > *, .ccard').forEach((el, i) => { el.style.animationDelay = Math.min(i, 14) * 38 + 'ms'; el.classList.add('pop'); });
   }
   show(name, arg) { this.cur = name; this.app.showMenuScene(name); this['s_' + name](arg); }
   // Bildschirmwechsel mit Fuchsfeuer-Wipe: Kreis wächst vom Tipp-Punkt, Inhalt wechselt verdeckt, dann blendet er weg
@@ -69,20 +70,18 @@ export class Menus {
     const med = (go, img, label, cls = '', dot = false) => `<button class="med ${cls}" data-go="${go}"><span class="mc">${img}</span><b>${label}</b>${dot ? '<i class="dot"></i>' : ''}</button>`;
     const pimg = (id, o) => `<img src="${portrait(id, o)}" alt="">`;
     const hero = unlocked(P, 'hero', P.hero) ? P.hero : 'kairo';
-    this.render(`<div class="hub">
-      <div class="hubTop">
-        <button class="profile mini" data-go="account"><div class="fr" style="--fc:${frame}">${pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch })}</div>
-          <div class="pi"><b>Lv ${a.level}</b> <span>${esc(TITLES[a.title] || TITLES.none)}</span><div class="bar acc"><u style="width:${a.xp / need * 100}%"></u></div></div></button>
-        <div class="hubLogo">BEAST<span>FORGE</span></div>
-        <div class="rbtns">${med('daily', '📅', 'Täglich', 'sm', this.dailyDot())}${med('ach', '🏆', 'Erfolge', 'sm', newAch)}${med('stats', '📜', 'Statistik', 'sm')}${med('settings', '⚙', 'Optionen', 'sm')}</div>
+    const tile = (go, img, label, cls = '', dot = false) => `<button class="btile ${cls}" data-go="${go}"><span class="bti">${img}</span><b>${label}</b>${dot ? '<i class="dot"></i>' : ''}</button>`;
+    const sp = shinobiPoints(P);
+    this.render(`<div class="hub bhub">
+      <div class="bTop">
+        <button class="bLevel" data-go="account"><span class="bStar"><b>${a.level}</b></span><span class="bName"><b>${esc(TITLES[a.title] || TITLES.none)}</b><i class="bXp"><u style="width:${a.xp / need * 100}%"></u></i></span></button>
+        <div class="bLogo">BEAST<span>FORGE</span></div>
+        <div class="bRight"><button class="bCur" data-go="academy" title="Shinobi-Punkte"><span>⛩</span><b>${sp.free}</b></button><button class="bGear" data-go="settings" aria-label="Optionen">⚙</button></div>
       </div>
-      <div class="hubM">
-        ${med('collection', pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch }), 'Kreaturen')}
-        ${med('hero', pimg(hero, { hlvl: 1 }), 'Helden')}
-        ${med('play', '<span class="playI">▶</span>', 'SPIELEN', 'mbig')}
-        ${med('evo', pimg('golem', { stage: 2 }), 'Entwicklung')}
-        ${med('academy', '<span class="acI">⛩</span>', 'Akademie', 'acad', shinobiPoints(P).free > 0)}
-      </div></div>`);
+      <div class="bLeft">${tile('collection', pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch }), 'Kreaturen', 'big')}${tile('hero', pimg(hero, { hlvl: 1 }), 'Helden', 'big')}${tile('evo', pimg('golem', { stage: 2 }), 'Entwicklung', 'big')}</div>
+      <div class="bRightCol">${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('stats', '📜', 'Statistik', 'sq')}</div>
+      <button class="bPlay" data-go="play"><span>SPIELEN</span></button>
+    </div>`);
     this.app.audio.playSong('menu');
   }
 
@@ -157,12 +156,12 @@ export class Menus {
   s_play(sel) {
     const P = this.P;
     this.diff = this.diff && unlocked(P, 'mode', this.diff) ? this.diff : 'normal';
-    const NODES = { ahnenhain: [22, 64], dorf: [48, 42], glut: [72, 68] };
-    const FOG = [['Frosttempel', 84, 38, '❄'], ['Himmelsinseln', 64, 26, '☁']];
+    const NODES = { ahnenhain: [22, 64], dorf: [48, 42], glut: [72, 68], frost: [84, 34], sky: [62, 18] };
+    const FOG = [];
     const nodes = Object.values(MAPS).map(m => {
       const [x, y] = NODES[m.id] || [50, 50], ok = unlocked(P, 'map', m.id), b = P.maps[m.id] || {};
-      const st = (b.normal >= 20 ? 1 : 0) + (b.hard >= 20 ? 1 : 0) + ((b.endless || 0) >= 30 ? 1 : 0);
-      return `<button class="wnode ${ok ? '' : 'lock'} ${sel === m.id ? 'on' : ''}" data-map="${m.id}" style="left:${x}%;top:${y}%"><span class="ring"><img data-thumb="${m.id}" alt=""></span><b>${esc(m.name)}</b><small>${ok ? '★'.repeat(st) + '☆'.repeat(3 - st) : '🔒 Konto-Lv ' + unlockLevel('map', m.id)}</small></button>`;
+      const st = (b.normal >= 20 ? 1 : 0) + (b.hard >= BAL.diff.hard.waves ? 1 : 0) + ((b.master || 0) >= BAL.diff.master.waves ? 1 : 0) + ((b.endless || 0) >= 30 ? 1 : 0);
+      return `<button class="wnode ${ok ? '' : 'lock'} ${sel === m.id ? 'on' : ''}" data-map="${m.id}" style="left:${x}%;top:${y}%"><span class="ring"><img data-thumb="${m.id}" alt=""></span><b>${esc(m.name)}</b><small>${ok ? '★'.repeat(st) + '☆'.repeat(4 - st) : '🔒 Konto-Lv ' + unlockLevel('map', m.id)}</small></button>`;
     }).join('');
     const fog = FOG.map(([n, x, y, ic]) => `<div class="wnode fog" style="left:${x}%;top:${y}%"><span class="ring">${ic}</span><b>${n}</b><small>unerforscht</small></div>`).join('');
     const team = unlockedCreatures(P);
@@ -170,7 +169,7 @@ export class Menus {
     let panel = '';
     if (sel) {
       const map = MAPS[sel], ok = unlocked(P, 'map', sel), best = P.maps[sel] || {};
-      const modes = [['normal', '🌿', 'Normal'], ['hard', '🔥', 'Schwer'], ['endless', '∞', 'Endlos']];
+      const modes = [['normal', '🌿', 'Normal · 20'], ['hard', '🔥', 'Schwer · 40'], ['master', '👑', 'Meister · 60'], ['endless', '∞', 'Endlos']];
       const heroes = Object.values(HEROES);
       if (!unlocked(P, 'hero', P.hero)) P.hero = 'kairo';
       panel = `<aside class="wpanel"><button class="x" id="wx">✕</button><img class="wthumb" data-thumb="${sel}" alt="">
@@ -220,6 +219,10 @@ export class Menus {
         return `<button class="ccard ${ok ? '' : 'locked'}" data-c="${id}" style="--cc:${d.color}">${ok ? `<span class="lvl">Lv ${c.level}</span><span class="els">${d.elements.map(e => `<i style="color:${ELEMENT_COLORS[e]};font-style:normal">●</i>`).join('')}</span>` : ''}<img src="${portrait(id, { stage: st, branch: c.branch })}" alt=""><b>${ok ? esc(d.name) : '???'}</b><small>${ok ? esc(d.role) : '🔒 Konto-Lv ' + unlockLevel('creature', id)}</small>
           ${ok ? `<div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / charNeed(c.level) * 100}%"></u></div><div class="stars">${stars(c.mastery)}</div>` : ''}</button>`;
       }).join('')}</div>
+      <div class="box"><b>⚭ Fusionen</b><div class="fgrid">${FUSIONS.map(f => { const ok = unlocked(P, 'creature', f.a) && unlocked(P, 'creature', f.b), D = CREATURES[f.id];
+        return `<div class="fcard ${ok ? '' : 'locked'}" style="--cc:${f.color}"><img src="${portrait(f.id)}" alt=""><div><b>${ok ? esc(f.name) : '???'}</b><small>${esc(CREATURES[f.a].name)} + ${esc(CREATURES[f.b].name)}</small><small class="mut">${ok ? esc(f.desc) : 'Schalte beide Kreaturen frei'}</small></div></div>`; }).join('')}</div>
+        <small style="color:var(--mut)">So geht's: beide Kreaturen nebeneinander stellen (höchstens ${FUSE.range} Felder), beide erwecken, eine antippen → <b>Fusion</b>. Die Fusion behält die Pfadstufen und ist sofort mit Fähigkeiten bereit.</small></div>
+      <div class="box"><b>🐾 Rudel</b><small style="display:block;color:var(--mut);margin-top:4px">Kreaturen, die direkt nebeneinander stehen, bilden ein Rudel: jede weitere Kreatur gibt allen <b>×${(1 + BAL.run.packDmg).toFixed(2)} Schaden</b> und <b>×${(1 + BAL.run.packRate).toFixed(3)} Tempo</b> – multiplikativ und ohne Obergrenze.</small></div>
       <div class="box"><b>Synergien</b><div class="list" style="margin-top:6px">${SYNERGIES.map(s => `<div class="li"><div class="d"><b>${esc(s.name)}</b><small>${esc(s.desc)}</small></div></div>`).join('')}</div><small style="color:var(--mut)">Aktiv, wenn beide Partner höchstens ${BAL.run.synergyRange} Felder auseinander stehen.</small></div></div>`,
     m => m.querySelectorAll('[data-c]').forEach(b => b.onclick = e => { this.click(); if (unlocked(this.P, 'creature', b.dataset.c)) this.go('creature', b.dataset.c, e); }));
   }

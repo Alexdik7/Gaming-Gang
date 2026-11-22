@@ -4,7 +4,7 @@ import { BAL } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
 import { MOD_NAMES } from '../data/waves.js';
-import { ENEMIES, ELEMENT_NAMES, ELEMENT_COLORS } from '../data/enemies.js';
+import { ENEMIES, BOSSES, ELEMENT_NAMES, ELEMENT_COLORS } from '../data/enemies.js';
 import { TARGETS, TARGET_NAMES } from '../sim/world.js';
 import { canTier } from '../sim/stats.js';
 import { charNeed, accNeed, nextFormByLevel, formAt } from '../meta/progression.js';
@@ -91,7 +91,7 @@ export class Hud {
     if (key !== this.last.play) {
       this.last.play = key; const b = $('bPlay');
       b.className = 'play ' + (running ? 'fast s' + this.g.speed : 'go');
-      b.innerHTML = running ? `<span>${'▶'.repeat(Math.min(3, this.g.speed))}</span><small>${this.g.speed}× Tempo</small>` : `<span>▶</span><small>Welle ${w.wave + 1}</small>`;
+      b.innerHTML = running ? `<span>${this.g.speed > 1 ? '▶▶' : '▶'}</span><small>${this.g.speed}×</small>` : `<span>▶</span><small>Start</small>`;
       $('bEarly').classList.toggle('hidden', !(can && running));
       $('bEarly').innerHTML = `⏩ Nächste Welle <b>+◈${BAL.run.earlyCall(w.wave)}</b>`;
     }
@@ -136,15 +136,23 @@ export class Hud {
     });
   }
   icon(t, tiers) {
-    return t.hero ? portrait(t.cid, { hlvl: t.hlvl >= 20 ? 20 : t.hlvl >= 15 ? 15 : 1 }) : portrait(t.cid, { stage: t.stage, branch: this.P.chars[t.cid].branch, skin: this.g.skinOf(t.cid), tiers: tiers || t.tiers.map(x => Math.min(x, 4)) });
+    return t.hero ? portrait(t.cid, { hlvl: t.hlvl >= 20 ? 20 : t.hlvl >= 15 ? 15 : 1 }) : portrait(t.cid, { stage: t.stage, branch: this.P.chars[t.cid]?.branch, skin: this.g.skinOf(t.cid), tiers: tiers || t.tiers.map(x => Math.min(x, 4)) });
   }
 
   // ───────── Upgrade-Panel ─────────
   showPanel(t) {
     this.sel = t;
     if (!t) { $('panel').classList.add('hidden'); $('hud').classList.remove('psel'); document.querySelector('.coach')?.classList.remove('hidden'); this.insets(); return; }
-    $('panel').classList.remove('hidden'); $('hud').classList.add('psel'); document.querySelector('.coach')?.classList.add('hidden');
+    const el = $('panel'), fresh = el.classList.contains('hidden') || this.panelFor !== t; this.panelFor = t;
+    el.classList.remove('hidden'); $('hud').classList.add('psel'); document.querySelector('.coach')?.classList.add('hidden');
+    // Geister-Tipp verhindern: das Fenster nimmt kurz nach dem Öffnen keine Tipps an (sonst landet der Tipp auf der Kreatur als Upgrade-Kauf)
+    if (fresh) { el.classList.add('fresh'); clearTimeout(this.freshT); this.freshT = setTimeout(() => el.classList.remove('fresh'), 450); this.panelFresh = performance.now(); }
+    // unten anzeigen – steht die Kreatur selbst unten, rutscht das Fenster nach oben
+    const sp = this.g.view.screenPos?.(t.x, t.y, 0), H = appSize()[1];
+    const W = appSize()[0], right = !!sp && sp[0] < W * 0.42 && !this.g.app.stage.portrait;   // Kreatur links → Fenster rechts (über dem Shop)
+    el.classList.toggle('atright', right); $('hud').classList.toggle('pright', right); void H;
     this.refreshPanel();
+    requestAnimationFrame(() => $('hud').style.setProperty('--ph', el.getBoundingClientRect().height + 'px'));
   }
   refreshPanel(soft) {
     const t = this.sel; if (!t || !this.w.towers.includes(t)) return;
@@ -158,12 +166,12 @@ export class Hud {
       title = h.name; sub = h.title;
       const next = h.milestones.find(m => m.lvl > t.hlvl);
       body = `<div class="xpline hero"><b>Held Lv ${t.hlvl}</b><div class="bar hero"><u style="width:${t.hlvl >= 20 ? 100 : t.hxp / need * 100}%"></u></div><small>${t.hlvl >= 20 ? 'MAX' : fmt(t.hxp) + ' / ' + fmt(need)}</small></div>
-        <div class="chips">${chips}</div>
+        <div class="chips">${chips}</div><!--main-->
         ${next ? `<div class="nextm">Nächster Meilenstein · <b>Lv ${next.lvl}: ${esc(next.name)}</b><br><small>${esc(next.desc)}</small></div>` : ''}
         <div class="miles">${h.milestones.map(m => `<div class="${t.hlvl >= m.lvl ? 'on' : ''}"><i>${t.hlvl >= m.lvl ? '✓' : m.lvl}</i><span><b>${esc(m.name)}</b> ${esc(m.desc)}</span></div>`).join('')}</div>
         <small class="mut">${esc(h.name)} steigt durch Schaden und Wellen auf – kein Münzkauf nötig.</small>`;
     } else {
-      const def = CREATURES[t.cid], c = this.P.chars[t.cid], need = charNeed(c.level), br = c.branch;
+      const def = CREATURES[t.cid], c = this.P.chars[t.cid] || { level: w.levelOf(t.cid), xp: 0, branch: 'spirit' }, need = charNeed(c.level), br = c.branch;
       const form = formAt(t.cid, t.stage, br);
       title = form.name; sub = def.role + ' · ' + def.elements.map(e => `<i style="color:${ELEMENT_COLORS[e]}">●</i> ${ELEMENT_NAMES[e]}`).join(' ');
       const nx = nextFormByLevel(t.cid, c.level, br), ev = w.nextEvo(t);
@@ -188,20 +196,27 @@ export class Hud {
         }
         return `<div class="prow2" style="--pc:${PATH_COLORS[i]}"><div class="pl"><b>${p.icon} ${esc(p.name)}</b><div class="pips">${pips}</div><small>${esc(cur)}</small></div>${right}</div>`;
       }).join('');
+      // Fusionen: Partner daneben stellen, beide erwecken → verschmelzen
+      const fus = w.fuseOptions(t).map(o => o.ok
+        ? `<button class="fuse" data-fuse="${o.f.id}" style="--fa:${o.def.color}"><img src="${portrait(o.f.id)}" alt=""><div><b>⚭ Fusion: ${esc(o.def.name)}</b><small>mit ${esc(CREATURES[o.other].name)} · ${esc(o.def.role)}</small></div><span class="price">◈ ${fmt(o.cost)}</span></button>`
+        : `<div class="fuse off" style="--fa:${o.def.color}"><img src="${portrait(o.f.id)}" alt=""><div><b>⚭ ${esc(o.def.name)}</b><small>${esc(o.why)}</small></div></div>`).join('');
       const auraTxt = s.aura ? `<div class="aura">✿ Aura: ${s.aura.rate ? '+' + Math.round(s.aura.rate * 100) + '% Tempo ' : ''}${s.aura.dmg ? '+' + Math.round(s.aura.dmg * 100) + '% Schaden ' : ''}${s.aura.camo ? '· erkennt Getarnte' : ''}</div>` : '';
       const ab = w.abilityInfo(t).map(a => `<div class="abi ${a.ready ? 'on' : ''}"><b>${a.slot === 'ult' ? '★ ' : ''}${esc(a.name)}</b> <small>${a.ready ? (a.left > 0 ? Math.ceil(a.left) + ' s' : 'bereit') : '🔒 ' + esc(a.need)}</small></div>`).join('');
       body = `<div class="xpline"><b>${esc(def.name)} Lv ${c.level}</b><div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / need * 100}%"></u></div><small>${c.level >= 50 ? 'MAX' : fmt(c.xp) + ' / ' + fmt(need) + ' XP'}${nx ? ' · ' + esc(nx.name) + ' bei Lv ' + nx.lvl : ''}</small></div>
-        <div class="chips">${chips}${s.camo ? '<span>👁 Erkennung</span>' : ''}${!s.flying ? '<span class="warn">⛔ keine Fliegenden</span>' : ''}${t.disabledT > 0 ? '<span class="warn">🔥 Gestört!</span>' : ''}</div>${auraTxt}
-        ${evo}<div class="prows">${rows}</div>${ab ? `<div class="abis">${ab}</div>` : ''}`;
+        <div class="chips">${chips}${s.camo ? '<span>👁 Erkennung</span>' : ''}${!s.flying ? '<span class="warn">⛔ keine Fliegenden</span>' : ''}${t.disabledT > 0 ? '<span class="warn">🔥 Gestört!</span>' : ''}${t.pack > 1 ? `<span class="pack" title="Rudel-Bonus">🐾 Rudel ${t.pack} · <b>×${s.packMul.toFixed(2)}</b></span>` : ''}${def.fusion ? '<span class="fz">⚭ Fusion</span>' : ''}</div>${auraTxt}<!--main-->
+        ${evo}${fus ? `<div class="fuses">${fus}</div>` : ''}<div class="prows">${rows}</div>${ab ? `<div class="abis">${ab}</div>` : ''}`;
     }
-    el.innerHTML = `<div class="ph"><img src="${this.icon(t)}" alt=""><div class="nm"><b>${esc(title)}</b><small>${sub}</small></div><button class="x" data-x>✕</button></div>${body}
-      <div class="tgt"><button data-tg="-1">◀</button><div><small>Ziel</small><b>${TARGET_NAMES[t.target]}</b></div><button data-tg="1">▶</button></div>
-      <button class="sell" data-sell>Verkaufen <b>◈ ${fmt(t.spent * BAL.run.sellRefund)}</b></button>`;
+    const [info, main] = body.split('<!--main-->');
+    el.innerHTML = `<div class="pinfo"><div class="ph"><img src="${this.icon(t)}" alt=""><div class="nm"><b>${esc(title)}</b><small>${sub}</small></div><button class="x" data-x>✕</button></div>${info}
+      <div class="pact"><div class="tgt"><button data-tg="-1">◀</button><div><small>Ziel</small><b>${TARGET_NAMES[t.target]}</b></div><button data-tg="1">▶</button></div>
+      <button class="sell" data-sell>Verkaufen <b>◈ ${fmt(t.spent * BAL.run.sellRefund)}</b></button></div></div><div class="pmain">${main || ''}</div>`;
+    const guard = fn => e => { if (performance.now() - (this.panelFresh || 0) < 450) return; fn(e); };
     el.querySelector('[data-x]').onclick = () => this.g.select(null);
     el.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const i = TARGETS.indexOf(t.target), n = TARGETS.length; w.setTarget(t.id, TARGETS[(i + +b.dataset.tg + n) % n]); this.g.app.audio.play('click'); this.refreshPanel(); });
-    el.querySelector('[data-sell]').onclick = () => this.confirm('Verkaufen?', `Du bekommst ◈${fmt(t.spent * BAL.run.sellRefund)} zurück. Die Charakter-XP bleiben erhalten.`, 'Verkaufen', () => { w.sell(t.id); this.g.select(null); });
-    el.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const r = w.upgrade(t.id, +b.dataset.up); if (!r.ok) this.err(r.why); else this.coachEvent('upgrade'); this.refreshPanel(); });
-    const ev = el.querySelector('[data-evo]'); if (ev) ev.onclick = () => { const r = w.evolve(t.id); if (!r.ok) this.err(r.why); this.refreshPanel(); };
+    el.querySelector('[data-sell]').onclick = guard(() => this.confirm('Verkaufen?', `Du bekommst ◈${fmt(t.spent * BAL.run.sellRefund)} zurück. Die Charakter-XP bleiben erhalten.`, 'Verkaufen', () => { w.sell(t.id); this.g.select(null); }));
+    el.querySelectorAll('[data-up]').forEach(b => b.onclick = guard(() => { const r = w.upgrade(t.id, +b.dataset.up); if (!r.ok) this.err(r.why); else this.coachEvent('upgrade'); this.refreshPanel(); }));
+    el.querySelectorAll('[data-fuse]').forEach(b => b.onclick = guard(() => { const r = w.fuse(t.id, b.dataset.fuse); if (!r.ok) this.err(r.why); else { this.g.select(r.tower); this.toast('evo', '⚭ Fusion gelungen!', CREATURES[r.tower.cid].name + ' ist erwacht'); } }));
+    const ev = el.querySelector('[data-evo]'); if (ev) ev.onclick = guard(() => { const r = w.evolve(t.id); if (!r.ok) this.err(r.why); this.refreshPanel(); });
   }
 
   // ───────── Ereignisse ─────────
@@ -218,15 +233,17 @@ export class Hud {
         this.coachEvent('wave');
         break;
       }
-      case 'bossWarn': this.banner('⚠ BOSS ⚠', 'Vharox, der Abgrunddrache erwacht', 'boss'); this.g.app.stage.addShake(0.5); break;
+      case 'bossWarn': this.banner('⚠ BOSS ⚠', BOSSES[e.boss]?.warn || 'Vharox erwacht', 'boss'); this.g.app.stage.addShake(0.5); break;
       case 'bossPhase': this.banner(e.name.toUpperCase(), e.desc, 'boss'); break;
-      case 'bossDie': this.banner('BOSS BESIEGT!', 'Vharox fällt in die Tiefe', 'evo'); break;
+      case 'bossDie': this.banner('BOSS BESIEGT!', (e.e?.def?.name || 'Vharox').split(',')[0] + ({ wolf: ' zerfällt zu Schnee', owl: ' verweht im Sturm' }[e.e?.def?.model] || ' fällt in die Tiefe'), 'evo'); break;
       case 'waveEnd': this.toast('syn', `Welle ${e.wave} geschafft · +◈${fmt(e.bonus + e.income)}`, e.income ? `Wellenbonus ${fmt(e.bonus)} · Einkommen ${fmt(e.income)}` : ''); break;
       case 'synergy': this.toast('syn', '✦ Synergie: ' + e.sy.name, e.sy.desc); break;
       case 'say': this.bubble(e.tower, e.text); break;
       case 'heroLevel': if (e.milestone) this.toast('char', `${HEROES[e.tower.cid].name} Lv ${e.lvl}: ${e.milestone.name}`, e.milestone.desc); if (this.sel === e.tower) this.refreshPanel(); break;
       case 'evolve': if (this.sel === e.tower) this.refreshPanel(); this.coachEvent('evolve'); break;
       case 'leak': this.flash(0.15, '#ff2040'); break;
+      case 'gust': this.banner('🌬 WINDBÖE', 'Bodengegner auf Brücken werden zurückgedrückt · Fliegende schneller', 'boss'); break;
+      case 'storm': if (e.on) this.banner('❄ SCHNEESTURM ❄', 'Gegner langsamer · Eiskreaturen schneller · andere frieren', 'boss'); else this.toast('syn', 'Der Sturm legt sich', ''); break;
       case 'rebirth': this.flash(0.5, '#ffb43a'); this.banner('WIEDERGEBURT', 'Der Phönix schenkt dir ' + e.lives + ' Leben', 'evo'); break;
       case 'early': this.toast('syn', `+◈${e.coins} früh gerufen`, ''); break;
     }

@@ -4,7 +4,7 @@ import { toon, glow, flat, mk, geo, merge, gradTex, optimize, anim } from './too
 import { raftPos } from '../data/maps.js';
 
 const PI = Math.PI;
-export const HEIGHT = { '.': 0, 'T': 0, 'R': 0, '#': -0.05, '~': -0.32, '^': 0.34, 'S': 0, 'L': -0.3 };
+export const HEIGHT = { '.': 0, 'T': 0, 'R': 0, '#': -0.05, '~': -0.32, '^': 0.34, 'S': 0, 'L': -0.3, 'B': -0.05, 'V': -3 };
 export const RAFT_TOP = 0.02;
 // Instanz-Matrix mitnehmen, sonst landen alle Kacheln an derselben Stelle
 const VS = 'varying vec3 vW; void main(){ vec4 p = vec4(position,1.0);\n#ifdef USE_INSTANCING\np = instanceMatrix*p;\n#endif\nvec4 w = modelMatrix*p; vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }';
@@ -24,8 +24,9 @@ export class MapView {
     this.H = map.grid.length; this.W = map.grid[0].length; this.rocks = new Map(); this.t = 0; this.paths = map.paths || [map.path];
     const th = map.theme;
     const vmat = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradTex });
-    const cells = { grass: [], path: [], water: [], high: [], lava: [] };
+    const cells = { grass: [], path: [], water: [], high: [], lava: [], bridge: [] };
     map.grid.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch === 'V') return; if (ch === 'B') { cells.bridge.push([x, y]); return; }
       if (ch === '#') cells.path.push([x, y]); else if (ch === 'L') cells.lava.push([x, y]); else if (ch === '~') cells.water.push([x, y]); else if (ch === '^') cells.high.push([x, y]); else cells.grass.push([x, y, ch]);
     }));
     const inst = (g, list, yOf, colFn) => {
@@ -34,11 +35,14 @@ export class MapView {
       m.receiveShadow = true; this.root.add(m); return m;
     };
     const rnd = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5; return s - Math.floor(s); };
-    inst(tileGeo(th.grass, 0x7a5a3a, 0.6), cells.grass, ([x, y]) => (rnd(x, y) - 0.5) * 0.02, ([x, y], c) => c.setHSL(0, 0, 0.92 + rnd(x + 3, y) * 0.12).lerp(new THREE.Color(th.grass2), (x + y) % 2 ? 0.08 : 0));
-    inst(tileGeo(th.dirt, 0x8a6a48, 0.6), cells.path, () => HEIGHT['#'], ([x, y], c) => c.setHSL(0, 0, 0.94 + rnd(x, y + 7) * 0.08));
+    const deep = th.isles ? 1.6 : 0.6;   // Himmelsinseln: tiefe Inselklippen
+    if (cells.bridge.length) inst(tileGeo(th.bridge || 0xb08850, 0x6a4a2a, 0.1), cells.bridge, () => HEIGHT['B'], ([x, y], c) => c.setHSL(0, 0, (x + y) % 2 ? 1 : 0.82));
+    inst(tileGeo(th.grass, th.isles ? th.cliff : 0x7a5a3a, deep), cells.grass, ([x, y]) => (rnd(x, y) - 0.5) * 0.02, ([x, y], c) => c.setHSL(0, 0, 0.92 + rnd(x + 3, y) * 0.12).lerp(new THREE.Color(th.grass2), (x + y) % 2 ? 0.08 : 0));
+    const onIce = (x, y) => (this.map.ice || []).some(([a, b, c2, d]) => x >= a && x <= c2 && y >= b && y <= d);
+    inst(tileGeo(th.dirt, th.isles ? th.cliff : 0x8a6a48, deep), cells.path, () => HEIGHT['#'], ([x, y], c) => onIce(x, y) ? c.setRGB(0.95 + rnd(x, y) * 0.15, 1.55, 2.0) : c.setHSL(0, 0, 0.94 + rnd(x, y + 7) * 0.08));
     inst(tileGeo(0x2a7a9a, 0x5a4a3a, 0.6), cells.water, () => -0.42, (_, c) => c.setRGB(1, 1, 1));
     if (cells.lava.length) inst(tileGeo(0x3a1a12, th.cliff, 0.6), cells.lava, () => -0.42, (_, c) => c.setRGB(1, 1, 1));
-    inst(tileGeo(th.high || 0x88c85a, th.cliff, 1.0), cells.high, () => HEIGHT['^'], ([x, y], c) => c.setHSL(0, 0, 0.95 + rnd(x, y) * 0.08));
+    inst(tileGeo(th.high || 0x88c85a, th.cliff, th.isles ? 2.0 : 1.0), cells.high, () => HEIGHT['^'], ([x, y], c) => c.setHSL(0, 0, 0.95 + rnd(x, y) * 0.08));
     if (th.roof) { // Dachziegel-Reihen + First auf den Dächern
       const rows = []; for (const [x, y] of cells.high) for (let k = 0; k < 3; k++) rows.push([this.wx(x), HEIGHT['^'] + 0.02, this.wz(y) - 0.33 + k * 0.33]);
       const rm = new THREE.InstancedMesh(geo.box(), toon(0x5a3a32), rows.length), RM = new THREE.Matrix4();
@@ -68,7 +72,7 @@ export class MapView {
     tufts.forEach(([x, z, r, h = 0], i) => { M.compose(new THREE.Vector3(x, h, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, r, 0)), new THREE.Vector3(1, 1, 1)); tm.setMatrixAt(i, M); });
     this.root.add(tm);
     // Blumen
-    const fl = []; cells.grass.forEach(([x, y, ch]) => { if (ch === '.' && !th.ash && rnd(x * 7, y) > 0.72) fl.push([this.wx(x) + (rnd(x, y * 3) - 0.5) * 0.7, this.wz(y) + (rnd(x * 3, y) - 0.5) * 0.7, rnd(x, y) > 0.5 ? 0xffe14d : 0xffffff]); });
+    const fl = []; cells.grass.forEach(([x, y, ch]) => { if (ch === '.' && !th.ash && !th.snow && rnd(x * 7, y) > 0.72) fl.push([this.wx(x) + (rnd(x, y * 3) - 0.5) * 0.7, this.wz(y) + (rnd(x * 3, y) - 0.5) * 0.7, rnd(x, y) > 0.5 ? 0xffe14d : 0xffffff]); });
     const fm = new THREE.InstancedMesh(geo.sphere(6), toon(0xffffff), fl.length);
     fl.forEach(([x, z, c], i) => { M.compose(new THREE.Vector3(x, 0.05, z), new THREE.Quaternion(), new THREE.Vector3(0.035, 0.02, 0.035)); fm.setMatrixAt(i, M); fm.setColorAt(i, new THREE.Color(c)); });
     this.root.add(fm);
@@ -87,11 +91,25 @@ export class MapView {
     // Umgebung
     // Umgebung: vier Flächen rund um die Karte (nicht darüber – sonst verdecken sie Pfad und Wasser)
     const gm = toon(th.ground || 0x5a9a40), W2 = this.W / 2, H2 = this.H / 2, F = 40;
-    for (const [x, z, w, h] of [[-W2 - F / 2, 0, F, 2 * F], [W2 + F / 2, 0, F, 2 * F], [0, -H2 - F / 2, this.W, F], [0, H2 + F / 2, this.W, F]]) {
+    if (th.isles) this.buildClouds(rnd); else for (const [x, z, w, h] of [[-W2 - F / 2, 0, F, 2 * F], [W2 + F / 2, 0, F, 2 * F], [0, -H2 - F / 2, this.W, F], [0, H2 + F / 2, this.W, F]]) {
       const g = new THREE.Mesh(new THREE.PlaneGeometry(w, h), gm); g.rotation.x = -PI / 2; g.position.set(x, -0.012, z); g.receiveShadow = true; this.root.add(g);
     }
     anim(this.heart, ...this.rocks.values(), ...this.raftG.map(r => r[1]));
     optimize(this.root);
+  }
+  // Wolkenmeer unter den Himmelsinseln + Brückenpfosten mit Seilen
+  buildClouds(rnd) {
+    const sea = new THREE.Mesh(new THREE.PlaneGeometry(90, 70), toon(0x6aa8dc)); sea.rotation.x = -PI / 2; sea.position.y = -3.6; this.root.add(sea);
+    const puffs = merge([[geo.ico(1), 0xc8dcf0, [0, 0, 0], 0, [1, 0.45, 0.8]], [geo.ico(1), 0xb8d0ea, [0.8, 0.1, 0.2], 0, [0.7, 0.4, 0.6]], [geo.ico(1), 0xd4e4f4, [-0.7, 0.05, -0.1], 0, [0.6, 0.35, 0.55]]]);
+    const n = 70, m = new THREE.InstancedMesh(puffs, new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradTex }), n), M = new THREE.Matrix4();
+    for (let i = 0; i < n; i++) { const x = (rnd(i, 7) - 0.5) * 50, z = (rnd(i, 8) - 0.5) * 34, s = 0.8 + rnd(i, 9) * 1.6; M.compose(new THREE.Vector3(x, -2.8 - rnd(i, 3) * 0.6, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rnd(i, 4) * 6, 0)), new THREE.Vector3(s, s, s)); m.setMatrixAt(i, M); }
+    this.root.add(m);
+    const wood = toon(0x6a4a2a), rope = toon(0xd8c8a0);
+    this.map.grid.forEach((r, y) => [...r].forEach((c, x) => {
+      if (c !== 'B') return;
+      const horiz = r[x - 1] === 'B' || r[x + 1] === 'B' || r[x - 1] === '#' || r[x + 1] === '#';
+      for (const sd of [-1, 1]) { const px = this.wx(x) + (horiz ? 0 : sd * 0.48), pz = this.wz(y) + (horiz ? sd * 0.48 : 0); this.root.add(mk(geo.cyl(5), wood, { p: [px, 0.12, pz], s: [0.04, 0.34, 0.04] })); this.root.add(mk(geo.cyl(4), rope, { p: [px, 0.26, pz], r: horiz ? [0, 0, PI / 2] : [PI / 2, 0, 0], s: [0.015, 1, 0.015], ol: false })); }
+    }));
   }
   wx(x) { return x + 0.5 - this.W / 2; }
   wz(y) { return y + 0.5 - this.H / 2; }
@@ -112,7 +130,7 @@ export class MapView {
     list.forEach(([x, y], i) => { M.makeTranslation(this.wx(x), -0.12, this.wz(y)); m.setMatrixAt(i, M); });
     this.root.add(m);
     // Seerosen
-    const pads = list.filter(([x, y]) => (x * 7 + y * 3) % 4 === 0);
+    const pads = this.map.theme.snow ? [] : list.filter(([x, y]) => (x * 7 + y * 3) % 4 === 0);
     for (const [x, y] of pads) {
       this.root.add(mk(geo.cyl(10), toon(0x4aa040), { p: [this.wx(x) + 0.2, -0.11, this.wz(y) - 0.15], s: [0.16, 0.01, 0.16], ol: 0.008 }));
       this.root.add(mk(geo.sphere(8), toon(0xffb0d0), { p: [this.wx(x) + 0.22, -0.08, this.wz(y) - 0.12], s: [0.05, 0.035, 0.05], ol: 0.008 }));
@@ -159,7 +177,7 @@ export class MapView {
     const spots = [];
     cells.grass.forEach(([x, y, ch]) => { if (ch === 'T') spots.push([this.wx(x), this.wz(y), rnd(x, y)]); });
     // Waldrand: links, rechts, hinten (vorne bleibt frei, damit die Kamera nichts verdeckt)
-    for (let i = 0; i < 160; i++) {
+    for (let i = 0; i < (th.isles ? 0 : 160); i++) {
       const side = i % 3, a = rnd(i, 1), b = rnd(i, 2);
       let x, z;
       if (side === 0) { x = -this.W / 2 - 0.6 - a * 7; z = -this.H / 2 - 3 + b * (this.H + 2); }
@@ -177,6 +195,11 @@ export class MapView {
     const buckets = { pine: [], round: [], blossom: [] };
     for (const [x, z, r] of spots) buckets[r < 0.4 ? 'pine' : r < 0.75 ? 'round' : 'blossom'].push([x, z, r]);
     const M = new THREE.Matrix4();
+    if (th.snow) { // verschneite Tannen, Eiskristalle statt Blütenbäumen
+      kinds.pine = merge([[geo.cyl(6), 0x5a4a3a, [0, 0.25, 0], 0, [0.07, 0.5, 0.07]], [geo.cone(7), 0x2f6a5a, [0, 0.62, 0], 0, [0.42, 0.6, 0.42]], [geo.cone(7), 0xf4f8ff, [0, 0.78, 0], 0, [0.3, 0.28, 0.3]], [geo.cone(7), 0x3a7a66, [0, 0.95, 0], 0, [0.33, 0.5, 0.33]], [geo.cone(7), 0xffffff, [0, 1.12, 0], 0, [0.2, 0.25, 0.2]]]);
+      kinds.round = merge([[geo.ico(1), 0xf4f8ff, [0, 0.18, 0], 0, [0.42, 0.26, 0.36]], [geo.ico(1), 0xe0ecf8, [0.24, 0.12, 0.1], 0, 0.2]]);
+      kinds.blossom = merge([[geo.cone(5), 0xbfeaff, [0, 0.45, 0], 0, [0.14, 0.9, 0.14]], [geo.cone(5), 0x9fd8ff, [0.15, 0.3, 0.05], [0, 0, -0.5], [0.08, 0.5, 0.08]], [geo.cone(5), 0xdff6ff, [-0.13, 0.28, -0.04], [0, 0, 0.6], [0.07, 0.45, 0.07]]]);
+    }
     if (th.dead) { // verkohlte Bäume mit Glutspitzen
       kinds.pine = merge([[geo.cyl(6), 0x2a2224, [0, 0.45, 0], 0, [0.07, 0.9, 0.07]], [geo.cyl(5), 0x2a2224, [0.12, 0.7, 0], [0, 0, -0.8], [0.035, 0.35, 0.035]], [geo.cyl(5), 0x2a2224, [-0.1, 0.55, 0], [0, 0, 0.9], [0.03, 0.3, 0.03]], [geo.sphere(6), 0xff7a2a, [0, 0.92, 0], 0, 0.04]]);
       kinds.round = merge([[geo.dodec(), 0x3a3034, [0, 0.25, 0], [0.3, 0.5, 0.2], [0.4, 0.3, 0.36]], [geo.dodec(), 0x4a3e42, [0.25, 0.15, 0.15], [0.1, 1, 0.4], [0.22, 0.18, 0.2]]]);

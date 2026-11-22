@@ -34,6 +34,7 @@ export function migrate(p) {
   const fill = (dst, src) => { for (const k in src) { if (dst[k] === undefined) dst[k] = src[k]; else if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k])) fill(dst[k], src[k]); } };
   fill(p, d);
   for (const id in CREATURES) { p.chars[id] = p.chars[id] || {}; fill(p.chars[id], newCharProgress()); }
+  p.heroes ||= {}; for (const id in HEROES) p.heroes[id] ||= { rank: 1, xp: 0, runs: 0, wins: 0 };   // neue Helden in alten Spielständen
   p.v = V;
   return p;
 }

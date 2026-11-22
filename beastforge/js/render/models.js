@@ -3,7 +3,9 @@
 import * as THREE from 'three';
 import { toon, glow, flat, mk, geo, merge, optimize, anim } from './toon.js';
 import { buildGlb, gearOn } from './assets.js';
-import { turtle as turtleX, mantis as mantisX, phoenix as phoenixX } from './beasts.js';
+import { CREATURES } from '../data/creatures.js';
+import '../data/fusions.js';
+import { turtle as turtleX, mantis as mantisX, phoenix as phoenixX, naga, monk, voidcat, kappa, kirin, komainu } from './beasts.js';
 
 const PI = Math.PI;
 const S = () => geo.sphere(12), C = () => geo.cone(12), Y = () => geo.cyl(12), B = () => geo.box(), CP = () => geo.caps();
@@ -609,8 +611,33 @@ function mika(o) {
   return { root, tick, height: 1.1 };
 }
 
-const BUILDERS = { kitsune: fox, tiger, turtle: turtleX, deer, raven, kairo, dragonwolf, mantis: mantisX, phoenix: phoenixX, golem, raizen, mika };
-export function buildModel(id, o = {}) { const g = buildGlb(id, o); if (g) return g; const m = (BUILDERS[id] || fox)(o); optimize(m.root); return (id === 'turtle' || id === 'mantis' || id === 'phoenix') && o.tiers ? gearOn(m, o.tiers) : m; }
+const BUILDERS = { kitsune: fox, tiger, turtle: turtleX, deer, raven, kairo, dragonwolf, mantis: mantisX, phoenix: phoenixX, naga, monk, voidcat, kappa, kirin, komainu, golem, raizen, mika, hana: kairo, goro: raizen, yoru: mika, sora: kairo, ren: raizen };
+// Fusion: Körper von A (Stufe 3, etwas größer) + Kristallkrone, Halo und kreisende Splitter in der Farbe von B
+function fusionModel(def, o) {
+  const A = CREATURES[def.parents[0]], B = CREATURES[def.parents[1]];
+  const inner = buildModel(def.parents[0], { ...o, stage: Math.min(3, Math.max(...A.forms.map(f => f.stage))), skin: null });
+  const root = new THREE.Group(), body = new THREE.Group(); body.add(inner.root); body.scale.setScalar(1.14); root.add(body);
+  const cA = new THREE.Color(def.color).getHex(), cB = new THREE.Color(B.color).getHex();
+  // Körper leicht in Fusionsfarbe glühen lassen
+  inner.root.traverse(m => { if (m.isMesh && m.material?.emissive && !m.material.transparent) { m.material = m.material.clone(); m.material.emissive = new THREE.Color(cB); m.material.emissiveIntensity = 0.12; } });
+  const halo = add(root, new THREE.TorusGeometry(0.42, 0.018, 6, 40), glow(cB, 0.85), { p: [0, 0.05, 0], r: [PI / 2, 0, 0], ol: false });
+  const halo2 = add(root, new THREE.TorusGeometry(0.5, 0.01, 6, 40), glow(cA, 0.6), { p: [0, 0.07, 0], r: [PI / 2, 0, 0], ol: false });
+  const orbit = grp(root, [0, 0.55, 0]), shards = [];
+  for (let i = 0; i < 4; i++) {
+    const a = i / 4 * PI * 2, sh = add(orbit, geo.cone(4), glow(i % 2 ? cA : cB, 0.95), { p: [Math.cos(a) * 0.46, 0, Math.sin(a) * 0.46], s: [0.045, 0.13, 0.045], ol: false });
+    const tip = add(sh, geo.cone(4), glow(0xffffff, 0.8), { p: [0, -0.9, 0], r: [PI, 0, 0], s: [1, 0.7, 1], ol: false }); shards.push(sh); void tip;
+  }
+  const crown = grp(root, [0, 1.05, 0]);
+  for (let i = 0; i < 5; i++) { const a = i / 5 * PI * 2; add(crown, geo.cone(4), glow(i % 2 ? cA : cB, 0.9), { p: [Math.cos(a) * 0.09, 0, Math.sin(a) * 0.09], s: [0.025, i % 2 ? 0.07 : 0.11, 0.025], ol: false }); }
+  anim(orbit, crown, halo, halo2);
+  return { root, tick(t, dt, st) {
+    inner.tick(t, dt, st);
+    orbit.rotation.y = t * 1.6; orbit.position.y = 0.55 + Math.sin(t * 2) * 0.05; for (const [i, s] of shards.entries()) s.rotation.z = Math.sin(t * 3 + i) * 0.3;
+    crown.rotation.y = -t * 0.8; crown.position.y = 1.05 + Math.sin(t * 2.6) * 0.03;
+    halo.scale.setScalar(1 + Math.sin(t * 3) * 0.06 + (st?.atk || 0) * 0.15); halo2.rotation.z = t * 0.5;
+  } };
+}
+export function buildModel(id, o = {}) { const fd = CREATURES[id]; if (fd?.fusion) return fusionModel(fd, o); const g = buildGlb(id, o); if (g) return g; const m = (BUILDERS[id] || fox)(o); optimize(m.root); return ['turtle', 'mantis', 'phoenix', 'naga', 'monk', 'voidcat', 'kappa', 'kirin', 'komainu'].includes(id) && o.tiers ? gearOn(m, o.tiers) : m; }
 
 // ───────────────────────── GEGNER (verschmolzen für Instancing) ─────────────────────────
 const sp = () => geo.sphere(12), cn = () => geo.cone(8), bx = () => geo.box(), cy = () => geo.cyl(8), cap = () => geo.caps();

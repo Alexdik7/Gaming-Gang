@@ -367,3 +367,118 @@ test('Phönix: Glutfedern brennen, Wiedergeburt einmal pro Run, Sonnenaufgang', 
   const x = w2.spawn('golem', [], 0); x.x = t2.x + 1; x.y = t2.y; const hp = x.hp; t2.abCd = 0;
   assert.ok(w2.useAbility(t2.id, 'ab').ok); assert.ok(x.hp < hp && x.burnT > 0);
 });
+
+test('Rudel: Nachbarn stärken sich ohne Obergrenze, Fusionen verschmelzen zwei erweckte Kreaturen', async () => {
+  const { FUSIONS } = await import('../js/data/fusions.js');
+  const P = defaultProfile(); for (const id in CREATURES) P.chars[id].level = 30;
+  const { w } = mkWorld(P); w.coins = 1e6;
+  const a = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower; const solo = a.s.dmg;
+  const near = []; for (let k = 0; k < 40 && near.length < 4; k++) { const ang = k * 0.7, r = 0.9 + (k % 3) * 0.3, p = w.place('raven', a.x + Math.cos(ang) * r, a.y + Math.sin(ang) * r); if (p.ok) near.push(p.tower); }
+  assert.ok(near.length >= 2, 'Nachbarn platziert');
+  assert.ok(a.pack >= 2 && Math.abs(a.s.packMul - Math.pow(1 + BAL.run.packDmg, a.pack - 1)) < 1e-9 && a.s.dmg > solo * 1.05, 'Rudel-Multiplikator wächst mit jeder Kreatur');
+  assert.ok(!Object.keys(CREATURES).includes('solfox') && CREATURES.solfox?.fusion, 'Fusionen nicht im Shop');
+  for (const f of FUSIONS) assert.ok(CREATURES[f.id].paths.length === 3 && baseStats({ cid: f.id, stage: 0, tiers: [0, 0, 0] }).dmg > CREATURES[f.a].base.dmg, f.id);
+  const { w: w2 } = mkWorld(P); w2.coins = 1e6;
+  const k = w2.place('kitsune', ...w2.suggestSpot('kitsune', 3)).tower; let ph = null;
+  for (let i = 0; i < 24 && !ph; i++) { const r = w2.place('phoenix', k.x + Math.cos(i * 0.5) * 1.1, k.y + Math.sin(i * 0.5) * 1.1); if (r.ok) ph = r.tower; }
+  assert.ok(ph, 'Phönix daneben');
+  assert.match(w2.fuseOptions(k)[0].why, /erwecken/);
+  w2.evolve(k.id); w2.evolve(ph.id); w2.upgrade(k.id, 0); w2.upgrade(k.id, 0);
+  const before = k.s.dmg, coins = w2.coins, r = w2.fuse(k.id, 'solfox');
+  assert.ok(r.ok && w2.towers.length === 1 && k.cid === 'solfox' && k.tiers[0] === 2 && w2.coins === coins - FUSIONS[0].cost);
+  assert.ok(k.s.dmg > before * 1.5 && k.s.pierce >= 3 && k.s.burn.dps > 5, 'Fusion ist deutlich stärker');
+  assert.ok(w2.abilityInfo(k).every(x => x.ready), 'Fähigkeiten sofort bereit');
+  w2.charXp('solfox', 100); assert.ok(w2.stats.xp.kitsune > 0 && w2.stats.xp.phoenix > 0, 'XP für beide Eltern');
+});
+
+test('Neue Kreaturen: Gift der Schlangenmagierin, Wirbelsturm, Realitätsriss, neue Fusionen', () => {
+  const P = defaultProfile(); for (const id in CREATURES) P.chars[id].level = 12;
+  const { w } = mkWorld(P); w.coins = 1e6;
+  const n = w.place('naga', ...w.suggestSpot('naga', 3)).tower, m = w.place('monk', ...w.suggestSpot('monk', 3)).tower, v = w.place('voidcat', ...w.suggestSpot('voidcat', 3)).tower;
+  assert.ok(n && m && v && n.s.poison && m.s.knock > 0 && v.s.dmgType === 'astral');
+  for (const t of [n, m, v]) w.evolve(t.id);
+  const near = t => { const e = w.spawn('golem', [], 0); e.x = t.x + 0.8; e.y = t.y; return e; };
+  const e1 = near(n), hp1 = e1.hp; assert.ok(w.useAbility(n.id).ok !== false); assert.ok(e1.vuln >= 0.4 && e1.burnType === 'shadow' && e1.hp < hp1, 'Fluch');
+  const e2 = w.spawn('slime', [], 0); e2.d = 6; w.posAt(e2.d, e2, e2.pi); m.x = e2.x + 0.5; m.y = e2.y; m.abCd = 0; assert.ok(w.useAbility(m.id).ok !== false); assert.ok(!e2.alive || e2.d < 6, 'Wirbelsturm wirft zurück');
+  const e3 = near(v), hp3 = e3.hp; v.abCd = 0; w.useAbility(v.id); assert.ok(e3.hp < hp3 - v.s.dmg * 20 || !e3.alive, 'Realitätsriss');
+  for (const id of ['hydra', 'tengu', 'cosmofox']) assert.ok(CREATURES[id]?.fusion && baseStats({ cid: id, stage: 0, tiers: [0, 0, 0] }).dmg > 5, id);
+});
+
+test('Wellen 1–60: Schwer 40, Meister 60 mit Boss-Varianten, Rückstoß-Grenze, Heiler heilen keine Heiler', () => {
+  assert.equal(BAL.diff.hard.waves, 40); assert.equal(BAL.diff.master.waves, 60);
+  for (let i = 1; i <= 70; i++) { const d = waveDef(i); assert.ok(d.groups.length > 0, 'Welle ' + i); }
+  assert.equal(waveDef(40).boss, 'vharox2'); assert.equal(waveDef(60).boss, 'vharox3');
+  const { w } = mkWorld(defaultProfile(), { diff: 'master' });
+  const b = w.spawn('vharox3', [], 2); assert.ok(b.boss && b.maxHp > 100000);
+  const e = w.spawn('wolf', [], 8); for (let i = 0; i < 10; i++) w.knock(e, 1); assert.ok(Math.abs(e.d - (8 - BAL.run.knockCap)) < 1e-9, 'Rückstoß gedeckelt');
+  const h1 = w.spawn('healer', [], 5), h2 = w.spawn('healer', [], 5.2), x = w.spawn('boar', [], 5.1);
+  h1.hp = h1.maxHp / 2; x.hp = x.maxHp / 2; for (let i = 0; i < 60 * 4; i++) w.step(1 / 60);
+  assert.ok(h1.hp <= h1.maxHp / 2 + 1e-6 && x.hp > x.maxHp / 2, 'Heiler heilen nur andere Gegner');
+  assert.ok(BAL.miniScale(30) > 2 && BAL.lateCoins(60) > 2);
+});
+
+test('Frosttempel: Eisbahnen beschleunigen, Schneesturm verlangsamt Gegner und stärkt Eiskreaturen, Boss Hyōga', () => {
+  const P = defaultProfile(); for (const id in CREATURES) P.chars[id].level = 20;
+  const { w } = mkWorld(P, { map: 'frost' }); w.coins = 1e6;
+  const dw = w.place('dragonwolf', ...w.suggestSpot('dragonwolf', 2.2)).tower, k = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower;
+  const r0 = dw.s.rate, k0 = k.s.rate;
+  const e = w.spawn('slime', [], 0); const ice = w.spawn('slime', [], 0);
+  // auf einer Eisbahn: Feld (5,1) liegt im ersten Eisstück
+  assert.ok(w.onIce(5.5, 1.5) && !w.onIce(2.5, 6.5));
+  w.stormCd = 0; w.updStorm(0.01); w.refresh();
+  assert.ok(w.stormT > 0 && dw.s.rate > r0 * 1.2 && k.s.rate < k0, 'Sturm: Eis schneller, andere langsamer');
+  w.stormT = 0.005; w.updStorm(0.01); w.refresh(); assert.ok(Math.abs(dw.s.rate - r0) < 1e-9, 'Sturm vorbei');
+  const { w: w2 } = mkWorld(P, { map: 'frost' }); w2.wave = 19; w2.doneWave = 19; w2.startWave();
+  assert.ok(w2.spawners.some(s => s.e === 'hyoga'), 'Boss im Frosttempel ist Hyōga');
+  const b = w2.spawn('hyoga', [], 2); assert.ok(b.boss && b.def.model === 'wolf');
+  void e; void ice;
+});
+
+test('Himmelsinseln: offener Himmel nicht bebaubar, Brücken, Windböe drückt zurück, Boss Fūjin', () => {
+  const { w } = mkWorld(defaultProfile(), { map: 'sky' }); w.coins = 1e6;
+  assert.equal(w.terrainAt(6.5, 1.5), 'V'); assert.equal(w.terrainAt(6.5, 9.5), 'B');
+  assert.ok(!w.canPlace('kitsune', 6.5, 5.5).ok, 'Himmel nicht bebaubar');
+  const e = w.spawn('boar', [], 0); const L = w.paths[0];
+  // Gegner auf die Brücke bei (6.5, 9.5) setzen: Abstand entlang des Pfads suchen
+  let d = 0; for (; d < 40; d += 0.05) { w.posAt(d, e, 0); if (w.terrainAt(e.x, e.y) === 'B') break; } e.d = d + 0.3; w.posAt(e.d, e, 0);
+  const f = w.spawn('wisp', [], 2); const fd = f.d;
+  w.gustCd = 0; w.updGust(0.01); assert.ok(w.gustT > 0);
+  const d0 = e.d; for (let i = 0; i < 30; i++) w.step(1 / 60);
+  assert.ok(e.d < d0, 'auf der Brücke zurückgedrückt'); assert.ok(f.d > fd, 'Fliegende fliegen weiter');
+  const { w: w2 } = mkWorld(defaultProfile(), { map: 'sky' }); w2.wave = 19; w2.doneWave = 19; w2.startWave();
+  assert.ok(w2.spawners.some(s => s.e === 'fujin'), 'Boss auf den Himmelsinseln ist Fūjin');
+  void L;
+});
+
+test('Neue Helden Hana, Gorō, Yoru: Grundangriff, Fähigkeiten, alte Spielstände bekommen die Helden', () => {
+  const old = defaultProfile(); delete old.heroes.hana; const P = migrate(JSON.parse(JSON.stringify(old)));
+  assert.ok(P.heroes.hana && P.heroes.goro && P.heroes.yoru, 'Migration legt neue Helden an');
+  for (const [hid, ab, ult] of [['hana', 'petals', 'thousand'], ['goro', 'wall', 'meteor'], ['yoru', 'veil', 'starfall']]) {
+    const { w } = mkWorld(defaultProfile(), { hero: hid }); w.coins = 1e6;
+    const h = w.place(hid, ...w.suggestSpot(hid, 2)).tower; assert.ok(h?.hero, hid + ' platziert');
+    w.heroXp(h, 1e7); assert.equal(h.hlvl, 20);
+    const es = [0, 1, 2].map(i => { const e = w.spawn('golem', [], 0); e.x = h.x + 0.6 + i * 0.3; e.y = h.y; return e; });
+    const hp = es.map(e => e.hp);
+    assert.ok(w.useAbility(h.id, 'ab').ok !== false, hid + ' Fähigkeit'); assert.ok(w.useAbility(h.id, 'ult').ok !== false, hid + ' Ultimate');
+    assert.ok(es.some((e, i) => e.hp < hp[i] || e.vuln > 0), hid + ' wirkt');
+  }
+});
+
+test('Kappa, Kirin, Komainu + Helden Sora/Ren: Fähigkeiten, Gurkenhandel, Bossschaden, Fusionen', () => {
+  const P = defaultProfile(); for (const id in CREATURES) P.chars[id].level = 12;
+  const { w } = mkWorld(P); w.coins = 1e6;
+  const kp = w.place('kappa', ...w.suggestSpot('kappa', 2.8)).tower, kr = w.place('kirin', ...w.suggestSpot('kirin', 3)).tower, km = w.place('komainu', ...w.suggestSpot('komainu', 1.5)).tower;
+  assert.ok(kp && kr && km && kr.s.chain.n >= 2 && km.s.bossMul > 1.5);
+  for (let i = 0; i < 3; i++) w.upgrade(kp.id, 2); assert.ok(kp.s.income >= 170, 'Gurkenhandel bringt Münzen');
+  for (const t of [kp, kr, km]) w.evolve(t.id);
+  const near = t => { const e = w.spawn('golem', [], 0); e.x = t.x + 0.7; e.y = t.y; return e; };
+  for (const t of [kp, kr, km]) { const e = near(t), hp = e.hp; t.abCd = 0; assert.ok(w.useAbility(t.id).ok !== false, t.cid); assert.ok(e.hp < hp || !e.alive, t.cid + ' trifft'); }
+  assert.ok(kr.buffs.some(b => b.id === 'radiance'), 'Himmelsglanz stärkt');
+  for (const id of ['riverdragon', 'sunkirin', 'templeguard']) assert.ok(CREATURES[id]?.fusion && baseStats({ cid: id, stage: 0, tiers: [0, 0, 0] }).dmg > 5, id);
+  for (const [hid, ab, ult] of [['sora', 'volley', 'skyshot'], ['ren', 'puppets', 'bind']]) {
+    const { w: w2 } = mkWorld(defaultProfile(), { hero: hid }); const h = w2.place(hid, ...w2.suggestSpot(hid, 3)).tower; w2.heroXp(h, 1e7);
+    const es = [0, 1, 2].map(i => { const e = w2.spawn('golem', [], 0); e.x = h.x + 0.6 + i * 0.3; e.y = h.y; return e; }); const hp = es.map(e => e.hp);
+    assert.ok(w2.useAbility(h.id, 'ab').ok !== false && w2.useAbility(h.id, 'ult').ok !== false, hid);
+    assert.ok(es.some((e, i) => e.hp < hp[i]) || h.clonesT > 0, hid + ' wirkt');
+  }
+});

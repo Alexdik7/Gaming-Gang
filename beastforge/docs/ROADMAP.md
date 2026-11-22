@@ -39,9 +39,9 @@ Ziel: Spielgefühl und Umfang eines Top-Tower-Defense – mit eigener Welt, eige
 - **B1 ✅ (v0.5)** Modell-Pipeline + echte animierte Gegner/Bosse + 5 Kreaturen als Skin-Modelle.
 - **B2 ✅ (v0.6)** Helden (KayKit) + Tiger (Katze mit Streifen) als Modelle, sichtbare Teile für **jede** Pfadstufe. Offen: Schildkröte, Mantis (kein CC0-Modell – evtl. prozedural aufwerten).
 - **A1 ✅ (v0.9, Grundform)** Schichten-Gegner: Hüllen platzen ab und setzen kleinere Gegner frei (Knall, Funken, Ton) – das Herz des Genres. Gegner-Eigenschaften als kombinierbare Merkmale (getarnt, gepanzert, regenerierend, verstärkt).
-- **A2** Leistung für 1.000+ Gegner: Simulation im Web Worker, Gruppen bündeln, Umriss + Pose in einem Draw-Call, LOD.
-- **A3** Wellen 1–60 neu (+ freies Weiterspielen), Wirtschafts-Kreatur (Bank/Farm-Prinzip), Super-Endausbau pro Kreatur.
-- **C1–C4** Kreaturen 9–16 (Schlangenmagier, Windmönch, Phönix, Leerenkatze …), Helden 4–6, Karten 4–10 in drei Schwierigkeitsgruppen, Bosse 2–5 mit Stufen.
+- **A2 ✅ (v0.20)** Leistung für 1.000+ Gegner: gemessen (Grafik ist der Engpass, Simulation 0,7 ms → kein Worker nötig), Massen-LOD + Massenmodus ohne Umrisse, mitwachsende Instanz-Puffer, laufende Auto-Qualität.
+- **A3 ✅ (v0.19)** Wellen 1–60 neu (Schwer 40, Meister 60, Boss-Varianten), freies Weiterspielen, Wirtschafts-Kreatur (Glückskatze v0.11). Offen: Super-Endausbau pro Kreatur.
+- **C1–C4** Kreaturen 9–16 (Schlangenmagier, Windmönch, Phönix, Leerenkatze …), Helden 4–6, Karten 4–10 in drei Schwierigkeitsgruppen, Bosse 2–5 mit Stufen. ✅ Karte 4 Frosttempel + Boss 2 Hyōga (v0.21), Karte 5 Himmelsinseln + Boss 3 Fūjin (v0.22); Helden 4–6 Hana/Gorō/Yoru (v0.23).
 - **D ✅ (v0.13, Grundform)** Herausforderungs-Modi (nur Grundkreaturen, halbes Geld, umgekehrter Weg, doppelte KP, „Seelenbrand“), tägliche Herausforderung, Boss-Events.
 - **E** Wissensbaum, Kräfte, Kosmetik-Shop, Quests, Wochen-Events.
 - **F** Koop 2–4 über Raumcode (Netzcode aus Cats TD übernehmen).
@@ -52,7 +52,7 @@ Ziel: Spielgefühl und Umfang eines Top-Tower-Defense – mit eigener Welt, eige
 1. **Echter Spieltest auf dem iPhone** → Balance, Lesbarkeit, **Leistung mit den neuen Modellen**.
 2. ✅ Kreaturen 6–8 · ✅ Karte 2 · ✅ Helden Raizen + Mika
 3. ✅ Karte 3 „Glutkrater“ + Feuerdämon/Schildträger
-4. **Kreaturen 9–12**: ✅ Phönix (v0.16) · offen: Schlangenmagier, Windmönch, Leerenkatze (Realitätsschaden).
+4. **Kreaturen 9–12**: ✅ Phönix (v0.16) · ✅ Rudel-Bonus + 6 Fusionen (v0.17) · ✅ Schlangenmagierin, Windmönch, Leerenkatze + 3 Fusionen (v0.18)
 5. **Helden 4–5**: Akuma (Oni-Krieger), Sora (Himmelskriegerin).
 6. **Bosse 2–5**: Leerenkaiser (stört Türme), Titan, Seuchenkönigin (Adds), Himmelsbestie (sehr schnell).
 7. **Modi**: Boss-Rush, Herausforderungen mit Modifikatoren, Zufallsmodus, härteste Stufe „Seelenbrand“ (eigener Name).
