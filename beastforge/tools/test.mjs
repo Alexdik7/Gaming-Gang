@@ -463,3 +463,22 @@ test('Neue Helden Hana, Gorō, Yoru: Grundangriff, Fähigkeiten, alte Spielstän
     assert.ok(es.some((e, i) => e.hp < hp[i] || e.vuln > 0), hid + ' wirkt');
   }
 });
+
+test('Kappa, Kirin, Komainu + Helden Sora/Ren: Fähigkeiten, Gurkenhandel, Bossschaden, Fusionen', () => {
+  const P = defaultProfile(); for (const id in CREATURES) P.chars[id].level = 12;
+  const { w } = mkWorld(P); w.coins = 1e6;
+  const kp = w.place('kappa', ...w.suggestSpot('kappa', 2.8)).tower, kr = w.place('kirin', ...w.suggestSpot('kirin', 3)).tower, km = w.place('komainu', ...w.suggestSpot('komainu', 1.5)).tower;
+  assert.ok(kp && kr && km && kr.s.chain.n >= 2 && km.s.bossMul > 1.5);
+  for (let i = 0; i < 3; i++) w.upgrade(kp.id, 2); assert.ok(kp.s.income >= 170, 'Gurkenhandel bringt Münzen');
+  for (const t of [kp, kr, km]) w.evolve(t.id);
+  const near = t => { const e = w.spawn('golem', [], 0); e.x = t.x + 0.7; e.y = t.y; return e; };
+  for (const t of [kp, kr, km]) { const e = near(t), hp = e.hp; t.abCd = 0; assert.ok(w.useAbility(t.id).ok !== false, t.cid); assert.ok(e.hp < hp || !e.alive, t.cid + ' trifft'); }
+  assert.ok(kr.buffs.some(b => b.id === 'radiance'), 'Himmelsglanz stärkt');
+  for (const id of ['riverdragon', 'sunkirin', 'templeguard']) assert.ok(CREATURES[id]?.fusion && baseStats({ cid: id, stage: 0, tiers: [0, 0, 0] }).dmg > 5, id);
+  for (const [hid, ab, ult] of [['sora', 'volley', 'skyshot'], ['ren', 'puppets', 'bind']]) {
+    const { w: w2 } = mkWorld(defaultProfile(), { hero: hid }); const h = w2.place(hid, ...w2.suggestSpot(hid, 3)).tower; w2.heroXp(h, 1e7);
+    const es = [0, 1, 2].map(i => { const e = w2.spawn('golem', [], 0); e.x = h.x + 0.6 + i * 0.3; e.y = h.y; return e; }); const hp = es.map(e => e.hp);
+    assert.ok(w2.useAbility(h.id, 'ab').ok !== false && w2.useAbility(h.id, 'ult').ok !== false, hid);
+    assert.ok(es.some((e, i) => e.hp < hp[i]) || h.clonesT > 0, hid + ' wirkt');
+  }
+});

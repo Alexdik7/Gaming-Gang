@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.23.0 – Drei neue Helden
+## Stand: v0.24.0 – Kappa, Kirin, Komainu, Sora und Ren
+**0.24:** Neue Kreaturen (prozedural in beasts.js): **Kappa** `kappa` (Konto-Lv 14, Wasserblasen `bubble` mit Fläche/Rückstoß/Verlangsamung, im Wasser schneller, Pfad Gurkenhandel = Einkommen, Fähigkeit `flood`), **Komainu** `komainu` (Lv 16, Nahkampf-Bossjäger `bossMul`, Fähigkeit `guardbite`), **Kirin** `kirin` (Lv 18, Licht-Kettenstrahlen – Blitzfarbe Gold, Segens-Aura, Fähigkeit `radiance`). Fusionen Flussdrache (Kappa+Schlangenmagierin), Sonnenkirin (Kirin+Phönix), Tempelkoloss (Komainu+Golem) – jetzt 12. Helden **Sora, Windbogenschützin** (Lv 17, `arrow`, Reichweite 4, `volley`/`skyshot`) und **Ren, Schattenpuppenspieler** (Lv 19, `puppets` = Klon-Mechanik, `bind` lähmt die ganze Karte). Animationen mit `scale` immer relativ zur Grundgröße setzen (sonst riesige Teile).
+
+## v0.23.0 – Drei neue Helden
 **0.23:** Helden 4–6 in `data/heroes.js`, Figuren in `HEROES3D` (assets.js, KayKit-Modelle umgefärbt + eigenes Zubehör, Rückfall in models.js): **Hana, Blütenklinge** (Konto-Lv 11, Nahkampf `atk:'slash'`, Fähigkeit `petals` Blütensturm mit Blutung, Ultimate `thousand` trifft die 12 stärksten Gegner), **Gorō, Steinmönch** (Lv 13, Erdstoß `pulse` mit Betäubung, Aura schützt vor Boss-Lähmung `support.protect`, Fähigkeit `wall` Steinwall 3 s Erstarren, Ultimate `meteor` in die dichteste Gruppe), **Yoru, Mondmagierin** (Lv 15, Astralsterne mit Verwundbarkeit `mark`, Aura +Reichweite, Fähigkeit `veil` enttarnt + 50 % Verwundbarkeit, Ultimate `starfall` 30 Sterne). Alte Spielstände bekommen neue Helden über `migrate`.
 
 ## v0.22.0 – Himmelsinseln und Boss Fūjin

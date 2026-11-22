@@ -441,6 +441,23 @@ const HEROES3D = {
     const rocks = []; for (let i = 0; i < (form ? 5 : 3); i++) { const r = mk(geo.dodec(), toon(0x9a8a78), { s: 0.045 + (i % 2) * 0.02, ol: 0.005 }); R.root.add(r); rocks.push(r); }
     anim.push(t => rocks.forEach((r, i) => { const q = t * 0.7 + i * PI * 2 / rocks.length; r.position.set(Math.cos(q) * 0.36, 0.5 + Math.sin(t * 1.4 + i) * 0.08, Math.sin(q) * 0.36); r.rotation.set(t + i, t * 0.6, 0); }));
   } }),
+  // Sora: Bogenschützin in Windgrün, Langbogen in der Hand, Köcher, Feder im Haar, Windbänder
+  sora: o => hero('kk_ninja', o, { tint: [0x6ac88a, 0.5], em: 0x061a0a, col: 0x8fe0a0, atk: 'throw', build(R, head, hb, form, anim) {
+    const bow = new THREE.Group(); bow.add(mk(new THREE.TorusGeometry(1, 0.06, 6, 20, PI * 0.9), toon(0x8a5a32), { r: [0, 0, PI * 0.55], s: 0.24, ol: 0.004 })); bow.add(mk(geo.cyl(4), toon(0xf0f0e8), { s: [0.004, 0.44, 0.004], ol: false, p: [-0.07, 0, 0] }));
+    bow.position.set(0.22, 0.42, 0.08); bow.rotation.y = PI / 2; R.root.add(bow);
+    const quiver = new THREE.Group(); quiver.add(mk(geo.cyl(10), toon(0x6a3a22), { s: [0.05, 0.22, 0.05], ol: 0.004 })); for (let i = 0; i < 3; i++) quiver.add(mk(C(4), toon(0xffffff), { p: [(i - 1) * 0.02, 0.14, 0], s: [0.02, 0.06, 0.008], ol: false }));
+    quiver.position.set(-0.1, 0.5, -0.14); quiver.rotation.z = 0.4; R.root.add(quiver);
+    R.attach(hb, mk(C(4), toon(0xffffff, { emissive: 0x8fe0a0, emissiveIntensity: 0.3 }), { r: [0, 0, -0.5], s: [0.03, 0.16, 0.01], ol: 0.003 }), head.clone().add(new THREE.Vector3(0.12, 0.28, -0.04)));
+    const winds = []; for (let i = 0; i < (form ? 3 : 2); i++) { const w = mk(geo.torus(0.02), glow(0xdff8ff, 0.5), { r: [PI / 2, 0, 0], s: 0.3 + i * 0.08, ol: false }); w.position.y = 0.25 + i * 0.2; R.root.add(w); winds.push(w); }
+    anim.push(t => winds.forEach((w, i) => { w.rotation.z = t * (i % 2 ? -1.5 : 1.8); w.scale.setScalar(0.3 + i * 0.08 + Math.sin(t * 2 + i) * 0.02); }));
+  } }),
+  // Ren: Puppenspieler in Violett-Schwarz, Fäden aus den Händen, eine kleine schwebende Schattenpuppe
+  ren: o => hero('kk_raizen', o, { tint: [0x3a1a5a, 0.85], em: 0x14061e, col: 0xb07bff, atk: 'magic', build(R, head, hb, form, anim) {
+    R.attach(hb, mk(geo.box(), toon(0xf0e8f8), { s: [0.16, 0.1, 0.03], ol: 0.004 }), head.clone().add(new THREE.Vector3(0, 0.12, 0.13)));   // Halbmaske
+    const pups = []; for (let i = 0; i < (form ? 3 : 1); i++) { const p = new THREE.Group(); p.add(mk(geo.sphere(10), toon(0x2a1a3a, { emissive: 0x6a2aa8, emissiveIntensity: 0.4 }), { p: [0, 0.07, 0], s: [0.045, 0.06, 0.04], ol: 0.004 })); p.add(mk(geo.sphere(10), toon(0xf0e8f8), { p: [0, 0.15, 0], s: 0.035, ol: 0.004 })); p.add(mk(geo.sphere(6), glow(0xb07bff, 0.9), { p: [0, 0.155, 0.03], s: [0.02, 0.008, 0.008], ol: false }));
+      const thread = mk(geo.cyl(3), glow(0xd8c8ff, 0.45), { p: [0, 0.4, 0], s: [0.003, 0.5, 0.003], ol: false }); p.add(thread); R.root.add(p); pups.push(p); }
+    anim.push(t => pups.forEach((p, i) => { const q = t * 0.8 + i * PI * 2 / pups.length; p.position.set(Math.cos(q) * 0.3, 0.25 + Math.abs(Math.sin(t * 3 + i)) * 0.08, Math.sin(q) * 0.3); p.rotation.y = -q; }));
+  } }),
   // Yoru: Magierin in Nachtblau mit Mondsichel über dem Kopf und kreisenden Sternen
   yoru: o => hero('kk_mage', o, { tint: [0x3a4a9a, 0.55], em: 0x0a0a20, col: 0x9fb4ff, atk: 'cast', build(R, head, hb, form, anim) {
     const moon = mk(new THREE.TorusGeometry(1, 0.16, 8, 24, PI * 1.3), glow(0xe8ecff, 0.9), { r: [0, 0, PI * 0.35], s: 0.09, ol: false });
@@ -475,7 +492,7 @@ function neko(o) {
 }
 
 export const GLB_CREATURES = { kitsune, deer, raven, dragonwolf, golem, tiger, neko, ...HEROES3D };
-const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', neko: 'cat', kairo: 'kk_ninja', raizen: 'kk_raizen', mika: 'kk_mage', hana: 'kk_ninja', goro: 'kk_raizen', yoru: 'kk_mage' };
+const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', neko: 'cat', kairo: 'kk_ninja', raizen: 'kk_raizen', mika: 'kk_mage', hana: 'kk_ninja', goro: 'kk_raizen', yoru: 'kk_mage', sora: 'kk_ninja', ren: 'kk_raizen' };
 export function buildGlb(id, o) { if (!(ready && GLB_CREATURES[id] && ASSETS[SRC[id]])) return null; try { return GLB_CREATURES[id](o); } catch (e) { console.warn(e.message); return null; } }
 
 // ───────── Bosse / Mini-Bosse ─────────

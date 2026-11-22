@@ -589,5 +589,134 @@ CREATURES.voidcat = {
   mastery: { title: 'Sternenwanderer', skins: [{ name: 'Mondkatze', pal: 'moon' }, { name: 'Sonnenkatze', pal: 'star' }] },
 };
 
+// ───────────────────────── KAPPA (Wasser, Rückstoß, Gurkenhandel) ─────────────────────────
+CREATURES.kappa = {
+  id: 'kappa', name: 'Kappa', role: 'Wasser / Fläche', elements: ['ice', 'earth'],
+  color: '#5fc8a0', cost: 500, place: ['ground', 'high', 'water'], model: 'kappa',
+  lore: 'Ein Flusskobold mit einer Wasserschale auf dem Kopf. Er verbeugt sich höflich – und dann spült er alles weg. Für eine Gurke tut er fast alles.',
+  base: { proj: 'bubble', dmg: 4, rate: 1.1, range: 2.8, speed: 10, aoe: 0.7, dmgType: 'phys', knock: 0.12, 'slow.pct': 0.2, 'slow.dur': 1, water: 0.3 },
+  forms: [
+    { id: 'kid', stage: 0, lvl: 1, cost: 0, name: 'Kappa-Kind', desc: 'Wirft Wasserblasen: kleine Fläche, Rückstoß, Verlangsamung. Im Wasser +30 % Tempo.' },
+    { id: 'river', stage: 1, lvl: 10, cost: 650, name: 'Flusskappa', desc: 'Panzer aus Flusskieseln. Größere Blasen.', fx: { mul: { dmg: 1.35 }, add: { aoe: 0.3, range: 0.2 } } },
+    { id: 'falls', stage: 2, lvl: 25, cost: 2500, name: 'Wasserfall-Kappa', desc: 'Trägt einen kleinen Wasserfall auf dem Rücken. Zwei Blasen, sieht Getarnte.', fx: { mul: { dmg: 1.5 }, add: { shots: 1, aoe: 0.2, range: 0.3 }, set: { camo: true } } },
+  ],
+  paths: [
+    { id: 'stream', name: 'Strömung', icon: '🌊', tiers: [
+      { name: 'Volle Schale', cost: 200, desc: '+2 Schaden', fx: { add: { dmg: 2 } } },
+      { name: 'Wirbelblasen', cost: 480, desc: 'Größere Fläche', fx: { add: { aoe: 0.4 } } },
+      { name: 'Sturzbach', cost: 1150, desc: 'Tempo ×1,3, +1 Blase', fx: { mul: { rate: 1.3 }, add: { shots: 1, spread: 0.3 } } },
+      { name: 'Hochwasser', cost: 2700, desc: 'Schaden ×2,2', fx: { mul: { dmg: 2.2 } } },
+      { name: 'Flussgott', cost: 7000, desc: 'Schaden ×2,4, riesige Blasen', fx: { mul: { dmg: 2.4 }, add: { aoe: 0.8 } } },
+    ] },
+    { id: 'tide', name: 'Gezeiten', icon: '🌀', tiers: [
+      { name: 'Sog', cost: 220, desc: '+15 % Verlangsamung', fx: { add: { 'slow.pct': 0.15 } } },
+      { name: 'Brandung', cost: 500, desc: 'Stärkerer Rückstoß', fx: { add: { knock: 0.15 } } },
+      { name: 'Strudel', cost: 1200, desc: 'Jede 4. Blase: großer Strudel', fx: { set: { 'every.n': 4, 'every.mul': 3, 'every.aoe': 1.6, 'every.proj': 'bubble', 'every.dmgType': 'phys' } } },
+      { name: 'Springflut', cost: 2600, desc: '+20 % Verlangsamung, länger', fx: { add: { 'slow.pct': 0.2, 'slow.dur': 1 } } },
+      { name: 'Mahlstrom', cost: 6800, desc: 'Strudel jede 2., ×3 Schaden', fx: { set: { 'every.n': 2 }, mul: { 'every.mul': 3 } } },
+    ] },
+    { id: 'cucumber', name: 'Gurkenhandel', icon: '🥒', tiers: [
+      { name: 'Gurkenbeet', cost: 300, desc: '+30 Münzen je Welle', fx: { add: { income: 30 } } },
+      { name: 'Gurkenstand', cost: 700, desc: '+50 Münzen je Welle', fx: { add: { income: 50 } } },
+      { name: 'Gurkenmarkt', cost: 1600, desc: '+90 Münzen je Welle', fx: { add: { income: 90 } } },
+      { name: 'Gurkenhandelshaus', cost: 3600, desc: '+180 Münzen je Welle', fx: { add: { income: 180 } } },
+      { name: 'Gurkenimperium', cost: 8000, desc: '+400 Münzen je Welle', fx: { add: { income: 400 } } },
+    ] },
+  ],
+  ability: { id: 'flood', name: 'Flutwelle', lvl: 8, stage: 1, cd: 45, desc: 'Eine Flutwelle spült alle Gegner in der Nähe zurück und verlangsamt sie stark.' },
+  passives: {
+    20: { name: 'Flussherz', desc: '+10 % Schaden', fx: { mul: { dmg: 1.1 } } },
+    40: { name: 'Weiter Wurf', desc: '+0,2 Reichweite', fx: { add: { range: 0.2 } } },
+    50: { name: 'Flussmeister', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } },
+  },
+  mastery: { title: 'Gurkenfreund', skins: [{ name: 'Mondkappa', pal: 'moon' }, { name: 'Sternenkappa', pal: 'star' }] },
+};
+
+// ───────────────────────── KIRIN (Licht, Kettenstrahlen, Segen) ─────────────────────────
+CREATURES.kirin = {
+  id: 'kirin', name: 'Kirin', role: 'Licht / Kette / Segen', elements: ['light', 'spirit'],
+  color: '#ffe27a', cost: 750, place: ['ground', 'high'], model: 'kirin',
+  lore: 'Ein Himmelswesen mit Hufen aus Licht. Wo es geht, wächst kein Unkraut – nur Mut. Seine Strahlen springen von Feind zu Feind.',
+  base: { atk: 'chain', dmg: 11, rate: 0.9, range: 3.0, dmgType: 'light', 'chain.n': 2, 'chain.range': 2.2 },
+  forms: [
+    { id: 'foal', stage: 0, lvl: 1, cost: 0, name: 'Kirin-Fohlen', desc: 'Lichtstrahlen springen auf zwei weitere Gegner.' },
+    { id: 'kirin', stage: 1, lvl: 10, cost: 800, name: 'Kirin', desc: 'Goldene Mähne und Geweih. Längere Ketten.', fx: { mul: { dmg: 1.35 }, add: { 'chain.n': 1, range: 0.2 } } },
+    { id: 'celestial', stage: 2, lvl: 25, cost: 2900, name: 'Himmelskirin', desc: 'Schwebt auf Wolken, Heiligenschein. Sieht Getarnte.', fx: { mul: { dmg: 1.5 }, add: { 'chain.n': 1, range: 0.3 }, set: { camo: true } } },
+  ],
+  paths: [
+    { id: 'beam', name: 'Lichtstrahl', icon: '✨', tiers: [
+      { name: 'Heller Strahl', cost: 250, desc: '+4 Schaden', fx: { add: { dmg: 4 } } },
+      { name: 'Prisma', cost: 550, desc: 'Kette +2', fx: { add: { 'chain.n': 2 } } },
+      { name: 'Strahlenkranz', cost: 1300, desc: 'Tempo ×1,3', fx: { mul: { rate: 1.3 } } },
+      { name: 'Sonnenspeer', cost: 2900, desc: 'Schaden ×2, weniger Abfall', fx: { mul: { dmg: 2 }, set: { 'chain.fall': 0.9 } } },
+      { name: 'Himmelsurteil', cost: 7400, desc: 'Schaden ×2,4, Kette +3', fx: { mul: { dmg: 2.4 }, add: { 'chain.n': 3 } } },
+    ] },
+    { id: 'glare', name: 'Heiliger Glanz', icon: '🔆', tiers: [
+      { name: 'Blendung', cost: 230, desc: '10 % Chance zu betäuben', fx: { add: { 'stun.ch': 0.1, 'stun.dur': 0.5 } } },
+      { name: 'Wahres Licht', cost: 520, desc: 'Sieht Getarnte', fx: { set: { camo: true } } },
+      { name: 'Entlarvung', cost: 1200, desc: 'Getroffene nehmen +15 % Schaden', fx: { add: { mark: 0.15 } } },
+      { name: 'Gleißen', cost: 2700, desc: '+20 % Krit, Krit ×2,5', fx: { add: { 'crit.ch': 0.2 }, set: { 'crit.mult': 2.5 } } },
+      { name: 'Sonnenauge', cost: 7000, desc: '+15 % Verwundbarkeit, Schaden ×1,8', fx: { add: { mark: 0.15 }, mul: { dmg: 1.8 } } },
+    ] },
+    { id: 'bless', name: 'Segen', icon: '🕊', tiers: [
+      { name: 'Gute Omen', cost: 260, desc: 'Aura: +6 % Schaden', fx: { add: { 'support.range': 2.6, 'support.dmg': 0.06 } } },
+      { name: 'Glücksbringer', cost: 600, desc: '+2 Leben je Welle', fx: { add: { lifeRegen: 2 } } },
+      { name: 'Heiliger Boden', cost: 1400, desc: 'Aura: +8 % Tempo, +10 % Reichweite', fx: { add: { 'support.rate': 0.08, 'support.rng': 0.1 } } },
+      { name: 'Himmelsschutz', cost: 3000, desc: 'Aura schützt vor Lähmung, +8 % Schaden', fx: { add: { 'support.dmg': 0.08 }, set: { 'support.protect': true } } },
+      { name: 'Göttlicher Segen', cost: 7600, desc: 'Aura +15 % Schaden, +10 % Tempo', fx: { add: { 'support.dmg': 0.15, 'support.rate': 0.1 } } },
+    ] },
+  ],
+  ability: { id: 'radiance', name: 'Himmelsglanz', lvl: 8, stage: 1, cd: 50, desc: 'Kreaturen in der Nähe +40 % Schaden (8 s); Gegner in der Nähe werden verwundbar und vom Licht getroffen.' },
+  passives: {
+    20: { name: 'Lichthuf', desc: '+10 % Schaden', fx: { mul: { dmg: 1.1 } } },
+    40: { name: 'Weiter Glanz', desc: '+0,2 Reichweite', fx: { add: { range: 0.2 } } },
+    50: { name: 'Himmelsbote', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } },
+  },
+  mastery: { title: 'Lichtträger', skins: [{ name: 'Mondkirin', pal: 'moon' }, { name: 'Sternenkirin', pal: 'star' }] },
+};
+
+// ───────────────────────── KOMAINU (Bossjäger, Nahkampf) ─────────────────────────
+CREATURES.komainu = {
+  id: 'komainu', name: 'Komainu', role: 'Bossjäger / Nahkampf', elements: ['earth', 'phys'],
+  color: '#e8b04a', cost: 650, place: ['ground', 'high'], model: 'komainu',
+  lore: 'Ein steinerner Löwenhund, der seit tausend Jahren vor dem Schrein wacht. Kleine Gegner langweilen ihn. Große Gegner – die beißt er.',
+  base: { atk: 'slash', dmg: 16, rate: 0.9, range: 1.5, dmgType: 'phys', bossMul: 1.6, pierceArmor: 0.2 },
+  forms: [
+    { id: 'pup', stage: 0, lvl: 1, cost: 0, name: 'Komainu-Welpe', desc: 'Kräftige Bisse, +60 % Schaden gegen Bosse und Mini-Bosse.' },
+    { id: 'guard', stage: 1, lvl: 10, cost: 700, name: 'Tempelwächter', desc: 'Lockige Steinmähne. Mehr Schaden, durchdringt Panzer.', fx: { mul: { dmg: 1.4 }, add: { pierceArmor: 0.2, range: 0.1 } } },
+    { id: 'lion', stage: 2, lvl: 25, cost: 2700, name: 'Steinlöwe', desc: 'Goldene Mähne und Glutaugen. Bossschaden ×2,2.', fx: { mul: { dmg: 1.5, bossMul: 1.35 }, add: { range: 0.1 } } },
+  ],
+  paths: [
+    { id: 'hunter', name: 'Bossjäger', icon: '👑', tiers: [
+      { name: 'Scharfe Zähne', cost: 250, desc: '+5 Schaden', fx: { add: { dmg: 5 } } },
+      { name: 'Riesenbiss', cost: 600, desc: 'Bossschaden ×1,3', fx: { mul: { bossMul: 1.3 } } },
+      { name: 'Panzerbrecher', cost: 1300, desc: 'Durchdringt Panzer, Schaden ×1,3', fx: { add: { pierceArmor: 0.3 }, mul: { dmg: 1.3 } } },
+      { name: 'Titanentöter', cost: 3000, desc: 'Bossschaden ×1,6', fx: { mul: { bossMul: 1.6 } } },
+      { name: 'Göttlicher Wächter', cost: 7800, desc: 'Schaden ×2,5', fx: { mul: { dmg: 2.5 } } },
+    ] },
+    { id: 'roar', name: 'Gebrüll', icon: '🦁', tiers: [
+      { name: 'Knurren', cost: 220, desc: 'Tempo ×1,15', fx: { mul: { rate: 1.15 } } },
+      { name: 'Prankenhieb', cost: 500, desc: 'Trifft auch Nachbarn', fx: { add: { cleave: 1 } } },
+      { name: 'Schreckensruf', cost: 1200, desc: '12 % Chance zu betäuben', fx: { add: { 'stun.ch': 0.12, 'stun.dur': 0.7 } } },
+      { name: 'Rudelführer', cost: 2600, desc: 'Breiter Bogen, Tempo ×1,3', fx: { add: { cleave: 1 }, mul: { rate: 1.3 } } },
+      { name: 'Donnergebrüll', cost: 6800, desc: 'Schaden ×2, längere Betäubung', fx: { mul: { dmg: 2 }, add: { 'stun.dur': 0.5 } } },
+    ] },
+    { id: 'watch', name: 'Wacht', icon: '⛩', tiers: [
+      { name: 'Wachsam', cost: 240, desc: 'Sieht Getarnte', fx: { set: { camo: true } } },
+      { name: 'Schreinwacht', cost: 560, desc: 'Aura schützt Nachbarn vor Lähmung', fx: { add: { 'support.range': 2.4 }, set: { 'support.protect': true } } },
+      { name: 'Langer Sprung', cost: 1200, desc: '+0,5 Reichweite', fx: { add: { range: 0.5 } } },
+      { name: 'Hüterstolz', cost: 2800, desc: 'Aura: +10 % Schaden gegen alles', fx: { add: { 'support.dmg': 0.1 } } },
+      { name: 'Ewige Wacht', cost: 7200, desc: 'Aura +15 % Schaden, eigener Schaden ×1,6', fx: { add: { 'support.dmg': 0.15 }, mul: { dmg: 1.6 } } },
+    ] },
+  ],
+  ability: { id: 'guardbite', name: 'Wächterbiss', lvl: 8, stage: 1, cd: 40, desc: 'Ein gewaltiger Biss in den stärksten Gegner in Reichweite – macht ihn 10 s lang verwundbar.' },
+  passives: {
+    20: { name: 'Steinherz', desc: '+10 % Schaden', fx: { mul: { dmg: 1.1 } } },
+    40: { name: 'Sprungkraft', desc: '+0,15 Reichweite', fx: { add: { range: 0.15 } } },
+    50: { name: 'Schreinhüter', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } },
+  },
+  mastery: { title: 'Schreinwächter', skins: [{ name: 'Jadelöwe', pal: 'moon' }, { name: 'Sternenlöwe', pal: 'star' }] },
+};
+
 export const CREATURE_IDS = Object.keys(CREATURES);
 export const PATH_COLORS = ['#ff7a3d', '#5fd6ff', '#c39bff'];

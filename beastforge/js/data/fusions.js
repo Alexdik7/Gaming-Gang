@@ -33,6 +33,15 @@ export const FUSIONS = [
   { id: 'cosmofox', a: 'voidcat', b: 'kitsune', name: 'Kosmosfuchs', role: 'Sternenfeuer', elements: ['astral', 'fire'], color: '#ff9af0', cost: 1700,
     desc: 'Fuchsfeuer aus dem All: drei Leerenkugeln, die brennen, und kreisende Sterne.',
     fx: { mul: { dmg: 1.35 }, add: { shots: 2, spread: 0.3, 'orbs.n': 2, 'orbs.dmg': 8, 'burn.dps': 5, range: 0.2 } }, paths: [['a', 0], ['b', 0], ['a', 2]] },
+  { id: 'riverdragon', a: 'kappa', b: 'naga', name: 'Flussdrache', role: 'Giftige Flut', elements: ['ice', 'shadow'], color: '#3fb0b0', cost: 1300,
+    desc: 'Ein Wasserdrache mit Kappa-Schale: drei giftige Blasen, die zurückstoßen und lange vergiften.',
+    fx: { mul: { dmg: 1.4 }, add: { shots: 2, spread: 0.3, 'burn.dps': 6, aoe: 0.3, range: 0.3 }, set: { poison: true } }, paths: [['a', 0], ['b', 0], ['a', 1]] },
+  { id: 'sunkirin', a: 'kirin', b: 'phoenix', name: 'Sonnenkirin', role: 'Brennendes Licht', elements: ['light', 'fire'], color: '#ffb040', cost: 1700,
+    desc: 'Hufe aus Sonnenfeuer: Lichtketten springen weiter und setzen alles in Brand.',
+    fx: { mul: { dmg: 1.4 }, add: { 'chain.n': 3, 'burn.dps': 8, 'burn.dur': 2.5, range: 0.3 } }, paths: [['a', 0], ['b', 1], ['a', 2]] },
+  { id: 'templeguard', a: 'komainu', b: 'golem', name: 'Tempelkoloss', role: 'Bossbrecher', elements: ['earth', 'phys'], color: '#d8a060', cost: 1500,
+    desc: 'Ein Löwenhund aus ganzem Tempelstein: zermalmt Bosse und betäubt alles um sich.',
+    fx: { mul: { dmg: 1.5, bossMul: 1.4 }, add: { cleave: 2, 'stun.ch': 0.12, 'stun.dur': 0.6, range: 0.2 } }, paths: [['a', 0], ['b', 0], ['a', 1]] },
 ];
 export const FUSION_IDS = FUSIONS.map(f => f.id);
 export const fusionFor = (a, b) => FUSIONS.find(f => (f.a === a && f.b === b) || (f.a === b && f.b === a)) || null;

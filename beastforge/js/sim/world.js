@@ -920,6 +920,46 @@ export class World {
         for (const e of this.enemies) if (e.alive) { e.slowPct = Math.max(e.slowPct, 0.7); e.slowT = Math.max(e.slowT, 6); }
         this.lives = Math.min(this.maxLives, this.lives + 15); break;
       }
+      case 'flood': {   // Kappa: Flutwelle
+        const R = 4; this.emit({ t: 'ability', id: 'flood', tower: t, r: R });
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < R) { this.damage(e, s.dmg * 6, 'phys', t, { big: true }); if (e.alive) { if (!e.heavy && !e.boss) this.knock(e, 2); e.slowPct = Math.max(e.slowPct, 0.55); e.slowT = Math.max(e.slowT, 4); } }
+        break;
+      }
+      case 'radiance': {   // Kirin: Himmelsglanz – Kreaturen stärken, Gegner verwundbar
+        const R = 4; this.emit({ t: 'ability', id: 'radiance', tower: t, r: R });
+        for (const o of this.towers) if (Math.hypot(o.x - t.x, o.y - t.y) <= R) o.buffs.push({ id: 'radiance', t: 8, fx: { mul: { dmg: 1.4 } } });
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < R) { e.vuln = Math.max(e.vuln, 0.3); e.vulnT = Math.max(e.vulnT, 8); this.damage(e, s.dmg * 8, 'light', t, { big: true }); }
+        this.dirty = true; break;
+      }
+      case 'guardbite': {   // Komainu: Biss in den stärksten Gegner in Reichweite
+        let best = null; for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) <= s.range + 1 && (!best || e.hp > best.hp)) best = e;
+        if (!best) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'guardbite', tower: t, x: best.x, y: best.y });
+        best.vuln = Math.max(best.vuln, 0.35); best.vulnT = Math.max(best.vulnT, 10);
+        this.damage(best, s.dmg * 30, 'phys', t, { big: true }); break;
+      }
+      case 'volley': {   // Sora: Pfeilregen auf die dichteste Gruppe
+        let best = null, bn = 0;
+        for (const e of this.enemies) { if (!e.alive) continue; let n = 0; for (const o of this.enemies) if (o.alive && Math.hypot(o.x - e.x, o.y - e.y) < 2.2) n++; if (n > bn) { bn = n; best = e; } }
+        if (!best) { ok = false; break; }
+        const x = best.x, y = best.y, A = HEROES[t.cid].abilities.volley; this.emit({ t: 'ability', id: 'volley', tower: t, x, y }); this.say(t, 'ability');
+        const ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - x, e.y - y) < 2.2);
+        for (let i = 0; i < 24; i++) { const e = ts[i % ts.length]; if (e?.alive) this.damage(e, s.dmg * A.mul, 'phys', t, { big: i < ts.length }); }
+        break;
+      }
+      case 'skyshot': {   // Sora: Himmelspfeil – jeder Gegner auf dem Pfad
+        const al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'skyshot', tower: t }); this.say(t, 'ult');
+        for (const e of al) { this.damage(e, s.dmg * HEROES[t.cid].abilities.skyshot.mul, 'phys', t, { big: true }); if (e.alive && !e.heavy && !e.boss) this.knock(e, 1); }
+        break;
+      }
+      case 'puppets': t.clonesT = HEROES[t.cid].abilities.puppets.dur; this.emit({ t: 'ability', id: 'puppets', tower: t }); this.say(t, 'ability'); break;
+      case 'bind': {   // Ren: Schattenbann – ganze Karte
+        const al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'bind', tower: t, targets: al.slice(0, 60).map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ult');
+        for (const e of al) { this.damage(e, s.dmg * HEROES[t.cid].abilities.bind.mul, 'shadow', t); if (!e.alive) continue; e.vuln = Math.max(e.vuln, 0.3); e.vulnT = Math.max(e.vulnT, 6); if (e.boss) { e.slowPct = Math.max(e.slowPct, 0.6); e.slowT = Math.max(e.slowT, 3); } else e.stunT = Math.max(e.stunT, 2.5); }
+        break;
+      }
       case 'petals': {   // Hana: Klingenwirbel im Umkreis 3 + Blutung
         const A = HEROES[t.cid].abilities.petals, ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 3);
         if (!ts.length) { ok = false; break; }

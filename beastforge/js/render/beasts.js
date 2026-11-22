@@ -498,3 +498,140 @@ export function voidcat(o = {}) {
   };
   return { root, tick, height: [0.55, 0.75, 0.95][st] };
 }
+
+// ───────────────────────── KAPPA ─────────────────────────
+// Form 0 Kappa-Kind · 1 Flusskappa (Kieselpanzer) · 2 Wasserfall-Kappa (Wasserfall auf dem Rücken)
+const KPAL = [
+  { skin: 0x5fc88a, skin2: 0x3a9a6a, belly: 0xf0e8a0, shell: 0x6a8a3a, rim: 0xc8a050, beak: 0xffc83a, water: 0x7ad8ff },
+  { skin: 0xbfe4ff, skin2: 0x8ab0d8, belly: 0xffffff, shell: 0x6a7ab0, rim: 0xdfe8ff, beak: 0xdfe8ff, water: 0xdff4ff },
+  { skin: 0x2a3a6a, skin2: 0x1a2448, belly: 0x9fb4ff, shell: 0x3a2a6a, rim: 0xffd257, beak: 0xffd257, water: 0xffd8ff },
+];
+export function kappa(o = {}) {
+  const st = o.stage || 0, pal = KPAL[skinOf(o.skin)], k = [0.9, 1, 1.1][st];
+  const root = new THREE.Group(), mS = toon(pal.skin), mS2 = toon(pal.skin2), mB = toon(pal.belly);
+  add(root, Y(10), toon(0x8a9aa0), { p: [0, 0.03, 0], s: [0.2, 0.06, 0.2], ol: 0.01 });   // Flussstein
+  const body = grp(root, [0, 0.06, 0]);
+  add(body, S(14), mS, { p: [0, 0.17 * k, 0], s: [0.12 * k, 0.13 * k, 0.11 * k], ol: 0.01 });
+  add(body, S(12), mB, { p: [0, 0.16 * k, 0.06 * k], s: [0.085 * k, 0.1 * k, 0.06 * k], ol: false });
+  // Panzer auf dem Rücken
+  const shell = grp(body, [0, 0.18 * k, -0.07 * k], [0.25, 0, 0]);
+  add(shell, S(14), toon(pal.shell), { s: [0.13 * k, 0.14 * k, 0.07 * k], ol: 0.008 });
+  add(shell, geo.torus(0.06), toon(pal.rim), { r: [0, 0, 0], s: [0.125 * k, 0.135 * k, 0.1], ol: 0.004 });
+  if (st >= 1) for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2; add(shell, D(), toon(0x9aa0a8), { p: [Math.cos(a) * 0.07 * k, Math.sin(a) * 0.08 * k, -0.06 * k], s: 0.025 * k, ol: 0.004 }); }
+  // Beine + Arme
+  for (const sd of [-1, 1]) { add(body, S(8), mS2, { p: [sd * 0.07 * k, 0.04, 0.02], s: [0.045, 0.04, 0.06], ol: 0.006 }); }
+  const arms = []; for (const sd of [-1, 1]) { const A = grp(body, [sd * 0.11 * k, 0.2 * k, 0.02], [0, 0, sd * 0.5]); add(A, S(8), mS, { p: [0, -0.05, 0], s: [0.03, 0.07, 0.03], ol: 0.006 }); add(A, S(8), mS2, { p: [0, -0.11, 0.01], s: 0.03, ol: 0.005 }); A.userData.sd = sd; arms.push(A); }
+  // Kopf mit Schnabel, Haarkranz und Wasserschale
+  const head = grp(body, [0, 0.37 * k, 0.01]), hs = 0.11 * k;
+  add(head, S(14), mS, { s: [hs, hs * 0.95, hs], ol: 0.01 });
+  add(head, C(8), toon(pal.beak), { p: [0, -hs * 0.2, hs * 0.95], r: [PI / 2 + 0.15, 0, 0], s: [hs * 0.35, hs * 0.5, hs * 0.2], ol: 0.006 });
+  for (const sd of [-1, 1]) eye(head, [sd * hs * 0.42, hs * 0.15, hs * 0.75], hs * 0.3, 0x2a4a3a, sd);
+  for (let i = 0; i < 12; i++) { const a = i / 12 * PI * 2; add(head, C(4), mS2, { p: [Math.cos(a) * hs * 0.82, hs * 0.55, Math.sin(a) * hs * 0.82], r: [Math.sin(a) * 0.6, 0, -Math.cos(a) * 0.6], s: [hs * 0.12, hs * 0.35, hs * 0.12], ol: 0.004 }); }
+  add(head, Y(14), toon(0xe8e0c8), { p: [0, hs * 0.75, 0], s: [hs * 0.6, hs * 0.1, hs * 0.6], ol: 0.004 });
+  const dish = add(head, Y(14), glow(pal.water, 0.85), { p: [0, hs * 0.81, 0], s: [hs * 0.5, hs * 0.03, hs * 0.5], ol: false });
+  // Wasserfall (Form 2): Säule aus Tropfen über dem Panzer
+  const drops = [];
+  if (st === 2) for (let i = 0; i < 10; i++) drops.push(add(root, S(6), glow(pal.water, 0.8), { s: [0.025, 0.05, 0.025], ol: false }));
+  anim(body, head, shell, dish, ...arms, ...drops);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.position.y = 0.06 + Math.abs(Math.sin(t * 3)) * 0.012; head.rotation.z = Math.sin(t * 1.4) * 0.08; head.rotation.x = -a * 0.25;
+    arms.forEach(A => { const sd = A.userData.sd; A.rotation.x = sd > 0 ? -a * 2.2 - 0.1 : Math.sin(t * 2) * 0.1; A.rotation.z = sd * (0.5 - (sd > 0 ? a * 0.3 : 0)); });
+    dish.scale.y = hs * 0.03 * (1 + Math.sin(t * 5) * 0.3);
+    drops.forEach((d, i) => { const f = (t * 0.9 + i / drops.length) % 1; d.position.set(Math.sin(i * 2.3) * 0.04, 0.62 * k - f * 0.45, -0.16 * k - f * 0.05); d.scale.set(0.025 * (1 - f * 0.4), 0.05 * (1 - f * 0.4), 0.025 * (1 - f * 0.4)); });
+  };
+  return { root, tick, height: [0.6, 0.7, 0.8][st] };
+}
+
+// ───────────────────────── KIRIN ─────────────────────────
+// Form 0 Fohlen · 1 Kirin (Mähne, Geweih) · 2 Himmelskirin (schwebt auf Wolken, Heiligenschein)
+const QPAL = [
+  { body: 0xfff2c8, body2: 0xe8c878, mane: 0xffd257, horn: 0xffe27a, hoof: 0xffb43a, scale: 0x9fe8c8, eye: 0x3a5a8a },
+  { body: 0xeef4ff, body2: 0xb8c8e8, mane: 0x9fd8ff, horn: 0xdff4ff, hoof: 0x8ab0d8, scale: 0xc8b8ff, eye: 0x3a4a8a },
+  { body: 0x2a2a5a, body2: 0x1a1a3a, mane: 0xff9af0, horn: 0xffd257, hoof: 0xffd257, scale: 0x9fb4ff, eye: 0xffd257 },
+];
+export function kirin(o = {}) {
+  const st = o.stage || 0, pal = QPAL[skinOf(o.skin)], k = [0.85, 1, 1.08][st];
+  const root = new THREE.Group(), mB = toon(pal.body, { emissive: pal.mane, emissiveIntensity: st ? 0.15 : 0.05 }), mB2 = toon(pal.body2), mM = toon(pal.mane, { emissive: pal.mane, emissiveIntensity: 0.45 });
+  const base = grp(root, [0, st === 2 ? 0.16 : 0, 0]);
+  if (st === 2) for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2; add(root, S(10), toon(0xffffff, { emissive: 0xfff2c8, emissiveIntensity: 0.3 }), { p: [Math.cos(a) * 0.16, 0.08, Math.sin(a) * 0.12], s: [0.1, 0.06, 0.1], ol: 0.006 }); }
+  else add(root, Y(10), toon(0xd8d0c0), { p: [0, 0.03, 0], s: [0.2, 0.06, 0.2], ol: 0.01 });
+  const body = grp(base, [0, 0.3 * k, 0]);
+  add(body, S(14), mB, { s: [0.09 * k, 0.09 * k, 0.17 * k], ol: 0.01 });
+  for (let i = 0; i < 8; i++) add(body, S(6), toon(pal.scale, { emissive: pal.scale, emissiveIntensity: 0.3 }), { p: [(i % 2 ? 0.07 : -0.07) * k, 0.02 * k, (0.1 - i * 0.03) * k], s: [0.02, 0.025, 0.02], ol: false });
+  // Beine mit leuchtenden Hufen
+  const legs = [];
+  for (const [x, z] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) { const L = grp(body, [x * 0.05 * k, -0.04 * k, z * 0.1 * k]); add(L, Y(8), mB2, { p: [0, -0.1 * k, 0], s: [0.022, 0.2 * k, 0.022], ol: 0.005 }); add(L, Y(8), glow(pal.hoof, 0.9), { p: [0, -0.2 * k, 0], s: [0.03, 0.03, 0.03], ol: false }); legs.push(L); }
+  // Hals + Kopf
+  add(body, Y(10), mB, { p: [0, 0.09 * k, 0.12 * k], r: [-0.5, 0, 0], s: [0.04 * k, 0.16 * k, 0.04 * k], ol: 0.008 });
+  const head = grp(body, [0, 0.18 * k, 0.18 * k]), hs = 0.07 * k;
+  add(head, S(12), mB, { s: [hs, hs * 0.95, hs * 1.3], ol: 0.01 });
+  add(head, S(10), mB, { p: [0, -hs * 0.25, hs * 1.1], s: [hs * 0.6, hs * 0.5, hs * 0.6], ol: 0.008 });
+  for (const sd of [-1, 1]) eye(head, [sd * hs * 0.55, hs * 0.15, hs * 0.75], hs * 0.3, pal.eye, sd, st === 2);
+  // Horn bzw. Geweih
+  if (st === 0) add(head, C(6), glow(pal.horn, 0.9), { p: [0, hs * 1.1, hs * 0.2], r: [-0.3, 0, 0], s: [hs * 0.15, hs * 0.6, hs * 0.15], ol: false });
+  else for (const sd of [-1, 1]) { const A = grp(head, [sd * hs * 0.35, hs * 0.8, -hs * 0.1], [-0.4, 0, -sd * 0.35]); add(A, Y(6), glow(pal.horn, 0.9), { p: [0, hs * 0.5, 0], s: [hs * 0.08, hs, hs * 0.08], ol: false }); add(A, Y(6), glow(pal.horn, 0.9), { p: [sd * hs * 0.2, hs * 0.7, 0], r: [0, 0, -sd * 0.8], s: [hs * 0.06, hs * 0.5, hs * 0.06], ol: false }); }
+  // Mähne + Schweif aus Lichtflammen
+  const flames = [];
+  for (let i = 0; i < (st ? 7 : 4); i++) { const f = add(body, C(6), mM, { p: [0, 0.12 * k - i * 0.01, (0.14 - i * 0.035) * k], r: [-1.1, 0, 0], s: [0.025, 0.09 * k, 0.025], ol: 0.004 }); flames.push(f); }
+  const tail = grp(body, [0, 0.03, -0.17 * k], [0.9, 0, 0]); add(tail, C(6), mM, { p: [0, 0.08 * k, 0], s: [0.04, 0.16 * k, 0.04], ol: 0.004 });
+  // Heiligenschein (Form 2)
+  const halo = st === 2 ? add(body, geo.torus(0.05), glow(pal.horn, 0.8), { p: [0, 0.3 * k, 0.1 * k], r: [PI / 2.4, 0, 0], s: 0.12, ol: false }) : null;
+  anim(base, body, head, tail, ...legs, ...flames, ...(halo ? [halo] : []));
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    base.position.y = (st === 2 ? 0.16 : 0) + (st === 2 ? Math.sin(t * 1.6) * 0.03 : 0);
+    head.rotation.x = -a * 0.4 + Math.sin(t * 1.2) * 0.05; head.rotation.y = Math.sin(t * 0.7) * 0.2 * (1 - a);
+    body.rotation.x = -a * 0.15;
+    legs.forEach((L, i) => { L.rotation.x = (i < 2 ? -a * 0.6 : 0) + Math.sin(t * 2 + i) * 0.05; });
+    flames.forEach((f, i) => { f.scale.y = 0.09 * k * (1 + Math.sin(t * 9 + i * 1.3) * 0.2); });
+    tail.rotation.z = Math.sin(t * 2.4) * 0.3;
+    if (halo) halo.rotation.z = t;
+  };
+  return { root, tick, height: [0.55, 0.7, 0.85][st] };
+}
+
+// ───────────────────────── KOMAINU ─────────────────────────
+// Form 0 Welpe · 1 Tempelwächter (Lockenmähne) · 2 Steinlöwe (goldene Mähne, Glutaugen)
+const LPAL = [
+  { stone: 0xd8c8a8, stone2: 0xa89878, mane: 0x8a7a68, glowC: 0xff8a2a, base: 0x8a8478 },
+  { stone: 0x9ad8b0, stone2: 0x6aa888, mane: 0x4a8a6a, glowC: 0x9ff6ff, base: 0x6a7a70 },
+  { stone: 0x3a3a5a, stone2: 0x2a2a44, mane: 0xffd257, glowC: 0xff9af0, base: 0x2a2a3a },
+];
+export function komainu(o = {}) {
+  const st = o.stage || 0, pal = LPAL[skinOf(o.skin)], k = [0.85, 1, 1.12][st];
+  const gold = st === 2 && !skinOf(o.skin);
+  const root = new THREE.Group(), mS = toon(pal.stone), mS2 = toon(pal.stone2), mMane = toon(gold ? 0xffc84a : pal.mane, { emissive: gold ? 0x6a3a00 : 0, emissiveIntensity: 0.4 });
+  // Steinsockel
+  add(root, B(), toon(pal.base), { p: [0, 0.05, 0], s: [0.36, 0.1, 0.36], ol: 0.01 });
+  add(root, B(), toon(pal.base), { p: [0, 0.12, 0], s: [0.3, 0.04, 0.3], ol: 0.008 });
+  const body = grp(root, [0, 0.14, 0]);
+  // sitzender Löwenhund
+  add(body, S(14), mS, { p: [0, 0.14 * k, -0.04], r: [-0.4, 0, 0], s: [0.11 * k, 0.15 * k, 0.12 * k], ol: 0.01 });
+  for (const sd of [-1, 1]) { add(body, Y(8), mS, { p: [sd * 0.06 * k, 0.07 * k, 0.07 * k], s: [0.035, 0.14 * k, 0.035], ol: 0.006 }); add(body, S(8), mS2, { p: [sd * 0.06 * k, 0.01, 0.09 * k], s: [0.045, 0.03, 0.05], ol: 0.005 }); add(body, S(10), mS, { p: [sd * 0.09 * k, 0.04, -0.06], s: [0.06, 0.05, 0.08], ol: 0.006 }); }
+  // Pfote auf einer Kugel (Wächterpose)
+  add(body, S(12), toon(gold ? 0xffd257 : pal.stone2), { p: [0.1 * k, 0.03, 0.12 * k], s: 0.04 * k, ol: 0.005 });
+  // Kopf mit Lockenmähne
+  const head = grp(body, [0, 0.33 * k, 0.04]), hs = 0.1 * k;
+  const nMane = [8, 14, 18][st];
+  for (let i = 0; i < nMane; i++) { const a = i / nMane * PI * 2; add(head, S(8), mMane, { p: [Math.cos(a) * hs * 1.05, Math.sin(a) * hs * 1.0, -hs * 0.25], s: hs * (st ? 0.38 : 0.3), ol: 0.004 }); }
+  add(head, S(14), mS, { s: [hs, hs * 0.92, hs * 0.95], ol: 0.01 });
+  add(head, S(10), mS2, { p: [0, -hs * 0.3, hs * 0.75], s: [hs * 0.55, hs * 0.4, hs * 0.4], ol: 0.006 });
+  add(head, S(6), toon(0x2a2a2a), { p: [0, -hs * 0.15, hs * 1.05], s: [hs * 0.14, hs * 0.1, hs * 0.08], ol: false });
+  const jaw = grp(head, [0, -hs * 0.55, hs * 0.55]); add(jaw, S(8), mS2, { s: [hs * 0.4, hs * 0.15, hs * 0.35], ol: 0.004 });
+  for (const sd of [-1, 1]) add(jaw, C(4), toon(0xffffff), { p: [sd * hs * 0.18, hs * 0.08, hs * 0.2], r: [PI, 0, 0], s: [hs * 0.06, hs * 0.14, hs * 0.06], ol: false });
+  for (const sd of [-1, 1]) eye(head, [sd * hs * 0.42, hs * 0.18, hs * 0.75], hs * 0.26, st === 2 ? pal.glowC : 0x3a2a1a, sd, st === 2);
+  for (const sd of [-1, 1]) add(head, S(8), mS2, { p: [sd * hs * 0.75, hs * 0.65, -hs * 0.1], s: [hs * 0.2, hs * 0.28, hs * 0.1], ol: 0.004 });
+  // Schweif-Flamme
+  const tail = grp(body, [0, 0.12 * k, -0.15 * k], [-0.6, 0, 0]);
+  for (let i = 0; i < 3; i++) add(tail, S(8), mMane, { p: [0, i * 0.05 * k, -i * 0.02], s: (0.045 - i * 0.008) * k, ol: 0.004 });
+  const embers = []; if (st === 2) for (let i = 0; i < 5; i++) embers.push(add(root, S(6), glow(pal.glowC, 0.85), { s: 0.02, ol: false }));
+  anim(body, head, jaw, tail, ...embers);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    head.rotation.x = -a * 0.35 + Math.sin(t * 1.1) * 0.04; head.rotation.y = Math.sin(t * 0.6) * 0.2 * (1 - a);
+    jaw.rotation.x = a * 0.7; body.position.z = a * 0.05; tail.rotation.z = Math.sin(t * 2) * 0.25;
+    embers.forEach((e, i) => { const q = t * 1.3 + i * 1.26; e.position.set(Math.cos(q) * 0.3, 0.3 + Math.sin(t * 2 + i) * 0.1, Math.sin(q) * 0.3); });
+  };
+  return { root, tick, height: [0.55, 0.65, 0.8][st] };
+}
