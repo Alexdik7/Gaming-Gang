@@ -73,6 +73,15 @@ export class World {
     const m = TOWER_R * 0.8;
     return this.rafts.findIndex(r => Math.abs(x - r.x) <= r.w / 2 - m && Math.abs(y - r.y) <= r.h / 2 - m);
   }
+  onIce(x, y) { const cx = Math.floor(x), cy = Math.floor(y); return this.map.ice.some(([a, b, c, d]) => cx >= a && cx <= c && cy >= b && cy <= d); }
+  // Schneesturm (Frosttempel): alle `every` s für `dur` s – Gegner langsamer, Eiskreaturen schneller, andere frieren etwas
+  updStorm(dt) {
+    const S = this.map.storm; if (!S) return;
+    if (this.stormT > 0) { this.stormT -= dt; if (this.stormT <= 0) { this.dirty = true; this.emit({ t: 'storm', on: false }); } return; }
+    if (!this.enemies.length) return;
+    this.stormCd = (this.stormCd ?? S.every * 0.6) - dt;
+    if (this.stormCd <= 0) { this.stormCd = S.every; this.stormT = S.dur; this.dirty = true; this.emit({ t: 'storm', on: true, dur: S.dur }); }
+  }
   updVents(dt) {
     if (!this.vents.length || !this.enemies.length) return;
     const L = this.map.lava;
@@ -266,7 +275,7 @@ export class World {
     if (this.enemies.length > 0 && this.wave > 0) { const b = BAL.run.earlyCall(this.wave); this.gain(b); this.emit({ t: 'early', coins: b }); }
     this.wave++;
     let def = waveDef(this.wave);
-    const mx = this.map.mix?.(this.wave, def.groups); if (mx) def = { ...def, groups: mx.groups, tip: mx.tip || def.tip };
+    const mx = this.map.mix?.(this.wave, def.groups); if (mx) def = { ...def, groups: mx.groups, tip: mx.tip || def.tip, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) };
     for (const g of def.groups) this.spawners.push({ e: g.e, left: Math.round(g.n), gap: g.gap, t: g.delay, mods: g.mods || [], wave: this.wave });
     this.emit({ t: 'wave', wave: this.wave, def });
     if (def.boss) this.emit({ t: 'bossWarn', boss: def.boss });
@@ -312,7 +321,7 @@ export class World {
     }
     this.spawners = this.spawners.filter(s => s.left > 0);
     if (this.rafts.length) this.updRafts();
-    this.updVents(dt);
+    this.updVents(dt); this.updStorm(dt);
     if (this.mods.apoc && this.wave > 0 && this.canStartWave()) this.startWave();   // Apokalypse: Wellen ohne Pause
     let buffChange = false;
     for (const t of this.towers) {
@@ -361,6 +370,8 @@ export class World {
     if (e.roarT > 0) { e.roarT -= dt; return; }
     let sp = e.speed * (1 - Math.min(0.75, e.slowPct * (e.heavy ? 0.5 : 1)));
     if (e.cryT > 0) sp *= 1 + (ENEMIES.oni.cry.speed);
+    if (this.map.ice && !e.flying && this.onIce(e.x, e.y)) sp *= 1.4;   // Eisbahn: rutschen
+    if (this.stormT > 0 && !e.boss) sp *= 1 - this.map.storm.slow;
     if (e.boss) { const ph = def.phases[e.phase]; if (e.flyT > 0) sp *= def.phases[1].fly.speed; if (e.phase >= 3) sp *= ph.enrage || 1; }
     e.d += sp * dt;
     this.posAt(e.d, e, e.pi);
@@ -380,7 +391,7 @@ export class World {
       if ((e.breathCd -= dt) <= 0) {
         e.breathCd = b.every;
         const ts = this.towers.filter(t => !t.prot).map(t => ({ t, d: Math.hypot(t.x - e.x, t.y - e.y) })).filter(o => o.d < 4).sort((a, c) => a.d - c.d).slice(0, b.n);
-        for (const o of ts) o.t.disabledT = b.dur;
+        for (const o of ts) { o.t.disabledT = b.dur; o.t.disCol = def.breathColor || 0; }
         e.roarT = Math.max(e.roarT, 0.9);
         this.emit({ t: 'breath', e, targets: ts.map(o => o.t) });
       }
@@ -576,6 +587,7 @@ export class World {
       if (t.ground === 'high') { s.range *= 1 + BAL.run.highRange; s.mortar.range *= 1 + BAL.run.highRange; }
       if (t.ground === 'water' && s.water) s.rate *= 1 + s.water;
       if (t.raft != null) s.dmg *= 1 + RAFT_BONUS;
+      if (this.stormT > 0) { const S = this.map.storm, icy = s.dmgType === 'ice' || (!t.hero && CREATURES[t.cid]?.elements?.includes('ice')); s.rate *= icy ? S.ice : S.cold; s.storm = icy ? 1 : -1; }
     }
   }
 

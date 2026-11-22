@@ -89,6 +89,29 @@ export const MAPS = {
       return { groups: out, tip: w === 1 ? 'Glutkrater: Lava-Spalten brechen alle 14 s aus und verbrennen Gegner. Basalt-Flöße tragen Kreaturen über den Lavasee (+15 % Schaden).' : null };
     },
   },
+  frost: {
+    id: 'frost', name: 'Frosttempel', sub: 'Eisbahnen, Schneestürme und ein Wolf aus Eis', level: 'Schwer', hpMul: 1.35,
+    desc: 'Auf den spiegelglatten Eisbahnen rutschen Gegner 40 % schneller. Alle 28 s zieht ein Schneesturm auf: Gegner werden langsamer, Eiskreaturen schneller – alle anderen frieren etwas.',
+    w: 22, h: 13,
+    path: [[-1.6, 6.5], [3.5, 6.5], [3.5, 1.5], [8.5, 1.5], [8.5, 11.5], [13.5, 11.5], [13.5, 4.5], [17.5, 4.5], [17.5, 8.5], [21.2, 8.5]],
+    ice: [[4, 1, 8, 1], [9, 11, 13, 11], [14, 4, 17, 4]],   // Eisbahnen (Pfadfelder): Gegner rutschen schneller
+    storm: { every: 28, dur: 7, slow: 0.25, ice: 1.25, cold: 0.85 },
+    rects: [
+      [10, 5, 12, 9, '~'],               // gefrorener Tempelsee
+      [5, 8, 6, 10, '^'], [15, 0, 17, 2, '^'], [19, 10, 20, 11, '^'],   // Eisfelsen
+      [21, 7, 21, 9, 'S'],
+    ],
+    cells: [[0, 0, 'T'], [1, 0, 'T'], [0, 10, 'T'], [1, 12, 'T'], [6, 4, 'T'], [11, 0, 'T'], [12, 0, 'T'], [20, 0, 'T'], [21, 1, 'T'], [15, 12, 'T'], [21, 12, 'T'],
+      [2, 3, 'R'], [10, 3, 'R'], [19, 6, 'R'], [6, 12, 'R']],
+    theme: { grass: 0xe6eef8, grass2: 0xd2e2f2, dirt: 0x9aaec4, cliff: 0x5e7088, high: 0xbcd0e6, water: 0x8ad4f0, fog: 0xc8dcf0, sky: 0xd4e6f8, blossom: 0xbfe8ff, snow: true, rock: 0x8a9ab0, ground: 0xdde6f0 },
+    music: 'forest',
+    // Frosttempel: der Boss ist Hyōga, der Frostwolf (statt Vharox); Irrlichter kommen als Eisgeister öfter
+    mix(w, groups) {
+      const B = { vharox: 'hyoga', vharox2: 'hyoga2', vharox3: 'hyoga3' };
+      const out = groups.map(g => B[g.e] ? { ...g, e: B[g.e] } : g);
+      return { groups: out, boss: out.find(g => g.e.startsWith('hyoga'))?.e, tip: w === 1 ? 'Frosttempel: Eisbahnen (helle Pfadstücke) lassen Gegner rutschen. Im Schneesturm sind Eiskreaturen im Vorteil.' : null };
+    },
+  },
 };
 for (const m of Object.values(MAPS)) { m.grid = build(m); m.path = (m.paths || [m.path])[0]; }
 export const MAP_IDS = Object.keys(MAPS);

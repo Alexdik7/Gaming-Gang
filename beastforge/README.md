@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.20.0 – Leistung für Gegner-Massen
+## Stand: v0.21.0 – Frosttempel und Boss Hyōga
+**0.21:** Neue Karte **Frosttempel** `frost` (Konto-Lv 10, Schwer, `hpMul` 1,35): Eisbahnen `map.ice` (Rechtecke auf dem Pfad, Gegner +40 % Tempo, `world.onIce`, hellblaue Pfadfelder in mapview), Schneesturm `map.storm` alle 28 s für 7 s (`world.updStorm`/`stormT`: Gegner −25 % Tempo, Kreaturen mit Element Eis Tempo ×1,25, andere ×0,85; Ereignis `storm` → Banner, Schneetreiben). Schnee-Thema `theme.snow` (verschneite Tannen, Eiskristalle, keine Seerosen/Blumen, Schneeflocken). Neuer Boss **Hyōga, Frostwolf** (`BOSSES.hyoga`/`hyoga2`/`hyoga3` für Welle 20/40/60) mit Modell `wolf` + Eisstacheln (`buildBig(kind, model)`, `BIG_LOOK`), Phasen Frostsprünge/Eisatem (`breathColor`, eingefrorene Kreaturen `disCol`)/Rudelruf; `map.mix` darf den Boss tauschen (`boss`). Erfolg „Ewiger Winter“.
+
+## v0.20.0 – Leistung für Gegner-Massen
 **0.20:** Masterplan A2. Messung (Desktop, 1.000 Gegner): Simulation 0,7 ms, Szene-Abgleich 1,8 ms, aber 1,8 Mio. Dreiecke pro Bild → Engpass ist die Grafik, nicht die Simulation (daher kein Web Worker nötig). Neu: **Massen-LOD** (`lodGeo` in toon.js bündelt Eckpunkte beim Laden, −40…85 % Dreiecke, Golem 5.864 → 915), **Massenmodus** `view.crowd` ab 260 Gegnern (Stufe Hoch) bzw. 140 (Mittel/Spar): LOD-Modelle statt voller Modelle, keine Umrisse, weniger Funken → 1.000 Gegner 0,74 Mio. statt 1,8 Mio. Dreiecke. **Mitwachsende Gegner-Puffer** (`makePool`/`growPool`, doppelte Größe bei Überlauf) – vorher waren z. B. Wolf Nr. 141+ unsichtbar (Welle 56 hat 150). KP-Balken ohne neue Objekte pro Bild. Automatische Grafikstufe regelt jetzt laufend nach (gleitender Schnitt, höchstens alle 8 s eine Stufe runter). Test: e2e-Szenario `crowd` (700 Gegner), `view.forceCrowd` zum Vergleichen.
 
 ## v0.19.0 – Wellen 1–60 und Meister-Modus

@@ -158,8 +158,8 @@ export class Menus {
   s_play(sel) {
     const P = this.P;
     this.diff = this.diff && unlocked(P, 'mode', this.diff) ? this.diff : 'normal';
-    const NODES = { ahnenhain: [22, 64], dorf: [48, 42], glut: [72, 68] };
-    const FOG = [['Frosttempel', 84, 38, '❄'], ['Himmelsinseln', 64, 26, '☁']];
+    const NODES = { ahnenhain: [22, 64], dorf: [48, 42], glut: [72, 68], frost: [84, 34] };
+    const FOG = [['Himmelsinseln', 64, 22, '☁']];
     const nodes = Object.values(MAPS).map(m => {
       const [x, y] = NODES[m.id] || [50, 50], ok = unlocked(P, 'map', m.id), b = P.maps[m.id] || {};
       const st = (b.normal >= 20 ? 1 : 0) + (b.hard >= BAL.diff.hard.waves ? 1 : 0) + ((b.master || 0) >= BAL.diff.master.waves ? 1 : 0) + ((b.endless || 0) >= 30 ? 1 : 0);

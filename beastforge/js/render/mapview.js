@@ -35,7 +35,8 @@ export class MapView {
     };
     const rnd = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5; return s - Math.floor(s); };
     inst(tileGeo(th.grass, 0x7a5a3a, 0.6), cells.grass, ([x, y]) => (rnd(x, y) - 0.5) * 0.02, ([x, y], c) => c.setHSL(0, 0, 0.92 + rnd(x + 3, y) * 0.12).lerp(new THREE.Color(th.grass2), (x + y) % 2 ? 0.08 : 0));
-    inst(tileGeo(th.dirt, 0x8a6a48, 0.6), cells.path, () => HEIGHT['#'], ([x, y], c) => c.setHSL(0, 0, 0.94 + rnd(x, y + 7) * 0.08));
+    const onIce = (x, y) => (this.map.ice || []).some(([a, b, c2, d]) => x >= a && x <= c2 && y >= b && y <= d);
+    inst(tileGeo(th.dirt, 0x8a6a48, 0.6), cells.path, () => HEIGHT['#'], ([x, y], c) => onIce(x, y) ? c.setRGB(0.95 + rnd(x, y) * 0.15, 1.55, 2.0) : c.setHSL(0, 0, 0.94 + rnd(x, y + 7) * 0.08));
     inst(tileGeo(0x2a7a9a, 0x5a4a3a, 0.6), cells.water, () => -0.42, (_, c) => c.setRGB(1, 1, 1));
     if (cells.lava.length) inst(tileGeo(0x3a1a12, th.cliff, 0.6), cells.lava, () => -0.42, (_, c) => c.setRGB(1, 1, 1));
     inst(tileGeo(th.high || 0x88c85a, th.cliff, 1.0), cells.high, () => HEIGHT['^'], ([x, y], c) => c.setHSL(0, 0, 0.95 + rnd(x, y) * 0.08));
@@ -68,7 +69,7 @@ export class MapView {
     tufts.forEach(([x, z, r, h = 0], i) => { M.compose(new THREE.Vector3(x, h, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, r, 0)), new THREE.Vector3(1, 1, 1)); tm.setMatrixAt(i, M); });
     this.root.add(tm);
     // Blumen
-    const fl = []; cells.grass.forEach(([x, y, ch]) => { if (ch === '.' && !th.ash && rnd(x * 7, y) > 0.72) fl.push([this.wx(x) + (rnd(x, y * 3) - 0.5) * 0.7, this.wz(y) + (rnd(x * 3, y) - 0.5) * 0.7, rnd(x, y) > 0.5 ? 0xffe14d : 0xffffff]); });
+    const fl = []; cells.grass.forEach(([x, y, ch]) => { if (ch === '.' && !th.ash && !th.snow && rnd(x * 7, y) > 0.72) fl.push([this.wx(x) + (rnd(x, y * 3) - 0.5) * 0.7, this.wz(y) + (rnd(x * 3, y) - 0.5) * 0.7, rnd(x, y) > 0.5 ? 0xffe14d : 0xffffff]); });
     const fm = new THREE.InstancedMesh(geo.sphere(6), toon(0xffffff), fl.length);
     fl.forEach(([x, z, c], i) => { M.compose(new THREE.Vector3(x, 0.05, z), new THREE.Quaternion(), new THREE.Vector3(0.035, 0.02, 0.035)); fm.setMatrixAt(i, M); fm.setColorAt(i, new THREE.Color(c)); });
     this.root.add(fm);
@@ -112,7 +113,7 @@ export class MapView {
     list.forEach(([x, y], i) => { M.makeTranslation(this.wx(x), -0.12, this.wz(y)); m.setMatrixAt(i, M); });
     this.root.add(m);
     // Seerosen
-    const pads = list.filter(([x, y]) => (x * 7 + y * 3) % 4 === 0);
+    const pads = this.map.theme.snow ? [] : list.filter(([x, y]) => (x * 7 + y * 3) % 4 === 0);
     for (const [x, y] of pads) {
       this.root.add(mk(geo.cyl(10), toon(0x4aa040), { p: [this.wx(x) + 0.2, -0.11, this.wz(y) - 0.15], s: [0.16, 0.01, 0.16], ol: 0.008 }));
       this.root.add(mk(geo.sphere(8), toon(0xffb0d0), { p: [this.wx(x) + 0.22, -0.08, this.wz(y) - 0.12], s: [0.05, 0.035, 0.05], ol: 0.008 }));
@@ -177,6 +178,11 @@ export class MapView {
     const buckets = { pine: [], round: [], blossom: [] };
     for (const [x, z, r] of spots) buckets[r < 0.4 ? 'pine' : r < 0.75 ? 'round' : 'blossom'].push([x, z, r]);
     const M = new THREE.Matrix4();
+    if (th.snow) { // verschneite Tannen, Eiskristalle statt Blütenbäumen
+      kinds.pine = merge([[geo.cyl(6), 0x5a4a3a, [0, 0.25, 0], 0, [0.07, 0.5, 0.07]], [geo.cone(7), 0x2f6a5a, [0, 0.62, 0], 0, [0.42, 0.6, 0.42]], [geo.cone(7), 0xf4f8ff, [0, 0.78, 0], 0, [0.3, 0.28, 0.3]], [geo.cone(7), 0x3a7a66, [0, 0.95, 0], 0, [0.33, 0.5, 0.33]], [geo.cone(7), 0xffffff, [0, 1.12, 0], 0, [0.2, 0.25, 0.2]]]);
+      kinds.round = merge([[geo.ico(1), 0xf4f8ff, [0, 0.18, 0], 0, [0.42, 0.26, 0.36]], [geo.ico(1), 0xe0ecf8, [0.24, 0.12, 0.1], 0, 0.2]]);
+      kinds.blossom = merge([[geo.cone(5), 0xbfeaff, [0, 0.45, 0], 0, [0.14, 0.9, 0.14]], [geo.cone(5), 0x9fd8ff, [0.15, 0.3, 0.05], [0, 0, -0.5], [0.08, 0.5, 0.08]], [geo.cone(5), 0xdff6ff, [-0.13, 0.28, -0.04], [0, 0, 0.6], [0.07, 0.45, 0.07]]]);
+    }
     if (th.dead) { // verkohlte Bäume mit Glutspitzen
       kinds.pine = merge([[geo.cyl(6), 0x2a2224, [0, 0.45, 0], 0, [0.07, 0.9, 0.07]], [geo.cyl(5), 0x2a2224, [0.12, 0.7, 0], [0, 0, -0.8], [0.035, 0.35, 0.035]], [geo.cyl(5), 0x2a2224, [-0.1, 0.55, 0], [0, 0, 0.9], [0.03, 0.3, 0.03]], [geo.sphere(6), 0xff7a2a, [0, 0.92, 0], 0, 0.04]]);
       kinds.round = merge([[geo.dodec(), 0x3a3034, [0, 0.25, 0], [0.3, 0.5, 0.2], [0.4, 0.3, 0.36]], [geo.dodec(), 0x4a3e42, [0.25, 0.15, 0.15], [0.1, 1, 0.4], [0.22, 0.18, 0.2]]]);

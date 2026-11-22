@@ -234,13 +234,14 @@ export class Hud {
       }
       case 'bossWarn': this.banner('⚠ BOSS ⚠', BOSSES[e.boss]?.warn || 'Vharox erwacht', 'boss'); this.g.app.stage.addShake(0.5); break;
       case 'bossPhase': this.banner(e.name.toUpperCase(), e.desc, 'boss'); break;
-      case 'bossDie': this.banner('BOSS BESIEGT!', 'Vharox fällt in die Tiefe', 'evo'); break;
+      case 'bossDie': this.banner('BOSS BESIEGT!', (e.e?.def?.name || 'Vharox').split(',')[0] + (e.e?.def?.model === 'wolf' ? ' zerfällt zu Schnee' : ' fällt in die Tiefe'), 'evo'); break;
       case 'waveEnd': this.toast('syn', `Welle ${e.wave} geschafft · +◈${fmt(e.bonus + e.income)}`, e.income ? `Wellenbonus ${fmt(e.bonus)} · Einkommen ${fmt(e.income)}` : ''); break;
       case 'synergy': this.toast('syn', '✦ Synergie: ' + e.sy.name, e.sy.desc); break;
       case 'say': this.bubble(e.tower, e.text); break;
       case 'heroLevel': if (e.milestone) this.toast('char', `${HEROES[e.tower.cid].name} Lv ${e.lvl}: ${e.milestone.name}`, e.milestone.desc); if (this.sel === e.tower) this.refreshPanel(); break;
       case 'evolve': if (this.sel === e.tower) this.refreshPanel(); this.coachEvent('evolve'); break;
       case 'leak': this.flash(0.15, '#ff2040'); break;
+      case 'storm': if (e.on) this.banner('❄ SCHNEESTURM ❄', 'Gegner langsamer · Eiskreaturen schneller · andere frieren', 'boss'); else this.toast('syn', 'Der Sturm legt sich', ''); break;
       case 'rebirth': this.flash(0.5, '#ffb43a'); this.banner('WIEDERGEBURT', 'Der Phönix schenkt dir ' + e.lives + ' Leben', 'evo'); break;
       case 'early': this.toast('syn', `+◈${e.coins} früh gerufen`, ''); break;
     }

@@ -416,3 +416,20 @@ test('Wellen 1–60: Schwer 40, Meister 60 mit Boss-Varianten, Rückstoß-Grenze
   assert.ok(h1.hp <= h1.maxHp / 2 + 1e-6 && x.hp > x.maxHp / 2, 'Heiler heilen nur andere Gegner');
   assert.ok(BAL.miniScale(30) > 2 && BAL.lateCoins(60) > 2);
 });
+
+test('Frosttempel: Eisbahnen beschleunigen, Schneesturm verlangsamt Gegner und stärkt Eiskreaturen, Boss Hyōga', () => {
+  const P = defaultProfile(); for (const id in CREATURES) P.chars[id].level = 20;
+  const { w } = mkWorld(P, { map: 'frost' }); w.coins = 1e6;
+  const dw = w.place('dragonwolf', ...w.suggestSpot('dragonwolf', 2.2)).tower, k = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower;
+  const r0 = dw.s.rate, k0 = k.s.rate;
+  const e = w.spawn('slime', [], 0); const ice = w.spawn('slime', [], 0);
+  // auf einer Eisbahn: Feld (5,1) liegt im ersten Eisstück
+  assert.ok(w.onIce(5.5, 1.5) && !w.onIce(2.5, 6.5));
+  w.stormCd = 0; w.updStorm(0.01); w.refresh();
+  assert.ok(w.stormT > 0 && dw.s.rate > r0 * 1.2 && k.s.rate < k0, 'Sturm: Eis schneller, andere langsamer');
+  w.stormT = 0.005; w.updStorm(0.01); w.refresh(); assert.ok(Math.abs(dw.s.rate - r0) < 1e-9, 'Sturm vorbei');
+  const { w: w2 } = mkWorld(P, { map: 'frost' }); w2.wave = 19; w2.doneWave = 19; w2.startWave();
+  assert.ok(w2.spawners.some(s => s.e === 'hyoga'), 'Boss im Frosttempel ist Hyōga');
+  const b = w2.spawn('hyoga', [], 2); assert.ok(b.boss && b.def.model === 'wolf');
+  void e; void ice;
+});

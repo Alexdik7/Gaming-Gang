@@ -25,7 +25,7 @@ export class GameView {
     this.floaters = new Floaters(document.getElementById('floaters'));
     this.towers = new Map(); this.bigs = new Map(); this.t = 0; this.numCount = 0;
     this.buildEnemyPools(); this.buildHelpers();
-    this.petalT = 0; this.sky = world.map.theme.sky ?? 0xbfe6dc; this.ash = !!world.map.theme.ash;
+    this.petalT = 0; this.sky = world.map.theme.sky ?? 0xbfe6dc; this.ash = !!world.map.theme.ash; this.snow = !!world.map.theme.snow;
     this.stage.hemi.color.setHex(this.ash ? 0xffd8c0 : 0xdff4ff);
   }
   toW(x, y) { return [x - this.map.W / 2, y - this.map.H / 2]; }
@@ -138,7 +138,7 @@ export class GameView {
       if (t.raft != null) { const [x, z] = this.toW(t.x, t.y); v.g.position.set(x, RAFT_TOP, z); }
       const dis = t.disabledT > 0;
       v.m.tick(this.t, dt, { atk: v.atk, dis, cannon: v.rot, hlvl: t.hlvl });
-      if (dis && Math.random() < dt * 14) { const [x, z] = this.toW(t.x, t.y); this.parts.spawn(x + (Math.random() - 0.5) * 0.4, 0.4, z + (Math.random() - 0.5) * 0.4, 0, 0.8, 0, Math.random() < 0.5 ? 0xff6a20 : 0x3a3030, 0.22, 0.6, { drag: 1 }); }
+      if (dis && Math.random() < dt * 14) { const [x, z] = this.toW(t.x, t.y); this.parts.spawn(x + (Math.random() - 0.5) * 0.4, 0.4, z + (Math.random() - 0.5) * 0.4, 0, 0.8, 0, Math.random() < 0.5 ? (t.disCol || 0xff6a20) : (t.disCol ? 0xffffff : 0x3a3030), 0.22, 0.6, { drag: 1 }); }
     }
     for (const [id, v] of this.towers) if (!alive.has(id)) { this.root.remove(v.g); this.towers.delete(id); }
     // Orbs
@@ -209,7 +209,7 @@ export class GameView {
       if (e.boss || e.kind === 'oni') {
         seen.add(e.id);
         let b = this.bigs.get(e.id);
-        if (!b) { b = buildBig(e.boss ? 'vharox' : 'oni') || (e.boss ? buildDragon() : buildOni()); this.root.add(b.root); b.rise = 0; this.bigs.set(e.id, b); }
+        if (!b) { b = buildBig(e.boss ? e.kind : 'oni', e.def.model) || (e.boss ? buildDragon() : buildOni()); this.root.add(b.root); b.rise = 0; this.bigs.set(e.id, b); }
         b.rise = Math.min(1, b.rise + dt * 0.8);
         b.root.position.set(x, -1.2 * (1 - b.rise) * (1 - b.rise), z); b.root.scale.setScalar(ENEMY_SCALE * (e.def.scale || 1));
         const tr = PI / 2 - e.ang; let d = tr - b.root.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); b.root.rotation.y += d * Math.min(1, dt * 4);
@@ -442,6 +442,7 @@ export class GameView {
         this.stage.focus = new THREE.Vector3(x, h, z); this.stage.zoomPunch = 1;
         break;
       }
+      case 'storm': { if (ev.on) { this.flashSky = 0.08; for (let i = 0; i < 40; i++) this.parts.spawn(-12, 1 + Math.random() * 3, (Math.random() - 0.5) * 14, 6 + Math.random() * 3, -0.5, 0.5, 0xffffff, 0.12, 3, { drag: 0.02 }); } break; }
       case 'sell': { const [x, z] = at(ev.tower.x, ev.tower.y); P.burst(x, 0.4, z, [0xffd257, 0xffffff], 20, 2.5, 0.16, 0.6, { grav: 3, up: 1.5 }); this.floaters.add(x, 0.9, z, '+' + ev.value, 'coin', 0.9); break; }
       case 'rock': { this.map.removeRock(ev.cx, ev.cy); const [x, z] = at(ev.cx + 0.5, ev.cy + 0.5); P.burst(x, 0.3, z, [0x9a9aa0, 0xc8c0b0], 30, 3, 0.25, 0.7, { grav: 6, up: 1.5 }); this.stage.addShake(0.3); break; }
       case 'boss': case 'spawn': {
@@ -451,11 +452,11 @@ export class GameView {
       case 'bossPhase': { const [x, z] = at(ev.e.x, ev.e.y); this.rings.add(x, 0.06, z, 0.4, 5, 0xff3a20, 0.8); P.burst(x, 1.5, z, [0xff6a20, 0xffd27a], 60, 5, 0.3, 0.8); this.stage.addShake(1); this.stage.focus = new THREE.Vector3(x, 0, z); this.stage.zoomPunch = 0.8; break; }
       case 'bossFly': { const [x, z] = at(ev.e.x, ev.e.y); P.burst(x, 0.2, z, [0xc8b8a8, 0x8a7a6a], 40, 4, 0.3, 0.7, { flat: true }); break; }
       case 'breath': {
-        const [bx, bz] = at(ev.e.x, ev.e.y);
+        const [bx, bz] = at(ev.e.x, ev.e.y), bc = ev.e.def.breathColor;
         for (const t of ev.targets) {
           const [x, z] = at(t.x, t.y);
-          for (let i = 0; i < 40; i++) { const f = i / 40; P.spawn(bx + (x - bx) * f + (Math.random() - 0.5) * 0.3, 1.8 - f * 1.3, bz + (z - bz) * f + (Math.random() - 0.5) * 0.3, (x - bx) * 0.8, 0.5, (z - bz) * 0.8, f < 0.5 ? 0xffd27a : 0xff4a10, 0.35, 0.5 + f * 0.4); }
-          this.rings.add(x, 0.06, z, 0.2, 1, 0xff4a10, 0.6);
+          for (let i = 0; i < 40; i++) { const f = i / 40; P.spawn(bx + (x - bx) * f + (Math.random() - 0.5) * 0.3, 1.8 - f * 1.3, bz + (z - bz) * f + (Math.random() - 0.5) * 0.3, (x - bx) * 0.8, 0.5, (z - bz) * 0.8, f < 0.5 ? (bc ? 0xffffff : 0xffd27a) : (bc || 0xff4a10), 0.35, 0.5 + f * 0.4); }
+          this.rings.add(x, 0.06, z, 0.2, 1, bc || 0xff4a10, 0.6); if (bc) { this.flashes.add(x, 0.6, z, bc, 1.2, 0.4); P.burst(x, 0.5, z, [0xffffff, bc], 18, 2, 0.15, 0.8, { up: 0.6 }); }
         }
         this.stage.addShake(0.5);
         break;
@@ -582,6 +583,7 @@ export class GameView {
     if (this.petalT > 0.12 && this.stage.quality > 0) {
       this.petalT = 0;
       if (this.ash) this.parts.spawn((Math.random() - 0.5) * 20, 0.1, (Math.random() - 0.5) * 12, 0.15, 0.5 + Math.random() * 0.4, 0, Math.random() < 0.6 ? 0xff8a2a : 0x6a5a58, 0.07, 5, { drag: 0.05 });
+      else if (this.snow) { const st = this.world.stormT > 0; for (let i = 0; i < (st ? 7 : 2); i++) this.parts.spawn((Math.random() - 0.5) * 24, 2.5 + Math.random() * 2.5, (Math.random() - 0.5) * 14, st ? 3.5 : 0.3, st ? -1.4 : -0.45, st ? 0.6 : 0.1, Math.random() < 0.8 ? 0xffffff : 0xcfeaff, st ? 0.08 : 0.07, 5, { drag: 0.02 }); }
       else this.parts.spawn((Math.random() - 0.5) * 14, 3 + Math.random() * 2, (Math.random() - 0.5) * 18, 0.4, -0.35, 0.2, Math.random() < 0.7 ? 0xffb8d0 : 0xffffff, 0.09, 6, { drag: 0.05 });
     }
     this.parts.update(dt); this.rings.update(dt); this.bolts.update(dt); this.pillars.update(dt);

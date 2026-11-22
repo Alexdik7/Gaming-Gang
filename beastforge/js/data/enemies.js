@@ -46,6 +46,21 @@ BOSSES.vharox3 = { ...BOSSES.vharox, name: 'Vharox, Urfeuer', title: 'Das erste 
   phases: [...BOSSES.vharox.phases.slice(0, 3).map(p => p.breath ? { ...p, breath: { every: 6, n: 5, dur: 4 } } : p),
     { at: 0.25, name: 'Weltenbrand', desc: 'Raserei: ruft Seelenwale!', enrage: 1.7, adds: { every: 10, kind: 'whale', n: 1 } }] };
 BOSSES.vharox.warn = 'Vharox, der Abgrunddrache erwacht';
+// Boss des Frosttempels: Hyōga, ein riesiger Wolf aus Eis (gleiches Phasen-Schema: 1 Sprung, 2 Atem, 3 Raserei)
+BOSSES.hyoga = {
+  name: 'Hyōga, Frostwolf', title: 'Herr des ewigen Winters', hp: 3200, speed: 0.42, coins: 0, xp: 700, lives: 100, r: 0.75, h: 2.0,
+  heavy: true, boss: true, res: { ice: 0.3, fire: 1.4, phys: 0.85 }, model: 'wolf', breathColor: 0x9fe8ff, warn: 'Ein Heulen aus dem Eis – Hyōga erwacht!',
+  phases: [
+    { at: 1.00, name: 'Heulen',       desc: 'Der Frostwolf tritt aus dem Schneesturm.' },
+    { at: 0.75, name: 'Frostsprünge', desc: 'Er springt über die Verwehungen – Bodenwellen verfehlen ihn.', fly: { every: 10, dur: 2.2, speed: 2.4 } },
+    { at: 0.50, name: 'Eisatem',      desc: 'Eisatem friert Kreaturen ein!', breath: { every: 7, n: 3, dur: 3.5 } },
+    { at: 0.25, name: 'Rudelruf',     desc: 'Raserei: ruft ein Rudel Dornwölfe.', enrage: 1.6, adds: { every: 8, kind: 'wolf', n: 6 } },
+  ],
+};
+BOSSES.hyoga2 = { ...BOSSES.hyoga, name: 'Hyōga, Weißer Sturm', hp: 27000, speed: 0.44, xp: 1400, scale: 1.2, warn: 'Hyōga kehrt zurück – der Weiße Sturm tobt!',
+  phases: BOSSES.hyoga.phases.map(p => p.adds ? { ...p, adds: { every: 7, kind: 'wolf', n: 10 } } : p.breath ? { ...p, breath: { every: 6, n: 4, dur: 3.5 } } : p) };
+BOSSES.hyoga3 = { ...BOSSES.hyoga, name: 'Hyōga, Ewiger Winter', hp: 125000, speed: 0.46, xp: 3000, scale: 1.45, warn: 'Der ewige Winter bricht an – der letzte Kampf!',
+  phases: BOSSES.hyoga.phases.map(p => p.adds ? { ...p, adds: { every: 9, kind: 'whale', n: 1 } } : p.breath ? { ...p, breath: { every: 5, n: 5, dur: 4 } } : p) };
 
 export const ELEMENT_NAMES = {
   phys: 'Physisch', ice: 'Eis', fire: 'Feuer', lightning: 'Blitz', earth: 'Erde', spirit: 'Geist', shadow: 'Schatten', light: 'Licht', astral: 'Astral',
