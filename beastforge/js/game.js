@@ -12,6 +12,7 @@ import { academyFx } from './data/academy.js';
 import { CH, reversedMap } from './data/challenges.js';
 import { ensureDaily, dailyChallenge, DAILY_XP } from './data/daily.js';
 import { HEROES } from './data/heroes.js';
+import { POWER, givePowers, runPowerReward } from './data/powers.js';
 import { addCharXp, addAccXp, addHeroRankXp, heroStartLevel, unlocked, unlockedCreatures, addMastery, checkAchievements, formsFor } from './meta/progression.js';
 import { saveProfile } from './meta/profile.js';
 
@@ -108,7 +109,7 @@ export class Game {
     cv.addEventListener('pointerdown', this.onDown); addEventListener('pointermove', this.onMove); addEventListener('pointerup', this.onUp);
     this.onKey = e => {
       if (e.key === ' ') { e.preventDefault(); this.hud.playBtn(); }
-      else if (e.key === 'Escape') { if (this.placing) this.cancelPlace(); else if (this.sel) this.select(null); else this.hud.pause(); }
+      else if (e.key === 'Escape') { if (this.aiming) this.aimPower(null); else if (this.placing) this.cancelPlace(); else if (this.sel) this.select(null); else this.hud.pause(); }
       else if (/^[1-6]$/.test(e.key)) { const c = this.hud.trayIds[+e.key - 1]; if (c) this.startPlace(c); }
       else if (e.key === 'f') this.hud.cycleSpeed();
     };
@@ -125,7 +126,9 @@ export class Game {
     return { x, y };
   }
   tap(cx, cy) {
-    const p = this.groundAt(cx, cy), w = this.world; if (!p) { this.select(null); return; }
+    const p = this.groundAt(cx, cy), w = this.world;
+    if (this.aiming) { if (p) this.firePower(this.aiming, p.x, p.y); return; }
+    if (!p) { this.select(null); return; }
     // Kreatur per Bildschirm-Abstand finden (Finger trifft meist den Körper, nicht den Boden darunter)
     let t = null, bd = 40;
     for (const o of w.towers) for (const h of [0.15, 0.6]) { const q = this.view.screenPos(o.x, o.y, h), d = Math.hypot(q[0] - cx, q[1] - cy); if (d < bd) { bd = d; t = o; } }
@@ -135,23 +138,40 @@ export class Game {
     if (w.cellType(c.x, c.y) === 'R') { this.hud.rockPrompt(c); return; }
     this.select(null);
   }
-  startPlace(cid, drag = false) {
+  // ───────── Kräfte: Vorrat im Profil, Wirkung in world.usePower ─────────
+  usePower(id) {
+    const pw = POWER[id], P = this.P; if (!pw || this.world.over) return;
+    if (!(P.powers[id] > 0)) { this.hud.err('Keine ' + pw.name + ' mehr'); return; }
+    this.aimPower(null);
+    if (pw.inst) { this.startPlace(pw.inst.cid, false, id); return; }
+    if (pw.target) { this.select(null); this.cancelPlace(); this.aiming = id; this.hud.hint(pw.icon + ' <b>' + pw.name + '</b>: tippe auf die Karte – nochmal auf die Kraft = abbrechen'); this.hud.updPowers(); return; }
+    this.firePower(id);
+  }
+  aimPower(id) { this.aiming = id; if (!id) this.hud.hint(null); this.hud.updPowers(); }
+  firePower(id, x, y) {
+    const r = this.world.usePower(id, x, y);
+    if (!r.ok) { this.hud.err(r.why); return; }
+    this.P.powers[id]--; this.P.stats.powers = (this.P.stats.powers || 0) + 1; saveProfile(this.P);
+    this.app.audio.play(id === 'gold' ? 'coin' : 'ult'); this.aimPower(null);
+  }
+  startPlace(cid, drag = false, pow = null) {
     if (this.world.over) return;
-    if (this.placing === cid && !drag) { this.cancelPlace(); return; }
-    this.select(null); this.cancelPlace();
-    if (this.world.coins < this.world.costOf(cid)) { this.hud.err('Zu wenig Münzen'); return; }
+    if (this.placing === cid && !drag && this.placePow === pow) { this.cancelPlace(); return; }
+    this.select(null); this.cancelPlace(); this.aimPower(null);
+    if (!pow && this.world.coins < this.world.costOf(cid)) { this.hud.err('Zu wenig Münzen'); return; }
+    this.placePow = pow;
     if (cid === this.heroId && this.world.towers.some(t => t.hero)) { this.hud.err(HEROES[cid].name + ' ist schon im Einsatz'); return; }
     this.placing = cid; this.dragging = drag; this.app.audio.play('click');
     this.view.showArrows(1.5);
     this.hud.buildTray(); this.hud.coachEvent('pick');
-    this.hud.hint(drag ? 'Auf die Karte <b>ziehen</b> und loslassen' : 'Auf die Karte tippen – Finger bewegen – <b>loslassen</b> zum Platzieren');
+    this.hud.hint(pow ? POWER[pow].icon + ' <b>' + POWER[pow].name + '</b> (gratis, ' + POWER[pow].inst.tiers.join('-') + '): auf die Karte tippen – <b>loslassen</b> zum Platzieren' : drag ? 'Auf die Karte <b>ziehen</b> und loslassen' : 'Auf die Karte tippen – Finger bewegen – <b>loslassen</b> zum Platzieren');
   }
   setGhost(p) {
     const w = this.world, cid = this.placing; if (!cid) return;
     p = { x: Math.max(0.3, Math.min(w.W - 0.3, p.x)), y: Math.max(0.3, Math.min(w.H - 0.3, p.y)) };
     // kein Einrasten: die Vorschau steht genau unter dem Finger (auch rot), damit man bis an den Rand ziehen kann
     this.ghostPos = p;
-    const ok = w.canPlace(cid, p.x, p.y);
+    const ok = w.canPlace(cid, p.x, p.y, !!this.placePow);
     if (!this.ghost || this.ghost.cid !== cid) {
       if (this.ghost) this.view.root.remove(this.ghost.m.root);
       const m = buildModel(cid, { stage: 0, branch: this.P.chars[cid]?.branch, skin: this.skinOf(cid), hlvl: 1 });
@@ -179,8 +199,10 @@ export class Game {
   }
   tryPlace() {
     const p = this.ghostPos; if (!p || !this.placing) return;
-    const r = this.world.place(this.placing, p.x, p.y);
+    const pw = POWER[this.placePow];
+    const r = this.world.place(this.placing, p.x, p.y, pw ? { free: true, tiers: pw.inst.tiers } : {});
     if (!r.ok) { this.hud.err(r.why); return; }
+    if (pw) { this.P.powers[pw.id]--; this.P.stats.powers = (this.P.stats.powers || 0) + 1; saveProfile(this.P); this.hud.toast('evo', pw.icon + ' ' + pw.name, 'Fertig ausgebaut: ' + pw.inst.tiers.join('-')); }
     this.app.audio.play('place');
     this.cancelPlace();
     // Hochformat: Shop offen lassen (weiter platzieren); Upgrades per Antippen der Kreatur
@@ -188,9 +210,9 @@ export class Game {
     this.hud.coachEvent('placed');
   }
   cancelPlace() {
-    this.placing = null; this.ghostPos = null; this.dragging = false; this.ghostLocked = false; this.rel = null;
+    this.placing = null; this.placePow = null; this.ghostPos = null; this.dragging = false; this.ghostLocked = false; this.rel = null;
     if (this.ghost) { this.view.root.remove(this.ghost.m.root); this.ghost = null; }
-    this.view.hideRange(); this.view.hideFoot(); this.hud.hint(null); this.hud.buildTray();
+    this.view.hideRange(); this.view.hideFoot(); this.hud.hint(null); this.hud.buildTray(); this.hud.updPowers?.();
   }
   select(t) {
     this.sel = t; this.view.select(t); this.hud.showPanel(t);
@@ -321,13 +343,14 @@ export class Game {
     P.stats.coins += 0; // laufend über Hooks gezählt
     P.stats.dmg = (P.stats.dmg || 0) + Object.values(w.stats.dmg).reduce((a, b) => a + b, 0);
     P.stats.coins = (P.stats.coins || 0) + w.stats.coins;
+    const powGot = givePowers(P, runPowerReward(w.doneWave, won, d));
     saveProfile(P);
     const hero = w.towers.find(t => t.hero);
     const res = ({
       won, perfect, firstClear, map: w.map.name, mapId: this.mapId, diff: D.name, diffKey: d, wave: w.doneWave, maxWave: w.maxWave, lives: w.lives, maxLives: w.maxLives,
       kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves,
       used, xp: w.stats.xp, winBonus, snap: this.snap, charUps: this.charUps, accGain: this.accGain, accUps: this.accUps, achs: this.achs, masteryUps,
-      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch], daily,
+      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch], daily, powGot,
     });
     if (silent) return res;
     this.app.results(res);

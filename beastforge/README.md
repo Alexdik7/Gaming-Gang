@@ -5,7 +5,9 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.32.0 – Spielgefühl: Wellen-Vorschau, Auto-Start, Bestenliste
+## Stand: v0.33.0 – Kräfte und Sofort-Kreaturen
+**0.33:** Verbrauchs-Kräfte (`js/data/powers.js`, Vorrat `P.powers`, Start `START_POWERS`): Seelenbombe (Ziel antippen, `BAL.power.bomb/bombWave/bombR`), Zeitstopp, Kampfrausch (Buff `rage`), Münzregen, Lebensquelle sowie Sofort-Kreaturen (Kitsune 3-0-2, Schildkröte 2-3-0, Donnertiger 0-3-2: `world.place(cid, x, y, { free, tiers })`, auch außerhalb des Teams). Simulation `world.usePower(id, x, y)` mit Abklingzeit `BAL.power.cd`, Ereignis `power` (Effekte in view.js, Banner in hud.js). HUD: ⚡-Knopf `#bPow` mit Zähler, Leiste `#powbar` (`hud.updPowers`), Zielmodus `game.aiming`, Sofort-Platzieren `game.placePow`. Nachschub: Rundenende `runPowerReward` (1 je 10 Wellen, max 4, +1 Sieg, +1 Schwer/Meister) → Ergebnis „Neue Kräfte“, jede abgeholte Tagesaufgabe +1 Kraft.
+
 **0.32:** Über dem Start-Knopf zeigt `#wprev` die nächste Welle (`world.peekWave()` inkl. Karten-Mix: Anzahl je Gegnerart, Boss, Merkmale fliegend/getarnt/gepanzert/schnell/Elite). Runder AUTO-Schalter `#bAuto` neben dem Start-Knopf (Einstellung `autoWave`, gold = an, startet beim Einschalten sofort). Ergebnis-Bildschirm mit „Beste Kreaturen“ (Top 5 nach Schaden, Balken, Medaillen). Plopp-Klänge je Schicht gab es schon (`A.play('pop', {layer})`).
 
 ## v0.31.0 – Ahnenform (Ultra-Entwicklung)

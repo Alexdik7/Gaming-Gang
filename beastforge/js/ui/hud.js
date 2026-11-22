@@ -3,6 +3,7 @@
 import { BAL } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
+import { POWERS } from '../data/powers.js';
 import { MOD_NAMES } from '../data/waves.js';
 import { ENEMIES, BOSSES, ELEMENT_NAMES, ELEMENT_COLORS } from '../data/enemies.js';
 import { TARGETS, TARGET_NAMES } from '../sim/world.js';
@@ -27,6 +28,8 @@ export class Hud {
     $('bPlay').onclick = () => this.playBtn();
     $('bAuto').onclick = () => { const S = this.g.settings(); S.autoWave = !S.autoWave; saveProfile(this.P); this.g.app.audio.play('click'); this.last.auto = null; if (S.autoWave && !this.w.waveRunning() && !this.w.over) this.playBtn(); };
     $('bCancel').onclick = () => this.g.cancelPlace();
+    $('bPow').onclick = () => { $('powbar').classList.toggle('hidden'); this.g.app.audio.play('click'); this.updPowers(); };
+    $('powbar').classList.add('hidden'); this.updPowers();
     $('bEarly').onclick = () => this.early();
     this.buildTray(); this.updAcc();
     this.coachStep = this.P.seen.intro ? -1 : 0; this.coach();
@@ -127,6 +130,21 @@ export class Hud {
   }
   early() { if (this.w.waveRunning() && this.w.startWave().ok) this.g.app.audio.play('click'); }
   cycleSpeed() { this.g.speed = this.g.speed >= 3 ? 1 : this.g.speed + 1; this.g.app.audio.play('click'); }
+  // Kräfte-Leiste: Vorrat aus dem Profil, Tippen = einsetzen (Ziel-Kräfte: danach auf die Karte tippen)
+  updPowers() {
+    const P = this.P, tot = POWERS.reduce((a, p) => a + (P.powers[p.id] || 0), 0);
+    $('hPowN').textContent = tot; $('bPow').classList.toggle('empty', !tot);
+    const bar = $('powbar'); if (bar.classList.contains('hidden')) return;
+    const list = POWERS.filter(p => P.powers[p.id] > 0);
+    bar.innerHTML = list.length ? list.map(p => `<button class="pw ${this.g.aiming === p.id || this.g.placePow === p.id ? 'on' : ''}" data-pw="${p.id}" style="--c:${p.color}" title="${esc(p.desc)}"><span>${p.icon}</span><b>${P.powers[p.id]}</b><small>${esc(p.name)}</small></button>`).join('')
+      : '<div class="pwnone">Keine Kräfte – du bekommst neue für Siege, alle 10 Wellen und Tagesaufgaben.</div>';
+    bar.querySelectorAll('[data-pw]').forEach(b => b.onclick = () => {
+      const id = b.dataset.pw;
+      if (this.g.aiming === id) { this.g.aimPower(null); return; }
+      if (this.g.placePow === id) { this.g.cancelPlace(); this.updPowers(); return; }
+      bar.classList.add('hidden'); this.g.usePower(id); this.updPowers();
+    });
+  }
   updAbilities() {
     const list = [];
     for (const t of this.w.towers) for (const a of this.w.abilityInfo(t)) if (a.ready) list.push({ t, a });
@@ -265,6 +283,7 @@ export class Hud {
       case 'upgrade': if (e.tier === 5) this.t5Splash(e); break;
       case 'ascend': this.ascendSplash(e); break;
       case 'storm': if (e.on) this.banner('❄ SCHNEESTURM ❄', 'Gegner langsamer · Eiskreaturen schneller · andere frieren', 'boss'); else this.toast('syn', 'Der Sturm legt sich', ''); break;
+      case 'power': { const pw = POWERS.find(x => x.id === e.id); this.flash(e.id === 'bomb' ? 0.45 : 0.3, pw?.color || '#fff'); if (pw) this.banner(pw.icon + ' ' + pw.name.toUpperCase(), e.id === 'gold' ? '+◈' + e.coins : e.id === 'heal' ? '+' + e.lives + ' Leben' : '', 'evo'); this.updPowers(); break; }
       case 'rebirth': this.flash(0.5, '#ffb43a'); this.banner('WIEDERGEBURT', 'Der Phönix schenkt dir ' + e.lives + ' Leben', 'evo'); break;
       case 'early': this.toast('syn', `+◈${e.coins} früh gerufen`, ''); break;
     }

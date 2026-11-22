@@ -1,6 +1,7 @@
 // Menü-Bildschirme (DOM). Alle Inhalte kommen aus den Daten-Dateien.
 import { BAL, VERSION, LEVEL_PERKS } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
+import { POWER, givePowers } from '../data/powers.js';
 import { HEROES } from '../data/heroes.js';
 import { MAPS } from '../data/maps.js';
 import { ELEMENT_NAMES } from '../data/enemies.js';
@@ -91,7 +92,7 @@ export class Menus {
     const P = this.P, D = ensureDaily(P), dc = dailyChallenge(P, id => unlocked(P, 'map', id)), map = MAPS[dc.map];
     const qs = D.quests.map(id => {
       const q = QUESTS.find(x => x.id === id), v = Math.min(q.goal, questProgress(P, q)), done = v >= q.goal, got = D.claimed[id];
-      return `<div class="dq ${got ? 'got' : done ? 'done' : ''}"><div><b>${esc(q.text)}</b><div class="bar"><u style="width:${v / q.goal * 100}%"></u></div><small>${fmt(v)} / ${fmt(q.goal)} · ✦ ${q.xp} Konto-XP</small></div>
+      return `<div class="dq ${got ? 'got' : done ? 'done' : ''}"><div><b>${esc(q.text)}</b><div class="bar"><u style="width:${v / q.goal * 100}%"></u></div><small>${fmt(v)} / ${fmt(q.goal)} · ✦ ${q.xp} Konto-XP · ⚡ +1 Kraft</small></div>
         ${got ? '<span class="aok">✓</span>' : `<button class="btn ${done ? 'pri' : ''}" data-q="${id}" ${done ? '' : 'disabled'}>Abholen</button>`}</div>`;
     }).join('');
     const [y, m, d] = dayKey().split('-');
@@ -100,10 +101,10 @@ export class Menus {
         <div class="dmods">${dc.mods.map(id => `<span title="${esc(CH[id].desc)}">${CH[id].icon} ${esc(CH[id].name)}</span>`).join('')}</div>
         <small class="mut">Belohnung beim ersten Sieg heute: <b style="color:#ffd257">+1 Shinobi-Punkt</b> · ✦ ${DAILY_XP} Konto-XP</small>
         ${D.won ? '<div class="aok">✓ Heute geschafft – morgen gibt es einen neuen Kampf</div>' : '<button class="big" id="dgo">⚔ Antreten</button>'}</div></div>
-      <div class="dqs"><div class="wlabel">Tagesaufgaben</div>${qs}<small class="mut">Neue Aufgaben gibt es jeden Tag um Mitternacht.</small></div></div></div>`, m2 => {
+      <div class="dqs"><div class="wlabel">Tagesaufgaben</div>${qs}${this.lastPow ? `<div class="newform">${POWER[this.lastPow].icon} Neue Kraft: <b>${esc(POWER[this.lastPow].name)}</b></div>` : ''}<small class="mut">Neue Aufgaben gibt es jeden Tag um Mitternacht.</small></div></div></div>`, m2 => {
       this.thumbs(m2);
       $('dgo')?.addEventListener('click', () => { this.app.audio.init(); this.app.startRun(dc.map, dc.diff, 'daily'); });
-      m2.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { const q = QUESTS.find(x => x.id === b.dataset.q); if (D.claimed[q.id] || questProgress(P, q) < q.goal) return; D.claimed[q.id] = 1; addAccXp(P, q.xp); saveProfile(P); this.app.audio.play('levelup'); this.s_daily(); });
+      m2.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { const q = QUESTS.find(x => x.id === b.dataset.q); if (D.claimed[q.id] || questProgress(P, q) < q.goal) return; D.claimed[q.id] = 1; addAccXp(P, q.xp); const pg = givePowers(P, 1)[0]; saveProfile(P); this.lastPow = pg; this.app.audio.play('levelup'); this.s_daily(); });
     });
   }
 
@@ -390,7 +391,8 @@ export class Menus {
       <div class="sect acc"><h3>KONTO</h3><div class="xprow" style="grid-template-columns:1fr auto"><div><b>Level ${a.level}</b>${r.accUps.length ? ` <span class="up2" style="color:var(--acc)">⬆ +${r.accUps.length}</span>` : ''}<div class="bar acc"><u data-w="${a.xp / need * 100}" style="width:0%"></u></div></div><span class="gain" style="color:var(--acc)">+${fmt(r.accGain)}</span></div>
         ${r.accUps.length ? `<div class="newform" style="background:linear-gradient(90deg,rgba(255,210,87,.25),transparent);color:#ffe9a0">✦ +${r.accUps.length} Shinobi-Punkt${r.accUps.length > 1 ? 'e' : ''} – ab in die Akademie!</div>` : ''}
         ${r.accUps.flatMap(u => u.rewards).map(x => `<div class="newform" style="background:linear-gradient(90deg,rgba(185,140,255,.25),transparent);color:#e0ccff">🔓 ${esc(x.text)}</div>`).join('')}
-        ${r.achs.map(x => `<div class="newform">🏆 ${esc(x.name)} <small>+${x.xp}</small></div>`).join('')}</div>
+        ${r.achs.map(x => `<div class="newform">🏆 ${esc(x.name)} <small>+${x.xp}</small></div>`).join('')}
+        ${r.powGot?.length ? `<h3 style="margin-top:8px">⚡ NEUE KRÄFTE</h3><div class="rpow">${r.powGot.map(id => `<span>${POWER[id].icon} ${esc(POWER[id].name)}</span>`).join('')}</div>` : ''}</div>
       </div><div class="seg" style="grid-template-columns:1fr 1fr;max-width:520px;margin:0 auto;width:100%"><button class="btn" data-go="home">Menü</button><button class="big" id="again" style="font-size:18px;padding:12px">↻ Nochmal</button></div>
       ${r.charUps.some(u => u.forms.length) ? '<button class="btn" data-go="collection">🦊 Neue Form in der Sammlung ansehen</button>' : ''}</div>`, m => {
       $('again').onclick = () => { this.app.audio.init(); this.app.startRun(r.mapId || 'ahnenhain', r.diffKey); };

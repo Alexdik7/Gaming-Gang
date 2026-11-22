@@ -655,3 +655,19 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .mrow { display: grid; grid-template-columns: 26px 40px 1fr auto; gap: 8px; align-items: center; padding: 3px 0; }
 .mrow img { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,.08); } .mrow .mpl { font-size: 18px; text-align: center; font-weight: 900; }
 .mrow b { display: block; font-size: 13px; }
+
+/* v0.33 Kräfte: Knopf in der Kopfleiste + aufklappbare Leiste */
+.pwbtn { position: relative; width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffe27a, #e08a1a); border: 3px solid #10162a; box-shadow: 0 4px 0 rgba(0,0,0,.4); font-size: 20px; display: grid; place-items: center; }
+.pwbtn i { position: absolute; right: -6px; bottom: -4px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px; background: #10162a; color: #ffd257; font: 13px/20px var(--cartoon, inherit); font-style: normal; text-align: center; border: 2px solid #ffd257; }
+.pwbtn.empty { filter: grayscale(.8) brightness(.8); }
+#powbar { position: absolute; top: calc(62px + var(--st)); right: calc(var(--shopW) + 14px + var(--sr)); display: flex; flex-wrap: wrap; justify-content: flex-end; align-content: flex-start; align-items: flex-start; gap: 10px 8px; width: max-content; max-width: calc(100vw - var(--shopW) - 40px); padding: 8px; border-radius: 16px; background: var(--pnl, rgba(30,20,60,.92)); border: 3px solid #10162a; box-shadow: 0 6px 16px rgba(0,0,0,.45); pointer-events: auto; z-index: 6; animation: pwIn .18s ease-out; }
+@keyframes pwIn { from { transform: translateY(-8px) scale(.95); opacity: 0; } }
+.pw { position: relative; width: 64px; height: 70px; border-radius: 14px; background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c) 55%, #fff 10%), color-mix(in srgb, var(--c) 40%, #10162a)); border: 3px solid #10162a; box-shadow: 0 4px 0 rgba(0,0,0,.4); padding: 4px 2px 0; color: #fff; }
+.pw span { font-size: 26px; display: block; line-height: 32px; }
+.pw b { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; border-radius: 11px; background: #10162a; color: #fff; font: 13px/22px var(--cartoon, inherit); border: 2px solid var(--c); }
+.pw small { display: block; font-size: 9px; line-height: 1.05; text-shadow: var(--ol); }
+.pw.on { outline: 3px solid #fff; animation: pwPulse .8s infinite alternate; }
+@keyframes pwPulse { to { transform: scale(1.07); } }
+.pw:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.4); }
+.pwnone { max-width: 240px; font-size: 12px; color: #fff; text-shadow: var(--ol); }
+.rpow { display: flex; flex-wrap: wrap; gap: 6px; } .rpow span { padding: 3px 9px; border-radius: 10px; background: rgba(255,210,87,.18); border: 2px solid #ffd257; font-size: 13px; }

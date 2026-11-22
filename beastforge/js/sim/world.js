@@ -143,10 +143,10 @@ export class World {
     }
     return { x, y, c };
   }
-  canPlace(cid, x, y) {
+  canPlace(cid, x, y, free = false) {
     if (this.over) return { ok: false, why: 'Run ist vorbei' };
     const isHero = cid === this.heroId && HEROES[cid];
-    if (!isHero && !this.loadout.includes(cid)) return { ok: false, why: 'Nicht im Team' };
+    if (!isHero && !free && !this.loadout.includes(cid)) return { ok: false, why: 'Nicht im Team' };
     if (x < TOWER_R || y < TOWER_R || x > this.W - TOWER_R || y > this.H - TOWER_R) return { ok: false, why: 'Außerhalb der Karte' };
     if (this.pathDist(x, y) < PATH_HALF + TOWER_R * 0.75) return { ok: false, why: 'Zu nah am Pfad' };
     const raft = this.raftAt(x, y), ch = raft >= 0 ? '.' : this.terrainAt(x, y), kind = PLACE[ch];
@@ -160,16 +160,17 @@ export class World {
     if (this.towers.some(t => Math.hypot(t.x - x, t.y - y) < TOWER_R * 2)) return { ok: false, why: 'Zu nah an einer Kreatur' };
     if (isHero && this.towers.some(t => t.hero)) return { ok: false, why: 'Nur ein Held pro Run' };
     if (this.towers.length >= BAL.run.maxTowers) return { ok: false, why: 'Zu viele Kreaturen' };
-    if (this.coins < this.costOf(cid)) return { ok: false, why: 'Zu wenig Münzen' };
+    if (!free && this.coins < this.costOf(cid)) return { ok: false, why: 'Zu wenig Münzen' };
     return { ok: true, kind, raft: raft >= 0 ? raft : null };
   }
-  place(cid, x, y) {
-    const c = this.canPlace(cid, x, y); if (!c.ok) return c;
-    const cost = this.costOf(cid); this.coins -= cost;
+  place(cid, x, y, o = {}) {
+    const c = this.canPlace(cid, x, y, o.free); if (!c.ok) return c;
+    const cost = o.free ? 0 : this.costOf(cid); this.coins -= cost;
     const hero = cid === this.heroId && !!HEROES[cid];
     const t = { id: this.nid++, cid, hero, cx: Math.floor(x), cy: Math.floor(y), x, y, ground: c.kind, stage: 0, tiers: [0, 0, 0], spent: cost,
       target: 'first', cd: 0.2, mcd: 0.5, cnt: 0, kills: 0, dmg: 0, ang: Math.PI / 2, abCd: 0, ultCd: 0, disabledT: 0, buffs: [], orbT: 0, dashCd: 3, clonesT: 0,
       hlvl: hero ? (this.hooks.heroStart?.() || 1) : 0, hxp: 0, s: null, prot: false, raft: c.raft };
+    if (o.tiers) { t.tiers = o.tiers.slice(); t.instant = true; }   // Sofort-Kreatur: fertige Upgrades
     if (c.raft != null) { const rf = this.rafts[c.raft]; t.ox = x - rf.x; t.oy = y - rf.y; }
     this.towers.push(t); this.stats.used.add(cid); this.dirty = true; this.refresh();
     this.emit({ t: 'place', tower: t });
@@ -317,6 +318,28 @@ export class World {
     return { ok: true };
   }
   // Vorschau: Definition der nächsten Welle (für die HUD-Vorschau)
+  // ───────── Kräfte (Verbrauchsgegenstände) ─────────
+  usePower(id, x, y) {
+    if (this.over) return { ok: false, why: 'Run ist vorbei' };
+    if (this.powCd > 0) return { ok: false, why: 'Kurz warten …' };
+    const w = Math.max(1, this.wave);
+    switch (id) {
+      case 'bomb': {
+        if (x == null) return { ok: false, why: 'Ziel fehlt' };
+        const R = BAL.power.bombR, dmg = BAL.power.bomb + BAL.power.bombWave * w;
+        this.emit({ t: 'power', id, x, y, r: R });
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - x, e.y - y) < R) { this.damage(e, e.boss ? dmg * 0.5 : dmg, 'fire', null, { ignoreRes: true }); if (e.alive) e.stunT = Math.max(e.stunT, e.boss ? 0.3 : 1.5); }
+        break;
+      }
+      case 'freeze': for (const e of this.enemies) if (e.alive) e.stunT = Math.max(e.stunT, e.boss ? 1 : 4); this.emit({ t: 'power', id }); break;
+      case 'rage': for (const t of this.towers) t.buffs.push({ id: 'rage', t: 15, fx: { mul: { rate: 1.6 } } }); this.dirty = true; this.emit({ t: 'power', id }); break;
+      case 'gold': { const c = Math.round(BAL.power.gold + BAL.power.goldWave * w); this.coins += c; this.emit({ t: 'power', id, coins: c }); break; }
+      case 'heal': this.lives += 25; this.emit({ t: 'power', id, lives: 25 }); break;
+      default: return { ok: false, why: 'Unbekannte Kraft' };
+    }
+    this.powCd = BAL.power.cd; this.stats.powers = (this.stats.powers || 0) + 1;
+    return { ok: true };
+  }
   peekWave() { const n = this.wave + 1; if (n > this.maxWave) return null; let def = waveDef(n); const mx = this.map.mix?.(n, def.groups); if (mx) def = { ...def, groups: mx.groups, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) }; return { n, def }; }
   waveRunning() { return this.spawners.length > 0 || this.enemies.length > 0; }
 
@@ -352,6 +375,7 @@ export class World {
   }
   step(dt) {
     this.t += dt;
+    if (this.powCd > 0) this.powCd -= dt;
     for (const s of this.spawners) {
       s.t -= dt;
       while (s.t <= 0 && s.left > 0) { this.spawn(s.e, s.mods, 0, s.wave); s.left--; s.t += s.gap; }

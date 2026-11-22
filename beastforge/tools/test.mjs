@@ -497,3 +497,26 @@ test('Ahnenform: drei Stufe-5-Pfade verschmelzen, Grad, Ahnenzorn, nur eine pro 
   const e = w.spawn('golem', [], 3), hp = e.hp; assert.ok(w.useAbility(a.id, 'ult').ok !== false); assert.ok(e.hp < hp, 'Ahnenzorn trifft');
   w.place('kitsune', ...w.suggestSpot('kitsune', 3)); assert.ok(!w.ascendInfo(w.towers.at(-1)) || !w.ascendInfo(w.towers.at(-1)).ok, 'nur eine Ahnenform');
 });
+
+test('Kräfte: Bombe, Zeitstopp, Münzen, Leben, Rausch, Sofort-Kreatur', async () => {
+  const { POWERS, givePowers, runPowerReward, START_POWERS } = await import('../js/data/powers.js');
+  const { w, P } = mkWorld({ ...defaultProfile() }, { loadout: ['kitsune'] });
+  assert.deepEqual(P.powers, START_POWERS);
+  w.startWave(); step(w, 4);
+  const e = w.enemies[0]; assert.ok(e);
+  const hp0 = e.hp; assert.ok(w.usePower('bomb', e.x, e.y).ok); assert.ok(!e.alive || e.hp < hp0, 'Bombe trifft');
+  assert.ok(!w.usePower('gold').ok, 'Abklingzeit'); step(w, 2);
+  const c0 = w.coins; assert.ok(w.usePower('gold').ok); assert.ok(w.coins > c0 + 200);
+  step(w, 2); const l0 = w.lives; assert.ok(w.usePower('heal').ok); assert.equal(w.lives, l0 + 25);
+  step(w, 2); assert.ok(w.usePower('freeze').ok); assert.ok(w.enemies.filter(x => x.alive && !x.boss).every(x => x.stunT > 3));
+  // Sofort-Kreatur: gratis, auch außerhalb des Teams, mit fertigen Upgrades
+  w.coins = 0; assert.ok(!w.canPlace('tiger', 8, 4.5).ok);
+  const r = w.place('tiger', 8, 4.5, { free: true, tiers: [0, 3, 2] }); assert.ok(r.ok, r.why);
+  assert.deepEqual(r.tower.tiers, [0, 3, 2]); assert.equal(w.coins, 0);
+  step(w, 2); assert.ok(w.usePower('rage').ok); assert.ok(r.tower.buffs.some(b => b.id === 'rage'));
+  for (const p of POWERS) if (p.inst) { const t = p.inst.tiers; assert.ok(t.filter(x => x > 0).length <= 2 && t.filter(x => x > BAL.cross.second).length <= 1, p.id); assert.ok(CREATURES[p.inst.cid], p.id); }
+  const got = givePowers(P, 5); assert.equal(got.length, 5);
+  assert.equal(runPowerReward(60, true, 'master'), 6); assert.equal(runPowerReward(7, false, 'normal'), 0);
+  // alte Spielstände bekommen den Startvorrat
+  const old = defaultProfile(); delete old.powers; assert.deepEqual(migrate(old).powers, START_POWERS);
+});

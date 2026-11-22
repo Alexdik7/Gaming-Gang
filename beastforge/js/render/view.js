@@ -365,6 +365,33 @@ export class GameView {
         this.arcs.add(x, 0.42, z, ang, t.stage >= 2 ? 0xff8aa0 : 0xd8fff0, 0.42, 0.14, 0.55, v ? v.flip : 1);
         break;
       }
+      case 'power': {   // Kräfte (data/powers.js)
+        const hp = this.map.heart?.getWorldPosition(new THREE.Vector3()) || new THREE.Vector3();
+        if (ev.id === 'bomb') {
+          const [x, z] = at(ev.x, ev.y);
+          this.pillars.add(x, z, 0.4, 9, 0xffd0a0, 0.5);
+          this.after(0.25, () => { this.flashes.add(x, 0.8, z, 0xffffff, 6, 0.35); this.flashes.add(x, 0.8, z, 0xff7a3a, 4, 0.7, { delay: 0.05 });
+            for (let i = 0; i < 3; i++) this.rings.add(x, 0.06 + i * 0.08, z, 0.3, ev.r * (1 + i * 0.25), i ? 0xffd257 : 0xff7a3a, 0.6 + i * 0.15);
+            this.rings.add(x, 0.04, z, 0.2, ev.r, 0x3a1a10, 1.4, { disc: true, alpha: 0.4 });
+            P.burst(x, 0.5, z, [0xff7a3a, 0xffd257, 0x3a2a2a], 140, 7, 0.3, 1.1, { up: 2 }); this.sparks.fan(x, 0.5, z, 0, 0, 0xffb43a, 50, 10, PI);
+            this.flashSky = 0.6; this.stage.addShake(1.6); });
+          this.stage.focus = new THREE.Vector3(x, 0, z); this.stage.zoomPunch = 0.8;
+        } else if (ev.id === 'freeze') {
+          this.flashSky = 0.5; this.darken = 0.8;
+          for (const e of this.world.enemies) { const [x, z] = this.toW(e.x, e.y); this.flashes.add(x, 0.6, z, 0x9fe0ff, 0.9, 0.5); P.burst(x, 0.6, z, [0xbff4ff, 0xffffff], 6, 1.2, 0.15, 0.7); }
+          this.rings.add(0, 0.08, 0, 0.5, 16, 0x9fe0ff, 1.2);
+        } else if (ev.id === 'rage') {
+          for (const t of this.world.towers) { const [x, z] = this.toW(t.x, t.y); this.pillars.add(x, z, 0.35, 3, 0xff5a5a, 0.8); P.burst(x, 0.6, z, [0xff5a5a, 0xffb43a], 20, 2.5, 0.16, 0.8, { up: 1.5 }); }
+          this.stage.addShake(0.6);
+        } else if (ev.id === 'gold') {
+          for (let i = 0; i < 40; i++) this.after(i * 0.02, () => P.spawn((Math.random() - 0.5) * 16, 5 + Math.random() * 2, (Math.random() - 0.5) * 10, 0, -6, 0, 0xffd257, 0.16, 1.2, { drag: 0.01 }));
+          this.floaters.add(hp.x, 2, hp.z, '+◈' + ev.coins, 'lvl', 1.6);
+        } else if (ev.id === 'heal') {
+          this.pillars.add(hp.x, hp.z, 0.8, 6, 0x5fe68a, 1.2); this.rings.add(hp.x, 0.06, hp.z, 0.3, 3, 0x5fe68a, 1.0);
+          P.burst(hp.x, 0.8, hp.z, [0x5fe68a, 0xffffff], 60, 3, 0.2, 1, { up: 2 }); this.floaters.add(hp.x, 2, hp.z, '+' + ev.lives + ' ❤', 'lvl', 1.6);
+        }
+        break;
+      }
       case 'heal2': this.map.heartGlow && this.rings.add(this.map.heart.getWorldPosition(new THREE.Vector3()).x, 0.06, this.map.heart.getWorldPosition(new THREE.Vector3()).z, 0.2, 1.8, 0xff9ac8, 0.8); break;
       case 'bolt': {
         this.atkStart(ev.tower, 0x9fe8ff);
