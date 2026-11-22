@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.24.0 – Kappa, Kirin, Komainu, Sora und Ren
+## Stand: v0.25.0 – HUD im Genre-Stil
+**0.25:** Spielerwunsch: HUD wie im Genre-Vorbild. Leben/Münzen/Runde als große umrandete Comic-Zahlen ohne Kästen (Schrift „Luckiest Guy“, Umriss über `--ol`), blaues Shop-Panel mit hellen Karten und umrandeten Preisen, runder grüner Start-/Tempo-Knopf, runder Pause-Knopf. Upgrade-Fenster wieder als Seitenleiste (Landscape): drei Pfadreihen untereinander mit grünen Kauf-Knöpfen (grau = zu teuer, gold = MAX), darunter Erwecken/Fusion, Werte, unten Ziel + roter Verkaufen-Knopf; es öffnet auf der Seite, auf der die Kreatur NICHT steht (`.atright`, `#hud.pright`). Reihenfolge per CSS `order` (`.pinfo`/`.pmain` als `display: contents`). Geister-Tipp-Sperre bleibt.
+
+## v0.24.0 – Kappa, Kirin, Komainu, Sora und Ren
 **0.24:** Neue Kreaturen (prozedural in beasts.js): **Kappa** `kappa` (Konto-Lv 14, Wasserblasen `bubble` mit Fläche/Rückstoß/Verlangsamung, im Wasser schneller, Pfad Gurkenhandel = Einkommen, Fähigkeit `flood`), **Komainu** `komainu` (Lv 16, Nahkampf-Bossjäger `bossMul`, Fähigkeit `guardbite`), **Kirin** `kirin` (Lv 18, Licht-Kettenstrahlen – Blitzfarbe Gold, Segens-Aura, Fähigkeit `radiance`). Fusionen Flussdrache (Kappa+Schlangenmagierin), Sonnenkirin (Kirin+Phönix), Tempelkoloss (Komainu+Golem) – jetzt 12. Helden **Sora, Windbogenschützin** (Lv 17, `arrow`, Reichweite 4, `volley`/`skyshot`) und **Ren, Schattenpuppenspieler** (Lv 19, `puppets` = Klon-Mechanik, `bind` lähmt die ganze Karte). Animationen mit `scale` immer relativ zur Grundgröße setzen (sonst riesige Teile).
 
 ## v0.23.0 – Drei neue Helden

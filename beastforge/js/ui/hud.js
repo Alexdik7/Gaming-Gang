@@ -91,7 +91,7 @@ export class Hud {
     if (key !== this.last.play) {
       this.last.play = key; const b = $('bPlay');
       b.className = 'play ' + (running ? 'fast s' + this.g.speed : 'go');
-      b.innerHTML = running ? `<span>${'▶'.repeat(Math.min(3, this.g.speed))}</span><small>${this.g.speed}× Tempo</small>` : `<span>▶</span><small>Welle ${w.wave + 1}</small>`;
+      b.innerHTML = running ? `<span>${this.g.speed > 1 ? '▶▶' : '▶'}</span><small>${this.g.speed}×</small>` : `<span>▶</span><small>Start</small>`;
       $('bEarly').classList.toggle('hidden', !(can && running));
       $('bEarly').innerHTML = `⏩ Nächste Welle <b>+◈${BAL.run.earlyCall(w.wave)}</b>`;
     }
@@ -149,7 +149,8 @@ export class Hud {
     if (fresh) { el.classList.add('fresh'); clearTimeout(this.freshT); this.freshT = setTimeout(() => el.classList.remove('fresh'), 450); this.panelFresh = performance.now(); }
     // unten anzeigen – steht die Kreatur selbst unten, rutscht das Fenster nach oben
     const sp = this.g.view.screenPos?.(t.x, t.y, 0), H = appSize()[1];
-    const top = !!sp && sp[1] > H * 0.56; el.classList.toggle('attop', top); $('hud').classList.toggle('ptop', top);
+    const W = appSize()[0], right = !!sp && sp[0] < W * 0.42 && !this.g.app.stage.portrait;   // Kreatur links → Fenster rechts (über dem Shop)
+    el.classList.toggle('atright', right); $('hud').classList.toggle('pright', right); void H;
     this.refreshPanel();
     requestAnimationFrame(() => $('hud').style.setProperty('--ph', el.getBoundingClientRect().height + 'px'));
   }
