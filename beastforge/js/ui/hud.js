@@ -143,8 +143,15 @@ export class Hud {
   showPanel(t) {
     this.sel = t;
     if (!t) { $('panel').classList.add('hidden'); $('hud').classList.remove('psel'); document.querySelector('.coach')?.classList.remove('hidden'); this.insets(); return; }
-    $('panel').classList.remove('hidden'); $('hud').classList.add('psel'); document.querySelector('.coach')?.classList.add('hidden');
+    const el = $('panel'), fresh = el.classList.contains('hidden') || this.panelFor !== t; this.panelFor = t;
+    el.classList.remove('hidden'); $('hud').classList.add('psel'); document.querySelector('.coach')?.classList.add('hidden');
+    // Geister-Tipp verhindern: das Fenster nimmt kurz nach dem Öffnen keine Tipps an (sonst landet der Tipp auf der Kreatur als Upgrade-Kauf)
+    if (fresh) { el.classList.add('fresh'); clearTimeout(this.freshT); this.freshT = setTimeout(() => el.classList.remove('fresh'), 450); this.panelFresh = performance.now(); }
+    // unten anzeigen – steht die Kreatur selbst unten, rutscht das Fenster nach oben
+    const sp = this.g.view.screenPos?.(t.x, t.y, 0), H = appSize()[1];
+    const top = !!sp && sp[1] > H * 0.56; el.classList.toggle('attop', top); $('hud').classList.toggle('ptop', top);
     this.refreshPanel();
+    requestAnimationFrame(() => $('hud').style.setProperty('--ph', el.getBoundingClientRect().height + 'px'));
   }
   refreshPanel(soft) {
     const t = this.sel; if (!t || !this.w.towers.includes(t)) return;
@@ -158,7 +165,7 @@ export class Hud {
       title = h.name; sub = h.title;
       const next = h.milestones.find(m => m.lvl > t.hlvl);
       body = `<div class="xpline hero"><b>Held Lv ${t.hlvl}</b><div class="bar hero"><u style="width:${t.hlvl >= 20 ? 100 : t.hxp / need * 100}%"></u></div><small>${t.hlvl >= 20 ? 'MAX' : fmt(t.hxp) + ' / ' + fmt(need)}</small></div>
-        <div class="chips">${chips}</div>
+        <div class="chips">${chips}</div><!--main-->
         ${next ? `<div class="nextm">Nächster Meilenstein · <b>Lv ${next.lvl}: ${esc(next.name)}</b><br><small>${esc(next.desc)}</small></div>` : ''}
         <div class="miles">${h.milestones.map(m => `<div class="${t.hlvl >= m.lvl ? 'on' : ''}"><i>${t.hlvl >= m.lvl ? '✓' : m.lvl}</i><span><b>${esc(m.name)}</b> ${esc(m.desc)}</span></div>`).join('')}</div>
         <small class="mut">${esc(h.name)} steigt durch Schaden und Wellen auf – kein Münzkauf nötig.</small>`;
@@ -191,17 +198,19 @@ export class Hud {
       const auraTxt = s.aura ? `<div class="aura">✿ Aura: ${s.aura.rate ? '+' + Math.round(s.aura.rate * 100) + '% Tempo ' : ''}${s.aura.dmg ? '+' + Math.round(s.aura.dmg * 100) + '% Schaden ' : ''}${s.aura.camo ? '· erkennt Getarnte' : ''}</div>` : '';
       const ab = w.abilityInfo(t).map(a => `<div class="abi ${a.ready ? 'on' : ''}"><b>${a.slot === 'ult' ? '★ ' : ''}${esc(a.name)}</b> <small>${a.ready ? (a.left > 0 ? Math.ceil(a.left) + ' s' : 'bereit') : '🔒 ' + esc(a.need)}</small></div>`).join('');
       body = `<div class="xpline"><b>${esc(def.name)} Lv ${c.level}</b><div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / need * 100}%"></u></div><small>${c.level >= 50 ? 'MAX' : fmt(c.xp) + ' / ' + fmt(need) + ' XP'}${nx ? ' · ' + esc(nx.name) + ' bei Lv ' + nx.lvl : ''}</small></div>
-        <div class="chips">${chips}${s.camo ? '<span>👁 Erkennung</span>' : ''}${!s.flying ? '<span class="warn">⛔ keine Fliegenden</span>' : ''}${t.disabledT > 0 ? '<span class="warn">🔥 Gestört!</span>' : ''}</div>${auraTxt}
+        <div class="chips">${chips}${s.camo ? '<span>👁 Erkennung</span>' : ''}${!s.flying ? '<span class="warn">⛔ keine Fliegenden</span>' : ''}${t.disabledT > 0 ? '<span class="warn">🔥 Gestört!</span>' : ''}</div>${auraTxt}<!--main-->
         ${evo}<div class="prows">${rows}</div>${ab ? `<div class="abis">${ab}</div>` : ''}`;
     }
-    el.innerHTML = `<div class="ph"><img src="${this.icon(t)}" alt=""><div class="nm"><b>${esc(title)}</b><small>${sub}</small></div><button class="x" data-x>✕</button></div>${body}
-      <div class="tgt"><button data-tg="-1">◀</button><div><small>Ziel</small><b>${TARGET_NAMES[t.target]}</b></div><button data-tg="1">▶</button></div>
-      <button class="sell" data-sell>Verkaufen <b>◈ ${fmt(t.spent * BAL.run.sellRefund)}</b></button>`;
+    const [info, main] = body.split('<!--main-->');
+    el.innerHTML = `<div class="pinfo"><div class="ph"><img src="${this.icon(t)}" alt=""><div class="nm"><b>${esc(title)}</b><small>${sub}</small></div><button class="x" data-x>✕</button></div>${info}
+      <div class="pact"><div class="tgt"><button data-tg="-1">◀</button><div><small>Ziel</small><b>${TARGET_NAMES[t.target]}</b></div><button data-tg="1">▶</button></div>
+      <button class="sell" data-sell>Verkaufen <b>◈ ${fmt(t.spent * BAL.run.sellRefund)}</b></button></div></div><div class="pmain">${main || ''}</div>`;
+    const guard = fn => e => { if (performance.now() - (this.panelFresh || 0) < 450) return; fn(e); };
     el.querySelector('[data-x]').onclick = () => this.g.select(null);
     el.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const i = TARGETS.indexOf(t.target), n = TARGETS.length; w.setTarget(t.id, TARGETS[(i + +b.dataset.tg + n) % n]); this.g.app.audio.play('click'); this.refreshPanel(); });
-    el.querySelector('[data-sell]').onclick = () => this.confirm('Verkaufen?', `Du bekommst ◈${fmt(t.spent * BAL.run.sellRefund)} zurück. Die Charakter-XP bleiben erhalten.`, 'Verkaufen', () => { w.sell(t.id); this.g.select(null); });
-    el.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const r = w.upgrade(t.id, +b.dataset.up); if (!r.ok) this.err(r.why); else this.coachEvent('upgrade'); this.refreshPanel(); });
-    const ev = el.querySelector('[data-evo]'); if (ev) ev.onclick = () => { const r = w.evolve(t.id); if (!r.ok) this.err(r.why); this.refreshPanel(); };
+    el.querySelector('[data-sell]').onclick = guard(() => this.confirm('Verkaufen?', `Du bekommst ◈${fmt(t.spent * BAL.run.sellRefund)} zurück. Die Charakter-XP bleiben erhalten.`, 'Verkaufen', () => { w.sell(t.id); this.g.select(null); }));
+    el.querySelectorAll('[data-up]').forEach(b => b.onclick = guard(() => { const r = w.upgrade(t.id, +b.dataset.up); if (!r.ok) this.err(r.why); else this.coachEvent('upgrade'); this.refreshPanel(); }));
+    const ev = el.querySelector('[data-evo]'); if (ev) ev.onclick = guard(() => { const r = w.evolve(t.id); if (!r.ok) this.err(r.why); this.refreshPanel(); });
   }
 
   // ───────── Ereignisse ─────────

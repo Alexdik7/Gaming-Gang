@@ -126,7 +126,10 @@ export class Game {
   }
   tap(cx, cy) {
     const p = this.groundAt(cx, cy), w = this.world; if (!p) { this.select(null); return; }
-    const t = w.towerNear(p.x, p.y, 0.6);
+    // Kreatur per Bildschirm-Abstand finden (Finger trifft meist den Körper, nicht den Boden darunter)
+    let t = null, bd = 40;
+    for (const o of w.towers) for (const h of [0.15, 0.6]) { const q = this.view.screenPos(o.x, o.y, h), d = Math.hypot(q[0] - cx, q[1] - cy); if (d < bd) { bd = d; t = o; } }
+    t = t || w.towerNear(p.x, p.y, 0.6);
     if (t) { this.select(t === this.sel ? null : t); this.app.audio.play('click'); return; }
     const c = { x: Math.floor(p.x), y: Math.floor(p.y) };
     if (w.cellType(c.x, c.y) === 'R') { this.hud.rockPrompt(c); return; }
@@ -146,9 +149,9 @@ export class Game {
   setGhost(p) {
     const w = this.world, cid = this.placing; if (!cid) return;
     p = { x: Math.max(0.3, Math.min(w.W - 0.3, p.x)), y: Math.max(0.3, Math.min(w.H - 0.3, p.y)) };
-    const n = w.nearestPlace(cid, p.x, p.y, 0.35); p = { x: n.x, y: n.y };
+    // kein Einrasten: die Vorschau steht genau unter dem Finger (auch rot), damit man bis an den Rand ziehen kann
     this.ghostPos = p;
-    const ok = n.c;
+    const ok = w.canPlace(cid, p.x, p.y);
     if (!this.ghost || this.ghost.cid !== cid) {
       if (this.ghost) this.view.root.remove(this.ghost.m.root);
       const m = buildModel(cid, { stage: 0, branch: this.P.chars[cid]?.branch, skin: this.skinOf(cid), hlvl: 1 });
