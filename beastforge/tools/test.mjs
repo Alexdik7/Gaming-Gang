@@ -390,3 +390,16 @@ test('Rudel: Nachbarn stärken sich ohne Obergrenze, Fusionen verschmelzen zwei 
   assert.ok(w2.abilityInfo(k).every(x => x.ready), 'Fähigkeiten sofort bereit');
   w2.charXp('solfox', 100); assert.ok(w2.stats.xp.kitsune > 0 && w2.stats.xp.phoenix > 0, 'XP für beide Eltern');
 });
+
+test('Neue Kreaturen: Gift der Schlangenmagierin, Wirbelsturm, Realitätsriss, neue Fusionen', () => {
+  const P = defaultProfile(); for (const id in CREATURES) P.chars[id].level = 12;
+  const { w } = mkWorld(P); w.coins = 1e6;
+  const n = w.place('naga', ...w.suggestSpot('naga', 3)).tower, m = w.place('monk', ...w.suggestSpot('monk', 3)).tower, v = w.place('voidcat', ...w.suggestSpot('voidcat', 3)).tower;
+  assert.ok(n && m && v && n.s.poison && m.s.knock > 0 && v.s.dmgType === 'astral');
+  for (const t of [n, m, v]) w.evolve(t.id);
+  const near = t => { const e = w.spawn('golem', [], 0); e.x = t.x + 0.8; e.y = t.y; return e; };
+  const e1 = near(n), hp1 = e1.hp; assert.ok(w.useAbility(n.id).ok !== false); assert.ok(e1.vuln >= 0.4 && e1.burnType === 'shadow' && e1.hp < hp1, 'Fluch');
+  const e2 = w.spawn('slime', [], 0); e2.d = 6; w.posAt(e2.d, e2, e2.pi); m.x = e2.x + 0.5; m.y = e2.y; m.abCd = 0; assert.ok(w.useAbility(m.id).ok !== false); assert.ok(!e2.alive || e2.d < 6, 'Wirbelsturm wirft zurück');
+  const e3 = near(v), hp3 = e3.hp; v.abCd = 0; w.useAbility(v.id); assert.ok(e3.hp < hp3 - v.s.dmg * 20 || !e3.alive, 'Realitätsriss');
+  for (const id of ['hydra', 'tengu', 'cosmofox']) assert.ok(CREATURES[id]?.fusion && baseStats({ cid: id, stage: 0, tiers: [0, 0, 0] }).dmg > 5, id);
+});

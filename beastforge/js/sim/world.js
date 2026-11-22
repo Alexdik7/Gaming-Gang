@@ -337,7 +337,7 @@ export class World {
     if (e.reactT > 0) e.reactT -= dt;
     if (e.cryT > 0) e.cryT -= dt;
     if (e.guardT > 0) e.guardT -= dt;
-    if (e.burnT > 0) { e.burnT -= dt; this.damage(e, e.burnDps * dt, 'fire', e.burnSrc, { dot: true }); if (!e.alive) return; }
+    if (e.burnT > 0) { e.burnT -= dt; this.damage(e, e.burnDps * dt, e.burnType || 'fire', e.burnSrc, { dot: true }); if (!e.alive) return; }
     if (e.regen && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * e.regen * dt);
     const def = e.def;
     if (def.guard && e.guard > 0) for (const o of this.enemies) if (o !== e && o.alive && Math.hypot(o.x - e.x, o.y - e.y) <= def.guard.r) o.guardT = 0.25;
@@ -455,7 +455,7 @@ export class World {
   }
   applyStatus(e, s, src) {
     if (!e.alive) return;
-    if (s.burn.dps > 0) { if (s.burn.dps >= e.burnDps || e.burnT <= 0) { e.burnDps = s.burn.dps; e.burnSrc = src; } e.burnT = Math.max(e.burnT, s.burn.dur); }
+    if (s.burn.dps > 0) { if (s.burn.dps >= e.burnDps || e.burnT <= 0) { e.burnDps = s.burn.dps; e.burnSrc = src; e.burnType = s.poison ? 'shadow' : 'fire'; } e.burnT = Math.max(e.burnT, s.burn.dur); }
     if (s.slow.pct > 0) { e.slowPct = Math.max(e.slowPct, s.slow.pct); e.slowT = Math.max(e.slowT, s.slow.dur); }
     if (s.stun.ch > 0 && !e.boss && this.rng() < s.stun.ch * (e.heavy ? 0.4 : 1)) { e.stunT = Math.max(e.stunT, s.stun.dur); this.emit({ t: 'stun', e }); }
     if (s.mark > 0) { e.vuln = Math.max(e.vuln, s.mark); e.vulnT = Math.max(e.vulnT, 3); }
@@ -820,6 +820,30 @@ export class World {
           this.damage(e, s.dmg * 8, 'earth', t, { big: true });
           if (e.alive) { if (!e.heavy) { e.d = Math.max(0, e.d - 1.5); this.posAt(e.d, e, e.pi); } e.slowPct = Math.max(e.slowPct, 0.6); e.slowT = 4; }
         }
+        break;
+      }
+      case 'hex': {   // Schlangenmagierin: Fluch – verwundbar, langsam, schweres Gift
+        const R = s.range * 1.4, ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) <= R);
+        if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'hex', tower: t, r: R, pts: ts.slice(0, 20).map(e => ({ x: e.x, y: e.y })) });
+        for (const e of ts) { e.vuln = Math.max(e.vuln, 0.4); e.vulnT = Math.max(e.vulnT, 8); e.slowPct = Math.max(e.slowPct, e.boss ? 0.25 : 0.5); e.slowT = Math.max(e.slowT, 4); e.burnDps = Math.max(e.burnDps || 0, s.dmg * 3); e.burnSrc = t; e.burnType = 'shadow'; e.burnT = Math.max(e.burnT || 0, 6); this.damage(e, s.dmg * 6, 'shadow', t, { big: true }); }
+        break;
+      }
+      case 'tornado': {   // Windmönch: Wirbelsturm wirft zurück
+        const R = 3.6;
+        this.emit({ t: 'ability', id: 'tornado', tower: t, r: R });
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < R) {
+          this.damage(e, s.dmg * 8, 'phys', t, { big: true });
+          if (e.alive) { if (!e.heavy && !e.boss) { e.d = Math.max(0, e.d - 2.2); this.posAt(e.d, e, e.pi); } e.slowPct = Math.max(e.slowPct, 0.5); e.slowT = Math.max(e.slowT, 3); }
+        }
+        break;
+      }
+      case 'rift': {   // Leerenkatze: stärkster Gegner in Reichweite wird vom Riss verschluckt
+        let best = null; for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) <= s.range * 1.5 && (!best || e.hp > best.hp)) best = e;
+        if (!best) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'rift', tower: t, x: best.x, y: best.y });
+        this.damage(best, s.dmg * (best.boss ? 25 : 70), 'astral', t, { big: true, ignoreRes: true });
+        for (const o of this.enemies) if (o !== best && o.alive && Math.hypot(o.x - best.x, o.y - best.y) < 1.4) { this.damage(o, s.dmg * 6, 'astral', t); if (o.alive && !o.boss) o.stunT = Math.max(o.stunT, 1); }
         break;
       }
       case 'goldrain': { const c = 60 + 15 * this.wave; this.gain(c); this.stats.income += c; this.emit({ t: 'ability', id: 'goldrain', tower: t, coins: c }); break; }

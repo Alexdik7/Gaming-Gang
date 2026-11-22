@@ -5,7 +5,7 @@ import { toon, glow, flat, mk, geo, merge, optimize, anim } from './toon.js';
 import { buildGlb, gearOn } from './assets.js';
 import { CREATURES } from '../data/creatures.js';
 import '../data/fusions.js';
-import { turtle as turtleX, mantis as mantisX, phoenix as phoenixX } from './beasts.js';
+import { turtle as turtleX, mantis as mantisX, phoenix as phoenixX, naga, monk, voidcat } from './beasts.js';
 
 const PI = Math.PI;
 const S = () => geo.sphere(12), C = () => geo.cone(12), Y = () => geo.cyl(12), B = () => geo.box(), CP = () => geo.caps();
@@ -611,7 +611,7 @@ function mika(o) {
   return { root, tick, height: 1.1 };
 }
 
-const BUILDERS = { kitsune: fox, tiger, turtle: turtleX, deer, raven, kairo, dragonwolf, mantis: mantisX, phoenix: phoenixX, golem, raizen, mika };
+const BUILDERS = { kitsune: fox, tiger, turtle: turtleX, deer, raven, kairo, dragonwolf, mantis: mantisX, phoenix: phoenixX, naga, monk, voidcat, golem, raizen, mika };
 // Fusion: Körper von A (Stufe 3, etwas größer) + Kristallkrone, Halo und kreisende Splitter in der Farbe von B
 function fusionModel(def, o) {
   const A = CREATURES[def.parents[0]], B = CREATURES[def.parents[1]];
@@ -637,7 +637,7 @@ function fusionModel(def, o) {
     halo.scale.setScalar(1 + Math.sin(t * 3) * 0.06 + (st?.atk || 0) * 0.15); halo2.rotation.z = t * 0.5;
   } };
 }
-export function buildModel(id, o = {}) { const fd = CREATURES[id]; if (fd?.fusion) return fusionModel(fd, o); const g = buildGlb(id, o); if (g) return g; const m = (BUILDERS[id] || fox)(o); optimize(m.root); return (id === 'turtle' || id === 'mantis' || id === 'phoenix') && o.tiers ? gearOn(m, o.tiers) : m; }
+export function buildModel(id, o = {}) { const fd = CREATURES[id]; if (fd?.fusion) return fusionModel(fd, o); const g = buildGlb(id, o); if (g) return g; const m = (BUILDERS[id] || fox)(o); optimize(m.root); return ['turtle', 'mantis', 'phoenix', 'naga', 'monk', 'voidcat'].includes(id) && o.tiers ? gearOn(m, o.tiers) : m; }
 
 // ───────────────────────── GEGNER (verschmolzen für Instancing) ─────────────────────────
 const sp = () => geo.sphere(12), cn = () => geo.cone(8), bx = () => geo.box(), cy = () => geo.cyl(8), cap = () => geo.caps();

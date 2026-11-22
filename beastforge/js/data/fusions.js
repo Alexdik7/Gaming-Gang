@@ -24,6 +24,15 @@ export const FUSIONS = [
   { id: 'aurora', a: 'phoenix', b: 'dragonwolf', name: 'Polarphönix', role: 'Feuer und Eis', elements: ['fire', 'ice'], color: '#ffa0e0', cost: 1600,
     desc: 'Federn aus Polarlicht: brennen UND verlangsamen. Gegner unter Frost nehmen mehr Schaden.',
     fx: { mul: { dmg: 1.45, rate: 1.1 }, add: { pierce: 1, 'slow.pct': 0.35, 'slow.dur': 1.2, 'burn.dps': 4, range: 0.3, 'crit.ch': 0.1 } }, paths: [['a', 0], ['b', 0], ['a', 2]] },
+  { id: 'hydra', a: 'naga', b: 'turtle', name: 'Hydra', role: 'Vielköpfiges Gift', elements: ['shadow', 'earth'], color: '#3fc0a0', cost: 1400,
+    desc: 'Drei Köpfe spucken gleichzeitig: drei Giftkugeln, die verlangsamen und lange vergiften.',
+    fx: { mul: { dmg: 1.4 }, add: { shots: 2, spread: 0.35, 'burn.dps': 6, 'slow.pct': 0.2, range: 0.3 } }, paths: [['a', 0], ['b', 0], ['a', 1]] },
+  { id: 'tengu', a: 'monk', b: 'raven', name: 'Sturmtengu', role: 'Sturm aus Federn', elements: ['phys', 'shadow'], color: '#7ab0ff', cost: 1400,
+    desc: 'Mönch mit Rabenschwingen: Windklingen treffen Fliegende und Getarnte und schneiden noch tiefer.',
+    fx: { mul: { dmg: 1.45, rate: 1.1 }, add: { pierce: 3, shots: 1, 'crit.ch': 0.15, range: 0.3 }, set: { flying: true, camo: true } }, paths: [['a', 0], ['b', 0], ['a', 1]] },
+  { id: 'cosmofox', a: 'voidcat', b: 'kitsune', name: 'Kosmosfuchs', role: 'Sternenfeuer', elements: ['astral', 'fire'], color: '#ff9af0', cost: 1700,
+    desc: 'Fuchsfeuer aus dem All: drei Leerenkugeln, die brennen, und kreisende Sterne.',
+    fx: { mul: { dmg: 1.35 }, add: { shots: 2, spread: 0.3, 'orbs.n': 2, 'orbs.dmg': 8, 'burn.dps': 5, range: 0.2 } }, paths: [['a', 0], ['b', 0], ['a', 2]] },
 ];
 export const FUSION_IDS = FUSIONS.map(f => f.id);
 export const fusionFor = (a, b) => FUSIONS.find(f => (f.a === a && f.b === b) || (f.a === b && f.b === a)) || null;

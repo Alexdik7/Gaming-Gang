@@ -13,7 +13,7 @@ export const BASE_STATS = {
   support: { range: 0, rate: 0, dmg: 0, rng: 0, camo: false, protect: false },
   income: 0, dash: { every: 0, mul: 0 }, multi: 0, mark: 0, brk: 0, water: 0,
   cone: 0.7, cleave: 0, bounty: 0, lifeRegen: 0,
-  interest: 0, icap: 0, lucky: 0, rebirth: 0,   // Phönix: einmal pro Run bei 0 Leben mit so vielen Leben wiederauferstehen
+  interest: 0, icap: 0, lucky: 0, rebirth: 0, poison: false,   // poison: Brand wirkt als Gift (Schattenschaden)   // Phönix: einmal pro Run bei 0 Leben mit so vielen Leben wiederauferstehen
     // Glückskatze: Zinsen auf gesparte Münzen (max. icap je Welle), Münzen je besiegtem Gegner in Reichweite
 };
 
@@ -458,6 +458,135 @@ CREATURES.phoenix = {
     50: { name: 'Unsterblich', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } },
   },
   mastery: { title: 'Feuerhüter', skins: [{ name: 'Mondphönix', pal: 'moon' }, { name: 'Sternenphönix', pal: 'star' }] },
+};
+
+// ───────────────────────── SCHLANGENMAGIERIN (Gift & Fluch) ─────────────────────────
+CREATURES.naga = {
+  id: 'naga', name: 'Schlangenmagierin', role: 'Gift / Fluch', elements: ['shadow', 'spirit'],
+  color: '#5fd08a', cost: 550, place: ['ground', 'high', 'water'], model: 'naga',
+  lore: 'In den versunkenen Tempeln unter dem Ahnenhain lernen junge Nattern die alte Giftmagie. Wer ihrem Blick begegnet, wird langsam – und verwundbar.',
+  base: { proj: 'venom', dmg: 3, rate: 1.4, range: 3.2, speed: 11, dmgType: 'shadow', poison: true, 'burn.dps': 3, 'burn.dur': 3, 'slow.pct': 0.15, 'slow.dur': 1 },
+  forms: [
+    { id: 'adder', stage: 0, lvl: 1, cost: 0, name: 'Kleine Natter', desc: 'Spuckt Giftkugeln: Gift über Zeit und leichte Verlangsamung.' },
+    { id: 'cobra', stage: 1, lvl: 10, cost: 700, name: 'Kobra-Magierin', desc: 'Breite Haube, schwebende Giftkugel. Ihr Gift macht Gegner verwundbar.', fx: { mul: { dmg: 1.3 }, add: { 'burn.dps': 3, mark: 0.1, range: 0.2 } } },
+    { id: 'priestess', stage: 2, lvl: 25, cost: 2600, name: 'Naga-Hohepriesterin', desc: 'Goldene Krone und Fluchrunen. Zwei Giftkugeln, sieht Getarnte.', fx: { mul: { dmg: 1.5 }, add: { shots: 1, 'burn.dps': 5, range: 0.3 }, set: { camo: true } } },
+  ],
+  paths: [
+    { id: 'poison', name: 'Gift', icon: '🧪', tiers: [
+      { name: 'Giftzahn', cost: 200, desc: '+2 Gift pro Sekunde', fx: { add: { 'burn.dps': 2 } } },
+      { name: 'Ätzende Spucke', cost: 450, desc: 'Gift hält länger, durchdringt Panzer', fx: { add: { 'burn.dur': 2, pierceArmor: 0.2 } } },
+      { name: 'Giftwolke', cost: 1100, desc: 'Jede 4. Kugel platzt als Giftwolke', fx: { set: { 'every.n': 4, 'every.mul': 2.5, 'every.aoe': 1.2, 'every.proj': 'venom', 'every.dmgType': 'shadow' } } },
+      { name: 'Nervengift', cost: 2600, desc: 'Gift ×2,5', fx: { mul: { 'burn.dps': 2.5 } } },
+      { name: 'Basiliskengift', cost: 7000, desc: 'Gift ×3, Schaden ×2', fx: { mul: { 'burn.dps': 3, dmg: 2 } } },
+    ] },
+    { id: 'curse', name: 'Fluch', icon: '🔮', tiers: [
+      { name: 'Böser Blick', cost: 250, desc: 'Getroffene nehmen +10 % Schaden', fx: { add: { mark: 0.1 } } },
+      { name: 'Schwächung', cost: 550, desc: '+10 % Verwundbarkeit, +0,3 Reichweite', fx: { add: { mark: 0.1, range: 0.3 } } },
+      { name: 'Fluchkette', cost: 1200, desc: 'Eine Kugel mehr', fx: { add: { shots: 1, spread: 0.25 } } },
+      { name: 'Verdammnis', cost: 2800, desc: '+15 % Verwundbarkeit, Kritische Treffer', fx: { add: { mark: 0.15, 'crit.ch': 0.15 } } },
+      { name: 'Seelenfluch', cost: 7200, desc: '+25 % Verwundbarkeit, Schaden ×2,2', fx: { add: { mark: 0.25 }, mul: { dmg: 2.2 } } },
+    ] },
+    { id: 'hypno', name: 'Hypnose', icon: '🌀', tiers: [
+      { name: 'Starrer Blick', cost: 220, desc: '+15 % Verlangsamung', fx: { add: { 'slow.pct': 0.15 } } },
+      { name: 'Trance', cost: 500, desc: '8 % Chance zu betäuben', fx: { add: { 'stun.ch': 0.08, 'stun.dur': 0.6 } } },
+      { name: 'Schlangentanz', cost: 1150, desc: 'Tempo ×1,3', fx: { mul: { rate: 1.3 } } },
+      { name: 'Bannkreis', cost: 2600, desc: '+10 % Betäubung, +15 % Verlangsamung', fx: { add: { 'stun.ch': 0.1, 'slow.pct': 0.15 } } },
+      { name: 'Medusablick', cost: 6800, desc: 'Lange Betäubung, Schaden ×1,8', fx: { add: { 'stun.ch': 0.15, 'stun.dur': 0.6 }, mul: { dmg: 1.8 } } },
+    ] },
+  ],
+  ability: { id: 'hex', name: 'Fluch der Naga', lvl: 8, stage: 1, cd: 45, desc: 'Alle Gegner in Reichweite: 8 s lang +40 % Schaden erleiden, stark verlangsamt, schweres Gift.' },
+  passives: {
+    20: { name: 'Giftdrüsen', desc: '+15 % Gift', fx: { mul: { 'burn.dps': 1.15 } } },
+    40: { name: 'Schlangenauge', desc: '+0,2 Reichweite', fx: { add: { range: 0.2 } } },
+    50: { name: 'Uralte Magie', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } },
+  },
+  mastery: { title: 'Giftmischer', skins: [{ name: 'Mondnatter', pal: 'moon' }, { name: 'Sternennatter', pal: 'star' }] },
+};
+
+// ───────────────────────── WINDMÖNCH (Wind & Rückstoß) ─────────────────────────
+CREATURES.monk = {
+  id: 'monk', name: 'Windmönch', role: 'Durchschlag / Rückstoß', elements: ['phys', 'light'],
+  color: '#8fe0ff', cost: 600, place: ['ground', 'high'], model: 'monk',
+  lore: 'Ein Äffchen, das im Bergkloster das Atmen lernte – so ruhig, dass der Wind ihm gehorcht. Seine Windklingen schneiden durch ganze Reihen.',
+  base: { proj: 'windblade', dmg: 3, rate: 1.0, range: 3.0, speed: 16, pierce: 4, knock: 0.25, dmgType: 'phys' },
+  forms: [
+    { id: 'novice', stage: 0, lvl: 1, cost: 0, name: 'Windäffchen', desc: 'Wirft Windklingen, die 4 Gegner durchschneiden und zurückstoßen.' },
+    { id: 'monk', stage: 1, lvl: 10, cost: 750, name: 'Windmönch', desc: 'Sitzt auf einer Wolke, Stab mit Windring. Stärkerer Rückstoß.', fx: { mul: { dmg: 1.3 }, add: { pierce: 2, knock: 0.1, range: 0.2 } } },
+    { id: 'master', stage: 2, lvl: 25, cost: 2700, name: 'Sturmerleuchteter', desc: 'Schwebt in Windringen. Drei Klingen, sieht Getarnte.', fx: { mul: { dmg: 1.5 }, add: { shots: 2, spread: 0.35, range: 0.3 }, set: { camo: true } } },
+  ],
+  paths: [
+    { id: 'blades', name: 'Sturmklingen', icon: '🌪', tiers: [
+      { name: 'Scharfer Wind', cost: 220, desc: '+1 Schaden', fx: { add: { dmg: 1 } } },
+      { name: 'Doppelklinge', cost: 520, desc: 'Eine Klinge mehr', fx: { add: { shots: 1, spread: 0.25 } } },
+      { name: 'Orkanklingen', cost: 1200, desc: '+4 Durchschlag, Tempo ×1,2', fx: { add: { pierce: 4 }, mul: { rate: 1.2 } } },
+      { name: 'Klingenwirbel', cost: 2800, desc: '+2 Klingen, +3 Schaden', fx: { add: { shots: 2, dmg: 3 } } },
+      { name: 'Himmelsschnitt', cost: 7200, desc: 'Schaden ×2,6, Tempo ×1,3', fx: { mul: { dmg: 2.6, rate: 1.3 } } },
+    ] },
+    { id: 'gale', name: 'Gegenwind', icon: '🍃', tiers: [
+      { name: 'Böe', cost: 200, desc: 'Stärkerer Rückstoß', fx: { add: { knock: 0.15 } } },
+      { name: 'Rückenwind', cost: 450, desc: '+0,4 Reichweite', fx: { add: { range: 0.4 } } },
+      { name: 'Sturmmauer', cost: 1100, desc: 'Rückstoß + Verlangsamung', fx: { add: { knock: 0.25, 'slow.pct': 0.2, 'slow.dur': 1 } } },
+      { name: 'Wirbelwind', cost: 2600, desc: 'Jede 5. Klinge: Wirbel mit Flächenschaden', fx: { set: { 'every.n': 5, 'every.mul': 3, 'every.aoe': 1.4, 'every.proj': 'windblade', 'every.dmgType': 'phys' } } },
+      { name: 'Taifun', cost: 6900, desc: 'Wirbel jede 3., ×3 Schaden, riesiger Rückstoß', fx: { set: { 'every.n': 3 }, mul: { 'every.mul': 3 }, add: { 'every.aoe': 0.8, knock: 0.3 } } },
+    ] },
+    { id: 'zen', name: 'Erleuchtung', icon: '☯', tiers: [
+      { name: 'Ruhe', cost: 260, desc: 'Aura: +6 % Tempo für Nachbarn', fx: { add: { 'support.range': 2.4, 'support.rate': 0.06 } } },
+      { name: 'Klarer Geist', cost: 600, desc: 'Er und Nachbarn sehen Getarnte', fx: { set: { camo: true, 'support.camo': true } } },
+      { name: 'Meditation', cost: 1300, desc: 'Aura: +8 % Tempo, +10 % Reichweite', fx: { add: { 'support.rate': 0.08, 'support.rng': 0.1 } } },
+      { name: 'Innere Stärke', cost: 2900, desc: 'Aura: +12 % Schaden', fx: { add: { 'support.dmg': 0.12 } } },
+      { name: 'Erleuchtet', cost: 7400, desc: 'Aura +15 % Schaden, +10 % Tempo, eigener Schaden ×1,5', fx: { add: { 'support.dmg': 0.15, 'support.rate': 0.1 }, mul: { dmg: 1.5 } } },
+    ] },
+  ],
+  ability: { id: 'tornado', name: 'Wirbelsturm', lvl: 8, stage: 1, cd: 45, desc: 'Ein Tornado wirft alle Gegner in der Nähe weit zurück und verlangsamt sie.' },
+  passives: {
+    20: { name: 'Leichter Schritt', desc: '+10 % Tempo', fx: { mul: { rate: 1.1 } } },
+    40: { name: 'Weiter Blick', desc: '+0,2 Reichweite', fx: { add: { range: 0.2 } } },
+    50: { name: 'Windmeister', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } },
+  },
+  mastery: { title: 'Windhüter', skins: [{ name: 'Schneeaffe', pal: 'moon' }, { name: 'Sternenaffe', pal: 'star' }] },
+};
+
+// ───────────────────────── LEERENKATZE (Astralschaden) ─────────────────────────
+CREATURES.voidcat = {
+  id: 'voidcat', name: 'Leerenkatze', role: 'Astral / Fläche', elements: ['astral', 'shadow'],
+  color: '#9a6aff', cost: 750, place: ['ground', 'high'], model: 'voidcat',
+  lore: 'Sie kam durch einen Riss zwischen den Sternen. Ihr Fell ist ein Stück Nachthimmel, und ihr Astralschaden kennt keine Widerstände.',
+  base: { proj: 'voidorb', dmg: 9, rate: 0.75, range: 3.4, speed: 10, aoe: 0.6, dmgType: 'astral' },
+  forms: [
+    { id: 'kitten', stage: 0, lvl: 1, cost: 0, name: 'Schattenkätzchen', desc: 'Leerenkugeln mit kleinem Flächenschaden. Astral ignoriert Widerstände.' },
+    { id: 'void', stage: 1, lvl: 10, cost: 800, name: 'Leerenkatze', desc: 'Zwei Schweife und ein Sichelmond. Größere Einschläge, kritische Treffer.', fx: { mul: { dmg: 1.35 }, add: { aoe: 0.2, 'crit.ch': 0.1, range: 0.2 } } },
+    { id: 'cosmic', stage: 2, lvl: 25, cost: 2900, name: 'Sternenschlingerin', desc: 'Schwebt mit kosmischer Mähne. Kleine Sterne kreisen um sie.', fx: { mul: { dmg: 1.5 }, add: { 'orbs.n': 2, 'orbs.dmg': 8, range: 0.3 }, set: { camo: true } } },
+  ],
+  paths: [
+    { id: 'void', name: 'Leere', icon: '⚫', tiers: [
+      { name: 'Leerenkralle', cost: 250, desc: '+3 Schaden', fx: { add: { dmg: 3 } } },
+      { name: 'Ereignishorizont', cost: 550, desc: 'Kritische Treffer ×2,5', fx: { add: { 'crit.ch': 0.15 }, set: { 'crit.mult': 2.5 } } },
+      { name: 'Gravitation', cost: 1250, desc: 'Einschläge verlangsamen, größere Fläche', fx: { add: { 'slow.pct': 0.25, 'slow.dur': 1.2, aoe: 0.3 } } },
+      { name: 'Singularität', cost: 2900, desc: 'Schaden ×2', fx: { mul: { dmg: 2 } } },
+      { name: 'Schwarzes Loch', cost: 7600, desc: 'Schaden ×2,4, riesige Einschläge', fx: { mul: { dmg: 2.4 }, add: { aoe: 0.8 } } },
+    ] },
+    { id: 'rift', name: 'Riss', icon: '✶', tiers: [
+      { name: 'Kleiner Riss', cost: 230, desc: 'Tempo ×1,15', fx: { mul: { rate: 1.15 } } },
+      { name: 'Doppelriss', cost: 520, desc: 'Eine Kugel mehr', fx: { add: { shots: 1, spread: 0.3 } } },
+      { name: 'Raumfalte', cost: 1100, desc: '+0,6 Reichweite', fx: { add: { range: 0.6 } } },
+      { name: 'Sternenregen', cost: 2700, desc: 'Jeder 4. Angriff: 3 Sterne', fx: { set: { 'every.n': 4, 'every.mul': 2, 'every.shots': 3, 'every.aoe': 0.8, 'every.proj': 'star', 'every.dmgType': 'astral' } } },
+      { name: 'Supernova', cost: 7200, desc: 'Sterne ×3, größer, Tempo ×1,3', fx: { mul: { 'every.mul': 3, rate: 1.3 }, add: { 'every.aoe': 1 } } },
+    ] },
+    { id: 'stardust', name: 'Sternenstaub', icon: '✧', tiers: [
+      { name: 'Sternenaugen', cost: 220, desc: 'Sieht Getarnte', fx: { set: { camo: true } } },
+      { name: 'Mondstaub', cost: 500, desc: 'Ein Stern kreist um sie', fx: { add: { 'orbs.n': 1, 'orbs.dmg': 5 } } },
+      { name: 'Sternbild', cost: 1200, desc: '+2 Sterne, stärker', fx: { add: { 'orbs.n': 2, 'orbs.dmg': 6 } } },
+      { name: 'Kometenschweif', cost: 2600, desc: 'Getroffene nehmen +15 % Schaden', fx: { add: { mark: 0.15 } } },
+      { name: 'Galaxie', cost: 6800, desc: '+3 Sterne, Schaden ×1,8', fx: { add: { 'orbs.n': 3 }, mul: { dmg: 1.8, 'orbs.dmg': 2 } } },
+    ] },
+  ],
+  ability: { id: 'rift', name: 'Realitätsriss', lvl: 8, stage: 1, cd: 60, desc: 'Der stärkste Gegner in Reichweite wird vom Riss verschluckt: gewaltiger Astralschaden.' },
+  passives: {
+    20: { name: 'Nachtfell', desc: '+10 % Schaden', fx: { mul: { dmg: 1.1 } } },
+    40: { name: 'Sternensicht', desc: '+0,2 Reichweite', fx: { add: { range: 0.2 } } },
+    50: { name: 'Herrin der Leere', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } },
+  },
+  mastery: { title: 'Sternenwanderer', skins: [{ name: 'Mondkatze', pal: 'moon' }, { name: 'Sonnenkatze', pal: 'star' }] },
 };
 
 export const CREATURE_IDS = Object.keys(CREATURES);

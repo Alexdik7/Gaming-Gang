@@ -458,6 +458,26 @@ export class GameView {
         P.burst(tx, 0.4, tz, [0xffd27a, 0xff7a2a, 0xff3a10], 60, 5, 0.22, 0.8, { flat: true });
         this.flashSky = 0.35; this.stage.addShake(0.6); break;
       }
+      case 'hex': { // Fluch: violetter Bannkreis, Giftnebel springt auf jedes Ziel
+        this.rings.add(tx, 0.06, tz, 0.3, ev.r, 0xc08aff, 0.7); this.rings.add(tx, 0.05, tz, 0.3, ev.r, 0x3fd06a, 0.9, { disc: true, alpha: 0.25 });
+        this.flashes.add(tx, 0.8, tz, 0xc08aff, 1.8, 0.3);
+        ev.pts.forEach((p, i) => this.after(0.05 + i * 0.02, () => { const [x, z] = this.toW(p.x, p.y); this.flashes.add(x, 0.5, z, 0x8aff6a, 0.9, 0.3); P.burst(x, 0.4, z, [0x8aff6a, 0xc08aff, 0x2a6a3a], 10, 1.4, 0.2, 0.9, { up: 0.8, drag: 1.5 }); this.floaters.add(x, 1, z, 'Fluch', 'react', 0.7); }));
+        this.stage.addShake(0.35); break;
+      }
+      case 'tornado': { // Wirbelsturm: drehende Windringe steigen auf, Funken kreisen nach außen
+        for (let i = 0; i < 5; i++) this.after(i * 0.07, () => this.rings.add(tx, 0.1 + i * 0.25, tz, 0.4 + i * 0.15, ev.r * (0.5 + i * 0.1), 0xdff8ff, 0.6));
+        for (let i = 0; i < 70; i++) { const a = i * 0.35, r = 0.3 + (i % 10) * 0.12; P.spawn(tx + Math.cos(a) * r, 0.1 + i * 0.025, tz + Math.sin(a) * r, -Math.sin(a) * 5, 1.5, Math.cos(a) * 5, i % 3 ? 0xdff8ff : 0x8fe0ff, 0.18, 0.9, { drag: 0.6 }); }
+        for (let i = 0; i < 30; i++) { const a = i / 30 * PI * 2; this.sparks.add(tx, 0.4, tz, Math.cos(a) * 11, 0.5, Math.sin(a) * 11, 0xffffff, 0.3, 0.04); }
+        this.stage.addShake(0.5); break;
+      }
+      case 'rift': { // Realitätsriss: Spalt öffnet sich über dem Ziel, Lichtstrahl, Sterne werden hineingesogen
+        const [x, z] = this.toW(ev.x, ev.y);
+        this.flashes.add(tx, 0.7, tz, 0xa070ff, 1.2, 0.25);
+        for (let i = 0; i < 40; i++) { const a = i / 40 * PI * 2, r = 1.4; P.spawn(x + Math.cos(a) * r, 0.5 + (i % 4) * 0.2, z + Math.sin(a) * r, -Math.cos(a) * 4, 0, -Math.sin(a) * 4, i % 2 ? 0xffffff : 0xa070ff, 0.14, 0.35, { drag: 0.2 }); }
+        this.after(0.3, () => { this.pillars.add(x, z, 0.5, 6, 0x6a20ff, 1.0); this.pillars.add(x, z, 0.22, 6, 0xffffff, 0.8, 0.05); this.flashes.add(x, 0.8, z, 0xffffff, 3, 0.4); this.flashes.add(x, 0.8, z, 0xa070ff, 2.2, 0.6, { delay: 0.08 });
+          this.rings.add(x, 0.06, z, 0.2, 2, 0xa070ff, 0.6); this.sparks.fan(x, 0.7, z, 0, 0, 0xcfb0ff, 26, 8, PI); this.flashSky = 0.3; this.stage.addShake(0.8); });
+        break;
+      }
       case 'goldrain': {
         this.rings.add(tx, 0.06, tz, 0.2, 2.6, 0xffd257, 0.7);
         for (let i = 0; i < 40; i++) setTimeout(() => this.parts.spawn(tx + (Math.random() - 0.5) * 3, 3 + Math.random(), tz + (Math.random() - 0.5) * 3, 0, -3, 0, Math.random() < 0.7 ? 0xffd257 : 0xfff2b0, 0.12, 1.2, { grav: 2 }), i * 25);
