@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { gradTex, glow, toon, flat, mk, geo } from './toon.js';
+import { KIT as LOOK_KIT, kitGear } from './looks.js';
 
 const PI = Math.PI;
 export const MODELS = ['blob', 'ghost', 'skull', 'wizard', 'mushking', 'bee', 'bee2', 'rockling', 'demon', 'orc', 'dragon', 'whale', 'wolf', 'bull', 'husky', 'stag', 'fox', 'owl', 'cat', 'deer2', 'fox2', 'shiba', 'pigeon', 'goleling', 'kk_ninja', 'kk_golem', 'kk_large1', 'kk_large2', 'kk_raizen', 'kk_mage', 'kk_anim1', 'kk_anim2', 'kk_anim3'];
@@ -336,7 +337,7 @@ function deer(o) {
   let orb = null;
   if (st >= 2) orb = add(R.root, geo.oct(), toon(0xfff2a8, { emissive: 0xffd257, emissiveIntensity: 1 }), { p: [0, 1.25 * sc, 0], s: [0.06, 0.1, 0.06] });
   const aura = add(R.root, geo.torus(0.02), glow(st === 2 ? 0xffe9a0 : 0x9fffd0, 0.5), { p: [0, 0.03, 0], r: [PI / 2, 0, 0], s: 0.55 });
-  const pg = pathGear(R, o.tiers, sc);
+  const pg = pathGear(R, o.tiers, sc, { cid: 'deer' });
   const tick = (t, dt, s) => { R.update(dt, s); pg(t); aura.scale.setScalar(0.55 + Math.sin(t * 2) * 0.04); if (orb) { orb.rotation.y = t * 1.5; orb.position.y = 1.25 * sc + Math.sin(t * 2.2) * 0.05; } };
   return { root: R.root, tick, height: 1.15 * sc, rig: R };
 }
@@ -361,7 +362,7 @@ function raven(o) {
     const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(sd * 0.55, 0.3 - j * 0.12); sh.lineTo(sd * 0.48, 0.02 - j * 0.1); sh.lineTo(sd * 0.3, -0.12); sh.lineTo(0, 0);
     const w = new THREE.Mesh(new THREE.ShapeGeometry(sh), toon(0x2a1a4a, { side: THREE.DoubleSide, emissive: 0x5a20a0, emissiveIntensity: 0.5 })); w.position.set(sd * 0.08, 0.72 - j * 0.1, -0.05); w.userData.sd = sd; w.userData.j = j; root.add(w); vw.push(w);
   }
-  const pg = pathGear(R, o.tiers, sc, { noHead: true });
+  const pg = pathGear(R, o.tiers, sc, { noHead: true, cid: 'raven' });
   const tick = (t, dt, s) => { R.update(dt, s); pg(t); vw.forEach(w => { w.rotation.z = w.userData.sd * (Math.sin(t * 2.4 + w.userData.j) * 0.25); w.rotation.x = -0.3; }); wisps.forEach((w, i) => { const a = t * 1.6 + i * PI / 2; w.position.set(Math.cos(a) * 0.38, 0.75 + Math.sin(t * 3 + i) * 0.05, Math.sin(a) * 0.38); }); };
   return { root, tick, height: 1.05 * sc, rig: R };
 }
@@ -405,6 +406,7 @@ function golem(o) {
 export const PATH_COL = [0xff7a3d, 0x5fd6ff, 0xc39bff];
 const boneBy = (R, re) => Object.keys(R.bones).find(k => re.test(k));
 export function pathGear(R, tiers = [0, 0, 0], sc = 1, o = {}) {
+  if (o.cid && LOOK_KIT[o.cid]) return kitGear(R, tiers, sc, LOOK_KIT[o.cid]);
   const anim = [], H = R.size.y, W = Math.max(R.size.x, R.size.z);
   const hb = boneBy(R, /^head$|head/i), bb = boneBy(R, /chest|spine|neck/i);
   const head = hb ? R.bonePos(hb) : new THREE.Vector3(0, H * 0.9, 0), back = bb ? R.bonePos(bb) : new THREE.Vector3(0, H * 0.6, 0);
@@ -428,10 +430,10 @@ export function pathGear(R, tiers = [0, 0, 0], sc = 1, o = {}) {
   return t => anim.forEach(f => f(t));
 }
 // Pfad-Ausrüstung auch für prozedurale Modelle (ohne Knochen): alles hängt am Wurzelobjekt
-export function gearOn(m, tiers) {
+export function gearOn(m, tiers, cid) {
   const bb = new THREE.Box3().setFromObject(m.root), size = bb.getSize(new THREE.Vector3());
   const R = { root: m.root, bones: {}, size, bonePos: () => new THREE.Vector3(0, size.y * 0.85, 0), attach: (b, obj, at) => { m.root.add(obj); if (at) obj.position.add(at); return obj; } };
-  const g = pathGear(R, tiers, 1, { noHead: true }), tick = m.tick;
+  const g = pathGear(R, tiers, 1, { noHead: true, cid }), tick = m.tick;
   m.tick = (t, dt, s) => { tick(t, dt, s); g(t); };
   return m;
 }
@@ -444,7 +446,7 @@ function tiger(o) {
   const sparks = [];
   if (st >= 1) { const bolts = new THREE.Group(); for (const sd of [-1, 1]) bolts.add(mk(C(4), glow(0x9fd8ff, 0.9), { p: [sd * 0.22 * sc, 0.45 * sc, -0.05], r: [0, 0, sd * 0.4], s: [0.025, 0.12, 0.025] })); R.root.add(bolts); sparks.push(bolts); }
   if (st >= 2) { const mane = new THREE.Group(); for (let i = 0; i < 12; i++) { const q = i / 12 * PI * 2; mane.add(mk(C(4), toon(0xffd257, { emissive: 0xffa000, emissiveIntensity: 0.7 }), { p: [Math.cos(q) * 0.2 * sc, Math.sin(q) * 0.2 * sc, -0.06], r: [0, 0, q - PI / 2], s: [0.05, 0.16, 0.04], ol: 0.004 })); } mane.scale.setScalar(1.6); R.attach(hb, mane, head.clone().add(new THREE.Vector3(0, 0, -0.1 * sc)).setY(R.size.y * 0.66)); sparks.push(mane); }
-  const g = pathGear(R, o.tiers, sc);
+  const g = pathGear(R, o.tiers, sc, { cid: 'tiger' });
   const tick = (t, dt, s) => { R.update(dt, s); g(t); sparks.forEach(m => { m.rotation.z = Math.sin(t * 10) * 0.08; }); };
   return { root: R.root, tick, height: 0.8 * sc, rig: R };
 }

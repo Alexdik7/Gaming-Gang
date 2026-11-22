@@ -637,7 +637,7 @@ function fusionModel(def, o) {
     halo.scale.setScalar(1 + Math.sin(t * 3) * 0.06 + (st?.atk || 0) * 0.15); halo2.rotation.z = t * 0.5;
   } };
 }
-export function buildModel(id, o = {}) { const fd = CREATURES[id]; if (fd?.fusion) return fusionModel(fd, o); const g = buildGlb(id, o); if (g) return g; const m = (BUILDERS[id] || fox)(o); optimize(m.root); return ['turtle', 'mantis', 'phoenix', 'naga', 'monk', 'voidcat', 'kappa', 'kirin', 'komainu'].includes(id) && o.tiers ? gearOn(m, o.tiers) : m; }
+export function buildModel(id, o = {}) { const fd = CREATURES[id]; if (fd?.fusion) return fusionModel(fd, o); const g = buildGlb(id, o); if (g) return g; const m = (BUILDERS[id] || fox)(o); optimize(m.root); return ['turtle', 'mantis', 'phoenix', 'naga', 'monk', 'voidcat', 'kappa', 'kirin', 'komainu'].includes(id) && o.tiers ? gearOn(m, o.tiers, id) : m; }
 
 // ───────────────────────── GEGNER (verschmolzen für Instancing) ─────────────────────────
 const sp = () => geo.sphere(12), cn = () => geo.cone(8), bx = () => geo.box(), cy = () => geo.cyl(8), cap = () => geo.caps();

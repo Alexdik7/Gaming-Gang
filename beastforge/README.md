@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.27.0 – Jedes Upgrade sichtbar (Vorlage Kitsune)
+## Stand: v0.28.0 – Upgrade-Optik-Baukasten (Tiger, Schildkröte, Hirsch, Rabe)
+**0.28:** Neuer Baukasten `js/render/looks.js`: Bauteile (`PART`: horns, gem, mask, collar, halo, crown, orbs, shards, coins, ring, flames, bolts, cloud, drums, wings, pillar, shield, spikes, cannon, twin, crates, muzzle, stones, roots, leaves, trees, torii, blades, hole, eyes, claws, stripes) und je Kreatur eine Liste `KIT[cid].paths[pfad][stufe]` = [[bauteil, farbe, n], …]. `pathGear(R, tiers, sc, { cid })` bzw. `gearOn(m, tiers, cid)` nutzen automatisch den Baukasten; Größen richten sich nach der Modellhöhe (Breite gedeckelt, sonst zählen Schwänze/Flügel mit). Fertig: Donnertiger (Sturmwolke, Raijin-Trommeln, Flammenkrone …), Eisenschildkröte (Schutzschild, Kanonen, Menhire …), Geisthirsch (Wurzeln, Mini-Wald, Torii, Lichtflügel …), Schattenrabe (Mondschwingen, Klingenring, Schwarzes Loch …).
+
+## v0.27.0 – Jedes Upgrade sichtbar (Vorlage Kitsune)
 **0.27:** Upgrade-Optik-System `LOOKS` in assets.js (eine Funktion pro Kreatur, sonst Rückfall `pathGear`). Regel: Stufe 1–2 Zubehör · 3 Farbe/Material (`tintByTier`) · 4 Umriss · 5 eigene Gestalt; Kreuzpfade kombinieren sich. Kitsune komplett: Flamme (Rücken-Kunai → brennende Kunai → kreisendes Fuchsfeuer → Flammenring + Schulterflammen → Inferno-Fuchs mit Flammenmähne, Feuerflügeln, Glut), Geist (Stirnjuwel → Papierlaterne → Geisterklinge → Seelenbänder → Ahnenfuchs mit Geisterkopf + Torii), Shinobi (Schal → Stirnband → Schatten-Nachbild → Kunai-Fächer → Tausend Klingen mit Klingenring, Maske, Schattenmantel). Höhen je Modell (`adult`). Stufe-5-Kauf: Vollbild-Einblendung `hud.t5Splash` (Strahlen in Pfadfarbe, neues Porträt, Name, Wirkung) + Kamera-Fokus/Effekte in view. Porträts führen jetzt einen Animationsschritt aus (`icons.portrait` → `m.tick`), damit kreisende Teile sichtbar sind.
 
 ## v0.26.0 – Hauptmenü im Genre-Stil
