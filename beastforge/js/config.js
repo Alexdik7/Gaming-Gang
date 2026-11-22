@@ -1,5 +1,5 @@
 // BEASTFORGE – alle Balance-Regler an EINEM Ort. Keine Zahlen in der Logik verstreuen.
-export const VERSION = '0.29.0';
+export const VERSION = '0.30.0';
 
 export const BAL = {
   tick: 1 / 60,               // fester Simulationsschritt (s)

@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.29.0 – Upgrade-Optik für Drachenwolf, Mantis, Golem, Glückskatze
+## Stand: v0.30.0 – Alle 20 Kreaturen mit sichtbaren Upgrades
+**0.30:** `KIT` für Phönix, Schlangenmagierin, Windmönch, Leerenkatze, Kappa, Komainu und Kirin (mit Kopfpositionen `head`). Damit zeigt jede der 20 Grund-Kreaturen alle 15 Pfadstufen sichtbar (Kitsune über eigene `LOOKS`, die anderen über den Baukasten). Fusionen erben die Optik ihres Körpers.
+
+## v0.29.0 – Upgrade-Optik für Drachenwolf, Mantis, Golem, Glückskatze
 **0.29:** Neue Bauteile `rocks`, `scythe`, `chest`, `lanterns`, `clover`; `KIT.dragonwolf/mantis/golem/neko`. Prozedurale Modelle ohne Knochen bekommen eine Kopfposition `KIT[cid].head` = [x, y, z] als Anteil der Höhe. Halsband schmaler. Damit haben 9 von 20 Kreaturen eigene Optiken für alle 15 Stufen.
 
 ## v0.28.0 – Upgrade-Optik-Baukasten (Tiger, Schildkröte, Hirsch, Rabe)

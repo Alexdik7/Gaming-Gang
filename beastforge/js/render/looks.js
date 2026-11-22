@@ -110,6 +110,41 @@ export const KIT = {
     [[['lanterns', 0xff3a2a, 1]], [['lanterns', 0xff3a2a, 2]], [['torii', 0xff8a3a]], [['lanterns', 0xff5a2a, 4], ['ring', 0xff8a3a]], [['torii', 0xffd257, 1.6], ['lanterns', 0xffb43a, 6], ['pillar', 0xff8a3a]]],
     [[['clover', 0x5adf5a]], [['gem', 0x5adf5a]], [['leaves', 0x5adf5a, 4]], [['orbs', 0xffe14d, 4], ['halo', 0x5adf5a]], [['shards', 0xffe14d, 6], ['crown', 0x9aff8a, 9], ['pillar', 0x5adf5a]]],
   ] },
+  phoenix: { cols: [0xffb43a, 0xff6a1a, 0xff5a3a], head: [0, 0.8, 0.12], paths: [
+    [[['blades', 0xffb43a, 2]], [['blades', 0xffb43a, 4]], [['wings', 0xff8a2a, 1.2]], [['blades', 0xffd257, 8]], [['wings', 0xffd257, 1.8], ['crown', 0xffd257, 9], ['pillar', 0xff8a2a]]],
+    [[['gem', 0xffd257]], [['halo', 0xff8a2a]], [['flames', 0xff6a1a, 8]], [['flames', 0xff3a10, 14], ['orbs', 0xffd27a, 3]], [['halo', 0xffe14d, 2.2], ['shards', 0xffe14d, 6], ['pillar', 0xffd257]]],
+    [[['ring', 0xff5a3a]], [['orbs', 0xc8a8a0, 3]], [['stones', 0x5a4a48, 4]], [['shield', 0xff8a2a]], [['wings', 0xff5a3a, 1.6], ['crown', 0xff8a2a, 9], ['pillar', 0xff5a3a]]],
+  ] },
+  naga: { cols: [0x8aff6a, 0xc08aff, 0xff9af0], head: [0, 0.85, 0.06], paths: [
+    [[['eyes', 0x8aff6a]], [['orbs', 0x8aff6a, 2]], [['flames', 0x5adf5a, 8]], [['shards', 0x8aff6a, 4]], [['flames', 0x8aff6a, 14], ['crown', 0x8aff6a, 9], ['pillar', 0x3fd06a]]],
+    [[['gem', 0xc08aff]], [['ring', 0xc08aff]], [['orbs', 0xc08aff, 3]], [['hole', 0xc08aff]], [['hole', 0xe0b8ff, 2], ['crown', 0xc08aff, 7], ['pillar', 0x6a2aa8]]],
+    [[['halo', 0xff9af0]], [['eyes', 0xff9af0]], [['ring', 0xff9af0, 1.5]], [['shards', 0xff9af0, 6]], [['halo', 0xff9af0, 2], ['wings', 0xff9af0, 1.3], ['pillar', 0xff9af0]]],
+  ] },
+  monk: { cols: [0x8fe0ff, 0x9af0c8, 0xffd257], head: [0, 0.7, 0.05], paths: [
+    [[['blades', 0x8fe0ff, 2]], [['blades', 0x8fe0ff, 4]], [['ring', 0xdff8ff]], [['blades', 0xdff8ff, 8]], [['blades', 0xffffff, 12], ['cloud', 0x8fe0ff, 1.5], ['crown', 0x8fe0ff, 9]]],
+    [[['leaves', 0x9af0c8, 3]], [['leaves', 0x9af0c8, 6]], [['ring', 0x9af0c8, 1.5]], [['wings', 0x9af0c8, 1.2], ['leaves', 0x9af0c8, 9]], [['wings', 0xdff8ff, 1.8], ['crown', 0x9af0c8, 9], ['pillar', 0x9af0c8]]],
+    [[['gem', 0xffd257]], [['halo', 0xffd257]], [['orbs', 0xffd257, 3]], [['torii', 0xffd257]], [['halo', 0xffd257, 2], ['torii', 0xffd257, 1.5], ['pillar', 0xffd257]]],
+  ] },
+  voidcat: { cols: [0x9a6aff, 0xff9af0, 0xfff2a8], head: [0, 0.58, 0.06], paths: [
+    [[['eyes', 0xd8b8ff]], [['orbs', 0x6a2aa8, 2]], [['ring', 0x9a6aff]], [['hole', 0x9a6aff]], [['hole', 0xd8a8ff, 2], ['crown', 0x9a6aff, 9], ['pillar', 0x3a1a6a]]],
+    [[['shards', 0xff9af0, 2]], [['shards', 0xff9af0, 4]], [['bolts', 0xff9af0, 3]], [['shards', 0xffffff, 8]], [['wings', 0xff9af0, 1.6], ['crown', 0xff9af0, 7], ['pillar', 0xff9af0]]],
+    [[['gem', 0xfff2a8]], [['orbs', 0xfff2a8, 2]], [['orbs', 0xfff2a8, 4]], [['halo', 0xfff2a8, 1.3], ['shards', 0xfff2a8, 4]], [['shards', 0xffffff, 8], ['crown', 0xfff2a8, 9], ['pillar', 0xfff2a8]]],
+  ] },
+  kappa: { cols: [0x5ab8ff, 0x9fe8ff, 0x6ad04a], head: [0, 0.62, 0.05], paths: [
+    [[['orbs', 0x7ad8ff, 2]], [['ring', 0x5ab8ff]], [['orbs', 0x7ad8ff, 4]], [['shield', 0x5ab8ff]], [['cloud', 0x5ab8ff, 1.5], ['crown', 0x9fe8ff, 9], ['pillar', 0x5ab8ff]]],
+    [[['collar', 0x3a9ad8]], [['ring', 0x9fe8ff]], [['ring', 0x9fe8ff, 2], ['shards', 0x9fe8ff, 3]], [['wings', 0x9fe8ff, 1.2]], [['shield', 0xdff8ff, 1.3], ['wings', 0xffffff, 1.6], ['pillar', 0x9fe8ff]]],
+    [[['leaves', 0x6ad04a, 2]], [['crates', 0x6ad04a]], [['lanterns', 0xff5a3a, 2]], [['coins', 0xffd257, 6], ['chest', 0xffd257]], [['torii', 0x6ad04a, 1.5], ['coins', 0xffd257, 10], ['crown', 0x9aff8a, 9]]],
+  ] },
+  komainu: { cols: [0xffd257, 0xff7a3d, 0xd8342c], head: [0, 0.72, 0.06], paths: [
+    [[['claws', 0xf4f0ea]], [['collar', 0xd8342c]], [['spikes', 0x8a7a68, 4]], [['horns', 0xffd257, 1.4]], [['crown', 0xffd257, 9], ['eyes', 0xff5a2a], ['pillar', 0xffd257]]],
+    [[['eyes', 0xff7a3d]], [['ring', 0xff7a3d]], [['flames', 0xff7a3d, 8]], [['ring', 0xff7a3d, 2], ['flames', 0xff3a10, 14]], [['wings', 0xff7a3d, 1.5], ['crown', 0xff5a2a, 9], ['pillar', 0xff7a3d]]],
+    [[['gem', 0xd8342c]], [['lanterns', 0xd8342c, 1]], [['torii', 0xd8342c]], [['shield', 0xd8342c], ['lanterns', 0xd8342c, 3]], [['torii', 0xffd257, 1.6], ['halo', 0xffd257, 1.5], ['pillar', 0xd8342c]]],
+  ] },
+  kirin: { cols: [0xffe27a, 0xfffbe0, 0x9aff9a], head: [0, 0.68, 0.26], paths: [
+    [[['bolts', 0xffe27a, 2]], [['bolts', 0xffe27a, 4]], [['halo', 0xffe27a]], [['bolts', 0xffd257, 7], ['ring', 0xffe27a]], [['crown', 0xffe27a, 9], ['wings', 0xffe27a, 1.4], ['pillar', 0xffe27a]]],
+    [[['gem', 0xffffff]], [['eyes', 0xffffff]], [['shards', 0xfffbe0, 3]], [['shards', 0xfffbe0, 6]], [['halo', 0xffffff, 2], ['shards', 0xffffff, 10], ['pillar', 0xfffbe0]]],
+    [[['leaves', 0x9aff9a, 2]], [['orbs', 0x9aff9a, 3]], [['ring', 0x9aff9a]], [['trees', 0x5adf5a, 5]], [['wings', 0x9aff9a, 1.6], ['crown', 0x9aff9a, 9], ['pillar', 0x9aff9a]]],
+  ] },
 };
 
 // Baukasten anwenden (Rig mit Knochen oder prozedurales Modell)
