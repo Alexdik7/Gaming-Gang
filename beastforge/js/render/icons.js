@@ -30,6 +30,7 @@ export function portrait(id, o = {}) {
   if (cache.has(key)) return cache.get(key);
   setup();
   const m = buildModel(id, o);
+  try { m.tick?.(0.6, 0.016, {}); } catch (e) { /* Porträt auch ohne Animation */ }   // Pose + kreisende Teile in Startlage
   frame(m, 0.55, id === 'raven' ? 1.15 : 1);
   R.setClearColor(0, 0); R.render(scene, cam);
   const url = R.domElement.toDataURL('image/png');

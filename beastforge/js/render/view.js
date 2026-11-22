@@ -404,7 +404,7 @@ export class GameView {
       case 'upgrade': {
         const t = ev.tower, [x, z] = at(t.x, t.y), h = this.ty(t), col = ['#ff7a3d', '#5fd6ff', '#c39bff'][ev.path];
         this.rings.add(x, h + 0.05, z, 0.2, 1.1, col, 0.45); P.burst(x, h + 0.4, z, [col, 0xffffff], ev.tier >= 5 ? 50 : 18, 2.5, 0.18, 0.7, { lift: 1.5 });
-        if (ev.tier >= 5) { this.pillars.add(x, z, 0.5, 6, col, 1.2); this.stage.addShake(0.4); }
+        if (ev.tier >= 5) { this.pillars.add(x, z, 0.5, 6, col, 1.2); this.pillars.add(x, z, 0.25, 6, 0xffffff, 1.0, 0.1); this.flashes.add(x, h + 0.8, z, 0xffffff, 3, 0.4); this.flashes.add(x, h + 0.8, z, col, 2.2, 0.6, { delay: 0.08 }); this.sparks.fan(x, h + 0.5, z, 0, 0, col, 40, 9, PI); this.rings.add(x, h + 0.06, z, 0.3, 3, col, 0.8); this.stage.addShake(0.7); this.stage.focus = new THREE.Vector3(x, h, z); this.stage.zoomPunch = 1; }
         const v = this.towers.get(t.id); if (v) v.born = 0.55;
         break;
       }

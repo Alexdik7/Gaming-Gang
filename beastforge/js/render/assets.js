@@ -208,13 +208,70 @@ export class Rig {
 }
 
 // ───────── Kreaturen ─────────
-const S = () => geo.sphere(12), C = (n = 8) => geo.cone(n), B = () => geo.box();
+const S = () => geo.sphere(12), C = (n = 8) => geo.cone(n), B = () => geo.box(), Y = (n = 10) => geo.cyl(n);
 const add = (par, g, m, o = {}) => { const x = mk(g, m, { ol: false, ...o }); par.add(x); return x; };
 const KIT = { // Farbton je Form [farbe, anteil], Leuchten
   young: [null], flame: [[0xff5a1a, 0.35]], spirit: [[0xeef4ff, 0.8], 0x0a2030], shadow: [[0x6a40a8, 0.72], 0x140820],
   ninetail: [[0xfff0dc, 0.7]], celestial: [[0xfff4d0, 0.78], 0x201808], astral: [[0x3a48c8, 0.8], 0x101a50],
 };
 const GOLD = 0xffc94a;
+// ───────── Upgrade-Optik: jede der 15 Stufen hat ein eigenes Aussehen ─────────
+// Regel: Stufe 1–2 Zubehör · 3 Farbe/Material · 4 Umriss · 5 eigene Gestalt. Kreuzpfade kombinieren sich.
+const PCOL = [0xff7a2a, 0x5fd6ff, 0xc39bff];
+function tintByTier(R, tiers) {
+  const top = Math.max(...tiers), pi = tiers.indexOf(top);
+  if (top >= 3 && R.mats) for (const m of R.mats) m.userData.u?.uEm?.value.lerp(new THREE.Color(PCOL[pi]), [0, 0, 0, 0.05, 0.09, 0.15][top]);
+  if (top >= 5) R.norm.scale.multiplyScalar(1.08);
+}
+export const LOOKS = {
+  kitsune(R, tiers, sc, B0) {
+    const [a, b, c] = tiers, anim = [], { HB, NB, head, neck } = B0, up = B0.adult ? 0.3 : 1, back = neck.clone().add(new THREE.Vector3(0, 0.02 * sc, -0.1 * sc));
+    const steel = toon(0xdfe6f0, { emissive: 0x6a7a9a, emissiveIntensity: 0.2 }), red = toon(0xd8342c), dark = toon(0x2a2440);
+    const back2 = back.clone().add(new THREE.Vector3(0, 0.12 * sc, 0));
+    const kunai = (m = steel) => { const g = new THREE.Group(); add(g, C(4), m, { p: [0, 0.07, 0], s: [0.02, 0.11, 0.008], ol: 0.003 }); add(g, B(), red, { p: [0, -0.01, 0], s: [0.012, 0.05, 0.012], ol: 0.003 }); add(g, geo.torus(0.3), dark, { p: [0, -0.045, 0], s: 0.015, ol: false }); return g; };
+    tintByTier(R, tiers);
+    // ── Pfad 1 Flamme ──
+    if (a >= 1) { const g = new THREE.Group(); for (const sd of [-1, 1]) { const k = kunai(a >= 2 ? toon(0xffc08a, { emissive: 0xff6a1a, emissiveIntensity: 0.7 }) : steel); k.rotation.z = -sd * 0.5; k.position.x = sd * 0.17 * sc; k.scale.setScalar(sc * 1.6); g.add(k); } R.attach(NB, g, back2);
+      if (a >= 2) { const fl = []; for (const sd of [-1, 1]) { const f = mk(C(6), glow(0xffa040, 0.85), { p: [sd * 0.2 * sc, 0.2 * sc, 0], s: [0.04, 0.1, 0.04], ol: false }); g.add(f); fl.push(f); } anim.push(t => fl.forEach((f, i) => { f.scale.y = 0.1 * (1 + Math.sin(t * 12 + i) * 0.3); })); } }
+    if (a >= 3) { const balls = []; for (let i = 0; i < 2; i++) { const g = new THREE.Group(); add(g, S(), glow(0xff8a2a, 0.9), { s: 0.09 * sc }); add(g, S(), glow(0xffffff, 0.9), { s: 0.045 * sc }); add(g, C(6), glow(0xffb040, 0.75), { p: [0, 0.1 * sc, 0], s: [0.05 * sc, 0.14 * sc, 0.05 * sc] }); R.root.add(g); balls.push(g); }
+      anim.push(t => balls.forEach((g, i) => { const q = t * 1.8 + i * PI; g.position.set(Math.cos(q) * 0.48 * sc, head.y * 1.1 + Math.sin(t * 3 + i) * 0.05, Math.sin(q) * 0.48 * sc); })); }
+    if (a >= 4) { const ring = []; for (let i = 0; i < 12; i++) { const q = i / 12 * PI * 2; ring.push(add(R.root, C(6), glow(i % 2 ? 0xff6a1a : 0xffb040, 0.75), { p: [Math.cos(q) * 0.5 * sc, 0.08, Math.sin(q) * 0.5 * sc], s: [0.06, 0.18, 0.06] })); }
+      for (const sd of [-1, 1]) ring.push(add(R.root, C(6), glow(0xff8a2a, 0.8), { p: [sd * 0.12 * sc, neck.y + 0.06 * sc, neck.z - 0.02], r: [0, 0, sd * 0.35], s: [0.05, 0.2 * sc, 0.05] }));
+      anim.push(t => ring.forEach((f, i) => { f.scale.y = (i < 12 ? 0.18 : 0.2 * sc) * (1 + Math.sin(t * 10 + i * 1.7) * 0.25); })); }
+    if (a >= 5) { // Inferno-Fuchs: Flammenmähne, Feuerflügel, aufsteigende Glut
+      const mane = new THREE.Group(); for (let i = 0; i < 12; i++) { const q = i / 12 * PI * 2; add(mane, C(6), glow(i % 2 ? 0xff5a10 : 0xffc040, 0.85), { p: [Math.cos(q) * 0.09 * sc, Math.sin(q) * 0.09 * sc, -0.02], r: [0, 0, q - PI / 2], s: [0.03 * sc, 0.12 * sc, 0.03 * sc] }); } R.attach(NB, mane, neck.clone().add(new THREE.Vector3(0, 0.04 * sc, -0.02)));
+      const wings = []; for (const sd of [-1, 1]) { const w = new THREE.Group(); w.position.set(sd * 0.06 * sc, neck.y, neck.z - 0.12 * sc); for (let i = 0; i < 5; i++) add(w, C(6), glow(i % 2 ? 0xff7a1a : 0xffd27a, 0.8), { p: [sd * (0.08 + i * 0.07) * sc, 0.05 + i * 0.035 * sc, 0], r: [0, 0, -sd * (1.1 - i * 0.12)], s: [0.035 * sc, (0.22 - i * 0.02) * sc, 0.02 * sc] }); w.scale.setScalar(1.6); R.root.add(w); wings.push(w); }
+      const emb = []; for (let i = 0; i < 8; i++) emb.push(add(R.root, S(), glow(i % 2 ? 0xffd27a : 0xff6a1a, 0.9), { s: 0.018 }));
+      anim.push(t => { wings.forEach((w, i) => { w.rotation.z = (i ? -1 : 1) * Math.sin(t * 3) * 0.12; }); mane.rotation.z = t * 0.5; emb.forEach((e, i) => { const f = (t * 0.5 + i / 8) % 1; e.position.set(Math.sin(i * 2.4) * 0.3 * sc, 0.1 + f * 1.1 * sc, Math.cos(i * 2.4) * 0.3 * sc); e.scale.setScalar(0.018 * (1 - f)); }); }); }
+    // ── Pfad 2 Geist ──
+    if (b >= 1) R.attach(HB, mk(geo.oct(), glow(0x7df3ff, 0.95), { s: [0.04 * sc, 0.055 * sc, 0.02 * sc], ol: false }), head.clone().add(new THREE.Vector3(0, 0.25 * sc * up, (B0.adult ? 0.14 : 0.1) * sc)));
+    if (b >= 2) { const lan = new THREE.Group(); lan.scale.setScalar(1.5); add(lan, Y(10), toon(0xfff2d8, { emissive: 0x7df3ff, emissiveIntensity: 0.5 }), { s: [0.045 * sc, 0.08 * sc, 0.045 * sc], ol: 0.004 }); for (const y of [-1, 1]) add(lan, Y(10), red, { p: [0, y * 0.045 * sc, 0], s: [0.035 * sc, 0.012, 0.035 * sc], ol: 0.003 }); R.root.add(lan);
+      anim.push(t => { lan.position.set(0.3 * sc, head.y + 0.12 + Math.sin(t * 2) * 0.04, 0.22 * sc); lan.rotation.z = Math.sin(t * 1.6) * 0.15; }); }
+    if (b >= 3) { const bl = new THREE.Group(); bl.scale.setScalar(1.5); add(bl, B(), glow(0x9ff6ff, 0.55), { p: [0, 0.18 * sc, 0], s: [0.025 * sc, 0.34 * sc, 0.008] }); add(bl, B(), glow(0xffffff, 0.8), { p: [0, 0, 0], s: [0.07 * sc, 0.015, 0.02] }); add(bl, B(), toon(0x5a4a7a), { p: [0, -0.05 * sc, 0], s: [0.02, 0.08 * sc, 0.02], ol: 0.003 }); R.root.add(bl);
+      anim.push(t => { bl.position.set(-0.22 * sc, neck.y + 0.1 * sc + Math.sin(t * 1.5) * 0.03, neck.z - 0.12 * sc); bl.rotation.set(0.2, t * 0.4, 0.5); }); }
+    if (b >= 4) { const rb = []; for (let i = 0; i < 2; i++) { const r = mk(new THREE.TorusGeometry(1, 0.06, 6, 28, PI * 1.4), glow(0x7df3ff, 0.65), { s: 0.44 * sc, ol: false }); R.root.add(r); rb.push(r); }
+      anim.push(t => rb.forEach((r, i) => { r.position.y = head.y * (0.5 + i * 0.3); r.rotation.set(PI / 2 + Math.sin(t + i) * 0.3, 0, t * (i ? -1.2 : 1.5)); })); }
+    if (b >= 5) { // Ahnenfuchs: riesiger Geisterkopf + Torii
+      const sp = new THREE.Group(), gm = glow(0x7df3ff, 0.22); add(sp, S(), gm, { s: [0.3 * sc, 0.26 * sc, 0.26 * sc] }); add(sp, S(), gm, { p: [0, -0.06 * sc, 0.24 * sc], s: [0.14 * sc, 0.1 * sc, 0.16 * sc] });
+      for (const sd of [-1, 1]) { add(sp, C(4), gm, { p: [sd * 0.18 * sc, 0.26 * sc, 0], r: [0, 0, -sd * 0.3], s: [0.09 * sc, 0.22 * sc, 0.06 * sc] }); add(sp, S(), glow(0xffffff, 0.9), { p: [sd * 0.1 * sc, 0.03 * sc, 0.22 * sc], s: [0.035 * sc, 0.02 * sc, 0.01] }); }
+      sp.scale.setScalar(1.5); sp.position.set(0, head.y + 0.45 * sc, -0.25 * sc); R.root.add(sp);
+      const to = new THREE.Group(); for (const x of [-1, 1]) add(to, Y(8), red, { p: [x * 0.17 * sc, 0.2 * sc, 0], s: [0.022 * sc, 0.4 * sc, 0.022 * sc], ol: 0.003 }); add(to, B(), toon(0x2a2a36), { p: [0, 0.42 * sc, 0], s: [0.46 * sc, 0.035 * sc, 0.05 * sc], ol: 0.003 }); add(to, B(), red, { p: [0, 0.35 * sc, 0], s: [0.38 * sc, 0.025 * sc, 0.04 * sc], ol: 0.003 });
+      to.position.set(0, 0, -0.42 * sc); R.root.add(to);
+      anim.push(t => { sp.position.y = head.y + 0.45 * sc + Math.sin(t * 1.4) * 0.04; gm.opacity = 0.18 + Math.sin(t * 2) * 0.06; }); }
+    // ── Pfad 3 Shinobi ──
+    if (c >= 1) { const sc2 = new THREE.Group(); add(sc2, geo.torus(0.45), red, { r: [PI / 2.2, 0, 0], s: 0.11 * sc, ol: 0.004 }); const tail2 = add(sc2, B(), red, { p: [0.08 * sc, -0.04, 0.06 * sc], s: [0.06 * sc, 0.16 * sc, 0.015], ol: 0.003 }); R.attach(NB, sc2, neck); anim.push(t => { tail2.rotation.set(Math.sin(t * 6) * 0.25, 0.3, 0); }); }
+    if (c >= 2) { const hb2 = new THREE.Group(); add(hb2, geo.torus(0.3), toon(0x2a3a8a), { r: [PI / 2, 0, 0], s: 0.15 * sc, ol: 0.004 }); add(hb2, B(), toon(0xc8d0e0, { emissive: 0x5a6a8a, emissiveIntensity: 0.3 }), { p: [0, 0, 0.15 * sc], s: [0.11 * sc, 0.05 * sc, 0.015], ol: 0.003 }); R.attach(HB, hb2, head.clone().add(new THREE.Vector3(0, 0.21 * sc * up, -0.01 * sc))); }
+    if (c >= 3) { const sh = new THREE.Group(), sm = glow(0x3a1a6a, 0.45); add(sh, S(), sm, { p: [0, head.y * 0.55, 0], s: [0.12 * sc, 0.16 * sc, 0.2 * sc] }); add(sh, S(), sm, { p: [0, head.y, 0.1 * sc], s: [0.1 * sc, 0.09 * sc, 0.1 * sc] }); for (const sd of [-1, 1]) add(sh, C(4), sm, { p: [sd * 0.06 * sc, head.y + 0.1 * sc, 0.08 * sc], s: [0.04 * sc, 0.08 * sc, 0.03] });
+      R.root.add(sh); anim.push(t => { const f = (t * 0.7) % 1; sh.position.set(-0.2 - f * 0.12, 0, -0.1 - f * 0.15); sm.opacity = 0.45 * (1 - f * 0.7); }); }
+    if (c >= 4) { const fan = new THREE.Group(); for (let i = 0; i < 5; i++) { const k = kunai(); k.rotation.z = (i - 2) * 0.32; k.position.y = 0.02; k.scale.setScalar(sc * 1.7); fan.add(k); } fan.rotation.x = -0.35; R.attach(NB, fan, back2.clone().add(new THREE.Vector3(0, 0.06 * sc, -0.02))); }
+    if (c >= 5) { // Tausend Klingen: Klingenring, Maske, Schattenmantel
+      const ring = new THREE.Group(); for (let i = 0; i < 8; i++) { const q = i / 8 * PI * 2, k = kunai(toon(0xe8e0ff, { emissive: 0x8a5aff, emissiveIntensity: 0.6 })); k.position.set(Math.cos(q) * 0.55 * sc, 0, Math.sin(q) * 0.55 * sc); k.rotation.set(PI / 2, 0, -q - PI / 2); k.scale.setScalar(sc * 1.9); ring.add(k); } R.root.add(ring);
+      R.attach(HB, mk(B(), toon(0x1a1626), { s: [0.11 * sc, 0.045 * sc, 0.03 * sc], ol: 0.003 }), head.clone().add(new THREE.Vector3(0, -0.035 * sc, 0.12 * sc)));
+      const cloak = add(R.root, C(10), glow(0x6a2aa8, 0.18), { p: [0, head.y * 0.5, 0], s: [0.3 * sc, head.y * 1.1, 0.3 * sc] });
+      anim.push(t => { ring.rotation.y = t * 2.4; ring.position.y = head.y * 0.55 + Math.sin(t * 2) * 0.03; cloak.material.opacity = 0.14 + Math.sin(t * 3) * 0.05; }); }
+    return (t, s) => anim.forEach(f => f(t, s));
+  },
+};
 function kitsune(o) {
   const st = o.stage || 0, br = o.branch || 'spirit', tiers = o.tiers || [0, 0, 0];
   const key = st === 2 ? br : ['young', 'flame', 'spirit', 'ninetail', 'celestial', 'astral'][st];
@@ -254,11 +311,8 @@ function kitsune(o) {
     for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2; add(runes, B(), glow(GOLD, 0.9), { p: [Math.cos(a) * 0.55, 0, Math.sin(a) * 0.55], r: [0, -a, 0], s: [0.08, 0.12, 0.01] }); }
   }
   if (st >= 5) for (let i = 0; i < 2; i++) rings.push(add(R.root, geo.torus(0.025), glow(i ? 0x9fe8ff : 0xc8a8ff, 0.8), { p: [0, 0.5 * sc, 0], r: [PI / 2 + i * 0.6, i * 0.8, 0], s: 0.7 + i * 0.12 }));
-  // Pfad-Optik
-  if (tiers[2] >= 1) R.attach(NB, mk(geo.torus(0.3), toon(0xc8283a), { r: [PI / 2.2, 0, 0], s: 0.08 * sc, ol: 0.004 }), neck);
-  if (tiers[0] >= 3) for (const sd of [-1, 1]) add(R.root, C(), glow(0xff8a2a, 0.75), { p: [sd * 0.13, 0.62 * sc, neck.z - 0.05], r: [0, 0, sd * 0.3], s: [0.05, 0.18, 0.05] });
-  let ofuda = null;
-  if (tiers[1] >= 3) { ofuda = new THREE.Group(); ofuda.position.y = 0.72 * sc; R.root.add(ofuda); for (let i = 0; i < 4; i++) { const a = i / 4 * PI * 2; const p = add(ofuda, B(), flat(0xfff8ec), { p: [Math.cos(a) * 0.42, 0, Math.sin(a) * 0.42], r: [0, -a, 0], s: [0.07, 0.15, 0.005] }); add(p, B(), flat(0xd8203a), { p: [0, 0, 0.6], s: [0.5, 0.6, 1] }); } }
+  // Pfad-Optik: jede Stufe sichtbar (looks.kitsune)
+  const look = LOOKS.kitsune(R, tiers, sc, { HB, NB, PB, head, neck, tail, adult }); look(0.3, {});   // Startlage auch für Porträts (ohne Animation)
   const lift = st >= 5 ? 0.2 : 0;
   const tick = (t, dt, s) => {
     R.update(dt, s); R.norm.position.y += 0;
@@ -267,7 +321,7 @@ function kitsune(o) {
     floaters.forEach((f, i) => { f.position.y = 0.8 * sc + Math.sin(t * 2.5 + i * 3) * 0.08; });
     if (halo) halo.rotation.z = t * 0.6;
     if (runes) { runes.rotation.y = t * 0.8; runes.position.y = 0.45 * sc + Math.sin(t * 2) * 0.04; }
-    if (ofuda) ofuda.rotation.y = -t * 1.1;
+    look(t, s);
     rings.forEach((r, i) => { r.rotation.z = t * (0.5 + i * 0.3); });
   };
   return { root: R.root, tick, height: 0.9 * sc + lift, rig: R };

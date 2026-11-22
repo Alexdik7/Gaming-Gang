@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.26.0 – Hauptmenü im Genre-Stil
+## Stand: v0.27.0 – Jedes Upgrade sichtbar (Vorlage Kitsune)
+**0.27:** Upgrade-Optik-System `LOOKS` in assets.js (eine Funktion pro Kreatur, sonst Rückfall `pathGear`). Regel: Stufe 1–2 Zubehör · 3 Farbe/Material (`tintByTier`) · 4 Umriss · 5 eigene Gestalt; Kreuzpfade kombinieren sich. Kitsune komplett: Flamme (Rücken-Kunai → brennende Kunai → kreisendes Fuchsfeuer → Flammenring + Schulterflammen → Inferno-Fuchs mit Flammenmähne, Feuerflügeln, Glut), Geist (Stirnjuwel → Papierlaterne → Geisterklinge → Seelenbänder → Ahnenfuchs mit Geisterkopf + Torii), Shinobi (Schal → Stirnband → Schatten-Nachbild → Kunai-Fächer → Tausend Klingen mit Klingenring, Maske, Schattenmantel). Höhen je Modell (`adult`). Stufe-5-Kauf: Vollbild-Einblendung `hud.t5Splash` (Strahlen in Pfadfarbe, neues Porträt, Name, Wirkung) + Kamera-Fokus/Effekte in view. Porträts führen jetzt einen Animationsschritt aus (`icons.portrait` → `m.tick`), damit kreisende Teile sichtbar sind.
+
+## v0.26.0 – Hauptmenü im Genre-Stil
 **0.26:** Hub `menus.s_home` neu: Konto-Level als Stern `.bStar` + Titel/XP oben links, Logo in Comic-Schrift, oben rechts Shinobi-Punkte `.bCur` und runder Optionen-Knopf `.bGear`; links große Kacheln (Kreaturen, Helden, Entwicklung), rechts orange Kacheln (Täglich, Erfolge, Akademie, Statistik) mit roten Hinweis-Punkten, unten mittig großer grüner SPIELEN-Knopf `.bPlay`. Titel, Bildschirmköpfe, Zurück-Knopf und Sammlungs-Karten im gleichen Comic-Stil (`--cartoon`, `--ol`).
 
 ## v0.25.0 – HUD im Genre-Stil

@@ -243,10 +243,18 @@ export class Hud {
       case 'evolve': if (this.sel === e.tower) this.refreshPanel(); this.coachEvent('evolve'); break;
       case 'leak': this.flash(0.15, '#ff2040'); break;
       case 'gust': this.banner('🌬 WINDBÖE', 'Bodengegner auf Brücken werden zurückgedrückt · Fliegende schneller', 'boss'); break;
+      case 'upgrade': if (e.tier === 5) this.t5Splash(e); break;
       case 'storm': if (e.on) this.banner('❄ SCHNEESTURM ❄', 'Gegner langsamer · Eiskreaturen schneller · andere frieren', 'boss'); else this.toast('syn', 'Der Sturm legt sich', ''); break;
       case 'rebirth': this.flash(0.5, '#ffb43a'); this.banner('WIEDERGEBURT', 'Der Phönix schenkt dir ' + e.lives + ' Leben', 'evo'); break;
       case 'early': this.toast('syn', `+◈${e.coins} früh gerufen`, ''); break;
     }
+  }
+  // Stufe-5-Kauf: Vollbild-Einblendung mit neuem Aussehen, Name und Pfadfarbe
+  t5Splash(e) {
+    const t = e.tower, def = CREATURES[t.cid], p = def.paths[e.path], col = ['#ff7a3d', '#5fd6ff', '#c39bff'][e.path];
+    const d = document.createElement('div'); d.className = 't5'; d.style.setProperty('--pc', col);
+    d.innerHTML = `<div class="t5rays"></div><img src="${this.icon(t)}" alt=""><div class="t5txt"><small>${esc(p.icon)} ${esc(p.name)} · STUFE 5</small><b>${esc(p.tiers[4].name)}</b><span>${esc(p.tiers[4].desc)}</span></div>`;
+    document.getElementById('hud').appendChild(d); setTimeout(() => d.remove(), 2600);
   }
   banner(text, sub = '', cls = '') { $('banner').innerHTML = `<div class="b ${cls}">${esc(text)}${sub ? `<small>${esc(sub)}</small>` : ''}</div>`; }
   toast(cls, title, text) {

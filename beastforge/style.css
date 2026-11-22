@@ -615,3 +615,15 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .ccard:not(.locked) > b { font-family: var(--cartoon); font-weight: 400; letter-spacing: .5px; color: #fff; text-shadow: var(--ol); }
 .ccard:not(.locked) > small { color: #10305a; font-weight: 800; }
 .ccard:not(.locked) .lv { background: #fff; color: #23518f; border: 2px solid #10162a; }
+
+/* Stufe-5-Einblendung */
+.t5 { position: absolute; inset: 0; z-index: 9; pointer-events: none; display: flex; align-items: center; justify-content: center; gap: 18px; animation: t5in 2.6s ease forwards;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--pc) 45%, transparent), rgba(10,14,30,.55) 70%); }
+.t5rays { position: absolute; width: 140vmax; height: 140vmax; background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--pc) 35%, transparent) 0 8deg, transparent 8deg 20deg); animation: t5spin 2.6s linear; opacity: .7; }
+.t5 img { position: relative; width: min(34vh, 220px); filter: drop-shadow(0 0 24px var(--pc)) drop-shadow(0 6px 0 rgba(0,0,0,.4)); animation: t5pop .5s cubic-bezier(.2,1.6,.4,1); }
+.t5txt { position: relative; display: flex; flex-direction: column; gap: 4px; max-width: 46vw; animation: t5slide .45s ease-out; }
+.t5txt small { font-family: var(--cartoon); font-size: 16px; color: #fff; text-shadow: var(--ol); letter-spacing: 1px; }
+.t5txt b { font-family: var(--cartoon); font-weight: 400; font-size: clamp(30px, 6vw, 54px); color: #fff; text-shadow: var(--ol), 0 0 26px var(--pc); line-height: 1; }
+.t5txt span { font-size: 14px; font-weight: 800; color: #fff; text-shadow: 0 2px 0 #10162a; }
+@keyframes t5in { 0% { opacity: 0; } 8% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes t5spin { to { transform: rotate(40deg); } } @keyframes t5pop { from { transform: scale(.3) rotate(-10deg); } } @keyframes t5slide { from { transform: translateX(40px); opacity: 0; } }
