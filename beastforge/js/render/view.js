@@ -442,6 +442,7 @@ export class GameView {
         this.stage.focus = new THREE.Vector3(x, h, z); this.stage.zoomPunch = 1;
         break;
       }
+      case 'gust': { for (let i = 0; i < 60; i++) this.after(i * 0.05, () => { const z = (Math.random() - 0.5) * 13; this.sparks.add(-12, 0.3 + Math.random() * 1.5, z, 16 + Math.random() * 6, 0, (Math.random() - 0.5) * 1.5, 0xffffff, 0.9, 0.025); }); break; }
       case 'storm': { if (ev.on) { this.flashSky = 0.08; for (let i = 0; i < 40; i++) this.parts.spawn(-12, 1 + Math.random() * 3, (Math.random() - 0.5) * 14, 6 + Math.random() * 3, -0.5, 0.5, 0xffffff, 0.12, 3, { drag: 0.02 }); } break; }
       case 'sell': { const [x, z] = at(ev.tower.x, ev.tower.y); P.burst(x, 0.4, z, [0xffd257, 0xffffff], 20, 2.5, 0.16, 0.6, { grav: 3, up: 1.5 }); this.floaters.add(x, 0.9, z, '+' + ev.value, 'coin', 0.9); break; }
       case 'rock': { this.map.removeRock(ev.cx, ev.cy); const [x, z] = at(ev.cx + 0.5, ev.cy + 0.5); P.burst(x, 0.3, z, [0x9a9aa0, 0xc8c0b0], 30, 3, 0.25, 0.7, { grav: 6, up: 1.5 }); this.stage.addShake(0.3); break; }

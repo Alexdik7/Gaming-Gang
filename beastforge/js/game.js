@@ -290,6 +290,7 @@ export class Game {
     if (won && this.mapId === 'dorf') P.stats.winDorf = (P.stats.winDorf || 0) + 1;
     if (won && this.mapId === 'glut') P.stats.winGlut = (P.stats.winGlut || 0) + 1;
     if (won && this.mapId === 'frost') P.stats.winFrost = (P.stats.winFrost || 0) + 1;
+    if (won && this.mapId === 'sky') P.stats.winSky = (P.stats.winSky || 0) + 1;
     if (perfect) P.stats.perfect++; if (perfect && d === 'hard') P.stats.perfectHard++;
     if (d === 'endless') P.stats.bestEndless = Math.max(P.stats.bestEndless || 0, w.doneWave);
     const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, master: 0, endless: 0 };

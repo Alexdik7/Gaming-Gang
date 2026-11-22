@@ -73,6 +73,13 @@ export class World {
     const m = TOWER_R * 0.8;
     return this.rafts.findIndex(r => Math.abs(x - r.x) <= r.w / 2 - m && Math.abs(y - r.y) <= r.h / 2 - m);
   }
+  updGust(dt) {
+    const G = this.map.gust; if (!G) return;
+    if (this.gustT > 0) { this.gustT -= dt; return; }
+    if (!this.enemies.length) return;
+    this.gustCd = (this.gustCd ?? G.every * 0.5) - dt;
+    if (this.gustCd <= 0) { this.gustCd = G.every; this.gustT = G.dur; this.emit({ t: 'gust', dur: G.dur }); }
+  }
   onIce(x, y) { const cx = Math.floor(x), cy = Math.floor(y); return this.map.ice.some(([a, b, c, d]) => cx >= a && cx <= c && cy >= b && cy <= d); }
   // Schneesturm (Frosttempel): alle `every` s für `dur` s – Gegner langsamer, Eiskreaturen schneller, andere frieren etwas
   updStorm(dt) {
@@ -321,7 +328,7 @@ export class World {
     }
     this.spawners = this.spawners.filter(s => s.left > 0);
     if (this.rafts.length) this.updRafts();
-    this.updVents(dt); this.updStorm(dt);
+    this.updVents(dt); this.updStorm(dt); this.updGust(dt);
     if (this.mods.apoc && this.wave > 0 && this.canStartWave()) this.startWave();   // Apokalypse: Wellen ohne Pause
     let buffChange = false;
     for (const t of this.towers) {
@@ -372,8 +379,9 @@ export class World {
     if (e.cryT > 0) sp *= 1 + (ENEMIES.oni.cry.speed);
     if (this.map.ice && !e.flying && this.onIce(e.x, e.y)) sp *= 1.4;   // Eisbahn: rutschen
     if (this.stormT > 0 && !e.boss) sp *= 1 - this.map.storm.slow;
+    if (this.gustT > 0 && !e.boss) { const G = this.map.gust; if (e.flying) sp *= G.fly; else if (this.terrainAt(e.x, e.y) === 'B' && !e.heavy) sp = -sp * G.back; }   // Böe: auf Brücken zurückgedrückt
     if (e.boss) { const ph = def.phases[e.phase]; if (e.flyT > 0) sp *= def.phases[1].fly.speed; if (e.phase >= 3) sp *= ph.enrage || 1; }
-    e.d += sp * dt;
+    e.d = Math.max(0, e.d + sp * dt);
     this.posAt(e.d, e, e.pi);
     if (e.d >= this.paths[e.pi].len) this.leak(e);
   }

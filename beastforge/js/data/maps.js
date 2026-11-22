@@ -1,5 +1,5 @@
 // Karten als Daten (Querformat). Das Raster wird aus Pfad + Merkmalen erzeugt.
-// Zeichen: . Gras  # Pfad  ~ Wasser  ^ Anhöhe (+Reichweite)  T Baum  R Fels (räumbar)  S Schrein  L Lava (nur Flöße)
+// Zeichen: . Gras  # Pfad  ~ Wasser  ^ Anhöhe (+Reichweite)  T Baum  R Fels (räumbar)  S Schrein  L Lava (nur Flöße)  V offener Himmel  B Brücke (Pfad über V)
 // Kreaturen werden FREI platziert (Kreis-Fußabdruck); das Raster liefert nur Gelände und Höhe.
 export const PATH_HALF = 0.5;   // halbe Pfadbreite in Feldern
 
@@ -11,7 +11,7 @@ function build(m) {
   // Pfad rastern (über die Rechtecke schreiben)
   for (const path of m.paths || [m.path]) for (let i = 1; i < path.length; i++) {
     const [ax, ay] = path[i - 1], [bx, by] = path[i], n = Math.ceil(Math.hypot(bx - ax, by - ay) * 4);
-    for (let k = 0; k <= n; k++) { const x = ax + (bx - ax) * k / n, y = ay + (by - ay) * k / n; set(Math.floor(x), Math.floor(y), '#'); }
+    for (let k = 0; k <= n; k++) { const x = ax + (bx - ax) * k / n, y = ay + (by - ay) * k / n, cx = Math.floor(x), cy = Math.floor(y); set(cx, cy, g[cy]?.[cx] === 'V' || g[cy]?.[cx] === 'B' ? 'B' : '#'); }
   }
   return g.map(r => r.join(''));
 }
@@ -110,6 +110,30 @@ export const MAPS = {
       const B = { vharox: 'hyoga', vharox2: 'hyoga2', vharox3: 'hyoga3' };
       const out = groups.map(g => B[g.e] ? { ...g, e: B[g.e] } : g);
       return { groups: out, boss: out.find(g => g.e.startsWith('hyoga'))?.e, tip: w === 1 ? 'Frosttempel: Eisbahnen (helle Pfadstücke) lassen Gegner rutschen. Im Schneesturm sind Eiskreaturen im Vorteil.' : null };
+    },
+  },
+  sky: {
+    id: 'sky', name: 'Himmelsinseln', sub: 'Brücken über den Wolken, Böen und eine Sturmeule', level: 'Schwer', hpMul: 1.1,
+    desc: 'Drei schwebende Inseln, verbunden durch Holzbrücken. Über offenem Himmel kann nichts stehen. Windböen drücken Bodengegner auf den Brücken zurück – Fliegende werden dabei schneller.',
+    w: 22, h: 13,
+    path: [[-1.6, 3.5], [4.5, 3.5], [4.5, 9.5], [10.5, 9.5], [10.5, 2.5], [17.5, 2.5], [17.5, 9.5], [21.2, 9.5]],
+    rects: [
+      [6, 0, 7, 12, 'V'], [14, 0, 15, 12, 'V'],                 // Himmelsschluchten zwischen den Inseln
+      [0, 0, 1, 1, 'V'], [0, 11, 2, 12, 'V'], [8, 0, 9, 0, 'V'], [11, 12, 13, 12, 'V'], [19, 0, 21, 0, 'V'], [20, 12, 21, 12, 'V'],
+      [1, 6, 2, 8, '^'], [12, 5, 13, 7, '^'], [19, 4, 20, 6, '^'],   // Windfelsen
+      [8, 4, 9, 6, '~'],                                       // Wolkenquelle
+      [21, 8, 21, 10, 'S'],
+    ],
+    cells: [[3, 0, 'T'], [5, 12, 'T'], [2, 4, 'T'], [13, 0, 'T'], [8, 11, 'T'], [16, 11, 'T'], [21, 2, 'T'], [3, 7, 'R'], [12, 10, 'R'], [19, 7, 'R']],
+    gust: { every: 20, dur: 4, back: 0.4, fly: 1.15 },
+    theme: { grass: 0x8fd86a, grass2: 0xa8e47a, dirt: 0xd8c49a, cliff: 0x9a8a7a, high: 0xc8d8a0, water: 0x9ae0ff, fog: 0x9cc8ec, sky: 0x8cc0ec, blossom: 0xffd8ec, isles: true, bridge: 0xb08850 },
+    music: 'forest',
+    // Himmelsinseln: Boss ist Fūjin, die Sturmeule; ab Welle 4 kommen zusätzlich Irrlichter (Fliegende)
+    mix(w, groups) {
+      const B = { vharox: 'fujin', vharox2: 'fujin2', vharox3: 'fujin3' };
+      const out = groups.map(g => B[g.e] ? { ...g, e: B[g.e] } : g), boss = out.find(g => g.e.startsWith('fujin'))?.e;
+      if (w >= 4 && !boss) out.push({ e: 'wisp', n: Math.min(24, 1 + Math.floor(w * 0.3)), gap: 0.9, delay: 3, mods: w > 20 ? (out[0].mods || []) : [] });
+      return { groups: out, boss, tip: w === 1 ? 'Himmelsinseln: Über offenem Himmel kann nichts stehen. Windböen drücken Gegner auf den Brücken zurück – Fliegende werden schneller.' : null };
     },
   },
 };

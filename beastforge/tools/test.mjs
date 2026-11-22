@@ -433,3 +433,19 @@ test('Frosttempel: Eisbahnen beschleunigen, Schneesturm verlangsamt Gegner und s
   const b = w2.spawn('hyoga', [], 2); assert.ok(b.boss && b.def.model === 'wolf');
   void e; void ice;
 });
+
+test('Himmelsinseln: offener Himmel nicht bebaubar, Brücken, Windböe drückt zurück, Boss Fūjin', () => {
+  const { w } = mkWorld(defaultProfile(), { map: 'sky' }); w.coins = 1e6;
+  assert.equal(w.terrainAt(6.5, 1.5), 'V'); assert.equal(w.terrainAt(6.5, 9.5), 'B');
+  assert.ok(!w.canPlace('kitsune', 6.5, 5.5).ok, 'Himmel nicht bebaubar');
+  const e = w.spawn('boar', [], 0); const L = w.paths[0];
+  // Gegner auf die Brücke bei (6.5, 9.5) setzen: Abstand entlang des Pfads suchen
+  let d = 0; for (; d < 40; d += 0.05) { w.posAt(d, e, 0); if (w.terrainAt(e.x, e.y) === 'B') break; } e.d = d + 0.3; w.posAt(e.d, e, 0);
+  const f = w.spawn('wisp', [], 2); const fd = f.d;
+  w.gustCd = 0; w.updGust(0.01); assert.ok(w.gustT > 0);
+  const d0 = e.d; for (let i = 0; i < 30; i++) w.step(1 / 60);
+  assert.ok(e.d < d0, 'auf der Brücke zurückgedrückt'); assert.ok(f.d > fd, 'Fliegende fliegen weiter');
+  const { w: w2 } = mkWorld(defaultProfile(), { map: 'sky' }); w2.wave = 19; w2.doneWave = 19; w2.startWave();
+  assert.ok(w2.spawners.some(s => s.e === 'fujin'), 'Boss auf den Himmelsinseln ist Fūjin');
+  void L;
+});

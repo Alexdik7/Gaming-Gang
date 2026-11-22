@@ -454,23 +454,26 @@ const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', g
 export function buildGlb(id, o) { if (!(ready && GLB_CREATURES[id] && ASSETS[SRC[id]])) return null; try { return GLB_CREATURES[id](o); } catch (e) { console.warn(e.message); return null; } }
 
 // ───────── Bosse / Mini-Bosse ─────────
-const BIG_LOOK = { wolf: { h: 1.9, tint: [0xcfeaff, 0.7], em: 0x2a6a9a, ol: 0.02 } };
+const BIG_LOOK = { wolf: { h: 1.9, tint: [0xcfeaff, 0.7], em: 0x2a6a9a, ol: 0.02 }, owl: { h: 1.9, tint: [0x5a6aa8, 0.55], em: 0x3a3a10, ol: 0.02 } };
+const CLIP_ALIAS = { owl: { walk: 'idle', fly: 'idle', attack: 'call' } };
 export function buildBig(kind, model) {
   const isBoss = kind !== 'oni', name = model || (isBoss ? 'dragon' : 'orc');
   if (!ready || !ASSETS[name]) return null;
   const R = new Rig(name, BIG_LOOK[name] || (isBoss ? { h: 2.2, tint: [0x4a2a6a, 0.45], ol: 0.02 } : { h: 1.6, tint: [0xd8402a, 0.6], ol: 0.02 }));
+  if (name === 'owl') { const zap = glow(0xffe14d, 0.9); for (let i = 0; i < 5; i++) add(R.root, C(), zap, { p: [(i - 2) * 0.12, 1.95 + (2 - Math.abs(i - 2)) * 0.06, -0.05], r: [-0.2, 0, (i - 2) * 0.35], s: [0.05, 0.28, 0.05], ol: false }); }
   if (name === 'wolf') { const ice = glow(0xbff4ff, 0.85); for (let i = 0; i < 7; i++) add(R.root, C(), ice, { p: [0, 1.05 + Math.sin(i * 0.9) * 0.08, 0.45 - i * 0.16], r: [-0.3, 0, (i % 2 ? 0.35 : -0.35)], s: [0.07, 0.32 - Math.abs(i - 3) * 0.04, 0.07], ol: false }); }
   if (!isBoss) { const hm = toon(0xf0e0c0); for (const sd of [-1, 1]) add(R.root, C(), hm, { p: [sd * 0.22, 1.62, 0.05], r: [0, 0, -sd * 0.35], s: [0.07, 0.26, 0.07], ol: 0.012 }); add(R.root, B(), toon(0xf0b030), { p: [0, 0.55, 0.36], s: [0.5, 0.08, 0.06], ol: 0.01 }); }
-  R.play(isBoss ? 'walk' : 'walk');
+  R.play(R.clips.walk ? 'walk' : 'idle');
   const aura = isBoss ? add(R.root, geo.torus(0.06), glow(0xff3a20, 0).clone(), { p: [0, 0.05, 0], r: [PI / 2, 0, 0], s: 1.1 }) : null;
   const big = { root: R.root, height: isBoss ? 2.4 : 1.9, flash: 0, rig: R };
   big.tick = (t, dt, s) => {
     let want = 'walk';
     if (isBoss) { if (s.roar || s.breath) want = 'attack'; else if (s.fly) want = 'fly'; }
     else if (s.cry) want = 'attack';
+    want = CLIP_ALIAS[name]?.[want] || want; if (!R.clips[want]) want = R.clips.walk ? 'walk' : 'idle';
     if (R.clips[want] && R.cur !== R.clips[want]) R.play(want, false, 0.2);
     R.mixer.update(dt * (isBoss && s.phase >= 3 ? 1.4 : 1));
-    R.root.position.y = isBoss && s.fly ? (name === 'wolf' ? Math.abs(Math.sin(t * 3)) * 0.9 : 0.8 + Math.sin(t * 2) * 0.1) : 0;
+    R.root.position.y = name === 'owl' ? 0.7 + Math.sin(t * 1.6) * 0.12 + (s.fly ? 1.0 : 0) : isBoss && s.fly ? (name === 'wolf' ? Math.abs(Math.sin(t * 3)) * 0.9 : 0.8 + Math.sin(t * 2) * 0.1) : 0;
     if (aura) { aura.material.opacity = s.phase >= 2 ? 0.3 + Math.sin(t * 6) * 0.1 : 0; aura.rotation.z = t; }
     R.flash(big.flash * 0.6);
   };

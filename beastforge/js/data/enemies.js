@@ -57,6 +57,21 @@ BOSSES.hyoga = {
     { at: 0.25, name: 'Rudelruf',     desc: 'Raserei: ruft ein Rudel Dornwölfe.', enrage: 1.6, adds: { every: 8, kind: 'wolf', n: 6 } },
   ],
 };
+// Boss der Himmelsinseln: Fūjin, eine riesige Sturmeule (schwebt immer; Phasen 1 Sturmflug, 2 Donnerschrei, 3 Federsturm)
+BOSSES.fujin = {
+  name: 'Fūjin, Sturmeule', title: 'Herrin der Winde', hp: 3000, speed: 0.44, coins: 0, xp: 700, lives: 100, r: 0.75, h: 2.2,
+  heavy: true, boss: true, res: { lightning: 0.3, earth: 0.6, ice: 1.3 }, model: 'owl', hover: 0.7, breathColor: 0xffe14d, warn: 'Der Himmel verdunkelt sich – Fūjin breitet die Schwingen aus!',
+  phases: [
+    { at: 1.00, name: 'Sturmwind',    desc: 'Die Sturmeule gleitet über die Inseln.' },
+    { at: 0.75, name: 'Sturmflug',    desc: 'Sie steigt hoch auf – Bodenwellen verfehlen sie.', fly: { every: 9, dur: 3.5, speed: 2.0 } },
+    { at: 0.50, name: 'Donnerschrei', desc: 'Ihr Schrei lähmt Kreaturen mit Blitzen!', breath: { every: 7, n: 3, dur: 3 } },
+    { at: 0.25, name: 'Federsturm',   desc: 'Raserei: ruft Irrlichter aus den Wolken.', enrage: 1.55, adds: { every: 8, kind: 'wisp', n: 6 } },
+  ],
+};
+BOSSES.fujin2 = { ...BOSSES.fujin, name: 'Fūjin, Gewitterherz', hp: 27000, speed: 0.46, xp: 1400, scale: 1.2, warn: 'Fūjin kehrt zurück – ein Gewitter folgt ihr!',
+  phases: BOSSES.fujin.phases.map(p => p.adds ? { ...p, adds: { every: 7, kind: 'wisp', n: 10 } } : p.breath ? { ...p, breath: { every: 6, n: 4, dur: 3 } } : p) };
+BOSSES.fujin3 = { ...BOSSES.fujin, name: 'Fūjin, Auge des Sturms', hp: 125000, speed: 0.48, xp: 3000, scale: 1.45, warn: 'Das Auge des Sturms öffnet sich – der letzte Kampf!',
+  phases: BOSSES.fujin.phases.map(p => p.adds ? { ...p, adds: { every: 9, kind: 'whale', n: 1 } } : p.breath ? { ...p, breath: { every: 5, n: 5, dur: 3.5 } } : p) };
 BOSSES.hyoga2 = { ...BOSSES.hyoga, name: 'Hyōga, Weißer Sturm', hp: 27000, speed: 0.44, xp: 1400, scale: 1.2, warn: 'Hyōga kehrt zurück – der Weiße Sturm tobt!',
   phases: BOSSES.hyoga.phases.map(p => p.adds ? { ...p, adds: { every: 7, kind: 'wolf', n: 10 } } : p.breath ? { ...p, breath: { every: 6, n: 4, dur: 3.5 } } : p) };
 BOSSES.hyoga3 = { ...BOSSES.hyoga, name: 'Hyōga, Ewiger Winter', hp: 125000, speed: 0.46, xp: 3000, scale: 1.45, warn: 'Der ewige Winter bricht an – der letzte Kampf!',

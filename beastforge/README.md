@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.21.0 – Frosttempel und Boss Hyōga
+## Stand: v0.22.0 – Himmelsinseln und Boss Fūjin
+**0.22:** Neue Karte **Himmelsinseln** `sky` (Konto-Lv 12, Schwer, `hpMul` 1,1): Rasterzeichen `V` offener Himmel (nicht bebaubar, kein Feld, Höhe −3) und `B` Brücke (Pfad über `V`, wird in `build()` automatisch gesetzt). mapview: tiefe Inselklippen (`theme.isles`), Holzbrücken mit Pfosten/Seilen und Wolkenmeer (`buildClouds`) statt Waldrand. Windböen `map.gust` alle 20 s für 4 s (`world.updGust`/`gustT`): Bodengegner auf Brücken werden zurückgedrückt (`back`), Fliegende ×1,15; Ereignis `gust` → Banner + Windstreifen. Ab Welle 4 zusätzliche Irrlichter. Neuer Boss **Fūjin, Sturmeule** (`fujin`/2/3, Modell `owl`, schwebt immer, Blitzschrei `breathColor` gelb, ruft Irrlichter); `buildBig` mit `CLIP_ALIAS` (fehlende Animationen → idle/call). Erfolg „Über den Wolken“. Bot: Normal Lv5 4/4, Schwer Lv30 Ø Welle 37.
+
+## v0.21.0 – Frosttempel und Boss Hyōga
 **0.21:** Neue Karte **Frosttempel** `frost` (Konto-Lv 10, Schwer, `hpMul` 1,35): Eisbahnen `map.ice` (Rechtecke auf dem Pfad, Gegner +40 % Tempo, `world.onIce`, hellblaue Pfadfelder in mapview), Schneesturm `map.storm` alle 28 s für 7 s (`world.updStorm`/`stormT`: Gegner −25 % Tempo, Kreaturen mit Element Eis Tempo ×1,25, andere ×0,85; Ereignis `storm` → Banner, Schneetreiben). Schnee-Thema `theme.snow` (verschneite Tannen, Eiskristalle, keine Seerosen/Blumen, Schneeflocken). Neuer Boss **Hyōga, Frostwolf** (`BOSSES.hyoga`/`hyoga2`/`hyoga3` für Welle 20/40/60) mit Modell `wolf` + Eisstacheln (`buildBig(kind, model)`, `BIG_LOOK`), Phasen Frostsprünge/Eisatem (`breathColor`, eingefrorene Kreaturen `disCol`)/Rudelruf; `map.mix` darf den Boss tauschen (`boss`). Erfolg „Ewiger Winter“.
 
 ## v0.20.0 – Leistung für Gegner-Massen
