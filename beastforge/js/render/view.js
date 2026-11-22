@@ -1,7 +1,7 @@
 // Darstellung eines Runs: liest world (Zustand) + Ereignisse, besitzt alle three.js-Objekte des Spielfelds.
 import * as THREE from 'three';
 import { MapView, HEIGHT } from './mapview.js';
-import { Particles, Rings, Bolts, Pillars, Projectiles, Floaters, projStyle } from './fx.js';
+import { Particles, Rings, Bolts, Pillars, Projectiles, Floaters, Flashes, Sparks, Arcs, projStyle } from './fx.js';
 import { RAFT_TOP } from './mapview.js';
 import { ENEMY_MODELS, bakeFrames, buildBig } from './assets.js';
 import { buildModel, ENEMY_GEO, ENEMY_GLOW, ENEMY_ALPHA, buildOni, buildDragon } from './models.js';
@@ -20,7 +20,7 @@ export class GameView {
     this.root = new THREE.Group(); this.scene.add(this.root);
     this.map = new MapView(this.root, world.map);
     stage.mapW = this.map.W; stage.mapH = this.map.H; stage.fit();
-    this.parts = new Particles(this.root); this.rings = new Rings(this.root); this.bolts = new Bolts(this.root); this.pillars = new Pillars(this.root);
+    this.parts = new Particles(this.root); this.rings = new Rings(this.root); this.bolts = new Bolts(this.root); this.pillars = new Pillars(this.root); this.flashes = new Flashes(this.root); this.sparks = new Sparks(this.root); this.arcs = new Arcs(this.root); this.later = [];
     this.projs = new Projectiles(this.root);
     this.floaters = new Floaters(document.getElementById('floaters'));
     this.towers = new Map(); this.bigs = new Map(); this.t = 0; this.numCount = 0;
@@ -95,13 +95,42 @@ export class GameView {
   towerKey(t) { return t.hero ? 'h' + (t.hlvl >= 20 ? 2 : t.hlvl >= 15 ? 1 : 0) : t.stage + ':' + t.tiers.join('') + ':' + (this.opts.branch?.(t.cid) || '') + (this.opts.skin?.(t.cid) || ''); }
   makeTower(t) {
     const m = buildModel(t.cid, { stage: t.stage, tiers: t.tiers, branch: this.opts.branch?.(t.cid), skin: this.opts.skin?.(t.cid), hlvl: t.hlvl });
-    const g = new THREE.Group(); g.add(m.root); g.scale.setScalar(TOWER_SCALE);
+    const g = new THREE.Group(), pose = new THREE.Group(); pose.rotation.order = 'YXZ'; pose.add(m.root); g.add(pose); g.scale.setScalar(TOWER_SCALE);
     const [x, z] = this.toW(t.x, t.y); g.position.set(x, this.ty(t), z);
     // Schatten-Kreis unter der Figur
     const sh = new THREE.Mesh(new THREE.CircleGeometry(0.34, 20).rotateX(-PI / 2), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18, depthWrite: false })); sh.position.y = 0.01; g.add(sh);
     this.root.add(g);
-    return { g, m, key: this.towerKey(t), atk: 0, rot: t.ang, born: 0, evoT: 0, flash: 0 };
+    return { g, m, pose, key: this.towerKey(t), atk: 0, rot: t.ang, born: 0, evoT: 0, flash: 0, at: 9, flip: 1 };
   }
+  // Angriffs-Bewegung je Kampfstil: Ausholen → Zuschlagen → Nachfedern (auf der Zwischengruppe `pose`)
+  atkPose(v, t) {
+    const P = v.pose, st = t.s?.atk || 'proj', D = Math.min(0.42, Math.max(0.16, 0.85 / Math.max(0.5, t.s?.rate || 1))), u = Math.min(1, v.at / D);
+    let lean = 0, fwd = 0, lift = 0, sy = 1, sxz = 1, twist = 0;
+    if (u < 1) {
+      const ant = u < 0.22 ? u / 0.22 : Math.max(0, 1 - (u - 0.22) / 0.12);            // Ausholen
+      const hit = u < 0.22 ? 0 : u < 0.34 ? (u - 0.22) / 0.12 : Math.pow(1 - (u - 0.34) / 0.66, 2); // Schlag + Abklingen
+      const wob = u > 0.34 ? Math.sin((u - 0.34) / 0.66 * Math.PI * 2.5) * (1 - u) * 0.5 : 0;          // Nachfedern
+      if (st === 'proj') { lean = -0.14 * ant + 0.2 * hit; fwd = -0.03 * ant + 0.07 * hit; sy = 1 - 0.06 * ant + 0.05 * hit + 0.03 * wob; sxz = 1 + 0.03 * ant - 0.03 * hit; }
+      else if (st === 'chain') { sy = 1 - 0.12 * ant + 0.09 * hit; sxz = 1 + 0.06 * ant - 0.03 * hit; lean = 0.08 * ant - 0.26 * hit; lift = 0.05 * hit; }
+      else if (st === 'pulse') { // Sprung und Stampfen: Landung bei u = 0.6
+        const air = u > 0.22 && u < 0.6 ? Math.sin((u - 0.22) / 0.38 * Math.PI) : 0, land = u >= 0.6 ? Math.pow(1 - (u - 0.6) / 0.4, 2) : 0;
+        lift = 0.2 * air; sy = 1 - 0.12 * ant + 0.08 * air - 0.18 * land; sxz = 1 + 0.06 * ant - 0.04 * air + 0.12 * land; lean = 0.06 * air;
+      } else if (st === 'breath') { lean = -0.24 * ant + 0.2 * hit; fwd = -0.04 * ant + 0.06 * hit; sy = 1 + 0.04 * ant - 0.04 * hit; sxz = 1 + 0.05 * hit; }
+      else if (st === 'slash') { fwd = 0.2 * hit - 0.02 * ant; twist = v.flip * (-0.35 * ant + 0.5 * hit); lean = 0.12 * hit; sy = 1 - 0.05 * ant; }
+      sy += 0; lean += wob * 0.06;
+    }
+    P.rotation.set(lean, v.rot + twist, 0);
+    P.position.set(Math.sin(v.rot) * fwd, lift, Math.cos(v.rot) * fwd);
+    P.scale.set(sxz, sy, sxz);
+  }
+  // Auslösen eines Angriffs: Pose starten + Mündungsblitz an der „Hand“
+  atkStart(t, color, delay = 0) {
+    const v = this.towers.get(t.id); if (!v) return null;
+    v.atk = 1; v.at = -delay; v.flip = -v.flip;
+    if (color != null) { const [x, z] = this.toW(t.x, t.y), h = this.ty(t), f = 0.32 * TOWER_SCALE; this.flashes.add(x + Math.sin(v.rot) * f, h + 0.55, z + Math.cos(v.rot) * f, color, 0.22, 0.09, { k: 0.8 }); }
+    return v;
+  }
+  after(d, fn) { this.later.push({ t: this.t + d, fn }); }
   syncTowers(dt) {
     const alive = new Set();
     for (const t of this.world.towers) {
@@ -111,10 +140,11 @@ export class GameView {
       const key = this.towerKey(t);
       if (v.evoT > 0) { v.evoT -= dt; v.m.root.rotation.y += dt * 14; const s = 1 + Math.sin(v.evoT * 30) * 0.06; v.m.root.scale.setScalar(s); }
       else if (key !== v.key) { this.root.remove(v.g); const nv = this.makeTower(t); nv.born = 0.5; nv.atk = 0; nv.rot = v.rot; this.towers.set(t.id, nv); v = nv; }
+      else v.m.root.rotation.y = 0;
       // drehen zum Ziel
       const target = PI / 2 - t.ang; let d = target - v.rot; d = Math.atan2(Math.sin(d), Math.cos(d)); v.rot += d * Math.min(1, dt * 12);
-      if (v.evoT <= 0) v.m.root.rotation.y = v.rot;
-      v.atk = Math.max(0, v.atk - dt * 5);
+      v.atk = Math.max(0, v.atk - dt * 5); v.at += dt;
+      this.atkPose(v, t);
       if (v.born < 1) { v.born = Math.min(1, v.born + dt * 3); if (v.evoT <= 0) v.m.root.scale.setScalar(backOut(v.born)); }
       if (t.raft != null) { const [x, z] = this.toW(t.x, t.y); v.g.position.set(x, RAFT_TOP, z); }
       const dis = t.disabledT > 0;
@@ -226,9 +256,15 @@ export class GameView {
     const at = (x, y) => this.toW(x, y);
     switch (ev.t) {
       case 'hit': {
-        const [x, z] = at(ev.x, ev.y), col = ELEMENT_COLORS[ev.type] || 0xffffff, y = (ev.e.h || 0.5) * 0.6 + (ev.e.flying && !ev.e.boss ? 0.85 : 0);
-        P.burst(x, y, z, col, ev.crit ? 10 : 3, ev.crit ? 3 : 1.6, ev.crit ? 0.16 : 0.1, 0.3);
-        if (ev.guard) { if (this.numCount++ % 6 === 0) P.burst(x, y, z, [0xd8e0f0, 0xffffff], 3, 1.4, 0.08, 0.2); break; }
+        // Genau am Einschlag: Richtung vom Angreifer, Blitz an der Körperseite, Funken fliegen nach hinten weg
+        let [x, z] = at(ev.x, ev.y); const col = ELEMENT_COLORS[ev.type] || 0xffffff, y = (ev.e.h || 0.5) * 0.6 + (ev.e.flying && !ev.e.boss ? 0.85 : 0);
+        let dx = 0, dz = 1; if (ev.sx != null) { const [sx, sz] = at(ev.sx, ev.sy); dx = x - sx; dz = z - sz; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L; }
+        const er = Math.min(0.5, (ev.e.r || 0.3) * 0.8); x -= dx * er; z -= dz * er;
+        if (ev.guard) { this.flashes.add(x, y, z, 0xe8eeff, 0.2, 0.07, { k: 0.7 }); this.sparks.fan(x, y, z, -dx, -dz, [0xffffff, 0xc8d4e8], 3, 3, 1.2, { up: 0.6, grav: 6 }); break; }
+        const many = this.world.enemies.length > 120;
+        this.flashes.add(x, y, z, col, ev.crit ? 0.5 : ev.big ? 0.32 : 0.2, ev.crit ? 0.14 : 0.08, { k: ev.crit ? 1 : 0.65 });
+        if (!many || ev.crit) this.sparks.fan(x, y, z, dx, dz, [col, 0xffffff], ev.crit ? 7 : 3, ev.crit ? 4.5 : 3, ev.crit ? 0.8 : 0.55, { len: ev.crit ? 0.045 : 0.03 });
+        if (ev.crit) P.burst(x, y, z, [col, 0xffffff], 4, 1.6, 0.08, 0.22);
         if (settings.dmgNums && (ev.crit || ev.big || ev.dmg >= 25 || (this.numCount++ % 4 === 0))) this.floaters.add(x, y + 0.3, z, Math.round(ev.dmg), ev.crit ? 'crit' : ev.big ? 'big' : '', ev.crit ? 0.95 : 0.7);
         if (ev.crit && ev.dmg > 60) this.stage.addShake(0.08);
         break;
@@ -245,48 +281,60 @@ export class GameView {
       case 'guardBreak': { const [x, z] = at(ev.x, ev.y); P.burst(x, 0.5, z, [0xd8e0f0, 0x8a96a8, 0xffffff], 22, 3.2, 0.14, 0.5, { grav: 5, up: 1.5 }); this.floaters.add(x, 1.2, z, 'Schild gebrochen!', 'crit', 0.9); break; }
       case 'pop': { // Schicht platzt: Ring + Funken in Schichtfarbe, kleines „Plopp“-Wort
         const [x, z] = at(ev.x, ev.y), col = [0, 0x6ff0ff, 0x5ad85a, 0xff8a2a, 0xa05aff, 0xffd23a, 0x8a7ab0, 0x5a9aff, 0xb07bff][ev.layer] || 0xffffff;
-        if (ev.layer >= 7) { this.rings.add(x, 0.1, z, 0.3, 3, col, 0.6); P.burst(x, 0.8, z, [col, 0xffffff, 0x9fe8ff], 70, 5, 0.25, 0.9, { up: 2 }); this.stage.addShake(0.5); }
-        this.rings.add(x, 0.3, z, 0.1, 0.55 + ev.layer * 0.06, col, 0.22); P.burst(x, 0.35, z, [col, 0xffffff], 8 + ev.layer * 2, 2.8, 0.1, 0.3, { up: 1.5 });
+        if (ev.layer >= 7) { this.rings.add(x, 0.1, z, 0.3, 2.6, col, 0.5); this.flashes.add(x, 0.8, z, col, 1.4, 0.2); P.burst(x, 0.8, z, [col, 0xffffff], 34, 4, 0.16, 0.7, { up: 2 }); this.stage.addShake(0.4); }
+        this.flashes.add(x, 0.35, z, col, 0.3 + ev.layer * 0.03, 0.1, { k: 0.8 }); this.rings.add(x, 0.3, z, 0.1, 0.4 + ev.layer * 0.05, col, 0.16, { alpha: 0.6 });
+        P.burst(x, 0.35, z, [col, 0xffffff], 3 + ev.layer, 2.2, 0.07, 0.26, { up: 1.5 });
         if (settings.dmgNums && this.numCount++ % 3 === 0) this.floaters.add(x, 0.8, z, ['', 'plopp', 'plopp!', 'PLOPP', 'PLOPP!', 'KRACH', 'KRACK!', 'WUMMS!', 'STURM!'][ev.layer], ev.layer >= 5 ? 'crit' : '', 0.6);
         break;
       }
       case 'kill': {
         const [x, z] = at(ev.x, ev.y), e = ev.e, big = e.boss || e.miniboss || e.kind === 'golem' || e.def.big;
         const col = { slime: 0x9af070, wolf: 0xb0a070, boar: 0xc0a090, wisp: 0x9ff6ff, shade: 0xa070ff, mage: 0xc0a0ff, healer: 0xffb070, beetle: 0x5ae8d8, mite: 0x5ae8d8, golem: 0xc0b8a8, demon: 0xff7a2a, bearer: 0xc8b8a0, l1: 0x6ff0ff, l2: 0x5ad85a, l3: 0xff8a2a, l4: 0xa05aff, l5: 0xffd23a, kokon: 0x8a7ab0 }[e.kind] || 0xffffff;
-        P.burst(x, 0.35, z, [col, 0xffffff], big ? 60 : 12, big ? 4 : 2.4, big ? 0.3 : 0.16, big ? 0.9 : 0.5, { grav: 4, up: 1.4 });
-        this.rings.add(x, 0.05, z, 0.1, big ? 2.5 : 0.7, col, big ? 0.7 : 0.35);
+        P.burst(x, 0.35, z, [col, 0xffffff], big ? 40 : 6, big ? 3.6 : 2, big ? 0.22 : 0.1, big ? 0.8 : 0.4, { grav: 4, up: 1.4 });
+        this.flashes.add(x, 0.4, z, col, big ? 1.6 : 0.38, big ? 0.25 : 0.11, { k: 0.75 });
+        if (big) this.rings.add(x, 0.05, z, 0.1, 2.2, col, 0.6); else this.rings.add(x, 0.05, z, 0.1, 0.5, col, 0.25, { alpha: 0.5 });
         if (ev.coins && settings.dmgNums !== false) this.floaters.add(x, 0.9, z, '+' + ev.coins, 'coin', 0.8);
         if (big) { this.stage.addShake(0.6); this.stage.zoomPunch = Math.max(this.stage.zoomPunch, 0.5); }
         break;
       }
-      case 'shot': { const v = this.towers.get(ev.tower.id); if (v) v.atk = 1; if (ev.special) { const [x, z] = at(ev.tower.x, ev.tower.y); P.burst(x, 0.7, z, 0xffa030, 10, 2, 0.2, 0.4); } break; }
-      case 'mortar': { const [x, z] = at(ev.tower.x, ev.tower.y); P.burst(x, 0.75, z, [0xd8c8a0, 0x8a8070], 8, 1.6, 0.2, 0.5, { up: 2 }); break; }
+      case 'shot': { const st = projStyle(ev.special ? 'fireball' : ev.tower.s?.proj); this.atkStart(ev.tower, ev.extra ? null : st.trail); if (ev.special) { const [x, z] = at(ev.tower.x, ev.tower.y); this.flashes.add(x, 0.7, z, 0xffa030, 0.6, 0.16); P.burst(x, 0.7, z, [0xffa030, 0xffe0a0], 6, 1.6, 0.12, 0.35); } break; }
+      case 'mortar': { this.atkStart(ev.tower, 0xffd27a); const [x, z] = at(ev.tower.x, ev.tower.y); P.burst(x, 0.75, z, [0xd8c8a0, 0x8a8070], 4, 1.2, 0.14, 0.45, { up: 2 }); break; }
       case 'pulse': {
-        const v = this.towers.get(ev.tower.id); if (v) v.atk = 1;
-        const [x, z] = at(ev.tower.x, ev.tower.y), h = this.ty(ev.tower);
-        this.rings.add(x, h + 0.06, z, 0.3, ev.r, 0xbfe8ff, 0.4); this.rings.add(x, h + 0.05, z, 0.2, ev.r * 0.92, 0x7ab0c8, 0.5, { disc: true, alpha: 0.25 });
-        P.burst(x, h + 0.1, z, [0xc8b090, 0x8a7a68], 10, 2.5, 0.16, 0.4, { flat: true });
+        const t = ev.tower, D = Math.min(0.42, Math.max(0.16, 0.85 / Math.max(0.5, t.s?.rate || 1)));
+        this.atkStart(t, null);
+        const [x, z] = at(t.x, t.y), h = this.ty(t), r = ev.r;
+        this.after(D * 0.6, () => { // Landung: Staubring am Boden, Risslinien nach außen, kleiner Ruck
+          this.rings.add(x, h + 0.06, z, 0.3, r, 0xe8dcc0, 0.35, { alpha: 0.7 }); this.rings.add(x, h + 0.05, z, 0.2, r * 0.9, 0x8a7a68, 0.45, { disc: true, alpha: 0.18 });
+          for (let i = 0; i < 10; i++) { const a = i / 10 * PI * 2 + Math.random() * 0.3; this.sparks.add(x + Math.cos(a) * 0.3, h + 0.08, z + Math.sin(a) * 0.3, Math.cos(a) * r * 6, 0.3, Math.sin(a) * r * 6, 0xe8d8b0, 0.2, 0.03); }
+          P.burst(x, h + 0.08, z, [0xc8b090, 0x8a7a68], 6, 2.2, 0.12, 0.35, { flat: true });
+          this.stage.addShake(0.05);
+        });
         break;
       }
       case 'cone': {
-        const v = this.towers.get(ev.tower.id); if (v) v.atk = 1;
-        const t = ev.tower, [x, z] = at(t.x, t.y), h = this.ty(t);
-        const col = ev.type === 'fire' ? [0xffd27a, 0xff7a2a, 0xff4a10] : [0xffffff, 0xbff4ff, 0x7ad0ff];
-        for (let i = 0; i < 14; i++) { const a = ev.ang + (Math.random() - 0.5) * ev.cone, sp = ev.r * (2 + Math.random() * 1.5); P.spawn(x + Math.cos(a) * 0.3, h + 0.55, z + Math.sin(a) * 0.3, Math.cos(a) * sp, 0.1, Math.sin(a) * sp, col[i % 3], 0.18 + Math.random() * 0.12, 0.35, { drag: 2.2, grow: 1.2 }); }
+        const t = ev.tower, [x, z] = at(t.x, t.y), h = this.ty(t), fire = ev.type === 'fire';
+        const col = fire ? [0xffd27a, 0xff7a2a, 0xff4a10] : [0xffffff, 0xbff4ff, 0x7ad0ff];
+        this.atkStart(t, null);
+        this.after(0.06, () => { // Strahl aus dem Maul: dichter Kern, Rand verwirbelt, Frostsplitter als feine Striche
+          const mx = x + Math.cos(ev.ang) * 0.3, mz = z + Math.sin(ev.ang) * 0.3;
+          this.flashes.add(mx, h + 0.55, mz, col[1], 0.3, 0.12, { k: 0.7 });
+          for (let i = 0; i < 12; i++) { const k = Math.random(), a = ev.ang + (Math.random() - 0.5) * ev.cone * (0.4 + k * 0.6), sp = ev.r * (1.8 + Math.random() * 1.4); P.spawn(mx, h + 0.52, mz, Math.cos(a) * sp, 0.05, Math.sin(a) * sp, col[i % 3], 0.1 + Math.random() * 0.08, 0.32, { drag: 2.4, grow: 1.6 }); }
+          this.sparks.fan(mx, h + 0.52, mz, Math.cos(ev.ang), Math.sin(ev.ang), fire ? [0xffd27a, 0xffffff] : [0xffffff, 0xbff4ff], 5, ev.r * 3.2, ev.cone * 0.45, { up: 0.1, len: 0.04, life: 0.22 });
+        });
         break;
       }
       case 'slash': {
-        const v = this.towers.get(ev.tower.id); if (v) v.atk = 1;
-        const [x, z] = at(ev.x, ev.y); this.rings.add(x, 0.4, z, 0.1, 0.55, 0xd8fff0, 0.12);
-        P.burst(x, 0.45, z, [0xffffff, 0xc8ffd8], 4, 2.6, 0.08, 0.18, { flat: true });
+        const v = this.atkStart(ev.tower, null), t = ev.tower;
+        const [x, z] = at(ev.x, ev.y), [tx, tz] = at(t.x, t.y), ang = Math.atan2(z - tz, x - tx);
+        this.arcs.add(x, 0.42, z, ang, t.stage >= 2 ? 0xff8aa0 : 0xd8fff0, 0.42, 0.14, 0.55, v ? v.flip : 1);
         break;
       }
       case 'heal2': this.map.heartGlow && this.rings.add(this.map.heart.getWorldPosition(new THREE.Vector3()).x, 0.06, this.map.heart.getWorldPosition(new THREE.Vector3()).z, 0.2, 1.8, 0xff9ac8, 0.8); break;
       case 'bolt': {
-        const v = this.towers.get(ev.tower.id); if (v) v.atk = 1;
+        this.atkStart(ev.tower, 0x9fe8ff);
         const pts = ev.pts.map((p, i) => { const [x, z] = at(p.x, p.y); return { x, z, y: i === 0 ? 0.8 : 0.45 }; });
-        this.bolts.add(pts, 0xbff4ff, 0.06, 0.16); this.bolts.add(pts, 0x5ab8ff, 0.12, 0.1);
-        for (const p of pts.slice(1)) P.burst(p.x, 0.45, p.z, [0xffffff, 0x9fe8ff], 5, 2.5, 0.12, 0.25);
+        this.bolts.add(pts, 0xffffff, 0.025, 0.12); this.bolts.add(pts, 0x5ab8ff, 0.07, 0.09);
+        for (const p of pts.slice(1)) { this.flashes.add(p.x, 0.45, p.z, 0x9fe8ff, 0.3, 0.09); this.sparks.fan(p.x, 0.45, p.z, 1, 0, [0xffffff, 0x9fe8ff], 3, 2.6, PI, { up: 0.8 }); }
         break;
       }
       case 'strike': {
@@ -299,8 +347,10 @@ export class GameView {
       case 'boom': {
         const [x, z] = at(ev.x, ev.y), st = projStyle(ev.kind);
         const c = ev.kind === 'shell' ? [0xff9a40, 0x8a7a6a, 0xffd27a] : [st.c, st.trail, 0xffffff];
-        this.rings.add(x, 0.06, z, 0.1, ev.r + 0.2, st.trail, 0.35); this.rings.add(x, 0.05, z, 0.1, ev.r, st.c, 0.3, { disc: true, alpha: 0.4 });
-        P.burst(x, 0.3, z, c, ev.r > 1 ? 26 : 14, 3.2, 0.22, 0.5, { grav: 2, up: 1.6 });
+        this.rings.add(x, 0.06, z, 0.1, ev.r, st.trail, 0.3, { alpha: 0.7 }); this.rings.add(x, 0.05, z, 0.1, ev.r * 0.85, st.c, 0.25, { disc: true, alpha: 0.22 });
+        this.flashes.add(x, 0.35, z, st.trail, 0.5 + ev.r * 0.6, 0.14);
+        this.sparks.fan(x, 0.3, z, 1, 0, c, ev.r > 1 ? 12 : 7, 3.5 + ev.r * 2, PI, { up: 0.9, grav: 5, len: 0.04 });
+        P.burst(x, 0.3, z, c, ev.r > 1 ? 10 : 5, 2.4, 0.14, 0.4, { grav: 2, up: 1.6 });
         if (ev.r >= 1) this.stage.addShake(0.12);
         break;
       }
@@ -449,6 +499,8 @@ export class GameView {
       else this.parts.spawn((Math.random() - 0.5) * 14, 3 + Math.random() * 2, (Math.random() - 0.5) * 18, 0.4, -0.35, 0.2, Math.random() < 0.7 ? 0xffb8d0 : 0xffffff, 0.09, 6, { drag: 0.05 });
     }
     this.parts.update(dt); this.rings.update(dt); this.bolts.update(dt); this.pillars.update(dt);
+    this.flashes.update(dt, this.stage.camera); this.sparks.update(dt); this.arcs.update(dt);
+    if (this.later.length) this.later = this.later.filter(L => { if (this.t < L.t) return true; L.fn(); return false; });
     const lf = this.world.lives / this.world.maxLives;
     this.map.wt = this.world.t; this.map.update(dt, lf);
     // Himmel abdunkeln (Ultimates)

@@ -389,7 +389,7 @@ export class World {
       this.stats.dmg[k] = (this.stats.dmg[k] || 0) + real;
       if (src.hero) this.heroXp(src, real * BAL.hero.dmgXp);
     }
-    if (!o.dot) this.emit({ t: 'hit', e, x: e.x, y: e.y, dmg, crit, type, big: o.big });
+    if (!o.dot) this.emit({ t: 'hit', e, x: e.x, y: e.y, dmg, crit, type, big: o.big, sx: src?.x, sy: src?.y });
     // Reaktion: anderes Element auf markiertem Gegner
     if (!o.dot && !o.noReact && ELEMENTAL.has(type)) {
       if (e.elem && e.elem !== type && e.elemT > 0 && e.reactT <= 0) {
