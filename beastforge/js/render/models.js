@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { toon, glow, flat, mk, geo, merge, optimize, anim } from './toon.js';
 import { buildGlb, gearOn } from './assets.js';
-import { turtle as turtleX, mantis as mantisX } from './beasts.js';
+import { turtle as turtleX, mantis as mantisX, phoenix as phoenixX } from './beasts.js';
 
 const PI = Math.PI;
 const S = () => geo.sphere(12), C = () => geo.cone(12), Y = () => geo.cyl(12), B = () => geo.box(), CP = () => geo.caps();
@@ -609,8 +609,8 @@ function mika(o) {
   return { root, tick, height: 1.1 };
 }
 
-const BUILDERS = { kitsune: fox, tiger, turtle: turtleX, deer, raven, kairo, dragonwolf, mantis: mantisX, golem, raizen, mika };
-export function buildModel(id, o = {}) { const g = buildGlb(id, o); if (g) return g; const m = (BUILDERS[id] || fox)(o); optimize(m.root); return (id === 'turtle' || id === 'mantis') && o.tiers ? gearOn(m, o.tiers) : m; }
+const BUILDERS = { kitsune: fox, tiger, turtle: turtleX, deer, raven, kairo, dragonwolf, mantis: mantisX, phoenix: phoenixX, golem, raizen, mika };
+export function buildModel(id, o = {}) { const g = buildGlb(id, o); if (g) return g; const m = (BUILDERS[id] || fox)(o); optimize(m.root); return (id === 'turtle' || id === 'mantis' || id === 'phoenix') && o.tiers ? gearOn(m, o.tiers) : m; }
 
 // ───────────────────────── GEGNER (verschmolzen für Instancing) ─────────────────────────
 const sp = () => geo.sphere(12), cn = () => geo.cone(8), bx = () => geo.box(), cy = () => geo.cyl(8), cap = () => geo.caps();

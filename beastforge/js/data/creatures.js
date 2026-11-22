@@ -13,7 +13,8 @@ export const BASE_STATS = {
   support: { range: 0, rate: 0, dmg: 0, rng: 0, camo: false, protect: false },
   income: 0, dash: { every: 0, mul: 0 }, multi: 0, mark: 0, brk: 0, water: 0,
   cone: 0.7, cleave: 0, bounty: 0, lifeRegen: 0,
-  interest: 0, icap: 0, lucky: 0,   // Glückskatze: Zinsen auf gesparte Münzen (max. icap je Welle), Münzen je besiegtem Gegner in Reichweite
+  interest: 0, icap: 0, lucky: 0, rebirth: 0,   // Phönix: einmal pro Run bei 0 Leben mit so vielen Leben wiederauferstehen
+    // Glückskatze: Zinsen auf gesparte Münzen (max. icap je Welle), Münzen je besiegtem Gegner in Reichweite
 };
 
 export const CREATURES = {
@@ -414,6 +415,49 @@ CREATURES.neko = {
     50: { name: 'Glücksgöttin', desc: 'Meister: Glück +1, +30 je Welle', fx: { add: { lucky: 1, income: 30 } } },
   },
   mastery: { title: 'Glückskind', skins: [{ name: 'Mondkatze', pal: 'moon' }, { name: 'Sternenkatze', pal: 'star' }] },
+};
+
+// ───────────────────────── PHÖNIX (Feuer / Wiedergeburt) ─────────────────────────
+CREATURES.phoenix = {
+  id: 'phoenix', name: 'Phönix', role: 'Feuer / Wiedergeburt', elements: ['fire', 'light'],
+  color: '#ff8a2a', cost: 700, place: ['ground', 'high', 'water'], model: 'phoenix',
+  lore: 'Er verbrennt alle tausend Jahre zu Asche – und steigt heller wieder auf. Wo er kreist, verliert selbst die Nacht ihren Mut.',
+  base: { proj: 'phoenix', dmg: 5, rate: 1.25, range: 3.2, speed: 13, pierce: 2, dmgType: 'fire', 'burn.dps': 2, 'burn.dur': 2 },
+  forms: [
+    { id: 'chick', stage: 0, lvl: 1, cost: 0, name: 'Glutküken', desc: 'Wirft Glutfedern, die durch zwei Gegner fliegen und anzünden.' },
+    { id: 'firebird', stage: 1, lvl: 10, cost: 750, name: 'Feuervogel', desc: 'Schwingen aus Flammen. Mehr Schaden und Brand.', fx: { mul: { dmg: 1.35 }, add: { 'burn.dps': 2, pierce: 1, range: 0.2 } } },
+    { id: 'sunbird', stage: 2, lvl: 25, cost: 2700, name: 'Sonnenphönix', desc: 'Leuchtet wie die Morgensonne. Lichtschaden durchdringt Widerstände.', fx: { mul: { dmg: 1.5 }, add: { 'burn.dps': 4, range: 0.3 }, set: { pierceArmor: 0.4 } } },
+  ],
+  paths: [
+    { id: 'feathers', name: 'Glutfedern', icon: '🪶', tiers: [
+      { name: 'Scharfe Kiele', cost: 230, desc: '+2 Schaden', fx: { add: { dmg: 2 } } },
+      { name: 'Federfächer', cost: 520, desc: '3 Federn pro Wurf', fx: { add: { shots: 2, spread: 0.2 } } },
+      { name: 'Brennende Kiele', cost: 1200, desc: '+2 Durchschlag, Tempo ×1,2', fx: { add: { pierce: 2 }, mul: { rate: 1.2 } } },
+      { name: 'Federsturm', cost: 2800, desc: '5 Federn, +4 Schaden', fx: { add: { shots: 2, dmg: 4, spread: 0.1 } } },
+      { name: 'Flügel der Sonne', cost: 7200, desc: 'Schaden ×2,5, Tempo ×1,4', fx: { mul: { dmg: 2.5, rate: 1.4 } } },
+    ] },
+    { id: 'flame', name: 'Sonnenflamme', icon: '☀', tiers: [
+      { name: 'Glutherz', cost: 200, desc: 'Brand ×2', fx: { mul: { 'burn.dps': 2 } } },
+      { name: 'Hitzeflimmern', cost: 500, desc: 'Jede 5. Feder: Feuerball (Fläche)', fx: { set: { 'every.n': 5, 'every.mul': 3, 'every.aoe': 1.2, 'every.proj': 'fireball', 'every.dmgType': 'fire' } } },
+      { name: 'Sonnenwind', cost: 1150, desc: '+0,5 Reichweite, Brand länger', fx: { add: { range: 0.5, 'burn.dur': 2 } } },
+      { name: 'Flammenkrone', cost: 2700, desc: 'Brand ×2,5, Feuerball jede 3.', fx: { mul: { 'burn.dps': 2.5 }, set: { 'every.n': 3 } } },
+      { name: 'Zweite Sonne', cost: 7000, desc: 'Feuerbälle ×4, riesige Einschläge', fx: { mul: { 'every.mul': 4 }, add: { 'every.aoe': 1 } } },
+    ] },
+    { id: 'ash', name: 'Asche & Wiedergeburt', icon: '🔥', tiers: [
+      { name: 'Warme Asche', cost: 250, desc: '+2 Leben je Welle', fx: { add: { lifeRegen: 2 } } },
+      { name: 'Flammenkreis', cost: 600, desc: 'Aura: +10 % Schaden für Nachbarn', fx: { add: { 'support.range': 2.4, 'support.dmg': 0.1 } } },
+      { name: 'Glutwacht', cost: 1400, desc: '+4 Leben je Welle, Aura +8 % Tempo', fx: { add: { lifeRegen: 4, 'support.rate': 0.08 } } },
+      { name: 'Ewige Flamme', cost: 3000, desc: 'Aura +15 % Schaden, Nachbarn sehen Getarnte', fx: { add: { 'support.dmg': 0.15 }, set: { 'support.camo': true, camo: true } } },
+      { name: 'Wiedergeburt', cost: 7500, desc: 'Einmal pro Run: bei 0 Leben mit 100 Leben wiederauferstehen', fx: { add: { rebirth: 100, lifeRegen: 4 } } },
+    ] },
+  ],
+  ability: { id: 'sunrise', name: 'Sonnenaufgang', lvl: 8, stage: 1, cd: 55, desc: 'Ein Flammenrad: schwerer Feuerschaden und Brand in großem Umkreis, +5 Leben.' },
+  passives: {
+    20: { name: 'Glutkern', desc: '+15 % Brand', fx: { mul: { 'burn.dps': 1.15 } } },
+    40: { name: 'Lichtschwingen', desc: '+0,2 Reichweite', fx: { add: { range: 0.2 } } },
+    50: { name: 'Unsterblich', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } },
+  },
+  mastery: { title: 'Feuerhüter', skins: [{ name: 'Mondphönix', pal: 'moon' }, { name: 'Sternenphönix', pal: 'star' }] },
 };
 
 export const CREATURE_IDS = Object.keys(CREATURES);

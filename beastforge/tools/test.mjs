@@ -351,3 +351,19 @@ test('Täglich: Aufgaben je Tag, Fortschritt seit Tagesbeginn, Tageskampf gibt S
   const p0 = shinobiPoints(P).earned; P.daily.sp = 2; assert.equal(shinobiPoints(P).earned, p0 + 2);
   const D2 = ensureDaily(P, new Date(2026, 10, 22)); assert.equal(D2.sp, 2, 'Punkte bleiben am nächsten Tag'); assert.equal(D2.won, false);
 });
+
+test('Phönix: Glutfedern brennen, Wiedergeburt einmal pro Run, Sonnenaufgang', () => {
+  const P = defaultProfile(); P.chars.phoenix.level = 12;
+  const w = mkWorld(P).w; w.coins = 99999;
+  const t = w.place('phoenix', 3, 4.5).tower;
+  assert.ok(t.s.burn.dps > 0 && t.s.pierce >= 2 && t.s.dmgType === 'fire');
+  for (let i = 0; i < 5; i++) w.upgrade(t.id, 2);
+  assert.equal(t.s.rebirth, 100);
+  const e = w.spawn('slime', [], 0); w.lives = 1; w.leak(e);
+  assert.ok(!w.over && w.lives === 100, 'Wiedergeburt mit 100 Leben');
+  const e2 = w.spawn('slime', [], 0); w.lives = 1; w.leak(e2);
+  assert.ok(w.over, 'nur einmal pro Run');
+  const w2 = mkWorld(P).w; w2.coins = 99999; const t2 = w2.place('phoenix', 3, 4.5).tower; w2.evolve(t2.id);
+  const x = w2.spawn('golem', [], 0); x.x = t2.x + 1; x.y = t2.y; const hp = x.hp; t2.abCd = 0;
+  assert.ok(w2.useAbility(t2.id, 'ab').ok); assert.ok(x.hp < hp && x.burnT > 0);
+});

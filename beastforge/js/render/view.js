@@ -358,6 +358,14 @@ export class GameView {
       case 'stun': { const [x, z] = at(ev.e.x, ev.e.y); for (let i = 0; i < 3; i++) P.spawn(x + Math.cos(i * 2.1) * 0.2, 0.8, z + Math.sin(i * 2.1) * 0.2, 0, 0.2, 0, 0xffe14d, 0.14, 0.6); break; }
       case 'heal': case 'shield': case 'cry': { const [x, z] = at(ev.x, ev.y); const c = ev.t === 'heal' ? 0x7aff9a : ev.t === 'shield' ? 0xb07bff : 0xff4a3a; this.rings.add(x, 0.06, z, 0.2, ev.r, c, 0.6); P.burst(x, 0.6, z, c, 10, 1.4, 0.16, 0.6, { lift: 0.8 }); break; }
       case 'leak': this.stage.addShake(ev.e.boss ? 1 : 0.25); break;
+      case 'rebirth': { // Wiedergeburt: Aschesäule, Sonnenblitz, Feuerwelle
+        const t = ev.tower, [x, z] = at(t.x, t.y);
+        this.pillars.add(x, z, 1.2, 14, 0xffb43a, 2.2); this.flashes.add(x, 1.5, z, 0xffe27a, 6, 0.6);
+        for (let i = 0; i < 4; i++) this.after(i * 0.15, () => this.rings.add(x, 0.07, z, 0.3, 5 + i, i % 2 ? 0xff7a2a : 0xffe27a, 0.8));
+        P.burst(x, 0.6, z, [0xffd27a, 0xff7a2a, 0x3a2a28, 0xffffff], 120, 6, 0.3, 1.4, { up: 2.5, grav: 1 });
+        this.floaters.add(x, 1.8, z, 'WIEDERGEBURT! +' + ev.lives + ' ❤', 'crit', 2.2);
+        this.flashSky = 1; this.stage.addShake(1.2); this.stage.focus = new THREE.Vector3(x, 0, z); this.stage.zoomPunch = 1; break;
+      }
       case 'place': {
         const t = ev.tower, [x, z] = at(t.x, t.y), h = this.ty(t);
         this.rings.add(x, h + 0.04, z, 0.2, 0.9, 0xffffff, 0.4); P.burst(x, h + 0.1, z, [0xd8c8a0, 0xffffff], 14, 2, 0.18, 0.5, { flat: true });
@@ -415,6 +423,14 @@ export class GameView {
   ability(ev) {
     const P = this.parts, t = ev.tower, [tx, tz] = this.toW(t.x, t.y);
     switch (ev.id) {
+      case 'sunrise': { // Flammenrad: Sonnenscheibe steigt auf, Feuerring rollt nach außen, Funkenstrahlen
+        this.pillars.add(tx, tz, 0.6, 5, 0xffb43a, 0.9); this.flashes.add(tx, 1.2, tz, 0xffd27a, 3, 0.35);
+        for (let i = 0; i < 3; i++) this.after(i * 0.12, () => { this.rings.add(tx, 0.07, tz, 0.3, ev.r * (0.7 + i * 0.15), i ? 0xff7a2a : 0xffe27a, 0.55); });
+        this.rings.add(tx, 0.05, tz, 0.3, ev.r, 0xff5a10, 0.7, { disc: true, alpha: 0.35 });
+        for (let i = 0; i < 36; i++) { const a = i / 36 * PI * 2; this.sparks.add(tx, 0.5, tz, Math.cos(a) * 14, 1.5, Math.sin(a) * 14, i % 2 ? 0xffe27a : 0xff7a2a, 0.35, 0.05); }
+        P.burst(tx, 0.4, tz, [0xffd27a, 0xff7a2a, 0xff3a10], 60, 5, 0.22, 0.8, { flat: true });
+        this.flashSky = 0.35; this.stage.addShake(0.6); break;
+      }
       case 'goldrain': {
         this.rings.add(tx, 0.06, tz, 0.2, 2.6, 0xffd257, 0.7);
         for (let i = 0; i < 40; i++) setTimeout(() => this.parts.spawn(tx + (Math.random() - 0.5) * 3, 3 + Math.random(), tz + (Math.random() - 0.5) * 3, 0, -3, 0, Math.random() < 0.7 ? 0xffd257 : 0xfff2b0, 0.12, 1.2, { grav: 2 }), i * 25);

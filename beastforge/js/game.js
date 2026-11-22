@@ -98,7 +98,7 @@ export class Game {
     this.onUp = e => {
       const d = down; down = null; const rel = this.rel; this.rel = null;
       const onMap = document.elementFromPoint(e.clientX, e.clientY) === cv;
-      if (this.dragging) { this.dragging = false; if (!onMap) { this.cancelPlace(); return; } const p = this.groundAt(e.clientX, e.clientY); if (p) this.setGhost(p); this.releaseGhost(); return; }
+      if (this.dragging) { this.dragging = false; if (!onMap) { this.cancelPlace(); return; } this.releaseGhost(); return; }   // genau dort lassen, wo die Vorschau angezeigt wurde (nicht unter dem Finger)
       if (!d) return;
       if (this.placing) { if (rel && !onMap) { this.cancelPlace(); return; } this.releaseGhost(); return; }
       if (e.target !== cv) return;
@@ -243,6 +243,7 @@ export class Game {
       case 'kill': if (e.e.boss || e.e.miniboss || e.e.kind === 'golem' || e.e.def.big) A.play('bigdie'); else { A.play('pop', { layer: e.e.def.layer || 0 }); A.play('coin'); } break;
       case 'leak': A.play('leak'); break; case 'react': A.play('react'); break;
       case 'upgrade': A.play(e.tier === 5 ? 'tier5' : 'upgrade', { tier: e.tier }); break;
+      case 'rebirth': A.play('ult'); A.play('evolve'); break;
       case 'evolve': A.play('evolve'); break; case 'sell': A.play('sell'); break; case 'rock': A.play('boom'); break;
       case 'wave': A.play('wave'); break; case 'waveEnd': A.play('waveEnd'); break;
       case 'bossWarn': A.play('bossWarn'); break; case 'bossPhase': A.play('roar'); break; case 'breath': A.play('breath'); break; case 'bossDie': A.play('roar'); break;

@@ -52,7 +52,7 @@ Ziel: Spielgefühl und Umfang eines Top-Tower-Defense – mit eigener Welt, eige
 1. **Echter Spieltest auf dem iPhone** → Balance, Lesbarkeit, **Leistung mit den neuen Modellen**.
 2. ✅ Kreaturen 6–8 · ✅ Karte 2 · ✅ Helden Raizen + Mika
 3. ✅ Karte 3 „Glutkrater“ + Feuerdämon/Schildträger
-4. **Kreaturen 9–12**: Schlangenmagier, Windmönch, Phönix (Wiederbelebung), Leerenkatze (Realitätsschaden).
+4. **Kreaturen 9–12**: ✅ Phönix (v0.16) · offen: Schlangenmagier, Windmönch, Leerenkatze (Realitätsschaden).
 5. **Helden 4–5**: Akuma (Oni-Krieger), Sora (Himmelskriegerin).
 6. **Bosse 2–5**: Leerenkaiser (stört Türme), Titan, Seuchenkönigin (Adds), Himmelsbestie (sehr schnell).
 7. **Modi**: Boss-Rush, Herausforderungen mit Modifikatoren, Zufallsmodus, härteste Stufe „Seelenbrand“ (eigener Name).
