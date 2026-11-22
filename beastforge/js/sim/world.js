@@ -920,6 +920,48 @@ export class World {
         for (const e of this.enemies) if (e.alive) { e.slowPct = Math.max(e.slowPct, 0.7); e.slowT = Math.max(e.slowT, 6); }
         this.lives = Math.min(this.maxLives, this.lives + 15); break;
       }
+      case 'petals': {   // Hana: Klingenwirbel im Umkreis 3 + Blutung
+        const A = HEROES[t.cid].abilities.petals, ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 3);
+        if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'petals', tower: t, r: 3 }); this.say(t, 'ability');
+        for (const e of ts) { this.damage(e, s.dmg * A.mul, 'phys', t, { big: true }); if (e.alive) { e.burnDps = Math.max(e.burnDps, s.dmg * 1.5); e.burnT = Math.max(e.burnT, 4); e.burnSrc = t; e.burnType = 'phys'; } }
+        break;
+      }
+      case 'thousand': {   // Hana: 12 stärkste Gegner der Karte
+        const ts = this.enemies.filter(e => e.alive).sort((a, b) => b.hp - a.hp).slice(0, 12);
+        if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'thousand', tower: t, targets: ts.map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ult');
+        for (const e of ts) this.damage(e, s.dmg * HEROES[t.cid].abilities.thousand.mul, 'phys', t, { big: true });
+        break;
+      }
+      case 'wall': {   // Gorō: Steinwall – Erstarren im Umkreis
+        const A = HEROES[t.cid].abilities.wall;
+        this.emit({ t: 'ability', id: 'wall', tower: t, r: 3.2 }); this.say(t, 'ability');
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 3.2) { this.damage(e, s.dmg * A.mul, 'earth', t, { big: true }); if (e.alive) { if (e.boss) { e.slowPct = Math.max(e.slowPct, 0.5); e.slowT = Math.max(e.slowT, 3); } else e.stunT = Math.max(e.stunT, 3); } }
+        break;
+      }
+      case 'meteor': {   // Gorō: Meteor in die dichteste Gruppe
+        let best = null, bn = 0;
+        for (const e of this.enemies) { if (!e.alive) continue; let n = 0; for (const o of this.enemies) if (o.alive && Math.hypot(o.x - e.x, o.y - e.y) < 2.5) n += o.boss ? 5 : 1; if (n > bn) { bn = n; best = e; } }
+        if (!best) { ok = false; break; }
+        const x = best.x, y = best.y; this.emit({ t: 'ability', id: 'meteor', tower: t, x, y, r: 2.5 }); this.say(t, 'ult');
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - x, e.y - y) < 2.5) { this.damage(e, s.dmg * HEROES[t.cid].abilities.meteor.mul, 'earth', t, { big: true }); if (e.alive) { e.burnDps = Math.max(e.burnDps, s.dmg * 2); e.burnT = Math.max(e.burnT, 4); e.burnSrc = t; e.burnType = 'fire'; } }
+        break;
+      }
+      case 'veil': {   // Yoru: Mondschleier – enttarnen + verwundbar
+        const ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 4);
+        if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'veil', tower: t, r: 4 }); this.say(t, 'ability');
+        for (const e of ts) { e.vuln = Math.max(e.vuln, 0.5); e.vulnT = Math.max(e.vulnT, 8); e.revealT = Math.max(e.revealT, 8); }
+        break;
+      }
+      case 'starfall': {   // Yoru: 30 Sterne auf zufällige Gegner
+        const al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        const ts = []; for (let i = 0; i < 30; i++) ts.push(al[Math.floor(this.rng() * al.length)]);
+        this.emit({ t: 'ability', id: 'starfall', tower: t, targets: ts.map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ult');
+        for (const e of ts) if (e.alive) this.damage(e, s.dmg * HEROES[t.cid].abilities.starfall.mul, 'astral', t, { big: true });
+        break;
+      }
       case 'whirl': {
         if (!this.enemies.length) { ok = false; break; }
         this.emit({ t: 'ability', id: 'whirl', tower: t }); this.say(t, 'ult');

@@ -423,6 +423,31 @@ const HEROES3D = {
     R.attach(hb, lotus, head.clone().add(new THREE.Vector3(0.1, 0.33, 0)));
     const orb = mk(geo.sphere(12), glow(0xff9ac8, 0.85), { s: 0.06 }); R.root.add(orb); anim.push(t => { orb.position.set(0.32 + Math.sin(t) * 0.03, 0.75 + Math.sin(t * 2) * 0.05, 0.12); });
   } }),
+  // Hana: Kunoichi in Kirschblüten-Rosa, Haarknoten mit Blüte, Katana auf dem Rücken, Blütenblätter umkreisen sie
+  hana: o => hero('kk_ninja', o, { tint: [0xff8ab8, 0.45], em: 0x200810, col: 0xff7ab0, atk: 'slash', build(R, head, hb, form, anim) {
+    R.attach(hb, mk(geo.sphere(10), toon(0x2a1a2a), { s: [0.09, 0.08, 0.09], ol: 0.005 }), head.clone().add(new THREE.Vector3(0, 0.27, -0.06)));
+    const fl = new THREE.Group(); for (let i = 0; i < 5; i++) { const q = i / 5 * PI * 2; fl.add(mk(geo.sphere(8), toon(0xffc8dc, { emissive: 0xff7ab0, emissiveIntensity: 0.3 }), { p: [Math.cos(q) * 0.04, Math.sin(q) * 0.04, 0], s: [0.035, 0.035, 0.012], ol: 0.003 })); } fl.add(mk(geo.sphere(6), toon(0xffe14d), { s: 0.018, ol: false }));
+    R.attach(hb, fl, head.clone().add(new THREE.Vector3(0.09, 0.28, 0.02)));
+    const sword = new THREE.Group(); sword.add(mk(geo.box(), toon(0xe8eef8, { emissive: 0x6a7a9a, emissiveIntensity: 0.3 }), { p: [0, 0.22, 0], s: [0.025, 0.42, 0.012], ol: 0.004 })); sword.add(mk(geo.box(), toon(0xd8342c), { p: [0, -0.04, 0], s: [0.03, 0.12, 0.03], ol: 0.004 })); sword.add(mk(geo.cyl(10), toon(0xffd257), { p: [0, 0.02, 0], s: [0.05, 0.012, 0.05], ol: 0.003 }));
+    sword.position.set(0.17, 0.42, -0.1); sword.rotation.set(0.2, 0, -0.9); R.root.add(sword);
+    const petals = []; for (let i = 0; i < (form ? 8 : 4); i++) { const p = mk(geo.sphere(6), toon(0xffb8d4, { emissive: 0xff6aa0, emissiveIntensity: 0.3 }), { s: [0.03, 0.008, 0.02], ol: false }); R.root.add(p); petals.push(p); }
+    anim.push(t => petals.forEach((p, i) => { const q = t * 1.2 + i * PI * 2 / petals.length; p.position.set(Math.cos(q) * 0.3, 0.3 + Math.sin(t * 2 + i) * 0.15, Math.sin(q) * 0.3); p.rotation.set(t * 3 + i, t * 2, 0); }));
+  } }),
+  // Gorō: breiter Steinmönch in Erdtönen, Gebetskette aus Felsperlen, schwebende Steine
+  goro: o => hero('kk_raizen', o, { tint: [0x9a7a58, 0.6], em: 0x1a1006, col: 0xc8a070, atk: 'magic', build(R, head, hb, form, anim) {
+    const beads = new THREE.Group(); for (let i = 0; i < 12; i++) { const q = i / 12 * PI * 2; beads.add(mk(geo.dodec(), toon(i % 4 ? 0x8a7a68 : 0xc8a070), { p: [Math.cos(q) * 0.16, 0, Math.sin(q) * 0.14], s: 0.03, ol: 0.004 })); }
+    beads.position.set(0, 0.52, 0.02); beads.rotation.x = 0.35; R.root.add(beads);
+    R.attach(hb, mk(geo.cyl(12), toon(0x6a5a48), { s: [0.17, 0.015, 0.17], ol: 0.004 }), head.clone().add(new THREE.Vector3(0, 0.25, 0)));
+    const rocks = []; for (let i = 0; i < (form ? 5 : 3); i++) { const r = mk(geo.dodec(), toon(0x9a8a78), { s: 0.045 + (i % 2) * 0.02, ol: 0.005 }); R.root.add(r); rocks.push(r); }
+    anim.push(t => rocks.forEach((r, i) => { const q = t * 0.7 + i * PI * 2 / rocks.length; r.position.set(Math.cos(q) * 0.36, 0.5 + Math.sin(t * 1.4 + i) * 0.08, Math.sin(q) * 0.36); r.rotation.set(t + i, t * 0.6, 0); }));
+  } }),
+  // Yoru: Magierin in Nachtblau mit Mondsichel über dem Kopf und kreisenden Sternen
+  yoru: o => hero('kk_mage', o, { tint: [0x3a4a9a, 0.55], em: 0x0a0a20, col: 0x9fb4ff, atk: 'cast', build(R, head, hb, form, anim) {
+    const moon = mk(new THREE.TorusGeometry(1, 0.16, 8, 24, PI * 1.3), glow(0xe8ecff, 0.9), { r: [0, 0, PI * 0.35], s: 0.09, ol: false });
+    R.attach(hb, moon, head.clone().add(new THREE.Vector3(0.12, 0.52, 0.02)));
+    const stars = []; for (let i = 0; i < (form ? 7 : 4); i++) { const st = mk(geo.ico(0), glow(i % 2 ? 0xfff2a8 : 0x9fb4ff, 0.95), { s: 0.03, ol: false }); R.root.add(st); stars.push(st); }
+    anim.push(t => stars.forEach((st, i) => { const q = -t * 0.9 + i * PI * 2 / stars.length; st.position.set(Math.cos(q) * 0.32, 0.6 + Math.sin(t * 2.2 + i) * 0.1, Math.sin(q) * 0.32); st.rotation.y = t * 3; }));
+  } }),
 };
 
 // Glückskatze (Maneki-Neko): sitzt, winkt beim „Angriff“; Form = Fellfarbe + Schmuck
@@ -450,7 +475,7 @@ function neko(o) {
 }
 
 export const GLB_CREATURES = { kitsune, deer, raven, dragonwolf, golem, tiger, neko, ...HEROES3D };
-const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', neko: 'cat', kairo: 'kk_ninja', raizen: 'kk_raizen', mika: 'kk_mage' };
+const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', neko: 'cat', kairo: 'kk_ninja', raizen: 'kk_raizen', mika: 'kk_mage', hana: 'kk_ninja', goro: 'kk_raizen', yoru: 'kk_mage' };
 export function buildGlb(id, o) { if (!(ready && GLB_CREATURES[id] && ASSETS[SRC[id]])) return null; try { return GLB_CREATURES[id](o); } catch (e) { console.warn(e.message); return null; } }
 
 // ───────── Bosse / Mini-Bosse ─────────

@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.22.0 – Himmelsinseln und Boss Fūjin
+## Stand: v0.23.0 – Drei neue Helden
+**0.23:** Helden 4–6 in `data/heroes.js`, Figuren in `HEROES3D` (assets.js, KayKit-Modelle umgefärbt + eigenes Zubehör, Rückfall in models.js): **Hana, Blütenklinge** (Konto-Lv 11, Nahkampf `atk:'slash'`, Fähigkeit `petals` Blütensturm mit Blutung, Ultimate `thousand` trifft die 12 stärksten Gegner), **Gorō, Steinmönch** (Lv 13, Erdstoß `pulse` mit Betäubung, Aura schützt vor Boss-Lähmung `support.protect`, Fähigkeit `wall` Steinwall 3 s Erstarren, Ultimate `meteor` in die dichteste Gruppe), **Yoru, Mondmagierin** (Lv 15, Astralsterne mit Verwundbarkeit `mark`, Aura +Reichweite, Fähigkeit `veil` enttarnt + 50 % Verwundbarkeit, Ultimate `starfall` 30 Sterne). Alte Spielstände bekommen neue Helden über `migrate`.
+
+## v0.22.0 – Himmelsinseln und Boss Fūjin
 **0.22:** Neue Karte **Himmelsinseln** `sky` (Konto-Lv 12, Schwer, `hpMul` 1,1): Rasterzeichen `V` offener Himmel (nicht bebaubar, kein Feld, Höhe −3) und `B` Brücke (Pfad über `V`, wird in `build()` automatisch gesetzt). mapview: tiefe Inselklippen (`theme.isles`), Holzbrücken mit Pfosten/Seilen und Wolkenmeer (`buildClouds`) statt Waldrand. Windböen `map.gust` alle 20 s für 4 s (`world.updGust`/`gustT`): Bodengegner auf Brücken werden zurückgedrückt (`back`), Fliegende ×1,15; Ereignis `gust` → Banner + Windstreifen. Ab Welle 4 zusätzliche Irrlichter. Neuer Boss **Fūjin, Sturmeule** (`fujin`/2/3, Modell `owl`, schwebt immer, Blitzschrei `breathColor` gelb, ruft Irrlichter); `buildBig` mit `CLIP_ALIAS` (fehlende Animationen → idle/call). Erfolg „Über den Wolken“. Bot: Normal Lv5 4/4, Schwer Lv30 Ø Welle 37.
 
 ## v0.21.0 – Frosttempel und Boss Hyōga

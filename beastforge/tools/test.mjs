@@ -449,3 +449,17 @@ test('Himmelsinseln: offener Himmel nicht bebaubar, Brücken, Windböe drückt z
   assert.ok(w2.spawners.some(s => s.e === 'fujin'), 'Boss auf den Himmelsinseln ist Fūjin');
   void L;
 });
+
+test('Neue Helden Hana, Gorō, Yoru: Grundangriff, Fähigkeiten, alte Spielstände bekommen die Helden', () => {
+  const old = defaultProfile(); delete old.heroes.hana; const P = migrate(JSON.parse(JSON.stringify(old)));
+  assert.ok(P.heroes.hana && P.heroes.goro && P.heroes.yoru, 'Migration legt neue Helden an');
+  for (const [hid, ab, ult] of [['hana', 'petals', 'thousand'], ['goro', 'wall', 'meteor'], ['yoru', 'veil', 'starfall']]) {
+    const { w } = mkWorld(defaultProfile(), { hero: hid }); w.coins = 1e6;
+    const h = w.place(hid, ...w.suggestSpot(hid, 2)).tower; assert.ok(h?.hero, hid + ' platziert');
+    w.heroXp(h, 1e7); assert.equal(h.hlvl, 20);
+    const es = [0, 1, 2].map(i => { const e = w.spawn('golem', [], 0); e.x = h.x + 0.6 + i * 0.3; e.y = h.y; return e; });
+    const hp = es.map(e => e.hp);
+    assert.ok(w.useAbility(h.id, 'ab').ok !== false, hid + ' Fähigkeit'); assert.ok(w.useAbility(h.id, 'ult').ok !== false, hid + ' Ultimate');
+    assert.ok(es.some((e, i) => e.hp < hp[i] || e.vuln > 0), hid + ' wirkt');
+  }
+});

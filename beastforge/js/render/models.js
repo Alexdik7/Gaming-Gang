@@ -611,7 +611,7 @@ function mika(o) {
   return { root, tick, height: 1.1 };
 }
 
-const BUILDERS = { kitsune: fox, tiger, turtle: turtleX, deer, raven, kairo, dragonwolf, mantis: mantisX, phoenix: phoenixX, naga, monk, voidcat, golem, raizen, mika };
+const BUILDERS = { kitsune: fox, tiger, turtle: turtleX, deer, raven, kairo, dragonwolf, mantis: mantisX, phoenix: phoenixX, naga, monk, voidcat, golem, raizen, mika, hana: kairo, goro: raizen, yoru: mika };
 // Fusion: Körper von A (Stufe 3, etwas größer) + Kristallkrone, Halo und kreisende Splitter in der Farbe von B
 function fusionModel(def, o) {
   const A = CREATURES[def.parents[0]], B = CREATURES[def.parents[1]];
