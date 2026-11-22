@@ -627,3 +627,14 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .t5txt span { font-size: 14px; font-weight: 800; color: #fff; text-shadow: 0 2px 0 #10162a; }
 @keyframes t5in { 0% { opacity: 0; } 8% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes t5spin { to { transform: rotate(40deg); } } @keyframes t5pop { from { transform: scale(.3) rotate(-10deg); } } @keyframes t5slide { from { transform: translateX(40px); opacity: 0; } }
+
+/* Ahnenform */
+.ascend { display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; text-align: left; padding: 6px 8px 6px 6px; border-radius: 12px; border: 3px solid #10162a; color: #fff;
+  background: linear-gradient(90deg, #ffd257, #ff8a2a 60%, #c83a8a); box-shadow: 0 4px 0 rgba(0,0,0,.4), 0 0 22px rgba(255,210,87,.6); animation: fglow 1.4s ease-in-out infinite alternate; --fa: #ffd257; }
+.ascend .aseal { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; background: radial-gradient(circle at 35% 30%, #fff6c8, #ffb43a); border: 2px solid #10162a; }
+.ascend b { font-family: var(--cartoon); font-weight: 400; font-size: 15px; text-shadow: var(--ol); letter-spacing: .5px; display: block; } .ascend small { font-size: 10.5px; font-weight: 800; color: #3a1a00; display: block; }
+.ascend .price { font-family: var(--cartoon); font-size: 16px; text-shadow: var(--ol); }
+.ascend.off { background: rgba(10,30,60,.45); border: 2px dashed rgba(255,210,87,.6); box-shadow: none; animation: none; grid-template-columns: 40px 1fr; } .ascend.off small { color: #ffe9b0; } .ascend.off .aseal { filter: grayscale(.6); }
+#panel .ascend { order: 2; }
+.t5.asc .t5txt b { font-size: clamp(34px, 7vw, 62px); }
+@media (orientation: landscape) { #panel .ascend { order: 1; } #panel .evo { order: 3; } #panel .fuses { order: 4; } }

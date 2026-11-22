@@ -197,6 +197,10 @@ export class Hud {
         return `<div class="prow2" style="--pc:${PATH_COLORS[i]}"><div class="pl"><b>${p.icon} ${esc(p.name)}</b><div class="pips">${pips}</div><small>${esc(cur)}</small></div>${right}</div>`;
       }).join('');
       // Fusionen: Partner daneben stellen, beide erwecken → verschmelzen
+      const ai = w.ascendInfo(t);
+      const asc = ai ? (ai.ok ? `<button class="ascend" data-ascend><span class="aseal">⛩</span><div><b>Ahnenform erwecken</b><small>${esc(ai.name)} · Grad ${ai.grade} · verschmilzt ${ai.n} Kreaturen</small></div><span class="price">◈ ${fmt(ai.cost)}</span></button>`
+        : `<div class="ascend off"><span class="aseal">⛩</span><div><b>Ahnenform</b><small>${esc(ai.why)} · ${ai.have.map((h, i) => (h ? '✓' : '✗') + ' ' + esc(def.paths[i].name)).join(' · ')}</small></div></div>`) : '';
+      if (t.ascended) { title = 'Ahnen-' + def.name; sub = '⛩ Ahnenform · Grad ' + t.ascended; }
       const fus = w.fuseOptions(t).map(o => o.ok
         ? `<button class="fuse" data-fuse="${o.f.id}" style="--fa:${o.def.color}"><img src="${portrait(o.f.id)}" alt=""><div><b>⚭ Fusion: ${esc(o.def.name)}</b><small>mit ${esc(CREATURES[o.other].name)} · ${esc(o.def.role)}</small></div><span class="price">◈ ${fmt(o.cost)}</span></button>`
         : `<div class="fuse off" style="--fa:${o.def.color}"><img src="${portrait(o.f.id)}" alt=""><div><b>⚭ ${esc(o.def.name)}</b><small>${esc(o.why)}</small></div></div>`).join('');
@@ -204,7 +208,7 @@ export class Hud {
       const ab = w.abilityInfo(t).map(a => `<div class="abi ${a.ready ? 'on' : ''}"><b>${a.slot === 'ult' ? '★ ' : ''}${esc(a.name)}</b> <small>${a.ready ? (a.left > 0 ? Math.ceil(a.left) + ' s' : 'bereit') : '🔒 ' + esc(a.need)}</small></div>`).join('');
       body = `<div class="xpline"><b>${esc(def.name)} Lv ${c.level}</b><div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / need * 100}%"></u></div><small>${c.level >= 50 ? 'MAX' : fmt(c.xp) + ' / ' + fmt(need) + ' XP'}${nx ? ' · ' + esc(nx.name) + ' bei Lv ' + nx.lvl : ''}</small></div>
         <div class="chips">${chips}${s.camo ? '<span>👁 Erkennung</span>' : ''}${!s.flying ? '<span class="warn">⛔ keine Fliegenden</span>' : ''}${t.disabledT > 0 ? '<span class="warn">🔥 Gestört!</span>' : ''}${t.pack > 1 ? `<span class="pack" title="Rudel-Bonus">🐾 Rudel ${t.pack} · <b>×${s.packMul.toFixed(2)}</b></span>` : ''}${def.fusion ? '<span class="fz">⚭ Fusion</span>' : ''}</div>${auraTxt}<!--main-->
-        ${evo}${fus ? `<div class="fuses">${fus}</div>` : ''}<div class="prows">${rows}</div>${ab ? `<div class="abis">${ab}</div>` : ''}`;
+        ${t.ascended ? '' : evo}${asc}${fus ? `<div class="fuses">${fus}</div>` : ''}<div class="prows">${rows}</div>${ab ? `<div class="abis">${ab}</div>` : ''}`;
     }
     const [info, main] = body.split('<!--main-->');
     el.innerHTML = `<div class="pinfo"><div class="ph"><img src="${this.icon(t)}" alt=""><div class="nm"><b>${esc(title)}</b><small>${sub}</small></div><button class="x" data-x>✕</button></div>${info}
@@ -215,6 +219,7 @@ export class Hud {
     el.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const i = TARGETS.indexOf(t.target), n = TARGETS.length; w.setTarget(t.id, TARGETS[(i + +b.dataset.tg + n) % n]); this.g.app.audio.play('click'); this.refreshPanel(); });
     el.querySelector('[data-sell]').onclick = guard(() => this.confirm('Verkaufen?', `Du bekommst ◈${fmt(t.spent * BAL.run.sellRefund)} zurück. Die Charakter-XP bleiben erhalten.`, 'Verkaufen', () => { w.sell(t.id); this.g.select(null); }));
     el.querySelectorAll('[data-up]').forEach(b => b.onclick = guard(() => { const r = w.upgrade(t.id, +b.dataset.up); if (!r.ok) this.err(r.why); else this.coachEvent('upgrade'); this.refreshPanel(); }));
+    el.querySelector('[data-ascend]')?.addEventListener('click', guard(() => { const r = w.ascend(t.id); if (!r.ok) this.err(r.why); else this.g.select(r.tower); }));
     el.querySelectorAll('[data-fuse]').forEach(b => b.onclick = guard(() => { const r = w.fuse(t.id, b.dataset.fuse); if (!r.ok) this.err(r.why); else { this.g.select(r.tower); this.toast('evo', '⚭ Fusion gelungen!', CREATURES[r.tower.cid].name + ' ist erwacht'); } }));
     const ev = el.querySelector('[data-evo]'); if (ev) ev.onclick = guard(() => { const r = w.evolve(t.id); if (!r.ok) this.err(r.why); this.refreshPanel(); });
   }
@@ -244,10 +249,16 @@ export class Hud {
       case 'leak': this.flash(0.15, '#ff2040'); break;
       case 'gust': this.banner('🌬 WINDBÖE', 'Bodengegner auf Brücken werden zurückgedrückt · Fliegende schneller', 'boss'); break;
       case 'upgrade': if (e.tier === 5) this.t5Splash(e); break;
+      case 'ascend': this.ascendSplash(e); break;
       case 'storm': if (e.on) this.banner('❄ SCHNEESTURM ❄', 'Gegner langsamer · Eiskreaturen schneller · andere frieren', 'boss'); else this.toast('syn', 'Der Sturm legt sich', ''); break;
       case 'rebirth': this.flash(0.5, '#ffb43a'); this.banner('WIEDERGEBURT', 'Der Phönix schenkt dir ' + e.lives + ' Leben', 'evo'); break;
       case 'early': this.toast('syn', `+◈${e.coins} früh gerufen`, ''); break;
     }
+  }
+  ascendSplash(e) {
+    const d = document.createElement('div'); d.className = 't5 asc'; d.style.setProperty('--pc', '#ffd257');
+    d.innerHTML = `<div class="t5rays"></div><img src="${this.icon(e.tower)}" alt=""><div class="t5txt"><small>⛩ AHNENFORM · GRAD ${e.grade}</small><b>${esc(e.name)}</b><span>Alle drei Stufe-5-Kräfte vereint · neue Ultimate „Ahnenzorn“</span></div>`;
+    document.getElementById('hud').appendChild(d); setTimeout(() => d.remove(), 3400);
   }
   // Stufe-5-Kauf: Vollbild-Einblendung mit neuem Aussehen, Name und Pfadfarbe
   t5Splash(e) {

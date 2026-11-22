@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.30.0 – Alle 20 Kreaturen mit sichtbaren Upgrades
+## Stand: v0.31.0 – Ahnenform (Ultra-Entwicklung)
+**0.31:** Paragon-Prinzip: Stehen für jeden der 3 Pfade Kreaturen derselben Art mit Stufe 5 auf der Karte, kann man sie im Upgrade-Fenster zur **Ahnenform** verschmelzen (`world.ascendInfo`/`ascend`, Kosten Kaufpreis × `BAL.run.ascendCost` = 40). Alle Kreaturen dieser Art werden geopfert; **Ahnen-Grad 1–100** aus investierten Münzen, Siegen und Anzahl. Werte: alle drei Stufe-5-Pfade gleichzeitig (`tiers` = [5,5,5]), Schaden ×2 × (1 + Grad·2 %), +Tempo, +Reichweite, Erkennung, Bossschaden ×1,5 (`stats.baseStats` über `t.ascended`). Neue Ultimate „Ahnenzorn“ (`ancestral`, ganze Karte). Optik: alle drei Stufe-5-Optiken, Modell ×1,45, goldene Aura + Runenring + Lichtsäule; Zwischensequenz `ascend` (Lichtstrahlen von den Geopferten, Säulen, Zeitlupe, Zoom) + Vollbild-Einblendung `hud.ascendSplash`. Eine Ahnenform pro Kreaturart.
+
+## v0.30.0 – Alle 20 Kreaturen mit sichtbaren Upgrades
 **0.30:** `KIT` für Phönix, Schlangenmagierin, Windmönch, Leerenkatze, Kappa, Komainu und Kirin (mit Kopfpositionen `head`). Damit zeigt jede der 20 Grund-Kreaturen alle 15 Pfadstufen sichtbar (Kitsune über eigene `LOOKS`, die anderen über den Baukasten). Fusionen erben die Optik ihres Körpers.
 
 ## v0.29.0 – Upgrade-Optik für Drachenwolf, Mantis, Golem, Glückskatze

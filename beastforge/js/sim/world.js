@@ -227,6 +227,34 @@ export class World {
   }
   // Rückstoß: höchstens BAL.run.knockCap Felder pro Gegner insgesamt (verhindert endlose Pattsituationen)
   knock(e, amt) { const a = Math.min(amt, BAL.run.knockCap - (e.kb || 0)); if (a <= 0) return; e.kb = (e.kb || 0) + a; e.d = Math.max(0, e.d - a); this.posAt(e.d, e, e.pi); }
+  // ───────── Ahnenform: 3× Stufe 5 (je ein Pfad) derselben Kreatur verschmelzen ─────────
+  ascendInfo(t) {
+    if (!t || t.hero || t.ascended || CREATURES[t.cid]?.fusion) return null;
+    const same = this.towers.filter(o => o.cid === t.cid && !o.hero), def = CREATURES[t.cid];
+    if (!same.some(o => o.tiers.includes(5))) return null;   // erst zeigen, wenn es eine Stufe 5 gibt
+    const have = [0, 1, 2].map(p => same.some(o => o.tiers[p] === 5));
+    const spent = same.reduce((a, o) => a + o.spent, 0), kills = same.reduce((a, o) => a + o.kills, 0);
+    const grade = Math.max(1, Math.min(100, 1 + Math.floor(spent / 1500) + Math.floor(kills / 150) + (same.length - 3) * 3));
+    const cost = Math.round(def.cost * BAL.run.ascendCost);
+    let why = '';
+    if (this.towers.some(o => o.ascended && o.cid === t.cid)) why = 'Nur eine Ahnenform pro Kreatur';
+    else if (!have.every(Boolean)) why = 'Braucht Stufe 5 auf allen 3 Pfaden (je eine ' + def.name + ')';
+    else if (this.mods.basic) why = 'Herausforderung: nur Grundformen';
+    else if (this.coins < cost) why = 'Zu wenig Münzen';
+    return { ok: !why, why, cost, grade, have, n: same.length, name: 'Ahnen-' + def.name };
+  }
+  ascend(id) {
+    const t = this.tower(id), info = this.ascendInfo(t); if (!info) return { ok: false, why: 'Nicht möglich' }; if (!info.ok) return { ok: false, why: info.why };
+    const same = this.towers.filter(o => o.cid === t.cid && !o.hero && o !== t), from = same.map(o => ({ x: o.x, y: o.y }));
+    this.coins -= info.cost;
+    for (const o of same) { t.spent += o.spent; t.kills += o.kills; t.dmg += o.dmg; this.towers.splice(this.towers.indexOf(o), 1); }
+    t.spent += info.cost; t.ascended = info.grade; t.tiers = [5, 5, 5]; t.stage = Math.max(t.stage, maxStage(t.cid, this.levelOf(t.cid), this.branchOf(t.cid)));
+    t.abCd = 0; t.ultCd = 0; t.buffs = [];
+    this.stats.ascends = (this.stats.ascends || 0) + 1; this.hooks.stat?.('ascends', 1);
+    this.dirty = true; this.refresh();
+    this.emit({ t: 'ascend', tower: t, from, grade: info.grade, name: info.name });
+    return { ok: true, tower: t, grade: info.grade };
+  }
   // ───────── Fusion ─────────
   fuseOptions(t) {
     if (!t || t.hero || CREATURES[t.cid]?.fusion) return [];
@@ -800,6 +828,7 @@ export class World {
     }
     const d = CREATURES[t.cid], out = [], lvl = this.levelOf(t.cid);
     if (d.ability) out.push({ slot: 'ab', ...d.ability, ready: lvl >= d.ability.lvl && t.stage >= d.ability.stage, need: lvl < d.ability.lvl ? `Charakter-Lv ${d.ability.lvl}` : `${formAt(t.cid, d.ability.stage, this.branchOf(t.cid)).name}`, left: t.abCd });
+    if (t.ascended) { out.push({ slot: 'ult', id: 'ancestral', name: 'Ahnenzorn', cd: 60, desc: 'Trifft jeden Gegner der Karte schwer und lässt ihn erstarren.', ready: true, need: '', left: t.ultCd }); return out; }
     if (d.ultimate) out.push({ slot: 'ult', ...d.ultimate, ready: t.stage >= d.ultimate.stage, need: formAt(t.cid, d.ultimate.stage, this.branchOf(t.cid))?.name || '', left: t.ultCd });
     return out;
   }
@@ -1000,6 +1029,12 @@ export class World {
         const ts = []; for (let i = 0; i < 30; i++) ts.push(al[Math.floor(this.rng() * al.length)]);
         this.emit({ t: 'ability', id: 'starfall', tower: t, targets: ts.map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ult');
         for (const e of ts) if (e.alive) this.damage(e, s.dmg * HEROES[t.cid].abilities.starfall.mul, 'astral', t, { big: true });
+        break;
+      }
+      case 'ancestral': {   // Ahnenform: Ahnenzorn trifft jeden Gegner der Karte
+        const al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'ancestral', tower: t, targets: al.slice(0, 50).map(e => ({ x: e.x, y: e.y })) });
+        for (const e of al) { this.damage(e, s.dmg * (e.boss ? 12 : 25), 'astral', t, { big: true }); if (e.alive && !e.boss) e.stunT = Math.max(e.stunT, 2); }
         break;
       }
       case 'whirl': {

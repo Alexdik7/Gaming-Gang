@@ -482,3 +482,18 @@ test('Kappa, Kirin, Komainu + Helden Sora/Ren: Fähigkeiten, Gurkenhandel, Bosss
     assert.ok(es.some((e, i) => e.hp < hp[i]) || h.clonesT > 0, hid + ' wirkt');
   }
 });
+
+test('Ahnenform: drei Stufe-5-Pfade verschmelzen, Grad, Ahnenzorn, nur eine pro Kreatur', () => {
+  const P = defaultProfile(); P.chars.kitsune.level = 50;
+  const { w } = mkWorld(P); w.coins = 1e7;
+  const ks = [0, 1, 2].map(p => { const r = w.place('kitsune', ...w.suggestSpot('kitsune', 3)); const t = r.tower; for (let i = 0; i < 5; i++) w.upgrade(t.id, p); for (let i = 0; i < 2; i++) w.upgrade(t.id, (p + 1) % 3); return t; });
+  assert.ok(ks.every((t, p) => t.tiers[p] === 5), 'je ein Pfad auf Stufe 5');
+  const solo = ks[0].s.dmg, info = w.ascendInfo(ks[0]);
+  assert.ok(info.ok && info.grade >= 1 && info.cost > 0, JSON.stringify(info));
+  const coins = w.coins, r = w.ascend(ks[0].id);
+  assert.ok(r.ok && w.towers.filter(t => t.cid === 'kitsune').length === 1 && w.coins === coins - info.cost);
+  const a = w.towers.find(t => t.cid === 'kitsune');
+  assert.ok(a.ascended >= 1 && a.tiers.join() === '5,5,5' && a.s.dmg > solo * 2 && a.s.camo, 'Ahnenform deutlich stärker');
+  const e = w.spawn('golem', [], 3), hp = e.hp; assert.ok(w.useAbility(a.id, 'ult').ok !== false); assert.ok(e.hp < hp, 'Ahnenzorn trifft');
+  w.place('kitsune', ...w.suggestSpot('kitsune', 3)); assert.ok(!w.ascendInfo(w.towers.at(-1)) || !w.ascendInfo(w.towers.at(-1)).ok, 'nur eine Ahnenform');
+});
