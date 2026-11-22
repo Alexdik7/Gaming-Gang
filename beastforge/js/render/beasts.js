@@ -219,3 +219,99 @@ export function mantis(o) {
   };
   return { root, tick, height: [0.8, 0.88, 0.98][st] * sc };
 }
+
+// ───────────────────────── PHÖNIX ─────────────────────────
+// Form 0 Glutküken (rund, sitzt im Nest) · 1 Feuervogel (schwebt, Federfächer) · 2 Sonnenphönix (golden, Sonnenrad)
+const PPAL = [
+  { body: [0xff7a2a, 0xe8461a, 0xfff0d8], wing: [0xc8281a, 0xff6a1a, 0xffb43a], tip: 0xffe27a, glowC: 0xff8a2a, beak: 0xffc83a, iris: 0x7a2a10 },
+  { body: [0x6ab8ff, 0x3a6ae8, 0xf0f8ff], wing: [0x2a48c8, 0x4a8aff, 0x9ad8ff], tip: 0xdff6ff, glowC: 0x6ad0ff, beak: 0xdfe8ff, iris: 0x1a2a6a },
+  { body: [0xb07bff, 0x6a3ad8, 0xfff4d8], wing: [0x4a2aa8, 0x8a5aff, 0xffd257], tip: 0xfff2a8, glowC: 0xc8a0ff, beak: 0xffd257, iris: 0x3a1a6a },
+];
+export function phoenix(o = {}) {
+  const st = o.stage || 0, pal = PPAL[skinOf(o.skin)], sc = [0.9, 1.0, 1.1][st];
+  const gold = st === 2 && !skinOf(o.skin);
+  const bodyC = gold ? [0xffc84a, 0xff8a2a, 0xfffaf0] : pal.body, wingC = gold ? [0xff8a2a, 0xffb43a, 0xfff0a0] : pal.wing;
+  const root = new THREE.Group(), stone = toon(0x8a8478), stone2 = toon(0x5a544c);
+  // Sockel: Nest (Küken) bzw. Feuerschale
+  if (st === 0) {
+    add(root, Y(10), stone, { p: [0, 0.05, 0], s: [0.2, 0.1, 0.2], ol: 0.01 });
+    const twig = toon(0x8a5a32);
+    for (let i = 0; i < 9; i++) { const a = i / 9 * PI * 2; add(root, Y(5), twig, { p: [Math.cos(a) * 0.15, 0.13, Math.sin(a) * 0.15], r: [PI / 2, 0, a + 0.6], s: [0.018, 0.17, 0.018], ol: 0.004 }); }
+  } else {
+    add(root, Y(8), stone2, { p: [0, 0.03, 0], s: [0.2, 0.06, 0.2], ol: 0.01 });
+    add(root, Y(8), stone, { p: [0, 0.14, 0], s: [0.07, 0.18, 0.07], ol: 0.01 });
+    add(root, C(10), stone, { p: [0, 0.28, 0], r: [PI, 0, 0], s: [0.17, 0.1, 0.17], ol: 0.01 });
+    add(root, Y(12), toon(gold ? 0xffd257 : 0xc8a060, { emissive: 0x3a2000, emissiveIntensity: 0.4 }), { p: [0, 0.335, 0], s: [0.175, 0.02, 0.175], ol: 0.006 });
+  }
+  const fire = [];
+  for (let i = 0; i < 3; i++) fire.push(add(root, C(6), glow(i ? pal.tip : pal.glowC, 0.75), { p: [(i - 1) * 0.05, st ? 0.38 : 0.2, (i % 2) * 0.03], s: [0.04, 0.12, 0.04], ol: false }));
+
+  const body = grp(root, [0, st ? 0.62 : 0.3, 0]);
+  const mB = toon(bodyC[0], { emissive: bodyC[1], emissiveIntensity: st ? 0.35 : 0.2 }), mB2 = toon(bodyC[1]), mBelly = toon(bodyC[2]);
+  const k = [1.25, 1, 1.1][st];
+  // Rumpf
+  if (st === 0) { add(body, S(), mB, { s: [0.17, 0.16, 0.17], ol: 0.012 }); add(body, S(), mBelly, { p: [0, -0.03, 0.08], s: [0.12, 0.11, 0.09], ol: false }); }
+  else { add(body, S(), mB, { r: [0.45, 0, 0], s: [0.085 * k, 0.1 * k, 0.17 * k], ol: 0.01 }); add(body, S(), mBelly, { p: [0, -0.01, 0.06 * k], r: [0.5, 0, 0], s: [0.065 * k, 0.08 * k, 0.09 * k], ol: false }); }
+  // Hals + Kopf
+  const head = grp(body, st === 0 ? [0, 0.15, 0.04] : [0, 0.16 * k, 0.12 * k]);
+  if (st) add(body, Y(8), mB, { p: [0, 0.09 * k, 0.08 * k], r: [0.5, 0, 0], s: [0.05 * k, 0.12 * k, 0.05 * k], ol: 0.008 });
+  const hs = st === 0 ? 0.13 : 0.085 * k;
+  add(head, S(), mB, { s: [hs, hs * 0.95, hs], ol: 0.01 });
+  add(head, C(8), toon(pal.beak), { p: [0, -hs * 0.1, hs * 1.0], r: [PI / 2 + 0.25, 0, 0], s: [hs * 0.28, hs * 0.55, hs * 0.22], ol: 0.006 });
+  for (const sd of [-1, 1]) eye(head, [sd * hs * 0.48, hs * 0.18, hs * 0.72], hs * (st === 0 ? 0.32 : 0.24), st === 2 ? pal.tip : pal.iris, sd, st === 2);
+  // Federkrone: flackernde Flammen
+  const crest = [], nC = [3, 3, 5][st];
+  for (let i = 0; i < nC; i++) {
+    const a = (i / (nC - 1) - 0.5) * 0.9, c = grp(head, [Math.sin(a) * hs * 0.4, hs * 0.75, -hs * 0.15], [-0.5 - Math.abs(a) * 0.3, 0, -a * 0.9]);
+    add(c, C(6), toon(wingC[1], { emissive: wingC[1], emissiveIntensity: 0.5 }), { p: [0, hs * 0.5, 0], s: [hs * 0.14, hs * (st ? 1.1 : 0.7), hs * 0.1], ol: 0.005 });
+    const tipF = add(c, S(8), glow(pal.tip, 0.85), { p: [0, hs * (st ? 1.1 : 0.75), 0], s: hs * 0.14, ol: false }); tipF.userData.c = c; crest.push(c);
+  }
+  // Schwingen: Federfächer am Schultergelenk
+  const wings = [], nF = [4, 7, 9][st], wl = [0.13, 0.4, 0.5][st];
+  for (const sd of [-1, 1]) {
+    const W = grp(body, st === 0 ? [sd * 0.15, 0.02, -0.02] : [sd * 0.08 * k, 0.07 * k, 0.02]);
+    for (let row = 0; row < (st === 2 ? 2 : 1); row++) for (let i = 0; i < nF; i++) {
+      const u = i / (nF - 1), b = (st ? -0.25 : 0.05) + u * (st ? 1.35 : 1.0), len = wl * (row ? 0.6 : 1) * (0.55 + 0.45 * Math.sin((1 - u * 0.75) * PI * 0.6 + 0.4));
+      const F = grp(W, [0, row * 0.012, 0], [0, sd > 0 ? b : PI - b, 0]);
+      const col = row ? wingC[2] : u < 0.35 ? wingC[0] : wingC[1];
+      add(F, S(8), toon(col, { emissive: col, emissiveIntensity: st ? 0.35 : 0.15 }), { p: [len * 0.5, 0, 0], s: [len * 0.5, 0.012, 0.03 + 0.012 * st], ol: 0.004 });
+      if (st && !row) add(F, S(6), glow(pal.tip, 0.7), { p: [len * 0.95, 0, 0], s: [0.035, 0.012, 0.02], ol: false });
+    }
+    W.userData.sd = sd; wings.push(W);
+  }
+  // Schwanzfedern
+  const tail = [], nT = [2, 3, 5][st];
+  for (let i = 0; i < nT; i++) {
+    const a = (i / Math.max(1, nT - 1) - 0.5) * (nT > 1 ? 0.9 : 0), T = grp(body, [0, st ? -0.03 : 0, st ? -0.15 * k : -0.14], [0.6 + (st ? 0.25 : -0.2), a, 0]);
+    const L = [0.08, 0.3, 0.42][st] * (1 - Math.abs(a) * 0.3);
+    add(T, S(8), toon(wingC[0], { emissive: wingC[0], emissiveIntensity: 0.25 }), { p: [0, -L * 0.15, -L * 0.45], s: [0.025, 0.012, L * 0.5], ol: 0.004 });
+    add(T, S(8), glow(i % 2 ? pal.tip : pal.glowC, 0.8), { p: [0, -L * 0.28, -L * 0.95], s: [0.04, 0.015, 0.06], ol: false });
+    T.userData.a = a; T.userData.i = i; tail.push(T);
+  }
+  // Sonnenrad (Form 2) hinter dem Körper
+  let sun = null;
+  if (st === 2) {
+    sun = grp(body, [0, 0.12, -0.16]);
+    add(sun, geo.torus(0.06), glow(pal.tip, 0.8), { s: 0.3, ol: false });
+    for (let i = 0; i < 12; i++) { const a = i / 12 * PI * 2; add(sun, C(4), glow(i % 2 ? pal.glowC : pal.tip, 0.7), { p: [Math.cos(a) * 0.36, Math.sin(a) * 0.36, 0], r: [0, 0, a - PI / 2], s: [0.025, 0.09, 0.01], ol: false }); }
+  }
+  // Glühende Funken, die um den Vogel kreisen (Form 1+)
+  const embers = [];
+  if (st) for (let i = 0; i < 4 + st * 2; i++) embers.push(add(root, S(6), glow(i % 2 ? pal.tip : pal.glowC, 0.85), { s: 0.022, ol: false }));
+  anim(body, head, ...wings, ...tail, ...crest, ...fire, ...embers, ...(sun ? [sun] : []));
+  const baseY = body.position.y;
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0, fl = st === 0 ? 14 : 6;
+    body.position.y = baseY + (st ? Math.sin(t * 2.2) * 0.035 : Math.abs(Math.sin(t * 3)) * 0.01);
+    body.rotation.x = -a * 0.25; head.rotation.x = -a * 0.35 + Math.sin(t * 1.3) * 0.06; head.rotation.y = Math.sin(t * 0.6) * 0.25 * (1 - a);
+    // Flügelschlag; beim Angriff schlagen die Schwingen nach vorn
+    const flap = st === 0 ? 0.3 + Math.sin(t * fl) * 0.35 : 0.2 + Math.sin(t * fl) * 0.45;
+    wings.forEach(W => { const sd = W.userData.sd; W.rotation.z = sd * (flap - a * 0.9); W.rotation.y = -sd * a * 0.75; });
+    tail.forEach(T => { T.rotation.y = T.userData.a + Math.sin(t * 1.6 + T.userData.i) * 0.12; T.rotation.x = (st ? 0.85 : 0.4) + Math.sin(t * 2.2 + T.userData.i) * 0.08 + a * 0.2; });
+    crest.forEach((c, i) => { const f = 1 + Math.sin(t * 11 + i * 1.7) * 0.12 + a * 0.3; c.scale.set(1, f, 1); });
+    fire.forEach((f, i) => { const q = 1 + Math.sin(t * 13 + i * 2.1) * 0.25; f.scale.set(0.04 * (2 - q) * 0.9 + 0.01, 0.12 * q, 0.04); f.rotation.y = t * 2 + i; });
+    embers.forEach((e, i) => { const ang = t * (1.2 + i * 0.13) + i * 1.9, r = 0.32 + (i % 3) * 0.06; e.position.set(Math.cos(ang) * r, baseY + 0.1 + Math.sin(t * 2.5 + i) * 0.15, Math.sin(ang) * r); });
+    if (sun) { sun.rotation.z = t * 0.5; const p = 1 + Math.sin(t * 3) * 0.04 + a * 0.15; sun.scale.setScalar(p); }
+  };
+  return { root, tick, height: [0.55, 0.95, 1.1][st] * sc };
+}

@@ -136,6 +136,7 @@ const PROJ_STYLE = {
   kunai: { c: 0xdfe6f0, trail: 0xffffff, s: 1 }, firekunai: { c: 0xffa040, trail: 0xff6a20, s: 1, glow: true }, shadowkunai: { c: 0xc28bff, trail: 0x8a40ff, s: 1, glow: true },
   foxfire: { c: 0xffb050, trail: 0xff7a2a, s: 1.4, glow: true, orb: true }, fireball: { c: 0xffa030, trail: 0xff4a10, s: 2.6, glow: true, orb: true },
   rune: { c: 0xfff2a8, trail: 0xffd257, s: 1.5, glow: true, orb: true }, astral: { c: 0xcfe0ff, trail: 0x8fa0ff, s: 1.3, glow: true }, star: { c: 0xffffff, trail: 0x9fe8ff, s: 1.8, glow: true, orb: true },
+  phoenix: { c: 0xffd070, trail: 0xff6a20, s: 1.35, leaf: true, glow: true },
   coin: { c: 0xffd257, trail: 0xffe9a0, s: 1.3, glow: true, orb: true },
   leaf: { c: 0x9af070, trail: 0x7be0a8, s: 1.1, leaf: true }, light: { c: 0xfff6c8, trail: 0xfff0a0, s: 1.2, glow: true, orb: true }, nova: { c: 0xfffbe0, trail: 0xfff2a8, s: 2.2, glow: true, orb: true },
   feather: { c: 0x3a2a5a, trail: 0xb07bff, s: 1.1, leaf: true }, voidorb: { c: 0xb070ff, trail: 0x6a20ff, s: 2.4, glow: true, orb: true },

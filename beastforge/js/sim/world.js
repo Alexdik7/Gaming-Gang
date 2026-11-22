@@ -359,7 +359,11 @@ export class World {
     this.emit({ t: 'leak', e, lives: lost });
     const hero = this.towers.find(t => t.hero); if (hero && this.rng() < 0.4) this.say(hero, 'leak');
     if (e.boss) this.boss = null;
-    if (this.lives <= 0 && !this.god) { this.lives = 0; this.over = true; this.won = false; this.emit({ t: 'lose' }); }
+    if (this.lives <= 0 && !this.god) {
+      const ph = !this.mods.soulburn && this.towers.find(t => t.s?.rebirth > 0 && !this.reborn);
+      if (ph) { this.reborn = true; this.lives = ph.s.rebirth; this.emit({ t: 'rebirth', tower: ph, lives: ph.s.rebirth }); for (const o of this.enemies) if (o.alive && !o.boss && Math.hypot(o.x - ph.x, o.y - ph.y) < 5) this.damage(o, ph.s.dmg * 30, 'fire', ph, { big: true }); return; }
+      this.lives = 0; this.over = true; this.won = false; this.emit({ t: 'lose' });
+    }
   }
 
   // ───────── Schaden / Status / Reaktionen ─────────
@@ -369,7 +373,7 @@ export class World {
     let mul = type === 'astral' ? 1 : (e.res[type] ?? 1);
     if (type === 'phys' && mul < 1) mul += (1 - mul) * Math.min(1, (s?.pierceArmor || 0) + (e.brkT > 0 ? 1 : 0));
     if (o.ignoreRes) mul = 1;
-    let dmg = amount * mul * (o.mul || 1);
+    let dmg = amount * mul * (o.mul || 1) * (src ? BAL.run.dmgMul : 1);
     if (e.vulnT > 0) dmg *= 1 + e.vuln;
     if (s && (e.boss || e.miniboss)) dmg *= s.bossMul;
     let crit = false;
@@ -786,6 +790,12 @@ export class World {
       case 'blizzard': {
         this.emit({ t: 'ability', id: 'blizzard', tower: t, r: 4 });
         for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 4) { this.damage(e, s.dmg * 10, 'ice', t, { big: true }); if (e.alive && !e.boss) e.stunT = Math.max(e.stunT, 2.5); if (e.alive) { e.slowPct = Math.max(e.slowPct, 0.5); e.slowT = 5; } }
+        break;
+      }
+      case 'sunrise': {
+        this.emit({ t: 'ability', id: 'sunrise', tower: t, r: 4.2 });
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 4.2) { this.damage(e, s.dmg * 14, 'fire', t, { big: true }); if (e.alive) { e.burnDps = Math.max(e.burnDps, s.dmg * 2); e.burnT = 5; e.burnSrc = t; } }
+        this.lives = Math.min(this.maxLives + 50, this.lives + 5);
         break;
       }
       case 'flurry': t.buffs.push({ id: 'flurry', t: 6, fx: { mul: { rate: 3 } } }); this.dirty = true; this.emit({ t: 'ability', id: 'flurry', tower: t }); break;

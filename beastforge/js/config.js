@@ -1,5 +1,5 @@
 // BEASTFORGE – alle Balance-Regler an EINEM Ort. Keine Zahlen in der Logik verstreuen.
-export const VERSION = '0.15.0';
+export const VERSION = '0.16.0';
 
 export const BAL = {
   tick: 1 / 60,               // fester Simulationsschritt (s)
@@ -13,6 +13,7 @@ export const BAL = {
     highRange: 0.15,          // Anhöhe: +15 % Reichweite
     synergyRange: 3.2,        // Abstand für Synergien (Felder)
     maxTowers: 40,
+    dmgMul: 1.35,             // globaler Schaden aller Kreaturen/Helden (Spieltest v0.16: zu schwach)
   },
 
   // Schwierigkeiten: Run-Werte und Fortschritts-Multiplikatoren getrennt
