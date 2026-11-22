@@ -19,7 +19,7 @@ export class Particles {
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uScale: { value: 400 } },
       vertexShader: `attribute float size; attribute float alpha; attribute vec3 color; varying vec3 vC; varying float vA; uniform float uScale;
         void main(){ vC=color; vA=alpha; vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=size*uScale/-mv.z; gl_Position=projectionMatrix*mv; }`,
-      fragmentShader: `varying vec3 vC; varying float vA; void main(){ vec2 d=gl_PointCoord-0.5; float r=length(d); if(r>0.5) discard; float f=smoothstep(0.5,0.0,r); gl_FragColor=vec4(vC*(0.6+f*0.9), vA*f); }`,
+      fragmentShader: `varying vec3 vC; varying float vA; void main(){ vec2 d=gl_PointCoord-0.5; float r=length(d); if(r>0.5) discard; float f=smoothstep(0.5,0.0,r); gl_FragColor=vec4(vC*(0.5+f*0.6), vA*f*0.9); }`,
     });
     this.pts = new THREE.Points(g, this.mat); this.pts.frustumCulled = false; scene.add(this.pts); this.g = g;
   }
@@ -65,7 +65,7 @@ export class Particles {
 export class Rings {
   constructor(scene, n = 40) {
     this.pool = []; this.live = [];
-    const g = new THREE.RingGeometry(0.8, 1, 48); g.rotateX(-PI / 2);
+    const g = new THREE.RingGeometry(0.9, 1, 56); g.rotateX(-PI / 2);
     const d = new THREE.CircleGeometry(1, 40); d.rotateX(-PI / 2);
     for (let i = 0; i < n; i++) { const m = new THREE.Mesh(i % 2 ? d : g, new THREE.MeshBasicMaterial({ transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); m.visible = false; m.userData.disc = i % 2 === 1; scene.add(m); this.pool.push(m); }
   }
@@ -125,7 +125,7 @@ export class Pillars {
     this.live = this.live.filter(L => {
       L.t += dt; if (L.t < 0) { L.m.material.opacity = 0; return true; }
       const k = L.t / L.dur, grow = Math.min(1, L.t * 6);
-      L.m.scale.set(L.r * (1 - k * 0.6), L.h * grow, L.r * (1 - k * 0.6)); L.m.material.opacity = 0.85 * (1 - k);
+      L.m.scale.set(L.r * (1 - k * 0.6), L.h * grow, L.r * (1 - k * 0.6)); L.m.material.opacity = 0.6 * (1 - k) * (1 - k * 0.3);
       if (k >= 1) { L.m.visible = false; return false; } return true;
     });
   }
@@ -168,8 +168,8 @@ export class Projectiles {
       this.Q.setFromEuler(this.E); const s = (st.orb ? 0.09 : 1) * st.s;
       this.M.compose(this.V.set(x, y, z), this.Q, this.SC.set(s, s, s)); m.setMatrixAt(m.count++, this.M);
       const h = this.meshes[k + ':h'];
-      if (h) { const hs = (st.orb ? 0.16 : 0.1) * st.s * (1 + Math.sin(t * 30 + p.id) * 0.1); this.M.compose(this.V.set(x, y, z), this.Q, this.SC.set(hs, hs, hs)); h.setMatrixAt(h.count++, this.M); }
-      if (quality > 0 && Math.random() < (st.orb ? 0.9 : 0.45)) parts.spawn(x, y, z, (Math.random() - 0.5) * 0.3, 0.2, (Math.random() - 0.5) * 0.3, st.trail, st.orb ? 0.16 * st.s : 0.08, 0.28, { drag: 3 });
+      if (h) { const hs = (st.orb ? 0.13 : 0.07) * st.s * (1 + Math.sin(t * 30 + p.id) * 0.1); this.M.compose(this.V.set(x, y, z), this.Q, this.SC.set(hs, hs, hs)); h.setMatrixAt(h.count++, this.M); }
+      if (quality > 0 && Math.random() < (st.orb ? 0.7 : 0.3)) parts.spawn(x, y, z, (Math.random() - 0.5) * 0.12, 0.08, (Math.random() - 0.5) * 0.12, st.trail, st.orb ? 0.1 * st.s : 0.05, 0.2, { drag: 4 });
     }
     for (const k in this.meshes) { const m = this.meshes[k]; m.visible = m.count > 0; m.instanceMatrix.needsUpdate = true; }
   }
@@ -201,4 +201,123 @@ export class Floaters {
     });
   }
   clear() { for (const L of this.live) { L.d.style.display = 'none'; this.pool.push(L.d); } this.live = []; }
+}
+
+// ───────── Präzise Treffer-Effekte (v0.15) ─────────
+// Aufblitzen: kleine Lichtsterne genau am Treffpunkt, immer zur Kamera gedreht (Instanzen, additiv)
+function flareTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+  const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.18, 'rgba(255,255,255,.75)'); g.addColorStop(0.45, 'rgba(255,255,255,.12)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+  x.globalCompositeOperation = 'lighter';
+  for (const [w, h] of [[30, 2.2], [2.2, 30]]) { const s = x.createRadialGradient(32, 32, 0, 32, 32, 30); s.addColorStop(0, 'rgba(255,255,255,.95)'); s.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = s; x.beginPath(); x.ellipse(32, 32, w, h, 0, 0, PI * 2); x.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+export class Flashes {
+  constructor(scene, cap = 160) {
+    this.cap = cap; this.live = [];
+    this.mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: flareTex(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, toneMapped: false }), cap);
+    this.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
+    this.mesh.count = 0; this.mesh.frustumCulled = false; this.mesh.renderOrder = 5; scene.add(this.mesh);
+    this.M = new THREE.Matrix4(); this.V = new THREE.Vector3(); this.S = new THREE.Vector3(); this.Q = new THREE.Quaternion(); this.Qr = new THREE.Quaternion(); this.Z = new THREE.Vector3(0, 0, 1); this.C = new THREE.Color();
+  }
+  // s: Größe, dur: Dauer, rot: Drehung (Stern), k: Helligkeit
+  add(x, y, z, color, s = 0.35, dur = 0.12, o = {}) {
+    if (this.live.length >= this.cap) this.live.shift();
+    this.live.push({ x, y, z, c: new THREE.Color(color), s, dur, t: -(o.delay || 0), rot: o.rot ?? Math.random() * PI, k: o.k ?? 1 });
+  }
+  update(dt, cam) {
+    const m = this.mesh; let n = 0;
+    this.live = this.live.filter(L => {
+      L.t += dt; if (L.t >= L.dur) return false; if (L.t < 0) return true;
+      const k = L.t / L.dur, sc = L.s * (0.55 + 0.6 * Math.sin(Math.min(1, k * 1.6) * PI * 0.5)), a = (1 - k) * (1 - k) * L.k;
+      this.Qr.setFromAxisAngle(this.Z, L.rot + k * 0.4); this.Q.copy(cam.quaternion).multiply(this.Qr);
+      this.M.compose(this.V.set(L.x, L.y, L.z), this.Q, this.S.set(sc, sc, sc)); m.setMatrixAt(n, this.M);
+      m.setColorAt(n, this.C.copy(L.c).multiplyScalar(a)); n++;
+      return true;
+    });
+    m.count = n; m.visible = n > 0; m.instanceMatrix.needsUpdate = true; m.instanceColor.needsUpdate = true;
+  }
+}
+
+// Funken als feine Striche (Linien entlang der Flugrichtung) – gerichtet, schnell, dezent
+export class Sparks {
+  constructor(scene, cap = 700) {
+    this.cap = cap; this.n = 0;
+    this.p = new Float32Array(cap * 3); this.v = new Float32Array(cap * 3); this.c = new Float32Array(cap * 3); this.life = new Float32Array(cap); this.max = new Float32Array(cap); this.len = new Float32Array(cap); this.grav = new Float32Array(cap);
+    this.pos = new Float32Array(cap * 6); this.col = new Float32Array(cap * 6);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
+    g.setAttribute('color', new THREE.BufferAttribute(this.col, 3).setUsage(THREE.DynamicDrawUsage));
+    this.g = g; this.lines = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    this.lines.frustumCulled = false; this.lines.renderOrder = 4; scene.add(this.lines);
+  }
+  add(x, y, z, vx, vy, vz, color, life = 0.18, len = 0.035, grav = 0) {
+    if (this.n >= this.cap) return; const i = this.n++, i3 = i * 3;
+    this.p[i3] = x; this.p[i3 + 1] = y; this.p[i3 + 2] = z; this.v[i3] = vx; this.v[i3 + 1] = vy; this.v[i3 + 2] = vz;
+    tmpC.set(color); this.c[i3] = tmpC.r; this.c[i3 + 1] = tmpC.g; this.c[i3 + 2] = tmpC.b;
+    this.life[i] = this.max[i] = life * (0.7 + Math.random() * 0.6); this.len[i] = len; this.grav[i] = grav;
+  }
+  // Fächer in Richtung (dx, dz) mit Öffnung spread
+  fan(x, y, z, dx, dz, color, n, speed, spread = 0.9, o = {}) {
+    const base = Math.atan2(dz, dx);
+    for (let k = 0; k < n; k++) {
+      const a = base + (Math.random() - 0.5) * spread * 2, sp = speed * (0.55 + Math.random() * 0.6), up = (o.up ?? 0.35) * speed * (Math.random() - 0.25);
+      this.add(x, y, z, Math.cos(a) * sp, up, Math.sin(a) * sp, Array.isArray(color) ? color[k % color.length] : color, o.life ?? 0.16, o.len ?? 0.035, o.grav ?? 0);
+    }
+  }
+  update(dt) {
+    let w = 0; const P = this.pos, C = this.col;
+    for (let i = 0; i < this.n; i++) {
+      this.life[i] -= dt; if (this.life[i] <= 0) continue;
+      const i3 = i * 3, w3 = w * 3;
+      if (w !== i) { for (const A of [this.p, this.v, this.c]) { A[w3] = A[i3]; A[w3 + 1] = A[i3 + 1]; A[w3 + 2] = A[i3 + 2]; } this.life[w] = this.life[i]; this.max[w] = this.max[i]; this.len[w] = this.len[i]; this.grav[w] = this.grav[i]; }
+      const f = Math.max(0, 1 - 7 * dt);
+      this.v[w3] *= f; this.v[w3 + 2] *= f; this.v[w3 + 1] = this.v[w3 + 1] * f - this.grav[w] * dt;
+      this.p[w3] += this.v[w3] * dt; this.p[w3 + 1] += this.v[w3 + 1] * dt; this.p[w3 + 2] += this.v[w3 + 2] * dt;
+      const k = this.life[w] / this.max[w], L = this.len[w] * (0.4 + k), o = w * 6;
+      P[o] = this.p[w3]; P[o + 1] = this.p[w3 + 1]; P[o + 2] = this.p[w3 + 2];
+      P[o + 3] = this.p[w3] - this.v[w3] * L; P[o + 4] = this.p[w3 + 1] - this.v[w3 + 1] * L; P[o + 5] = this.p[w3 + 2] - this.v[w3 + 2] * L;
+      const a = k * 1.4;
+      C[o] = this.c[w3] * a; C[o + 1] = this.c[w3 + 1] * a; C[o + 2] = this.c[w3 + 2] * a; C[o + 3] = C[o + 4] = C[o + 5] = 0;
+      w++;
+    }
+    this.n = w; this.g.setDrawRange(0, w * 2);
+    this.g.attributes.position.needsUpdate = this.g.attributes.color.needsUpdate = true;
+  }
+}
+
+// Hiebsicheln: dünne leuchtende Halbmonde, die in Schlagrichtung aufziehen (Mantis, Klingen, Krallen)
+export class Arcs {
+  constructor(scene, n = 24) {
+    this.pool = []; this.live = [];
+    // Sichel: Ring-Ausschnitt, innen schmaler (Dreiecke mit Verjüngung über Vertex-Farben)
+    const g = new THREE.BufferGeometry(), seg = 18, P = [], C = [], I = [];
+    for (let i = 0; i <= seg; i++) {
+      const u = i / seg, a = (u - 0.5) * PI * 0.95, w = Math.sin(u * PI) * 0.22, br = Math.sin(u * PI);
+      P.push(Math.cos(a), 0, Math.sin(a), Math.cos(a) * (1 - w), 0, Math.sin(a) * (1 - w));
+      C.push(br, br, br, br * 0.15, br * 0.15, br * 0.15);
+      if (i < seg) { const b = i * 2; I.push(b, b + 1, b + 2, b + 1, b + 3, b + 2); }
+    }
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.setIndex(I);
+    for (let i = 0; i < n; i++) {
+      const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+      m.visible = false; m.renderOrder = 4; scene.add(m); this.pool.push(m);
+    }
+  }
+  // ang: Schlagrichtung (Welt, um y), tilt: Neigung der Sichel, r: Radius
+  add(x, y, z, ang, color, r = 0.45, dur = 0.16, tilt = 0.5, flip = 1) {
+    const m = this.pool.find(p => !p.visible) || this.live.shift()?.m; if (!m) return;
+    m.visible = true; m.position.set(x, y, z); m.rotation.set(0, 0, 0); m.rotation.order = 'YXZ';
+    m.rotation.y = -ang; m.rotation.x = tilt * flip; m.rotation.z = flip < 0 ? PI : 0; m.material.color.set(color);
+    this.live.push({ m, t: 0, dur, r, spin: 1.1 * flip });
+  }
+  update(dt) {
+    this.live = this.live.filter(L => {
+      L.t += dt; const k = Math.min(1, L.t / L.dur), e = 1 - Math.pow(1 - k, 3);
+      L.m.scale.set(L.r * (0.7 + 0.35 * e), 1, L.r * (0.7 + 0.35 * e) * (1 - 0.3 * k));
+      L.m.rotation.y += L.spin * dt * 3; L.m.material.opacity = 1 - k * k;
+      if (k >= 1) { L.m.visible = false; return false; } return true;
+    });
+  }
 }

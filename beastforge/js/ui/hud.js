@@ -52,11 +52,16 @@ export class Hud {
     }).join('');
     $('tray').querySelectorAll('.card').forEach(b => {
       let st = null;
-      b.onpointerdown = e => { this.g.app.audio.init(); st = { x: e.clientX, y: e.clientY }; try { b.releasePointerCapture(e.pointerId); } catch (_) { /* egal */ } };
-      b.onpointermove = e => { if (st && Math.hypot(e.clientX - st.x, e.clientY - st.y) > 12 && !g.dragging) { st = null; g.startPlace(b.dataset.id, true); } };
-      b.onpointerleave = e => { if (st && e.buttons) { st = null; g.startPlace(b.dataset.id, true); } };
-      b.onpointerup = () => { if (st) { st = null; g.startPlace(b.dataset.id, false); } };
+      // Hoch/runter wischen = Leiste scrollen (Browser, touch-action: pan-y); zur Seite ziehen = platzieren
+      const out = e => { const dx = e.clientX - st.x, dy = e.clientY - st.y; return Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2; };
+      b.onpointerdown = e => { this.g.app.audio.init(); st = { x: e.clientX, y: e.clientY, y0: $('tray').scrollTop }; try { b.releasePointerCapture(e.pointerId); } catch (_) { /* egal */ } };
+      b.onpointermove = e => { if (!st || g.dragging) return; if (Math.abs(e.clientY - st.y) > 14 && !out(e)) { st = null; return; } if (out(e)) { st = null; g.startPlace(b.dataset.id, true); } };
+      b.onpointerleave = e => { if (st && e.buttons && out(e)) { st = null; g.startPlace(b.dataset.id, true); } };
+      b.onpointercancel = () => { st = null; };
+      b.onpointerup = () => { if (st && Math.abs($('tray').scrollTop - st.y0) < 4) g.startPlace(b.dataset.id, false); st = null; };
     });
+    const tr = $('tray'), endChk = () => tr.classList.toggle('end', tr.scrollTop + tr.clientHeight >= tr.scrollHeight - 4);
+    tr.onscroll = endChk; requestAnimationFrame(endChk);
     $('bCancel').classList.toggle('hidden', !g.placing);
     this.last.trayCoins = -1;
   }

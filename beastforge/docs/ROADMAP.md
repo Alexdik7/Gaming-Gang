@@ -45,6 +45,7 @@ Ziel: Spielgefühl und Umfang eines Top-Tower-Defense – mit eigener Welt, eige
 - **D ✅ (v0.13, Grundform)** Herausforderungs-Modi (nur Grundkreaturen, halbes Geld, umgekehrter Weg, doppelte KP, „Seelenbrand“), tägliche Herausforderung, Boss-Events.
 - **E** Wissensbaum, Kräfte, Kosmetik-Shop, Quests, Wochen-Events.
 - **F** Koop 2–4 über Raumcode (Netzcode aus Cats TD übernehmen).
+- **G1 ✅ (v0.15)** Kampfgefühl: präzise Treffer (Lichtstern + Funkenstriche), Hiebsicheln, Angriffs-Posen je Kampfstil, scrollbare Kreaturen-Leiste. Offen: eigene Treffer-Töne je Element, Projektil-Spuren als Bänder.
 - **G** Feinschliff: Balancing-Bot über alle Karten, Tutorials, Statistiken.
 
 ## Nächste Schritte (Content-Ausbau, je ein „Weiter“)

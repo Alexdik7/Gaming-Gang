@@ -5,7 +5,9 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.14.0 – Täglich
+## Stand: v0.15.0 – Feinere Angriffe
+**0.15:** Kreaturen-Leiste scrollbar (hoch/runter wischen = scrollen, zur Seite ziehen = platzieren; `touch-action: pan-y`, Ausblendung unten). Treffer-Effekte dezenter, aber genau: `Flashes` (Lichtstern am Einschlagpunkt, zur Kamera gedreht), `Sparks` (feine Funkenstriche weg vom Angreifer, `hit` trägt jetzt `sx/sy`), `Arcs` (Hiebsicheln der Mantis) in `render/fx.js`; weniger/kleinere Partikel, schwächere Lichtsäulen. Angriffs-Bewegungen je Kampfstil in `view.atkPose` (Zwischengruppe `pose`: Ausholen → Schlag → Nachfedern; Wurf, Blitz-Aufbäumen, Sprung + Stampfen mit Ring genau bei der Landung über `view.after`, Atem mit Ausholen, Hieb mit Ausfallschritt und wechselnder Seite) + Mündungsblitz `atkStart`.
+
 **0.14:** Neuer Hub-Knopf 📅 **Täglich** (`menus.s_daily`, Daten `js/data/daily.js`): **Tageskampf** – für jedes Datum feste Bedingungen (Karte aus den freigeschalteten, Normal/Schwer, 2 kombinierte Herausforderungen, `dailyChallenge`), erster Sieg am Tag = +1 Shinobi-Punkt (`daily.sp`) + 500 Konto-XP; **3 Tagesaufgaben** aus 12 (`QUESTS`, `ensureDaily`), Fortschritt = Statistik seit Tagesbeginn (`daily.snap`), Belohnung Konto-XP zum Abholen. Neuer Zähler `stats.pops` (geplatzte Schichten). Roter Punkt am Knopf, wenn etwas offen ist.
 
 ## Stand v0.13.0 – Herausforderungen

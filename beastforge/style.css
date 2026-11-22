@@ -46,9 +46,11 @@ b { font-weight: 800; }
   background: linear-gradient(180deg, rgba(34,24,70,.96), rgba(18,13,38,.97)); border-left: 3px solid rgba(255,210,87,.45); box-shadow: -8px 0 24px rgba(0,0,0,.35); }
 .shead { display: flex; align-items: center; justify-content: space-between; } .shead b { font-size: 15px; letter-spacing: .5px; color: #ffe9c8; }
 #bCancel { font-size: 11px; padding: 5px 8px; border-radius: 10px; background: rgba(255,90,106,.25); color: #ffb3bd; }
-#tray { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; align-content: start; overflow-y: auto; scrollbar-width: none; }
+#tray { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; align-content: start; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; scrollbar-width: none; padding-bottom: 14px;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 22px), transparent); }
+#tray.end { -webkit-mask-image: none; mask-image: none; }
 #tray::-webkit-scrollbar { display: none; }
-.card { min-width: 0; border-radius: 14px; padding: 4px 3px 5px; text-align: center; position: relative; background: linear-gradient(180deg, #4a3a8a, #2a1f56); border: 2px solid rgba(255,255,255,.18); box-shadow: 0 3px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2); touch-action: none; }
+.card { min-width: 0; border-radius: 14px; padding: 4px 3px 5px; text-align: center; position: relative; background: linear-gradient(180deg, #4a3a8a, #2a1f56); border: 2px solid rgba(255,255,255,.18); box-shadow: 0 3px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2); touch-action: pan-y; }
 .card img { width: 100%; aspect-ratio: 1; display: block; filter: drop-shadow(0 3px 2px rgba(0,0,0,.4)); }
 .card b { display: block; font-size: 10.5px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card .cost { font-size: 12.5px; color: var(--run); font-weight: 800; }
