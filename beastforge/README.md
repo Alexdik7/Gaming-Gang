@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.28.0 – Upgrade-Optik-Baukasten (Tiger, Schildkröte, Hirsch, Rabe)
+## Stand: v0.29.0 – Upgrade-Optik für Drachenwolf, Mantis, Golem, Glückskatze
+**0.29:** Neue Bauteile `rocks`, `scythe`, `chest`, `lanterns`, `clover`; `KIT.dragonwolf/mantis/golem/neko`. Prozedurale Modelle ohne Knochen bekommen eine Kopfposition `KIT[cid].head` = [x, y, z] als Anteil der Höhe. Halsband schmaler. Damit haben 9 von 20 Kreaturen eigene Optiken für alle 15 Stufen.
+
+## v0.28.0 – Upgrade-Optik-Baukasten (Tiger, Schildkröte, Hirsch, Rabe)
 **0.28:** Neuer Baukasten `js/render/looks.js`: Bauteile (`PART`: horns, gem, mask, collar, halo, crown, orbs, shards, coins, ring, flames, bolts, cloud, drums, wings, pillar, shield, spikes, cannon, twin, crates, muzzle, stones, roots, leaves, trees, torii, blades, hole, eyes, claws, stripes) und je Kreatur eine Liste `KIT[cid].paths[pfad][stufe]` = [[bauteil, farbe, n], …]. `pathGear(R, tiers, sc, { cid })` bzw. `gearOn(m, tiers, cid)` nutzen automatisch den Baukasten; Größen richten sich nach der Modellhöhe (Breite gedeckelt, sonst zählen Schwänze/Flügel mit). Fertig: Donnertiger (Sturmwolke, Raijin-Trommeln, Flammenkrone …), Eisenschildkröte (Schutzschild, Kanonen, Menhire …), Geisthirsch (Wurzeln, Mini-Wald, Torii, Lichtflügel …), Schattenrabe (Mondschwingen, Klingenring, Schwarzes Loch …).
 
 ## v0.27.0 – Jedes Upgrade sichtbar (Vorlage Kitsune)

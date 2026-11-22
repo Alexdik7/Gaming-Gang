@@ -380,7 +380,7 @@ function dragonwolf(o) {
     const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(sd * 1.0, 0.55); sh.lineTo(sd * 0.9, -0.1); sh.lineTo(sd * 0.6, -0.35); sh.lineTo(sd * 0.25, -0.2); sh.lineTo(0, 0);
     const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), toon(fire ? 0xc84a2a : 0x5aa8d8, { side: THREE.DoubleSide })); m.rotation.x = -PI / 2.4; w.add(m); w.userData.sd = sd; wings.push(w);
   }
-  const pg = pathGear(R, o.tiers, sc);
+  const pg = pathGear(R, o.tiers, sc, { cid: 'dragonwolf' });
   const tick = (t, dt, s) => { R.update(dt, s); pg(t); wings.forEach(w => { w.rotation.z = w.userData.sd * (0.3 + Math.sin(t * 3) * 0.25); }); };
   return { root: R.root, tick, height: 0.95 * sc, rig: R };
 }
@@ -393,7 +393,7 @@ function golem(o) {
   const crystals = [];
   if (st === 1) for (let i = 0; i < 5; i++) crystals.push(add(R.root, geo.oct(), toon(0x8ff6ff, { emissive: 0x3ad0ff, emissiveIntensity: 0.9 }), { p: [Math.cos(i * 1.26) * 0.32 * sc, 1.05 * sc + (i % 2) * 0.08, Math.sin(i * 1.26) * 0.32 * sc], s: [0.04, 0.09, 0.04] }));
   if (st === 2) { const cb = boneBy(R, /chest/), cp = R.bonePos(cb); for (let i = 0; i < 6; i++) { const q = (i / 5 - 0.5) * 2.2; R.attach(cb, mk(geo.dodec(), toon(i % 2 ? 0x5a8a3a : 0x6a5a48), { r: [i, i * 2, 0], s: [0.09, 0.07, 0.08], ol: 0.006 }), cp.clone().add(new THREE.Vector3(Math.sin(q) * 0.3, 0.32 + Math.cos(q) * 0.06, -0.08))); } const lava = mk(geo.sphere(10), glow(0xff7a2a, 0.9), { s: 0.06 }); R.attach(cb, lava, cp.clone().add(new THREE.Vector3(0, 0.1, 0.28))); crystals.push(lava); }
-  const pg = pathGear(R, o.tiers, sc, { noHead: true });
+  const pg = pathGear(R, o.tiers, sc, { noHead: true, cid: 'golem' });
   const tick = (t, dt, s) => { R.update(dt, s); pg(t); crystals.forEach((c, i) => { c.rotation.y = t + i; }); };
   return { root: R.root, tick, height: 1.1 * sc, rig: R };
 }
@@ -542,7 +542,7 @@ function neko(o) {
     for (const x of [-0.17, 0.17]) add(g, geo.cyl(8), red, { p: [x * sc, 0.3 * sc, 0], s: [0.025 * sc, 0.6 * sc, 0.025 * sc], ol: 0.004 });
     add(g, geo.box(), toon(0x2a2a36), { p: [0, 0.62 * sc, 0], s: [0.5 * sc, 0.04 * sc, 0.05 * sc], ol: 0.004 }); add(g, geo.box(), red, { p: [0, 0.54 * sc, 0], s: [0.42 * sc, 0.03 * sc, 0.04 * sc], ol: 0.004 });
   }
-  const pg = pathGear(R, o.tiers, sc);
+  const pg = pathGear(R, o.tiers, sc, { cid: 'neko' });
   const tick = (t, dt, s) => { R.update(dt, s); pg(t); coins.forEach((c, i) => { const q = t * 1.4 + i * PI * 2 / coins.length; c.position.set(Math.cos(q) * 0.34 * sc, 0.45 * sc + Math.sin(t * 2 + i) * 0.04, Math.sin(q) * 0.34 * sc); c.rotation.set(PI / 2, 0, q); }); };
   return { root: R.root, tick, height: 0.8 * sc, rig: R };
 }

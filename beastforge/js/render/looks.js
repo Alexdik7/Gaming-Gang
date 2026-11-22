@@ -21,7 +21,7 @@ const PART = {
   horns: (c, col, n = 1) => { for (const sd of [-1, 1]) c.R.attach(c.hb, mk(geo.cone(6), toon(col, { emissive: col, emissiveIntensity: 0.3 }), { r: [-0.3, 0, -sd * 0.5], s: [0.04 * n, 0.14 * n, 0.04 * n], ol: 0.004 }), c.head.clone().add(V(sd * 0.07, 0.09 + c.H * 0.08, 0))); },
   gem: (c, col) => c.R.attach(c.hb, mk(geo.oct(), glow(col, 0.95), { s: [0.045, 0.065, 0.025], ol: false }), c.head.clone().add(V(0, c.H * 0.2, c.H * 0.32))),
   mask: (c, col) => c.R.attach(c.hb, mk(geo.box(), toon(col), { s: [0.16, 0.06, 0.03], ol: 0.003 }), c.head.clone().add(V(0, c.H * 0.05, c.H * 0.2))),
-  collar: (c, col) => c.R.attach(c.bb, mk(geo.torus(0.3), toon(col, { emissive: col, emissiveIntensity: 0.25 }), { r: [PI / 2.2, 0, 0], s: 0.07 + c.H * 0.07, ol: 0.004 }), c.back.clone()),
+  collar: (c, col) => c.R.attach(c.bb, mk(geo.torus(0.14), toon(col, { emissive: col, emissiveIntensity: 0.25 }), { r: [PI / 2.2, 0, 0], s: 0.07 + c.H * 0.07, ol: 0.004 }), c.back.clone()),
   halo: (c, col, n = 1) => { const h = put(c.root, geo.torus(0.06), glow(col, 0.9), { r: [PI / 2, 0, 0], s: 0.13 * n }); h.position.set(c.head.x, Math.max(c.head.y + 0.2, c.H + 0.06), c.head.z); return t => { h.rotation.z = t; }; },
   crown: (c, col, n = 7) => { const g = new THREE.Group(); const cy = Math.max(c.head.y + 0.22, c.H + 0.1); g.position.set(c.head.x, cy, c.head.z); c.root.add(g); for (let i = 0; i < n; i++) { const q = i / n * PI * 2; put(g, geo.cone(4), glow(col, 0.95), { p: [Math.cos(q) * 0.1, 0, Math.sin(q) * 0.1], s: [0.03, i % 2 ? 0.09 : 0.14, 0.03] }); } return t => { g.rotation.y = t * 0.8; g.position.y = cy + Math.sin(t * 2) * 0.02; }; },
   orbs: (c, col, n = 3) => { const L = []; for (let i = 0; i < n; i++) L.push(put(c.root, geo.sphere(10), glow(col, 0.9), { s: 0.05 })); return t => L.forEach((o, i) => { const q = t * 1.6 + i * PI * 2 / n; o.position.set(Math.cos(q) * (c.W * 0.5 + 0.3), c.H * 0.6 + Math.sin(t * 3 + i) * 0.05, Math.sin(q) * (c.W * 0.5 + 0.3)); }); },
@@ -57,6 +57,15 @@ const PART = {
   eyes: (c, col) => { for (const sd of [-1, 1]) c.R.attach(c.hb, mk(geo.sphere(8), glow(col, 0.95), { s: [0.03, 0.018, 0.012], ol: false }), c.head.clone().add(V(sd * c.H * 0.08, c.H * 0.06, c.H * 0.2))); },
   claws: (c, col) => { for (const sd of [-1, 1]) for (let i = 0; i < 3; i++) put(c.root, geo.cone(4), toon(col), { p: [sd * 0.11 + (i - 1) * 0.035, 0.05, c.H * 0.24], r: [PI / 2.4, 0, 0], s: [0.03, 0.13, 0.03], ol: 0.003 }); },
   stripes: (c, col, n = 4) => { for (let i = 0; i < n; i++) c.R.attach(c.bb, mk(geo.box(), toon(col), { s: [0.24, 0.015, 0.02], ol: false }), c.back.clone().add(V(0, 0.06, -0.06 * i))); },
+  rocks: (c, col, n = 3) => { const L = []; for (let i = 0; i < n; i++) L.push(put(c.root, geo.dodec(), toon(col), { s: 0.05 + (i % 2) * 0.025, ol: 0.004 })); return t => L.forEach((o, i) => { const q = t * 0.7 + i * PI * 2 / n; o.position.set(Math.cos(q) * (c.W * 0.5 + 0.34), c.H * 0.55 + Math.sin(t * 1.4 + i) * 0.08, Math.sin(q) * (c.W * 0.5 + 0.34)); o.rotation.set(t + i, t * 0.6, 0); }); },
+  scythe: (c, col, n = 1) => { const g = new THREE.Group(); put(g, geo.cyl(6), toon(0x2a1a2a), { s: [0.015 * n, 0.5 * n, 0.015 * n], ol: 0.003 }); put(g, new THREE.TorusGeometry(1, 0.05, 5, 16, PI * 0.7), glow(col, 0.9), { p: [0.06 * n, 0.24 * n, 0], r: [0, 0, PI * 0.25], s: 0.16 * n, ol: false });
+    g.position.set(c.W * 0.3, c.H * 0.7, c.back.z - 0.08); g.rotation.z = -0.4; c.root.add(g); },
+  chest: (c, col, n = 1) => { const g = new THREE.Group(); put(g, geo.box(), toon(0x8a4a22), { p: [0, 0.05 * n, 0], s: [0.16 * n, 0.09 * n, 0.11 * n], ol: 0.004 }); put(g, geo.box(), toon(col, { emissive: col, emissiveIntensity: 0.4 }), { p: [0, 0.11 * n, 0], s: [0.17 * n, 0.04 * n, 0.12 * n], ol: 0.004 }); put(g, geo.sphere(8), glow(0xfff2a8, 0.9), { p: [0, 0.15 * n, 0], s: 0.04 * n });
+    g.position.set(c.W * 0.5 + 0.12, 0, 0.1); c.root.add(g); },
+  lanterns: (c, col, n = 2) => { const L = []; for (let i = 0; i < n; i++) { const g = new THREE.Group(); put(g, geo.sphere(10), toon(col, { emissive: col, emissiveIntensity: 0.5 }), { s: [0.05, 0.065, 0.05], ol: 0.003 }); put(g, geo.cyl(8), toon(0x2a2a2a), { p: [0, 0.07, 0], s: [0.025, 0.015, 0.025], ol: false }); c.root.add(g); L.push(g); }
+    return t => L.forEach((g, i) => { const q = t * 0.5 + i * PI * 2 / n; g.position.set(Math.cos(q) * (c.W * 0.5 + 0.32), c.H * 0.85 + Math.sin(t * 1.8 + i) * 0.04, Math.sin(q) * (c.W * 0.5 + 0.32)); }); },
+  clover: (c, col) => { const g = new THREE.Group(); for (let i = 0; i < 4; i++) { const q = i / 4 * PI * 2; put(g, geo.sphere(8), toon(col, { emissive: col, emissiveIntensity: 0.3 }), { p: [Math.cos(q) * 0.035, 0, Math.sin(q) * 0.035], s: [0.035, 0.01, 0.035], ol: 0.003 }); }
+    g.position.set(c.head.x, Math.max(c.head.y + 0.12, c.H + 0.02), c.head.z); c.root.add(g); return t => { g.rotation.y = t; }; },
 };
 
 // ───────── Optik je Kreatur: [Pfad][Stufe 0..4] = Liste [bauteil, farbe, n] ─────────
@@ -81,6 +90,26 @@ export const KIT = {
     [[['collar', 0xd8283a]], [['mask', 0x1a1626]], [['blades', 0xff3a4a, 3]], [['blades', 0xff3a4a, 6], ['eyes', 0xff3a2a]], [['blades', 0xff5a5a, 9], ['flames', 0xd8283a, 12], ['crown', 0xff3a4a, 7]]],
     [[['orbs', 0x6a2aa8, 1]], [['ring', 0x8a3ad8]], [['shards', 0x8a3ad8, 4]], [['hole', 0xb07bff]], [['hole', 0xd8a8ff, 2], ['pillar', 0x3a1a6a], ['wings', 0x5a20a0, 1.5]]],
   ] },
+  dragonwolf: { cols: [0x9fe8ff, 0xff6a1a, 0xb07bff], paths: [
+    [[['collar', 0x9fe8ff]], [['spikes', 0xcff4ff, 4]], [['ring', 0x9fe8ff], ['shards', 0xbff4ff, 3]], [['stones', 0xbff4ff, 6], ['eyes', 0x9fe8ff]], [['shards', 0xffffff, 6], ['crown', 0x9fe8ff, 9], ['wings', 0xcff4ff, 1.4], ['pillar', 0x9fe8ff]]],
+    [[['eyes', 0xff8a2a]], [['collar', 0xff6a1a]], [['flames', 0xff6a1a, 8]], [['spikes', 0xff8a2a, 5], ['flames', 0xff3a10, 14]], [['horns', 0x2a1a1a, 1.8], ['wings', 0xff6a1a, 1.5], ['pillar', 0xff6a1a]]],
+    [[['horns', 0xe8d8c8, 1]], [['wings', 0x9a7bff, 0.8]], [['orbs', 0xc39bff, 2]], [['horns', 0xffd257, 1.5], ['wings', 0x9a7bff, 1.3]], [['crown', 0xffd257, 9], ['wings', 0xc39bff, 1.8], ['pillar', 0x9a7bff]]],
+  ] },
+  mantis: { cols: [0xff3a4a, 0x7af07a, 0xc8283a], head: [-0.12, 0.66, 0.02], paths: [
+    [[['mask', 0x1a1626]], [['eyes', 0xff3a4a]], [['collar', 0x3a1a2a]], [['blades', 0xff3a4a, 4]], [['scythe', 0xff3a4a, 1.4], ['crown', 0xff3a4a, 7], ['pillar', 0x6a1a2a]]],
+    [[['gem', 0x7af07a]], [['blades', 0x7af07a, 2]], [['ring', 0x7af07a], ['blades', 0x7af07a, 4]], [['blades', 0x9aff9a, 8]], [['blades', 0xc8ffc8, 12], ['wings', 0x7af07a, 1.4], ['crown', 0x9aff9a, 9]]],
+    [[['collar', 0xc8283a]], [['eyes', 0xff2a4a]], [['coins', 0xffd257, 3]], [['coins', 0xffd257, 6], ['flames', 0xc8283a, 8]], [['scythe', 0xff2a4a, 1.8], ['hole', 0xff3a4a], ['pillar', 0x8a0a1a]]],
+  ] },
+  golem: { cols: [0xc8a070, 0xff5a10, 0xe8e0d8], paths: [
+    [[['spikes', 0x9a8a78, 3]], [['ring', 0xc8a070]], [['stones', 0xc8a070, 4]], [['horns', 0x9a8a78, 1.6], ['stones', 0xc8a070, 6]], [['rocks', 0x8a7a68, 6], ['crown', 0xc8a070, 9], ['pillar', 0xc8a070]]],
+    [[['shards', 0x3a2a5a, 2]], [['shards', 0x2a1a3a, 4]], [['flames', 0xff5a10, 8]], [['spikes', 0x1a1426, 6], ['flames', 0xff3a10, 14]], [['shards', 0xff6a1a, 8], ['crown', 0xff5a10, 9], ['eyes', 0xff6a1a], ['pillar', 0xff5a10]]],
+    [[['rocks', 0x8a7a68, 2]], [['rocks', 0x9a8a78, 4]], [['rocks', 0x7a6a58, 6]], [['trees', 0x3a8a4a, 5], ['ring', 0x9a8a78]], [['rocks', 0xa89888, 10], ['crown', 0xffffff, 9], ['pillar', 0xc8c0b0]]],
+  ] },
+  neko: { cols: [0xffd257, 0xff5a3a, 0x5adf5a], paths: [
+    [[['coins', 0xffd257, 2]], [['coins', 0xffd257, 4]], [['chest', 0xffd257]], [['coins', 0xffd257, 8], ['halo', 0xffd257]], [['chest', 0xffd257, 1.6], ['crown', 0xffd257, 9], ['pillar', 0xffd257]]],
+    [[['lanterns', 0xff3a2a, 1]], [['lanterns', 0xff3a2a, 2]], [['torii', 0xff8a3a]], [['lanterns', 0xff5a2a, 4], ['ring', 0xff8a3a]], [['torii', 0xffd257, 1.6], ['lanterns', 0xffb43a, 6], ['pillar', 0xff8a3a]]],
+    [[['clover', 0x5adf5a]], [['gem', 0x5adf5a]], [['leaves', 0x5adf5a, 4]], [['orbs', 0xffe14d, 4], ['halo', 0x5adf5a]], [['shards', 0xffe14d, 6], ['crown', 0x9aff8a, 9], ['pillar', 0x5adf5a]]],
+  ] },
 };
 
 // Baukasten anwenden (Rig mit Knochen oder prozedurales Modell)
@@ -89,7 +118,7 @@ export function kitGear(R, tiers = [0, 0, 0], sc = 1, spec) {
   const H = R.size.y, W = Math.min(Math.max(R.size.x, R.size.z), H * 0.9);   // Schwanz/Flügel nicht als Breite zählen
   const find = re => Object.keys(R.bones || {}).find(k => re.test(k));
   const hb = find(/^head$|head/i), bb = find(/chest|spine|neck/i);
-  const head = hb ? R.bonePos(hb) : V(0, H * 0.9, 0.05), back = bb ? R.bonePos(bb) : V(0, H * 0.6, 0);
+  const head = spec.head ? V(spec.head[0] * H, spec.head[1] * H, spec.head[2] * H) : hb ? R.bonePos(hb) : V(0, H * 0.9, 0.05), back = bb ? R.bonePos(bb) : V(0, H * 0.6, 0);
   const c = { R, root: R.root, H, W, head, back, hb, bb, sc }, anim = [];
   tintByTier(R, tiers, spec.cols);
   spec.paths.forEach((tl, pi) => { for (let k = 0; k < tiers[pi]; k++) for (const [name, col, n] of tl[k] || []) { const f = PART[name]?.(c, col, n); if (typeof f === 'function') anim.push(f); } });
