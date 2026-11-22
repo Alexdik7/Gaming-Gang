@@ -9,6 +9,7 @@ import { MAPS, PATH_HALF, raftPos } from '../data/maps.js';
 import { waveDef } from '../data/waves.js';
 import { REACTIONS, SYNERGIES } from '../data/meta.js';
 import { baseStats, applyFx, canTier } from './stats.js';
+import { FUSE, fusionFor, fusionsWith } from '../data/fusions.js';
 import { maxStage, formAt } from '../meta/progression.js';
 
 const PLACE = { '.': 'ground', '^': 'high', '~': 'water' };
@@ -39,7 +40,7 @@ export class World {
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
     this.t = 0; this.acc = 0; this.nid = 1; this.over = false; this.won = false; this.god = false;
-    this.dirty = true; this.synergies = []; this.boss = null; this.timeScale = 1;
+    this.dirty = true; this.synergies = []; this.packs = []; this.boss = null; this.timeScale = 1;
     this.rafts = (this.map.rafts || []).map(r => ({ ...r, x: r.a[0], y: r.a[1] })); this.updRafts();
     const L = this.map.lava; this.vents = (this.map.vents || []).map(([x, y], i) => ({ x: x + 0.5, y: y + 0.5, cd: L.every * (0.45 + i * 0.22), warned: false }));
     this.stats = { kills: 0, coins: 0, leaks: 0, crits: 0, reactions: 0, evolves: 0, upgrades: 0, t5: 0, abilities: 0, ults: 0, income: 0, rocks: 0,
@@ -178,7 +179,7 @@ export class World {
     this.emit({ t: 'upgrade', tower: t, path: p, tier: t.tiers[p] });
     return { ok: true };
   }
-  levelOf(cid) { return this.hooks.level?.(cid) ?? 1; }
+  levelOf(cid) { const d = CREATURES[cid]; if (d?.fusion) return Math.max(...d.parents.map(p => this.levelOf(p))); return this.hooks.level?.(cid) ?? 1; }
   branchOf(cid) { return this.hooks.branch?.(cid) ?? 'spirit'; }
   nextEvo(t) {
     if (t.hero) return null;
@@ -207,6 +208,41 @@ export class World {
     this.coins += v; this.towers.splice(i, 1); this.dirty = true; this.refresh();
     this.emit({ t: 'sell', tower: t, value: v });
     return { ok: true, value: v };
+  }
+  // ───────── Fusion ─────────
+  fuseOptions(t) {
+    if (!t || t.hero || CREATURES[t.cid]?.fusion) return [];
+    return fusionsWith(t.cid).map(f => {
+      const other = f.a === t.cid ? f.b : f.a, def = CREATURES[f.id];
+      const ps = this.towers.filter(o => o !== t && o.cid === other).sort((p, q) => Math.hypot(p.x - t.x, p.y - t.y) - Math.hypot(q.x - t.x, q.y - t.y));
+      const p = ps[0], cost = f.cost;
+      let why = '';
+      if (!p) why = 'Platziere ' + CREATURES[other].name + ' daneben';
+      else if (Math.hypot(p.x - t.x, p.y - t.y) > FUSE.range) why = CREATURES[other].name + ' steht zu weit weg';
+      else if (t.stage < FUSE.minStage || p.stage < FUSE.minStage) why = 'Beide zuerst erwecken (Stufe 1)';
+      else if (this.mods.basic) why = 'Herausforderung: nur Grundformen';
+      else if (this.coins < cost) why = 'Zu wenig Münzen';
+      return { f, def, other, partner: p || null, cost, ok: !why, why };
+    });
+  }
+  fuse(id, fid) {
+    const t = this.tower(id); if (!t) return { ok: false, why: 'Kein Turm' };
+    const o = this.fuseOptions(t).find(x => x.f.id === fid); if (!o) return { ok: false, why: 'Keine Fusion' };
+    if (!o.ok) return { ok: false, why: o.why };
+    const p = o.partner, f = o.f, A = f.a === t.cid ? t : p, B = A === t ? p : t;
+    // Pfadstufen mitnehmen, wo die Fusion den Pfad der Eltern übernimmt
+    let tiers = f.paths.map(([w, i]) => (w === 'a' ? A : B).tiers[i]);
+    if (tiers.filter(x => x > 0).length > 2 || tiers.filter(x => x > BAL.cross.second).length > 1)
+      tiers = f.paths.map(([w, i]) => (w === 'a' ? A.tiers[i] : 0));
+    this.coins -= o.cost;
+    const keep = A, gone = B;   // die Fusion steht dort, wo der Körper (A) stand
+    keep.cid = f.id; keep.stage = 0; keep.tiers = tiers; keep.spent += gone.spent + o.cost; keep.kills += gone.kills; keep.dmg += gone.dmg;
+    keep.abCd = 0; keep.ultCd = 0; keep.buffs = [];
+    this.towers.splice(this.towers.indexOf(gone), 1);
+    this.stats.fusions = (this.stats.fusions || 0) + 1; this.hooks.stat?.('fusions', 1);
+    this.dirty = true; this.refresh();
+    this.emit({ t: 'fuse', tower: keep, gone: { x: gone.x, y: gone.y, cid: gone.cid }, def: o.def });
+    return { ok: true, tower: keep };
   }
   setTarget(id, mode) { const t = this.tower(id); if (t && TARGETS.includes(mode)) { t.target = mode; return { ok: true }; } return { ok: false }; }
   clearRock(cx, cy) {
@@ -458,6 +494,7 @@ export class World {
     this.emit({ t: 'kill', e, x: e.x, y: e.y, coins, src });
   }
   charXp(cid, raw) {
+    const fd = CREATURES[cid]; if (fd?.fusion) { for (const p of fd.parents) this.charXp(p, raw * 0.6); return; }   // Fusion: XP für beide Eltern
     const got = this.hooks.charXp ? this.hooks.charXp(cid, raw, this.wave) : raw;
     this.stats.xp[cid] = (this.stats.xp[cid] || 0) + (got || 0);
   }
@@ -508,6 +545,16 @@ export class World {
       if (links.length) { act.push({ sy, links }); if (!this.stats.synergySeen.has(sy.id)) { this.stats.synergySeen.add(sy.id); this.hooks.stat?.('synergies', 1); this.emit({ t: 'synergy', sy }); } }
     }
     this.synergies = act;
+    // Rudel: zusammenhängende Gruppen benachbarter Kreaturen stärken sich gegenseitig – ohne Obergrenze
+    const PR = BAL.run.packR, seen = new Set(); this.packs = [];
+    for (const t0 of this.towers) {
+      if (seen.has(t0)) continue;
+      const grp = [t0], links = []; seen.add(t0);
+      for (let i = 0; i < grp.length; i++) for (const o of this.towers) if (o !== grp[i] && Math.hypot(o.x - grp[i].x, o.y - grp[i].y) <= PR) { if (!seen.has(o)) { seen.add(o); grp.push(o); } if (grp[i].id < o.id) links.push([grp[i], o]); }
+      for (const t of grp) t.pack = grp.length;
+      if (grp.length > 1) this.packs.push({ grp, links });
+    }
+    for (const t of this.towers) if (t.pack > 1) { const k = t.pack - 1, s = t.s; s.packMul = Math.pow(1 + BAL.run.packDmg, k); s.dmg *= s.packMul; s.rate *= Math.pow(1 + BAL.run.packRate, k); }
     // Auren: pro Wert gilt die stärkste Quelle (kein Stapeln)
     const aura = new Map();
     for (const src of this.towers) {

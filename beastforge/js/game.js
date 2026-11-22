@@ -220,6 +220,7 @@ export class Game {
   slow(scale, sec) { if (!this.settings().shake && scale < 1) return; this.world.timeScale = scale; this.slowT = sec; }
   react(e) {
     switch (e.t) {
+      case 'fuse': this.slow(0.25, 1.2); this.hud.banner(e.def.name.toUpperCase(), '⚭ Fusion!', 'evo'); setTimeout(() => this.hud.flash(0.6, e.def.color), 1000); break;
       case 'evolve': this.slow(0.2, 0.9); this.hud.banner(e.form.name.toUpperCase(), 'Evolution!', 'evo'); this.hud.flash(0.5); break;
       case 'ability': this.slow(0.35, 0.45); if (e.id === 'judgement') this.hud.flash(0.6); break;
       case 'bossDie': this.slow(0.25, 1.4); this.hud.flash(0.8); break;
@@ -247,6 +248,7 @@ export class Game {
       case 'leak': A.play('leak'); break; case 'react': A.play('react'); break;
       case 'upgrade': A.play(e.tier === 5 ? 'tier5' : 'upgrade', { tier: e.tier }); break;
       case 'rebirth': A.play('ult'); A.play('evolve'); break;
+      case 'fuse': A.play('ult'); setTimeout(() => A.play('evolve'), 900); break;
       case 'evolve': A.play('evolve'); break; case 'sell': A.play('sell'); break; case 'rock': A.play('boom'); break;
       case 'wave': A.play('wave'); break; case 'waveEnd': A.play('waveEnd'); break;
       case 'bossWarn': A.play('bossWarn'); break; case 'bossPhase': A.play('roar'); break; case 'breath': A.play('breath'); break; case 'bossDie': A.play('roar'); break;

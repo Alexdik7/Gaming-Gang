@@ -92,7 +92,7 @@ export class GameView {
   }
 
   // ───────── Türme ─────────
-  towerKey(t) { return t.hero ? 'h' + (t.hlvl >= 20 ? 2 : t.hlvl >= 15 ? 1 : 0) : t.stage + ':' + t.tiers.join('') + ':' + (this.opts.branch?.(t.cid) || '') + (this.opts.skin?.(t.cid) || ''); }
+  towerKey(t) { return t.cid + '|' + (t.hero ? 'h' + (t.hlvl >= 20 ? 2 : t.hlvl >= 15 ? 1 : 0) : t.stage + ':' + t.tiers.join('') + ':' + (this.opts.branch?.(t.cid) || '') + (this.opts.skin?.(t.cid) || '')); }
   makeTower(t) {
     const m = buildModel(t.cid, { stage: t.stage, tiers: t.tiers, branch: this.opts.branch?.(t.cid), skin: this.opts.skin?.(t.cid), hlvl: t.hlvl });
     const g = new THREE.Group(), pose = new THREE.Group(); pose.rotation.order = 'YXZ'; pose.add(m.root); g.add(pose); g.scale.setScalar(TOWER_SCALE);
@@ -165,6 +165,12 @@ export class GameView {
       }
     }
     this.orbMesh.count = this.orbHalo.count = n; this.orbMesh.visible = this.orbHalo.visible = n > 0; this.orbMesh.instanceMatrix.needsUpdate = this.orbHalo.instanceMatrix.needsUpdate = true;
+    // Rudel-Band: feine Lichtfunken zwischen benachbarten Kreaturen (mehr, je größer das Rudel)
+    for (const pk of this.world.packs || []) if (Math.random() < dt * (1.5 + pk.grp.length * 0.4)) {
+      const [a, b] = pk.links[Math.floor(Math.random() * pk.links.length)] || []; if (!a) continue;
+      const [ax, az] = this.toW(a.x, a.y), [bx, bz] = this.toW(b.x, b.y), f = Math.random(), c = pk.grp.length >= 6 ? 0xff9bf0 : pk.grp.length >= 4 ? 0xffd257 : 0x9ff6ff;
+      this.parts.spawn(ax + (bx - ax) * f, 0.12 + Math.sin(f * PI) * 0.18, az + (bz - az) * f, 0, 0.25, 0, c, 0.09, 0.7, { drag: 1 });
+    }
     // Synergie-Funken
     if (Math.random() < dt * 3) for (const s of this.world.synergies) for (const [a, b] of s.links) {
       const [ax, az] = this.toW(a.x, a.y), [bx, bz] = this.toW(b.x, b.y), f = Math.random();
@@ -389,6 +395,27 @@ export class GameView {
           this.rings.add(x, h + 0.06, z, 0.3, 4, 0xfff2a8, 0.7); this.rings.add(x, h + 0.05, z, 0.3, 3, 0xffffff, 0.5, { disc: true, alpha: 0.5 });
           this.stage.addShake(0.7);
         }, 520);
+        this.stage.focus = new THREE.Vector3(x, h, z); this.stage.zoomPunch = 1;
+        break;
+      }
+      case 'fuse': {
+        const t = ev.tower, [x, z] = at(t.x, t.y), [gx, gz] = at(ev.gone.x, ev.gone.y), h = this.ty(t), v = this.towers.get(t.id);
+        const cA = new THREE.Color(ev.def.color).getHex(), cB = new THREE.Color(CREATURES[ev.def.parents[1]].color).getHex();
+        // Essenz der zweiten Kreatur fliegt in einem Bogen hinüber
+        for (let i = 0; i < 40; i++) this.after(i * 0.012, () => { const f = Math.random(); P.spawn(gx + (x - gx) * f * 0.2, h + 0.5, gz + (z - gz) * f * 0.2, (x - gx) * 2.2, 1.6 + Math.random(), (z - gz) * 2.2, i % 2 ? cB : 0xffffff, 0.2, 0.5, { grav: 6, drag: 0.4 }); });
+        this.flashes.add(gx, h + 0.5, gz, cB, 1.4, 0.35);
+        this.after(0.45, () => {
+          if (v) v.evoT = 0.6;
+          this.pillars.add(x, z, 0.7, 10, cA, 1.6); this.pillars.add(x, z, 0.35, 10, cB, 1.3, 0.1);
+          this.flashes.add(x, h + 0.7, z, 0xffffff, 3, 0.4); this.flashes.add(x, h + 0.7, z, cB, 2.2, 0.6, { delay: 0.1 });
+          for (let i = 0; i < 80; i++) { const a = i * 0.4, r = 0.5 + (i % 7) * 0.06; P.spawn(x + Math.cos(a) * r, h + 0.1 + i * 0.015, z + Math.sin(a) * r, -Math.sin(a) * 1.8, 2.4, Math.cos(a) * 1.8, i % 2 ? cA : cB, 0.2, 1.1, { drag: 0.8 }); }
+        });
+        this.after(1.05, () => {
+          P.burst(x, h + 0.6, z, [0xffffff, cA, cB], 110, 5.5, 0.3, 1.0, { up: 1.2 });
+          this.rings.add(x, h + 0.06, z, 0.3, 4.5, cA, 0.8); this.rings.add(x, h + 0.08, z, 0.3, 3.2, cB, 0.6, { delay: 0.12 });
+          this.sparks.fan(x, h + 0.6, z, 0, 0, cB, 34, 7, PI, { up: 0.5 });
+          this.floaters.add(x, 1.6, z, 'FUSION! ' + ev.def.name, 'lvl', 1.6); this.stage.addShake(0.9);
+        });
         this.stage.focus = new THREE.Vector3(x, h, z); this.stage.zoomPunch = 1;
         break;
       }

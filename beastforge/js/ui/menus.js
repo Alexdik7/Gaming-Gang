@@ -13,6 +13,7 @@ import { ELEMENT_COLORS } from '../data/enemies.js';
 import { saveProfile, resetProfile } from '../meta/profile.js';
 import { CHALLENGES, CH, chUnlocked } from '../data/challenges.js';
 import { QUESTS, ensureDaily, dailyChallenge, questProgress, DAILY_XP, dayKey } from '../data/daily.js';
+import { FUSIONS, FUSE } from '../data/fusions.js';
 import { SCHOOLS, ACADEMY, ACADEMY_BY_ID, shinobiPoints, canLearn, learn, resetAcademy } from '../data/academy.js';
 
 const $ = id => document.getElementById(id);
@@ -220,6 +221,10 @@ export class Menus {
         return `<button class="ccard ${ok ? '' : 'locked'}" data-c="${id}" style="--cc:${d.color}">${ok ? `<span class="lvl">Lv ${c.level}</span><span class="els">${d.elements.map(e => `<i style="color:${ELEMENT_COLORS[e]};font-style:normal">●</i>`).join('')}</span>` : ''}<img src="${portrait(id, { stage: st, branch: c.branch })}" alt=""><b>${ok ? esc(d.name) : '???'}</b><small>${ok ? esc(d.role) : '🔒 Konto-Lv ' + unlockLevel('creature', id)}</small>
           ${ok ? `<div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / charNeed(c.level) * 100}%"></u></div><div class="stars">${stars(c.mastery)}</div>` : ''}</button>`;
       }).join('')}</div>
+      <div class="box"><b>⚭ Fusionen</b><div class="fgrid">${FUSIONS.map(f => { const ok = unlocked(P, 'creature', f.a) && unlocked(P, 'creature', f.b), D = CREATURES[f.id];
+        return `<div class="fcard ${ok ? '' : 'locked'}" style="--cc:${f.color}"><img src="${portrait(f.id)}" alt=""><div><b>${ok ? esc(f.name) : '???'}</b><small>${esc(CREATURES[f.a].name)} + ${esc(CREATURES[f.b].name)}</small><small class="mut">${ok ? esc(f.desc) : 'Schalte beide Kreaturen frei'}</small></div></div>`; }).join('')}</div>
+        <small style="color:var(--mut)">So geht's: beide Kreaturen nebeneinander stellen (höchstens ${FUSE.range} Felder), beide erwecken, eine antippen → <b>Fusion</b>. Die Fusion behält die Pfadstufen und ist sofort mit Fähigkeiten bereit.</small></div>
+      <div class="box"><b>🐾 Rudel</b><small style="display:block;color:var(--mut);margin-top:4px">Kreaturen, die direkt nebeneinander stehen, bilden ein Rudel: jede weitere Kreatur gibt allen <b>×${(1 + BAL.run.packDmg).toFixed(2)} Schaden</b> und <b>×${(1 + BAL.run.packRate).toFixed(3)} Tempo</b> – multiplikativ und ohne Obergrenze.</small></div>
       <div class="box"><b>Synergien</b><div class="list" style="margin-top:6px">${SYNERGIES.map(s => `<div class="li"><div class="d"><b>${esc(s.name)}</b><small>${esc(s.desc)}</small></div></div>`).join('')}</div><small style="color:var(--mut)">Aktiv, wenn beide Partner höchstens ${BAL.run.synergyRange} Felder auseinander stehen.</small></div></div>`,
     m => m.querySelectorAll('[data-c]').forEach(b => b.onclick = e => { this.click(); if (unlocked(this.P, 'creature', b.dataset.c)) this.go('creature', b.dataset.c, e); }));
   }

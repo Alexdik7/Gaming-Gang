@@ -367,3 +367,26 @@ test('Phönix: Glutfedern brennen, Wiedergeburt einmal pro Run, Sonnenaufgang', 
   const x = w2.spawn('golem', [], 0); x.x = t2.x + 1; x.y = t2.y; const hp = x.hp; t2.abCd = 0;
   assert.ok(w2.useAbility(t2.id, 'ab').ok); assert.ok(x.hp < hp && x.burnT > 0);
 });
+
+test('Rudel: Nachbarn stärken sich ohne Obergrenze, Fusionen verschmelzen zwei erweckte Kreaturen', async () => {
+  const { FUSIONS } = await import('../js/data/fusions.js');
+  const P = defaultProfile(); for (const id in CREATURES) P.chars[id].level = 30;
+  const { w } = mkWorld(P); w.coins = 1e6;
+  const a = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower; const solo = a.s.dmg;
+  const near = []; for (let k = 0; k < 40 && near.length < 4; k++) { const ang = k * 0.7, r = 0.9 + (k % 3) * 0.3, p = w.place('raven', a.x + Math.cos(ang) * r, a.y + Math.sin(ang) * r); if (p.ok) near.push(p.tower); }
+  assert.ok(near.length >= 2, 'Nachbarn platziert');
+  assert.ok(a.pack >= 2 && Math.abs(a.s.packMul - Math.pow(1 + BAL.run.packDmg, a.pack - 1)) < 1e-9 && a.s.dmg > solo * 1.05, 'Rudel-Multiplikator wächst mit jeder Kreatur');
+  assert.ok(!Object.keys(CREATURES).includes('solfox') && CREATURES.solfox?.fusion, 'Fusionen nicht im Shop');
+  for (const f of FUSIONS) assert.ok(CREATURES[f.id].paths.length === 3 && baseStats({ cid: f.id, stage: 0, tiers: [0, 0, 0] }).dmg > CREATURES[f.a].base.dmg, f.id);
+  const { w: w2 } = mkWorld(P); w2.coins = 1e6;
+  const k = w2.place('kitsune', ...w2.suggestSpot('kitsune', 3)).tower; let ph = null;
+  for (let i = 0; i < 24 && !ph; i++) { const r = w2.place('phoenix', k.x + Math.cos(i * 0.5) * 1.1, k.y + Math.sin(i * 0.5) * 1.1); if (r.ok) ph = r.tower; }
+  assert.ok(ph, 'Phönix daneben');
+  assert.match(w2.fuseOptions(k)[0].why, /erwecken/);
+  w2.evolve(k.id); w2.evolve(ph.id); w2.upgrade(k.id, 0); w2.upgrade(k.id, 0);
+  const before = k.s.dmg, coins = w2.coins, r = w2.fuse(k.id, 'solfox');
+  assert.ok(r.ok && w2.towers.length === 1 && k.cid === 'solfox' && k.tiers[0] === 2 && w2.coins === coins - FUSIONS[0].cost);
+  assert.ok(k.s.dmg > before * 1.5 && k.s.pierce >= 3 && k.s.burn.dps > 5, 'Fusion ist deutlich stärker');
+  assert.ok(w2.abilityInfo(k).every(x => x.ready), 'Fähigkeiten sofort bereit');
+  w2.charXp('solfox', 100); assert.ok(w2.stats.xp.kitsune > 0 && w2.stats.xp.phoenix > 0, 'XP für beide Eltern');
+});

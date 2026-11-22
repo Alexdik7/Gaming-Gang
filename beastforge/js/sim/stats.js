@@ -28,6 +28,7 @@ export function baseStats(t, level = 1, branch = 'spirit') {
   }
   const def = CREATURES[t.cid];
   applyFx(s, { set: def.base });
+  if (def.baseFx) for (const fx of def.baseFx) applyFx(s, fx);   // Fusion: Formen des Körpers + Fusions-Gabe
   for (const f of formsFor(t.cid, branch)) if (f.stage > 0 && f.stage <= t.stage) applyFx(s, f.fx);
   def.paths.forEach((p, i) => { for (let k = 0; k < t.tiers[i]; k++) applyFx(s, p.tiers[k].fx); });
   for (const fx of levelFx(t.cid, level)) applyFx(s, fx);
