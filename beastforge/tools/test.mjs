@@ -540,3 +540,24 @@ test('Truhen, Wochen-Event, Kosmetik', async () => {
   P.chests = 1; assert.notEqual(ev.openChest(P, () => 0.1).type, 'cos');
   const old = defaultProfile(); delete old.cos; delete old.chests; const m = migrate(old); assert.equal(m.cos.heart, 'default'); assert.equal(m.chests, 1);
 });
+
+test('Koop-Lockstep: gleiche Befehle zum gleichen Schritt → gleiche Welt', async () => {
+  const { worldHash } = await import('../js/net.js');
+  const mk = () => new World({ map: 'dorf', diff: 'normal', loadout: ['kitsune', 'turtle', 'raven', 'tiger'], hero: 'kairo', seed: 4242, hooks: { level: () => 12, branch: () => 'spirit', heroStart: () => 3 } });
+  const A = mk(), B = mk();
+  const log = [];
+  const run = (w, rec) => {
+    for (let i = 0; i < 3000; i++) {
+      if (rec) {
+        if (i === 5) { const p = w.suggestSpot('kitsune', 3); const r = w.place('kitsune', ...p); if (r.ok) log.push([w.tickN, 'place', ['kitsune', ...p]]); }
+        if (i === 8 || i === 1400) { if (w.startWave().ok) log.push([w.tickN, 'startWave', []]); }
+        if (i === 700) { w.coins += 0; const p = w.suggestSpot('tiger', 3); if (p) { const r = w.place('tiger', ...p); if (r.ok) log.push([w.tickN, 'place', ['tiger', ...p]]); } }
+        if (i === 900) { const t = w.towers[0]; if (w.upgrade(t.id, 0).ok) log.push([w.tickN, 'upgrade', [t.id, 0]]); }
+      } else for (const [n, name, a] of log) if (n === w.tickN) w[name](...a);
+      w.step(BAL.tick);
+    }
+  };
+  run(A, true); run(B, false);
+  assert.ok(log.length >= 3, 'Befehle aufgezeichnet');
+  assert.equal(A.tickN, B.tickN); assert.equal(worldHash(A), worldHash(B)); assert.equal(A.coins, B.coins); assert.equal(A.enemies.length, B.enemies.length);
+});

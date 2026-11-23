@@ -93,20 +93,20 @@ class App {
     this.menus.show('title');
     this.loader.hide();
   }
-  async startRun(map, diff, ch = 'std') {
+  async startRun(map, diff, ch = 'std', coop = null) {
     this.loader.show(MAPS[map].name, 'Betrete ' + MAPS[map].name + ' …');
     await this.loader.run([
-      ['Gelände wird geformt …', () => this._startRun(map, diff, ch)],
+      ['Gelände wird geformt …', () => this._startRun(map, diff, ch, coop)],
       ['Gegner sammeln sich am Tor …', () => this.stage.renderer.compile(this.stage.scene, this.stage.camera)],
       ['Kreaturen machen sich bereit …', () => { for (const id of this.game.loadout) portrait(id, { stage: 0, branch: this.profile.chars[id].branch }); }],
     ], 1100);
     this.loader.hide();
   }
-  _startRun(map, diff, ch = 'std') {
+  _startRun(map, diff, ch = 'std', coop = null) {
     if (this.game) { this.game.destroy(); this.game = null; }
     document.getElementById('menu').innerHTML = ''; this.menus.closePreview();
     this.menuRoot.visible = false;
-    this.game = new Game(this, { map, diff, ch });
+    this.game = new Game(this, { map, diff, ch, coop });
     this.perf = { n: 0, sum: 0, checked: this.profile.settings.quality !== 'auto' };
   }
   results(r) {
@@ -168,7 +168,7 @@ const app = new App();
 window.BF = {
   app, VERSION, BAL,
   get game() { return app.game; }, get world() { return app.game?.world; }, get profile() { return app.profile; },
-  start: (d = 'normal', map = 'ahnenhain', ch = 'std') => app._startRun(map, d, ch),
+  start: (d = 'normal', map = 'ahnenhain', ch = 'std', coop = null) => app._startRun(map, d, ch, coop),
   menu: n => app.menus.show(n),
   level: (L) => app.devLevel(L),
   charNeed,
