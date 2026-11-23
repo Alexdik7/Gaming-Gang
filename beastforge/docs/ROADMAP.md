@@ -47,6 +47,7 @@ Ziel: Spielgefühl und Umfang eines Top-Tower-Defense – mit eigener Welt, eige
 - **E** Wissensbaum, Kräfte, Kosmetik-Shop, Quests, Wochen-Events. ✅ Kräfte + Sofort-Kreaturen (v0.33). Weiter: Events/Truhen/Kosmetik.
 - **F** Koop 2–4 über Raumcode (Netzcode aus Cats TD übernehmen).
 - **G1 ✅ (v0.15)** Kampfgefühl: präzise Treffer (Lichtstern + Funkenstriche), Hiebsicheln, Angriffs-Posen je Kampfstil, scrollbare Kreaturen-Leiste. Offen: eigene Treffer-Töne je Element, Projektil-Spuren als Bänder.
+- **G2 ✅ (v0.34)** Lebendige Karten: Wind in Bäumen/Gras, Schmetterlinge, Vögel, Fische, Laternenflackern.
 - **G** Feinschliff: Balancing-Bot über alle Karten, Tutorials, Statistiken.
 
 ## Nächste Schritte (Content-Ausbau, je ein „Weiter“)

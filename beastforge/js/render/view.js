@@ -1,6 +1,7 @@
 // Darstellung eines Runs: liest world (Zustand) + Ereignisse, besitzt alle three.js-Objekte des Spielfelds.
 import * as THREE from 'three';
 import { MapView, HEIGHT } from './mapview.js';
+import { Ambient } from './ambient.js';
 import { Particles, Rings, Bolts, Pillars, Projectiles, Floaters, Flashes, Sparks, Arcs, projStyle } from './fx.js';
 import { RAFT_TOP } from './mapview.js';
 import { ENEMY_MODELS, bakeFrames, buildBig } from './assets.js';
@@ -21,6 +22,7 @@ export class GameView {
     this.map = new MapView(this.root, world.map);
     stage.mapW = this.map.W; stage.mapH = this.map.H; stage.fit();
     this.parts = new Particles(this.root); this.rings = new Rings(this.root); this.bolts = new Bolts(this.root); this.pillars = new Pillars(this.root); this.flashes = new Flashes(this.root); this.sparks = new Sparks(this.root); this.arcs = new Arcs(this.root); this.later = [];
+    this.amb = new Ambient(this.root, this.map, world.map.theme, { rings: this.rings, parts: this.parts });   // lebendige Karte (ambient.js)
     this.projs = new Projectiles(this.root);
     this.floaters = new Floaters(document.getElementById('floaters'));
     this.towers = new Map(); this.bigs = new Map(); this.t = 0; this.numCount = 0;
@@ -648,7 +650,7 @@ export class GameView {
     this.flashes.update(dt, this.stage.camera); this.sparks.update(dt); this.arcs.update(dt);
     if (this.later.length) this.later = this.later.filter(L => { if (this.t < L.t) return true; L.fn(); return false; });
     const lf = this.world.lives / this.world.maxLives;
-    this.map.wt = this.world.t; this.map.update(dt, lf);
+    this.map.wt = this.world.t; this.map.update(dt, lf); this.amb?.update(dt, this.stage.quality);
     // Himmel abdunkeln (Ultimates)
     const bg = this.stage.scene.background;
     if (this.darken > 0) { this.darken -= dt; bg.setHex(this.sky).lerp(new THREE.Color(0x1a1030), Math.min(1, this.darken) * 0.75); this.stage.hemi.intensity = 1.25 - Math.min(1, this.darken) * 0.7; }
