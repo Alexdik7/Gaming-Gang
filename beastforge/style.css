@@ -671,3 +671,33 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .pw:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.4); }
 .pwnone { max-width: 240px; font-size: 12px; color: #fff; text-shadow: var(--ol); }
 .rpow { display: flex; flex-wrap: wrap; gap: 6px; } .rpow span { padding: 3px 9px; border-radius: 10px; background: rgba(255,210,87,.18); border: 2px solid #ffd257; font-size: 13px; }
+
+/* v0.35 Truhen, Wochen-Event, Kosmetik */
+.bRightCol { display: grid; grid-template-columns: repeat(2, auto); align-content: start; }
+.btile.sq.gold { background: linear-gradient(180deg, #fff0a0, #ffb020); box-shadow: 0 0 14px rgba(255,210,87,.7), 0 4px 0 rgba(0,0,0,.35); }
+.chestScr .cgrid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; }
+@media (max-width: 620px) { .chestScr .cgrid { grid-template-columns: 1fr; } }
+.evc, .cbox { background: var(--pnl, rgba(30,20,60,.92)); border: 3px solid #10162a; border-radius: 18px; padding: 12px; box-shadow: 0 5px 0 rgba(0,0,0,.35); }
+.evh { display: flex; gap: 10px; align-items: center; } .evi { font-size: 40px; width: 58px; height: 58px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fff4b0, #ff9a2a); border: 3px solid #10162a; flex: none; }
+.evh small { color: #ffd257; font-weight: 800; letter-spacing: .5px; font-size: 10px; } .evh b { display: block; font: 22px/1.1 var(--cartoon, inherit); color: #fff; text-shadow: var(--ol); } .evh p { margin: 2px 0 0; font-size: 12px; color: #dfe8ff; }
+.bar.evb { position: relative; height: 14px; margin: 10px 0 4px; } .bar.evb u { background: linear-gradient(90deg, #ffd257, #ff8a2a); } .bar.evb i { position: absolute; top: -2px; bottom: -2px; width: 3px; background: #10162a; }
+.evms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.evm { display: grid; justify-items: center; gap: 3px; padding: 8px 4px; border-radius: 12px; background: rgba(0,0,0,.25); border: 2px solid rgba(255,255,255,.12); } .evm b { font: 17px var(--cartoon, inherit); color: #fff; } .evm small { color: #ffe9a0; }
+.evm.ok { border-color: #ffd257; box-shadow: 0 0 12px rgba(255,210,87,.5); } .evm.got { opacity: .6; } .evm .btn { padding: 5px 10px; font-size: 12px; }
+.cbox { display: grid; justify-items: center; gap: 8px; text-align: center; }
+.chest { position: relative; width: 110px; height: 92px; margin-top: 8px; }
+.chest .body { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; border-radius: 8px 8px 12px 12px; background: linear-gradient(180deg, #b8742a, #7a4418); border: 4px solid #10162a; box-shadow: inset 0 -8px 0 rgba(0,0,0,.25); }
+.chest .body::before { content: ''; position: absolute; inset: 0 40%; background: linear-gradient(180deg, #ffe27a, #e0a020); }
+.chest .body i { position: absolute; left: 50%; top: 6px; width: 18px; height: 20px; margin-left: -9px; border-radius: 4px; background: #ffd257; border: 3px solid #10162a; z-index: 1; }
+.chest .lid { position: absolute; left: -4px; right: -4px; top: 6px; height: 36px; border-radius: 40px 40px 6px 6px; background: linear-gradient(180deg, #d08a3a, #9a5a20); border: 4px solid #10162a; transform-origin: 10% 100%; transition: transform .35s cubic-bezier(.3,1.6,.5,1); z-index: 2; }
+.chest .lid::before { content: ''; position: absolute; top: 0; bottom: 0; left: 40%; right: 40%; background: linear-gradient(180deg, #ffe27a, #e0a020); }
+.chest.shake { animation: chShake .9s ease-in; } @keyframes chShake { 0%,100% { transform: none; } 20% { transform: rotate(-6deg) scale(1.05); } 40% { transform: rotate(6deg) scale(1.1); } 60% { transform: rotate(-8deg) scale(1.15); } 80% { transform: rotate(8deg) scale(1.2); } }
+.chest.opened .lid { transform: rotate(-35deg) translateY(-14px); } .chest.opened::after { content: ''; position: absolute; left: 10%; right: 10%; top: -30px; height: 70px; background: radial-gradient(ellipse at 50% 100%, rgba(255,240,160,.95), transparent 70%); animation: chGlow 1.2s ease-out; pointer-events: none; }
+@keyframes chGlow { from { transform: scale(.3); opacity: 0; } }
+.ccount { font: 18px var(--cartoon, inherit); color: #fff; text-shadow: var(--ol); }
+.crev { display: grid; justify-items: center; padding: 8px 14px; border-radius: 14px; background: linear-gradient(180deg, rgba(255,210,87,.3), rgba(255,210,87,.08)); border: 2px solid #ffd257; animation: pwIn .35s cubic-bezier(.3,1.6,.5,1); } .crev.cos { border-color: #ff9af0; background: linear-gradient(180deg, rgba(255,154,240,.3), rgba(255,154,240,.06)); }
+.crev .cri { font-size: 30px; } .crev b { color: #fff; } .crev small { color: #dfe8ff; font-size: 11px; }
+.cosr { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.cosw { width: 82px; display: grid; justify-items: center; gap: 4px; padding: 6px 4px; border-radius: 14px; background: var(--pnl, #2a2050); border: 3px solid #10162a; color: #fff; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+.cosw i { width: 36px; height: 36px; border-radius: 50%; border: 3px solid #10162a; box-shadow: inset 0 -5px 0 rgba(0,0,0,.2), inset 0 4px 0 rgba(255,255,255,.35); }
+.cosw small { font-size: 10px; line-height: 1.1; } .cosw.on { border-color: #ffd257; box-shadow: 0 0 12px rgba(255,210,87,.6), 0 3px 0 rgba(0,0,0,.35); } .cosw.lock { opacity: .45; } .cosw.lock i { filter: grayscale(1) brightness(.5); }

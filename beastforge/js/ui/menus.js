@@ -2,6 +2,7 @@
 import { BAL, VERSION, LEVEL_PERKS } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { POWER, givePowers } from '../data/powers.js';
+import { COSMETICS, COS_KINDS, hasCos, ensureEvent, eventDef, eventProgress, claimEvent, eventDot, openChest, daysLeft, EVENT_CHESTS } from '../data/events.js';
 import { HEROES } from '../data/heroes.js';
 import { MAPS } from '../data/maps.js';
 import { ELEMENT_NAMES } from '../data/enemies.js';
@@ -80,10 +81,43 @@ export class Menus {
         <div class="bRight"><button class="bCur" data-go="academy" title="Shinobi-Punkte"><span>⛩</span><b>${sp.free}</b></button><button class="bGear" data-go="settings" aria-label="Optionen">⚙</button></div>
       </div>
       <div class="bLeft">${tile('collection', pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch }), 'Kreaturen', 'big')}${tile('hero', pimg(hero, { hlvl: 1 }), 'Helden', 'big')}${tile('evo', pimg('golem', { stage: 2 }), 'Entwicklung', 'big')}</div>
-      <div class="bRightCol">${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('stats', '📜', 'Statistik', 'sq')}</div>
+      <div class="bRightCol">${tile('chests', '🎁', 'Truhen', 'sq gold', eventDot(P))}${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('stats', '📜', 'Statistik', 'sq')}</div>
       <button class="bPlay" data-go="play"><span>SPIELEN</span></button>
     </div>`);
     this.app.audio.playSong('menu');
+  }
+
+  // ───────── Truhen, Wochen-Event, Kosmetik ─────────
+  s_chests(reveal) {
+    const P = this.P, E = ensureEvent(P), d = eventDef(P), v = eventProgress(P);
+    const ms = d.goals.map((g, i) => { const got = E.claimed.includes(i), ok = v >= g;
+      return `<div class="evm ${got ? 'got' : ok ? 'ok' : ''}"><b>${fmt(g)}</b><small>🎁×${EVENT_CHESTS[i]}</small>${got ? '<span class="aok">✓</span>' : `<button class="btn ${ok ? 'pri' : ''}" data-ev="${i}" ${ok ? '' : 'disabled'}>Abholen</button>`}</div>`; }).join('');
+    const top = d.goals[2], pct = Math.min(100, v / top * 100);
+    const rv = reveal ? `<div class="crev ${reveal.type}">${reveal.type === 'cos' ? `<span class="cri">${reveal.kind === 'heart' ? '💎' : '✨'}</span><b>Neu: ${esc(reveal.item.name)}</b><small>${COS_KINDS[reveal.kind]} – unten auswählen</small>`
+      : reveal.type === 'powers' ? `<span class="cri">${reveal.got.map(p => p.icon).join('')}</span><b>${reveal.got.map(p => esc(p.name)).join(' + ')}</b><small>Kräfte für deine Runs</small>`
+      : `<span class="cri">✦</span><b>+${reveal.xp} Konto-XP</b><small>Weiter so!</small>`}</div>` : '';
+    const sw = (kind, c) => { const own = hasCos(P, kind, c.id), on = (P.cos[kind] || 'default') === c.id, col = kind === 'heart' ? '#' + c.glow.toString(16).padStart(6, '0') : c.cols ? `conic-gradient(${c.cols.map(x => '#' + x.toString(16).padStart(6, '0')).join(',')})` : 'linear-gradient(#fff,#9ad0ff)';
+      return `<button class="cosw ${on ? 'on' : ''} ${own ? '' : 'lock'}" data-cos="${kind}:${c.id}" ${own ? '' : 'disabled'}><i style="background:${col}"></i><small>${own ? esc(c.name) : '???'}</small></button>`; };
+    this.render(`<div class="scr chestScr">${this.hdr('Truhen & Event')}
+      <div class="cgrid">
+        <div class="evc"><div class="evh"><span class="evi">${d.icon}</span><div><small>WOCHEN-EVENT · noch ${daysLeft()} Tag${daysLeft() > 1 ? 'e' : ''}</small><b>${esc(d.name)}</b><p>${esc(d.desc)}</p></div></div>
+          <div class="bar evb"><u style="width:${pct}%"></u>${d.goals.slice(0, 2).map(g => `<i style="left:${g / top * 100}%"></i>`).join('')}</div><small class="mut">Fortschritt: <b style="color:#ffd257">${fmt(v)}</b> / ${fmt(top)}</small>
+          <div class="evms">${ms}</div></div>
+        <div class="cbox"><div class="chest ${reveal ? 'opened' : ''}" id="chest"><div class="lid"></div><div class="body"><i></i></div></div>
+          <b class="ccount">${P.chests} Truhe${P.chests === 1 ? '' : 'n'}</b>${rv}
+          <button class="big" id="copen" ${P.chests > 0 ? '' : 'disabled'}>🎁 Öffnen</button>
+          <small class="mut">Truhen gibt es für Siege, den Tageskampf und das Wochen-Event.</small></div>
+      </div>
+      ${Object.keys(COSMETICS).map(kind => `<div class="wlabel">${COS_KINDS[kind]}</div><div class="cosr">${COSMETICS[kind].map(c => sw(kind, c)).join('')}</div>`).join('')}
+    </div>`, m => {
+      m.querySelectorAll('[data-ev]').forEach(b => b.onclick = () => { const n = claimEvent(P, +b.dataset.ev); if (n) { saveProfile(P); this.app.audio.play('levelup'); this.s_chests(); } });
+      m.querySelectorAll('[data-cos]').forEach(b => b.onclick = () => { const [k, id] = b.dataset.cos.split(':'); P.cos[k] = id; saveProfile(P); this.click(); this.s_chests(); });
+      const ob = m.querySelector('#copen'); ob.onclick = () => {
+        if (this.opening || !(P.chests > 0)) return; this.opening = true;
+        const ch = m.querySelector('#chest'); ch.classList.remove('opened'); ch.classList.add('shake'); this.app.audio.play('tier5');
+        setTimeout(() => { const r = openChest(P); saveProfile(P); this.opening = false; this.app.audio.play(r?.type === 'cos' ? 'evolve' : 'levelup'); if (r?.type === 'xp') addAccXp(P, r.xp), saveProfile(P); this.s_chests(r); }, 900);
+      };
+    });
   }
 
   // ───────── Täglich: Tageskampf + Tagesaufgaben ─────────
@@ -392,6 +426,7 @@ export class Menus {
         ${r.accUps.length ? `<div class="newform" style="background:linear-gradient(90deg,rgba(255,210,87,.25),transparent);color:#ffe9a0">✦ +${r.accUps.length} Shinobi-Punkt${r.accUps.length > 1 ? 'e' : ''} – ab in die Akademie!</div>` : ''}
         ${r.accUps.flatMap(u => u.rewards).map(x => `<div class="newform" style="background:linear-gradient(90deg,rgba(185,140,255,.25),transparent);color:#e0ccff">🔓 ${esc(x.text)}</div>`).join('')}
         ${r.achs.map(x => `<div class="newform">🏆 ${esc(x.name)} <small>+${x.xp}</small></div>`).join('')}
+        ${r.chests ? `<div class="newform" style="color:#ffe9a0">🎁 +${r.chests} Truhe${r.chests > 1 ? 'n' : ''} – im Menü unter „Truhen“ öffnen</div>` : ''}
         ${r.powGot?.length ? `<h3 style="margin-top:8px">⚡ NEUE KRÄFTE</h3><div class="rpow">${r.powGot.map(id => `<span>${POWER[id].icon} ${esc(POWER[id].name)}</span>`).join('')}</div>` : ''}</div>
       </div><div class="seg" style="grid-template-columns:1fr 1fr;max-width:520px;margin:0 auto;width:100%"><button class="btn" data-go="home">Menü</button><button class="big" id="again" style="font-size:18px;padding:12px">↻ Nochmal</button></div>
       ${r.charUps.some(u => u.forms.length) ? '<button class="btn" data-go="collection">🦊 Neue Form in der Sammlung ansehen</button>' : ''}</div>`, m => {

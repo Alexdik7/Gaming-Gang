@@ -520,3 +520,23 @@ test('Kräfte: Bombe, Zeitstopp, Münzen, Leben, Rausch, Sofort-Kreatur', async 
   // alte Spielstände bekommen den Startvorrat
   const old = defaultProfile(); delete old.powers; assert.deepEqual(migrate(old).powers, START_POWERS);
 });
+
+test('Truhen, Wochen-Event, Kosmetik', async () => {
+  const ev = await import('../js/data/events.js');
+  const P = defaultProfile(); assert.equal(P.chests, 1);
+  const E = ev.ensureEvent(P, new Date(2026, 10, 25)); assert.equal(E.week, '2026-11-23'); assert.equal(ev.weekKey(new Date(2026, 10, 29)), '2026-11-23'); assert.equal(ev.weekKey(new Date(2026, 10, 30)), '2026-11-30');
+  const d = ev.EVENTS.find(x => x.id === E.id);
+  assert.equal(ev.claimEvent(P, 0), 0, 'noch nicht erreicht');
+  P.stats[d.stat] = (P.stats[d.stat] || 0) + d.goals[2];
+  assert.equal(ev.claimEvent(P, 0), 1); assert.equal(ev.claimEvent(P, 0), 0, 'nur einmal'); assert.equal(ev.claimEvent(P, 2), 3); assert.equal(P.chests, 5);
+  // Truhen öffnen: Kosmetik zuerst (r < 0.4), Kräfte, XP
+  let i = 0; const seq = [0.1, 0.0, 0.5, 0.1, 0.2, 0.9];
+  const r1 = ev.openChest(P, () => seq[i++]); assert.equal(r1.type, 'cos'); assert.ok(ev.hasCos(P, r1.kind, r1.item.id));
+  assert.equal(ev.openChest(P, () => seq[i++]).type, 'powers');
+  assert.equal(ev.openChest(P, () => 0.9).type, 'xp'); assert.equal(P.chests, 2);
+  P.chests = 0; assert.equal(ev.openChest(P), null);
+  // alle Kosmetik besessen → nie wieder Kosmetik
+  for (const k in ev.COSMETICS) for (const c of ev.COSMETICS[k]) P.cos.owned[k + '_' + c.id] = 1;
+  P.chests = 1; assert.notEqual(ev.openChest(P, () => 0.1).type, 'cos');
+  const old = defaultProfile(); delete old.cos; delete old.chests; const m = migrate(old); assert.equal(m.cos.heart, 'default'); assert.equal(m.chests, 1);
+});

@@ -20,6 +20,11 @@ export class GameView {
     this.stage = stage; this.world = world; this.scene = stage.scene; this.opts = opts;
     this.root = new THREE.Group(); this.scene.add(this.root);
     this.map = new MapView(this.root, world.map);
+    if (opts.heart && opts.heart.id !== 'default' && this.map.heartCore) {   // Kosmetik: Herzkristall
+      const M = this.map; M.heartCore.material = M.heartCore.material.clone(); M.heartCore.material.color.setHex(opts.heart.core); M.heartCore.material.emissive.setHex(opts.heart.glow);
+      M.heartGlow.material.color.setHex(opts.heart.glow); M.heartLight.color.setHex(opts.heart.glow);
+    }
+    this.popCols = opts.pop?.cols || null;   // Kosmetik: Plopp-Effekt
     stage.mapW = this.map.W; stage.mapH = this.map.H; stage.fit();
     this.parts = new Particles(this.root); this.rings = new Rings(this.root); this.bolts = new Bolts(this.root); this.pillars = new Pillars(this.root); this.flashes = new Flashes(this.root); this.sparks = new Sparks(this.root); this.arcs = new Arcs(this.root); this.later = [];
     this.amb = new Ambient(this.root, this.map, world.map.theme, { rings: this.rings, parts: this.parts });   // lebendige Karte (ambient.js)
@@ -328,7 +333,7 @@ export class GameView {
       case 'kill': {
         const [x, z] = at(ev.x, ev.y), e = ev.e, big = e.boss || e.miniboss || e.kind === 'golem' || e.def.big;
         const col = { slime: 0x9af070, wolf: 0xb0a070, boar: 0xc0a090, wisp: 0x9ff6ff, shade: 0xa070ff, mage: 0xc0a0ff, healer: 0xffb070, beetle: 0x5ae8d8, mite: 0x5ae8d8, golem: 0xc0b8a8, demon: 0xff7a2a, bearer: 0xc8b8a0, l1: 0x6ff0ff, l2: 0x5ad85a, l3: 0xff8a2a, l4: 0xa05aff, l5: 0xffd23a, kokon: 0x8a7ab0 }[e.kind] || 0xffffff;
-        P.burst(x, 0.35, z, [col, 0xffffff], big ? 40 : 6, big ? 3.6 : 2, big ? 0.22 : 0.1, big ? 0.8 : 0.4, { grav: 4, up: 1.4 });
+        P.burst(x, 0.35, z, this.popCols || [col, 0xffffff], big ? 40 : (this.popCols ? 9 : 6), big ? 3.6 : 2, big ? 0.22 : 0.1, big ? 0.8 : 0.4, { grav: 4, up: 1.4 });
         this.flashes.add(x, 0.4, z, col, big ? 1.6 : 0.38, big ? 0.25 : 0.11, { k: 0.75 });
         if (big) this.rings.add(x, 0.05, z, 0.1, 2.2, col, 0.6); else this.rings.add(x, 0.05, z, 0.1, 0.5, col, 0.25, { alpha: 0.5 });
         if (ev.coins && settings.dmgNums !== false) this.floaters.add(x, 0.9, z, '+' + ev.coins, 'coin', 0.8);

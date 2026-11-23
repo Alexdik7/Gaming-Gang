@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.34.0 – Lebendige Karten
+## Stand: v0.35.0 – Truhen, Wochen-Event, Kosmetik
+**0.35:** `js/data/events.js`: Truhen `P.chests` (Sieg +1, Tageskampf +1, Event-Stufen 1/2/3; Start 1), `openChest` (40 % fehlende Kosmetik, sonst 2 Kräfte oder 300 Konto-XP). Wochen-Event je Kalenderwoche ab Montag (`weekKey`, `ensureEvent` beim Run-Start, Fortschritt = Statistik seit Wochenbeginn, `claimEvent`), 6 Events rotieren. Kosmetik `P.cos` (`COSMETICS.heart` Herzkristall-Farbe, `COSMETICS.pop` Plopp-Farben) → `GameView` opts `heart`/`pop` (`view.popCols`). Bildschirm `menus.s_chests` (Hub-Kachel „Truhen“, Truhe mit Wackel- und Öffnen-Animation), Ergebnis zeigt „+N Truhe“.
+
+## Stand davor: v0.34.0 – Lebendige Karten
 **0.34:** `js/render/ambient.js`: Wind-Wiegen für Bäume und Grasbüschel per Shader (`addSway(mat, amp, speed)`, gemeinsame Uhr `WIND`), Klasse `Ambient` (in `view.amb`): Schmetterlinge, kreisende Vögel mit Schatten am Kartenrand, springende Fische mit Spritzern im Wasser, flackernde Laternen. Glutkrater ohne Falter/Fische/Vögel, Frosttempel ohne Falter. Qualität 0 = aus.
 
 ## Stand davor: v0.33.0 – Kräfte und Sofort-Kreaturen

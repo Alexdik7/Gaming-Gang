@@ -13,6 +13,7 @@ import { CH, reversedMap } from './data/challenges.js';
 import { ensureDaily, dailyChallenge, DAILY_XP } from './data/daily.js';
 import { HEROES } from './data/heroes.js';
 import { POWER, givePowers, runPowerReward } from './data/powers.js';
+import { cosOf, ensureEvent } from './data/events.js';
 import { addCharXp, addAccXp, addHeroRankXp, heroStartLevel, unlocked, unlockedCreatures, addMastery, checkAchievements, formsFor } from './meta/progression.js';
 import { saveProfile } from './meta/profile.js';
 
@@ -25,7 +26,7 @@ export class Game {
     this.heroId = unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
     this.snap = { acc: { ...P.account }, chars: Object.fromEntries(Object.entries(P.chars).map(([k, c]) => [k, { level: c.level, xp: c.xp }])) };
     this.accGain = 0; this.charUps = []; this.accUps = []; this.achs = [];
-    this.ac = academyFx(P);
+    this.ac = academyFx(P); ensureEvent(P);   // Event-Woche vor dem Run festlegen, damit der Run mitzählt
     const hooks = {
       level: cid => P.chars[cid]?.level ?? 1,
       branch: cid => P.chars[cid]?.branch || 'spirit',
@@ -43,7 +44,7 @@ export class Game {
     this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, academy: this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: (Date.now() % 1e6) | 0 });
     if (app.devGod) this.world.god = true;
     app.stage.setMode('game');
-    this.view = new GameView(app.stage, this.world, { branch: hooks.branch, skin: cid => this.skinOf(cid) });
+    this.view = new GameView(app.stage, this.world, { branch: hooks.branch, skin: cid => this.skinOf(cid), heart: cosOf(P, 'heart'), pop: cosOf(P, 'pop') });
     this.speed = 1; this.paused = false; this.placing = null; this.sel = null; this.ghost = null; this.ghostPos = null;
     this.slowT = 0; this.endT = -1; this.finished = false; this.saveT = 0;
     this.hud = new Hud(this);
@@ -321,7 +322,9 @@ export class Game {
     const firstClear = won && !(mp[d] >= w.maxWave);
     let medal = null;
     let daily = false;
-    if (won && this.ch === 'daily') { const D0 = ensureDaily(P); if (!D0.won) { D0.won = true; D0.sp = (D0.sp || 0) + 1; daily = true; this.giveAcc(DAILY_XP); } }
+    let chests = won ? 1 : 0;   // Truhen: Sieg +1, Tageskampf +1
+    if (won && this.ch === 'daily') { const D0 = ensureDaily(P); if (!D0.won) { D0.won = true; D0.sp = (D0.sp || 0) + 1; daily = true; chests++; this.giveAcc(DAILY_XP); } }
+    P.chests = (P.chests || 0) + chests; ensureEvent(P);
     if (won && CH[this.ch] && this.ch !== 'std') { mp.medals ||= {}; if (!mp.medals[this.ch]) { mp.medals[this.ch] = 1; medal = CH[this.ch]; this.giveAcc(BAL.acc.firstMapClear); } }
     mp[d] = Math.max(mp[d] || 0, w.doneWave);
     const used = [...w.stats.used].filter(c => CREATURES[c]);
@@ -350,7 +353,7 @@ export class Game {
       won, perfect, firstClear, map: w.map.name, mapId: this.mapId, diff: D.name, diffKey: d, wave: w.doneWave, maxWave: w.maxWave, lives: w.lives, maxLives: w.maxLives,
       kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves,
       used, xp: w.stats.xp, winBonus, snap: this.snap, charUps: this.charUps, accGain: this.accGain, accUps: this.accUps, achs: this.achs, masteryUps,
-      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch], daily, powGot,
+      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch], daily, powGot, chests,
     });
     if (silent) return res;
     this.app.results(res);
