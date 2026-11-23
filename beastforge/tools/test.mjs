@@ -482,3 +482,61 @@ test('Kappa, Kirin, Komainu + Helden Sora/Ren: Fähigkeiten, Gurkenhandel, Bosss
     assert.ok(es.some((e, i) => e.hp < hp[i]) || h.clonesT > 0, hid + ' wirkt');
   }
 });
+
+test('Ahnenform: drei Stufe-5-Pfade verschmelzen, Grad, Ahnenzorn, nur eine pro Kreatur', () => {
+  const P = defaultProfile(); P.chars.kitsune.level = 50;
+  const { w } = mkWorld(P); w.coins = 1e7;
+  const ks = [0, 1, 2].map(p => { const r = w.place('kitsune', ...w.suggestSpot('kitsune', 3)); const t = r.tower; for (let i = 0; i < 5; i++) w.upgrade(t.id, p); for (let i = 0; i < 2; i++) w.upgrade(t.id, (p + 1) % 3); return t; });
+  assert.ok(ks.every((t, p) => t.tiers[p] === 5), 'je ein Pfad auf Stufe 5');
+  const solo = ks[0].s.dmg, info = w.ascendInfo(ks[0]);
+  assert.ok(info.ok && info.grade >= 1 && info.cost > 0, JSON.stringify(info));
+  const coins = w.coins, r = w.ascend(ks[0].id);
+  assert.ok(r.ok && w.towers.filter(t => t.cid === 'kitsune').length === 1 && w.coins === coins - info.cost);
+  const a = w.towers.find(t => t.cid === 'kitsune');
+  assert.ok(a.ascended >= 1 && a.tiers.join() === '5,5,5' && a.s.dmg > solo * 2 && a.s.camo, 'Ahnenform deutlich stärker');
+  const e = w.spawn('golem', [], 3), hp = e.hp; assert.ok(w.useAbility(a.id, 'ult').ok !== false); assert.ok(e.hp < hp, 'Ahnenzorn trifft');
+  w.place('kitsune', ...w.suggestSpot('kitsune', 3)); assert.ok(!w.ascendInfo(w.towers.at(-1)) || !w.ascendInfo(w.towers.at(-1)).ok, 'nur eine Ahnenform');
+});
+
+test('Kräfte: Bombe, Zeitstopp, Münzen, Leben, Rausch, Sofort-Kreatur', async () => {
+  const { POWERS, givePowers, runPowerReward, START_POWERS } = await import('../js/data/powers.js');
+  const { w, P } = mkWorld({ ...defaultProfile() }, { loadout: ['kitsune'] });
+  assert.deepEqual(P.powers, START_POWERS);
+  w.startWave(); step(w, 4);
+  const e = w.enemies[0]; assert.ok(e);
+  const hp0 = e.hp; assert.ok(w.usePower('bomb', e.x, e.y).ok); assert.ok(!e.alive || e.hp < hp0, 'Bombe trifft');
+  assert.ok(!w.usePower('gold').ok, 'Abklingzeit'); step(w, 2);
+  const c0 = w.coins; assert.ok(w.usePower('gold').ok); assert.ok(w.coins > c0 + 200);
+  step(w, 2); const l0 = w.lives; assert.ok(w.usePower('heal').ok); assert.equal(w.lives, l0 + 25);
+  step(w, 2); assert.ok(w.usePower('freeze').ok); assert.ok(w.enemies.filter(x => x.alive && !x.boss).every(x => x.stunT > 3));
+  // Sofort-Kreatur: gratis, auch außerhalb des Teams, mit fertigen Upgrades
+  w.coins = 0; assert.ok(!w.canPlace('tiger', 8, 4.5).ok);
+  const r = w.place('tiger', 8, 4.5, { free: true, tiers: [0, 3, 2] }); assert.ok(r.ok, r.why);
+  assert.deepEqual(r.tower.tiers, [0, 3, 2]); assert.equal(w.coins, 0);
+  step(w, 2); assert.ok(w.usePower('rage').ok); assert.ok(r.tower.buffs.some(b => b.id === 'rage'));
+  for (const p of POWERS) if (p.inst) { const t = p.inst.tiers; assert.ok(t.filter(x => x > 0).length <= 2 && t.filter(x => x > BAL.cross.second).length <= 1, p.id); assert.ok(CREATURES[p.inst.cid], p.id); }
+  const got = givePowers(P, 5); assert.equal(got.length, 5);
+  assert.equal(runPowerReward(60, true, 'master'), 6); assert.equal(runPowerReward(7, false, 'normal'), 0);
+  // alte Spielstände bekommen den Startvorrat
+  const old = defaultProfile(); delete old.powers; assert.deepEqual(migrate(old).powers, START_POWERS);
+});
+
+test('Truhen, Wochen-Event, Kosmetik', async () => {
+  const ev = await import('../js/data/events.js');
+  const P = defaultProfile(); assert.equal(P.chests, 1);
+  const E = ev.ensureEvent(P, new Date(2026, 10, 25)); assert.equal(E.week, '2026-11-23'); assert.equal(ev.weekKey(new Date(2026, 10, 29)), '2026-11-23'); assert.equal(ev.weekKey(new Date(2026, 10, 30)), '2026-11-30');
+  const d = ev.EVENTS.find(x => x.id === E.id);
+  assert.equal(ev.claimEvent(P, 0), 0, 'noch nicht erreicht');
+  P.stats[d.stat] = (P.stats[d.stat] || 0) + d.goals[2];
+  assert.equal(ev.claimEvent(P, 0), 1); assert.equal(ev.claimEvent(P, 0), 0, 'nur einmal'); assert.equal(ev.claimEvent(P, 2), 3); assert.equal(P.chests, 5);
+  // Truhen öffnen: Kosmetik zuerst (r < 0.4), Kräfte, XP
+  let i = 0; const seq = [0.1, 0.0, 0.5, 0.1, 0.2, 0.9];
+  const r1 = ev.openChest(P, () => seq[i++]); assert.equal(r1.type, 'cos'); assert.ok(ev.hasCos(P, r1.kind, r1.item.id));
+  assert.equal(ev.openChest(P, () => seq[i++]).type, 'powers');
+  assert.equal(ev.openChest(P, () => 0.9).type, 'xp'); assert.equal(P.chests, 2);
+  P.chests = 0; assert.equal(ev.openChest(P), null);
+  // alle Kosmetik besessen → nie wieder Kosmetik
+  for (const k in ev.COSMETICS) for (const c of ev.COSMETICS[k]) P.cos.owned[k + '_' + c.id] = 1;
+  P.chests = 1; assert.notEqual(ev.openChest(P, () => 0.1).type, 'cos');
+  const old = defaultProfile(); delete old.cos; delete old.chests; const m = migrate(old); assert.equal(m.cos.heart, 'default'); assert.equal(m.chests, 1);
+});

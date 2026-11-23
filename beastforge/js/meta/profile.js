@@ -2,6 +2,7 @@
 // Run-Münzen werden NIE gespeichert.
 import { CREATURES } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
+import { START_POWERS } from '../data/powers.js';
 
 export const SAVE_KEY = 'beastforge.save';
 const V = 1;
@@ -24,6 +25,8 @@ export function defaultProfile() {
     settings: { music: 0.55, sfx: 0.8, quality: 'auto', dmgNums: true, shake: true, autoWave: false },
     seen: { intro: false, tips: {} },
     academy: { owned: {} },   // Shinobi-Akademie: erlernte Knoten
+    powers: { ...START_POWERS },   // Kräfte-Vorrat (data/powers.js)
+    chests: 1, cos: { owned: {}, heart: 'default', pop: 'default' }, event: null,   // Truhen, Kosmetik, Wochen-Event (data/events.js)
   };
 }
 

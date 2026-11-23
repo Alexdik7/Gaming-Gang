@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { toon, glow, flat, mk, geo, merge, gradTex, optimize, anim } from './toon.js';
 import { raftPos } from '../data/maps.js';
+import { addSway } from './ambient.js';
 
 const PI = Math.PI;
 export const HEIGHT = { '.': 0, 'T': 0, 'R': 0, '#': -0.05, '~': -0.32, '^': 0.34, 'S': 0, 'L': -0.3, 'B': -0.05, 'V': -3 };
@@ -68,7 +69,7 @@ export class MapView {
     cells.grass.forEach(([x, y, ch]) => { if (ch !== '.') return; const n = 2 + Math.floor(rnd(x, y) * 3); for (let i = 0; i < n; i++) tufts.push([this.wx(x) + (rnd(x + i, y * 2) - 0.5) * 0.85, this.wz(y) + (rnd(x * 2, y + i) - 0.5) * 0.85, rnd(i, y) * PI]); });
     cells.high.forEach(([x, y]) => { for (let i = 0; i < 2; i++) tufts.push([this.wx(x) + (rnd(x + i, y) - 0.5) * 0.8, this.wz(y) + (rnd(x, y + i) - 0.5) * 0.8, 0, HEIGHT['^']]); });
     const tg = merge([[geo.cone(4), th.grass2, [0, 0.06, 0], [0, 0, 0.2], [0.03, 0.14, 0.03]], [geo.cone(4), th.grass, [0.04, 0.05, 0.01], [0, 0, -0.3], [0.025, 0.11, 0.025]], [geo.cone(4), th.grass3 || 0x9ad86a, [-0.03, 0.045, -0.02], [0.2, 0, 0.1], [0.025, 0.1, 0.025]]]);
-    const tm = new THREE.InstancedMesh(tg, new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradTex }), tufts.length);
+    const tm = new THREE.InstancedMesh(tg, addSway(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradTex }), 2.2, 2.4), tufts.length);
     tufts.forEach(([x, z, r, h = 0], i) => { M.compose(new THREE.Vector3(x, h, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, r, 0)), new THREE.Vector3(1, 1, 1)); tm.setMatrixAt(i, M); });
     this.root.add(tm);
     // Blumen
@@ -191,7 +192,7 @@ export class MapView {
       round: merge([[geo.cyl(6), 0x6a4a32, [0, 0.3, 0], 0, [0.08, 0.6, 0.08]], [geo.ico(1), 0x4f9a3e, [0, 0.85, 0], 0, 0.42], [geo.ico(1), 0x63b04a, [0.18, 1.05, 0.08], 0, 0.28], [geo.ico(1), 0x5aa844, [-0.2, 0.95, -0.05], 0, 0.3]]),
       blossom: merge([[geo.cyl(6), 0x5a3a2a, [0, 0.3, 0], [0, 0, 0.1], [0.07, 0.6, 0.07]], [geo.ico(1), th.blossom, [0, 0.85, 0], 0, 0.4], [geo.ico(1), 0xffc8dc, [0.2, 1.0, 0.1], 0, 0.27], [geo.ico(1), 0xff98bc, [-0.2, 0.92, -0.08], 0, 0.28]]),
     };
-    const mats = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradTex });
+    const mats = addSway(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradTex }), th.dead ? 0.012 : 0.035, 1.3);
     const buckets = { pine: [], round: [], blossom: [] };
     for (const [x, z, r] of spots) buckets[r < 0.4 ? 'pine' : r < 0.75 ? 'round' : 'blossom'].push([x, z, r]);
     const M = new THREE.Matrix4();

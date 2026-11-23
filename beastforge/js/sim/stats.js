@@ -32,6 +32,7 @@ export function baseStats(t, level = 1, branch = 'spirit') {
   for (const f of formsFor(t.cid, branch)) if (f.stage > 0 && f.stage <= t.stage) applyFx(s, f.fx);
   def.paths.forEach((p, i) => { for (let k = 0; k < t.tiers[i]; k++) applyFx(s, p.tiers[k].fx); });
   for (const fx of levelFx(t.cid, level)) applyFx(s, fx);
+  if (t.ascended) { const g = t.ascended; s.dmg *= 2 * (1 + g * 0.02); s.rate *= 1 + g * 0.005; s.range += 0.5; s.camo = true; s.bossMul *= 1.5; s.pierce += 2; }   // Ahnenform
   return s;
 }
 

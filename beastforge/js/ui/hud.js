@@ -3,6 +3,7 @@
 import { BAL } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
+import { POWERS } from '../data/powers.js';
 import { MOD_NAMES } from '../data/waves.js';
 import { ENEMIES, BOSSES, ELEMENT_NAMES, ELEMENT_COLORS } from '../data/enemies.js';
 import { TARGETS, TARGET_NAMES } from '../sim/world.js';
@@ -10,6 +11,7 @@ import { canTier } from '../sim/stats.js';
 import { charNeed, accNeed, nextFormByLevel, formAt } from '../meta/progression.js';
 import { portrait } from '../render/icons.js';
 import { appSize } from '../render/stage.js';
+import { saveProfile } from '../meta/profile.js';
 
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
@@ -24,7 +26,10 @@ export class Hud {
     this.last = {}; this.abT = 0;
     $('bPause').onclick = () => this.pause();
     $('bPlay').onclick = () => this.playBtn();
+    $('bAuto').onclick = () => { const S = this.g.settings(); S.autoWave = !S.autoWave; saveProfile(this.P); this.g.app.audio.play('click'); this.last.auto = null; if (S.autoWave && !this.w.waveRunning() && !this.w.over) this.playBtn(); };
     $('bCancel').onclick = () => this.g.cancelPlace();
+    $('bPow').onclick = () => { $('powbar').classList.toggle('hidden'); this.g.app.audio.play('click'); this.updPowers(); };
+    $('powbar').classList.add('hidden'); this.updPowers();
     $('bEarly').onclick = () => this.early();
     this.buildTray(); this.updAcc();
     this.coachStep = this.P.seen.intro ? -1 : 0; this.coach();
@@ -95,6 +100,10 @@ export class Hud {
       $('bEarly').classList.toggle('hidden', !(can && running));
       $('bEarly').innerHTML = `⏩ Nächste Welle <b>+◈${BAL.run.earlyCall(w.wave)}</b>`;
     }
+    // Auto-Start-Schalter + Vorschau der nächsten Welle
+    const auto = !!this.g.settings().autoWave; if (auto !== this.last.auto) { this.last.auto = auto; $('bAuto').classList.toggle('on', auto); }
+    const pk = !running ? w.peekWave() : null, pkKey = pk ? pk.n : 0;
+    if (pkKey !== this.last.prev) { this.last.prev = pkKey; $('wprev').innerHTML = pk ? this.wavePreview(pk) : ''; $('wprev').classList.toggle('hidden', !pk); }
     if (w.boss) {
       $('bossBar').classList.remove('hidden');
       $('bossFill').style.width = Math.max(0, w.boss.hp / w.boss.maxHp * 100) + '%';
@@ -105,6 +114,14 @@ export class Hud {
     if (this.g.sel) { this.panelT = (this.panelT || 0) - dt; if (this.panelT <= 0) { this.panelT = 0.25; this.refreshPanel(true); } }
     this.updBubbles();
   }
+  wavePreview(pk) {
+    const g = new Map(); for (const x of pk.def.groups) g.set(x.e, (g.get(x.e) || 0) + Math.round(x.n));
+    const tags = new Set(pk.def.mods || []);
+    const items = [...g].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => { const d = ENEMIES[k] || BOSSES[k]; if (!d) return ''; if (d.flying) tags.add('fly'); if (d.camo) tags.add('camo'); if (d.res?.phys < 0.7) tags.add('armor');
+      return `<span class="${d.boss ? 'bossT' : ''}"><b>${d.boss ? '👑' : n + '×'}</b> ${esc(d.name.split(',')[0])}</span>`; }).join('');
+    const T = { fly: '🪽 Fliegend', camo: '👁 Getarnt', armor: '🛡 Gepanzert', fast: '⚡ Schnell', regen: '✚ Regeneration', elite: '👑 Elite', armored: '🛡 Gepanzert' };
+    return `<small>WELLE ${pk.n}</small>${items}${[...tags].filter(t => T[t]).map(t => `<i>${T[t]}</i>`).join('')}`;
+  }
   playBtn() {
     this.g.app.audio.init();
     const w = this.w;
@@ -113,6 +130,21 @@ export class Hud {
   }
   early() { if (this.w.waveRunning() && this.w.startWave().ok) this.g.app.audio.play('click'); }
   cycleSpeed() { this.g.speed = this.g.speed >= 3 ? 1 : this.g.speed + 1; this.g.app.audio.play('click'); }
+  // Kräfte-Leiste: Vorrat aus dem Profil, Tippen = einsetzen (Ziel-Kräfte: danach auf die Karte tippen)
+  updPowers() {
+    const P = this.P, tot = POWERS.reduce((a, p) => a + (P.powers[p.id] || 0), 0);
+    $('hPowN').textContent = tot; $('bPow').classList.toggle('empty', !tot);
+    const bar = $('powbar'); if (bar.classList.contains('hidden')) return;
+    const list = POWERS.filter(p => P.powers[p.id] > 0);
+    bar.innerHTML = list.length ? list.map(p => `<button class="pw ${this.g.aiming === p.id || this.g.placePow === p.id ? 'on' : ''}" data-pw="${p.id}" style="--c:${p.color}" title="${esc(p.desc)}"><span>${p.icon}</span><b>${P.powers[p.id]}</b><small>${esc(p.name)}</small></button>`).join('')
+      : '<div class="pwnone">Keine Kräfte – du bekommst neue für Siege, alle 10 Wellen und Tagesaufgaben.</div>';
+    bar.querySelectorAll('[data-pw]').forEach(b => b.onclick = () => {
+      const id = b.dataset.pw;
+      if (this.g.aiming === id) { this.g.aimPower(null); return; }
+      if (this.g.placePow === id) { this.g.cancelPlace(); this.updPowers(); return; }
+      bar.classList.add('hidden'); this.g.usePower(id); this.updPowers();
+    });
+  }
   updAbilities() {
     const list = [];
     for (const t of this.w.towers) for (const a of this.w.abilityInfo(t)) if (a.ready) list.push({ t, a });
@@ -197,6 +229,10 @@ export class Hud {
         return `<div class="prow2" style="--pc:${PATH_COLORS[i]}"><div class="pl"><b>${p.icon} ${esc(p.name)}</b><div class="pips">${pips}</div><small>${esc(cur)}</small></div>${right}</div>`;
       }).join('');
       // Fusionen: Partner daneben stellen, beide erwecken → verschmelzen
+      const ai = w.ascendInfo(t);
+      const asc = ai ? (ai.ok ? `<button class="ascend" data-ascend><span class="aseal">⛩</span><div><b>Ahnenform erwecken</b><small>${esc(ai.name)} · Grad ${ai.grade} · verschmilzt ${ai.n} Kreaturen</small></div><span class="price">◈ ${fmt(ai.cost)}</span></button>`
+        : `<div class="ascend off"><span class="aseal">⛩</span><div><b>Ahnenform</b><small>${esc(ai.why)} · ${ai.have.map((h, i) => (h ? '✓' : '✗') + ' ' + esc(def.paths[i].name)).join(' · ')}</small></div></div>`) : '';
+      if (t.ascended) { title = 'Ahnen-' + def.name; sub = '⛩ Ahnenform · Grad ' + t.ascended; }
       const fus = w.fuseOptions(t).map(o => o.ok
         ? `<button class="fuse" data-fuse="${o.f.id}" style="--fa:${o.def.color}"><img src="${portrait(o.f.id)}" alt=""><div><b>⚭ Fusion: ${esc(o.def.name)}</b><small>mit ${esc(CREATURES[o.other].name)} · ${esc(o.def.role)}</small></div><span class="price">◈ ${fmt(o.cost)}</span></button>`
         : `<div class="fuse off" style="--fa:${o.def.color}"><img src="${portrait(o.f.id)}" alt=""><div><b>⚭ ${esc(o.def.name)}</b><small>${esc(o.why)}</small></div></div>`).join('');
@@ -204,7 +240,7 @@ export class Hud {
       const ab = w.abilityInfo(t).map(a => `<div class="abi ${a.ready ? 'on' : ''}"><b>${a.slot === 'ult' ? '★ ' : ''}${esc(a.name)}</b> <small>${a.ready ? (a.left > 0 ? Math.ceil(a.left) + ' s' : 'bereit') : '🔒 ' + esc(a.need)}</small></div>`).join('');
       body = `<div class="xpline"><b>${esc(def.name)} Lv ${c.level}</b><div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / need * 100}%"></u></div><small>${c.level >= 50 ? 'MAX' : fmt(c.xp) + ' / ' + fmt(need) + ' XP'}${nx ? ' · ' + esc(nx.name) + ' bei Lv ' + nx.lvl : ''}</small></div>
         <div class="chips">${chips}${s.camo ? '<span>👁 Erkennung</span>' : ''}${!s.flying ? '<span class="warn">⛔ keine Fliegenden</span>' : ''}${t.disabledT > 0 ? '<span class="warn">🔥 Gestört!</span>' : ''}${t.pack > 1 ? `<span class="pack" title="Rudel-Bonus">🐾 Rudel ${t.pack} · <b>×${s.packMul.toFixed(2)}</b></span>` : ''}${def.fusion ? '<span class="fz">⚭ Fusion</span>' : ''}</div>${auraTxt}<!--main-->
-        ${evo}${fus ? `<div class="fuses">${fus}</div>` : ''}<div class="prows">${rows}</div>${ab ? `<div class="abis">${ab}</div>` : ''}`;
+        ${t.ascended ? '' : evo}${asc}${fus ? `<div class="fuses">${fus}</div>` : ''}<div class="prows">${rows}</div>${ab ? `<div class="abis">${ab}</div>` : ''}`;
     }
     const [info, main] = body.split('<!--main-->');
     el.innerHTML = `<div class="pinfo"><div class="ph"><img src="${this.icon(t)}" alt=""><div class="nm"><b>${esc(title)}</b><small>${sub}</small></div><button class="x" data-x>✕</button></div>${info}
@@ -215,6 +251,7 @@ export class Hud {
     el.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const i = TARGETS.indexOf(t.target), n = TARGETS.length; w.setTarget(t.id, TARGETS[(i + +b.dataset.tg + n) % n]); this.g.app.audio.play('click'); this.refreshPanel(); });
     el.querySelector('[data-sell]').onclick = guard(() => this.confirm('Verkaufen?', `Du bekommst ◈${fmt(t.spent * BAL.run.sellRefund)} zurück. Die Charakter-XP bleiben erhalten.`, 'Verkaufen', () => { w.sell(t.id); this.g.select(null); }));
     el.querySelectorAll('[data-up]').forEach(b => b.onclick = guard(() => { const r = w.upgrade(t.id, +b.dataset.up); if (!r.ok) this.err(r.why); else this.coachEvent('upgrade'); this.refreshPanel(); }));
+    el.querySelector('[data-ascend]')?.addEventListener('click', guard(() => { const r = w.ascend(t.id); if (!r.ok) this.err(r.why); else this.g.select(r.tower); }));
     el.querySelectorAll('[data-fuse]').forEach(b => b.onclick = guard(() => { const r = w.fuse(t.id, b.dataset.fuse); if (!r.ok) this.err(r.why); else { this.g.select(r.tower); this.toast('evo', '⚭ Fusion gelungen!', CREATURES[r.tower.cid].name + ' ist erwacht'); } }));
     const ev = el.querySelector('[data-evo]'); if (ev) ev.onclick = guard(() => { const r = w.evolve(t.id); if (!r.ok) this.err(r.why); this.refreshPanel(); });
   }
@@ -243,10 +280,25 @@ export class Hud {
       case 'evolve': if (this.sel === e.tower) this.refreshPanel(); this.coachEvent('evolve'); break;
       case 'leak': this.flash(0.15, '#ff2040'); break;
       case 'gust': this.banner('🌬 WINDBÖE', 'Bodengegner auf Brücken werden zurückgedrückt · Fliegende schneller', 'boss'); break;
+      case 'upgrade': if (e.tier === 5) this.t5Splash(e); break;
+      case 'ascend': this.ascendSplash(e); break;
       case 'storm': if (e.on) this.banner('❄ SCHNEESTURM ❄', 'Gegner langsamer · Eiskreaturen schneller · andere frieren', 'boss'); else this.toast('syn', 'Der Sturm legt sich', ''); break;
+      case 'power': { const pw = POWERS.find(x => x.id === e.id); this.flash(e.id === 'bomb' ? 0.45 : 0.3, pw?.color || '#fff'); if (pw) this.banner(pw.icon + ' ' + pw.name.toUpperCase(), e.id === 'gold' ? '+◈' + e.coins : e.id === 'heal' ? '+' + e.lives + ' Leben' : '', 'evo'); this.updPowers(); break; }
       case 'rebirth': this.flash(0.5, '#ffb43a'); this.banner('WIEDERGEBURT', 'Der Phönix schenkt dir ' + e.lives + ' Leben', 'evo'); break;
       case 'early': this.toast('syn', `+◈${e.coins} früh gerufen`, ''); break;
     }
+  }
+  ascendSplash(e) {
+    const d = document.createElement('div'); d.className = 't5 asc'; d.style.setProperty('--pc', '#ffd257');
+    d.innerHTML = `<div class="t5rays"></div><img src="${this.icon(e.tower)}" alt=""><div class="t5txt"><small>⛩ AHNENFORM · GRAD ${e.grade}</small><b>${esc(e.name)}</b><span>Alle drei Stufe-5-Kräfte vereint · neue Ultimate „Ahnenzorn“</span></div>`;
+    document.getElementById('hud').appendChild(d); setTimeout(() => d.remove(), 3400);
+  }
+  // Stufe-5-Kauf: Vollbild-Einblendung mit neuem Aussehen, Name und Pfadfarbe
+  t5Splash(e) {
+    const t = e.tower, def = CREATURES[t.cid], p = def.paths[e.path], col = ['#ff7a3d', '#5fd6ff', '#c39bff'][e.path];
+    const d = document.createElement('div'); d.className = 't5'; d.style.setProperty('--pc', col);
+    d.innerHTML = `<div class="t5rays"></div><img src="${this.icon(t)}" alt=""><div class="t5txt"><small>${esc(p.icon)} ${esc(p.name)} · STUFE 5</small><b>${esc(p.tiers[4].name)}</b><span>${esc(p.tiers[4].desc)}</span></div>`;
+    document.getElementById('hud').appendChild(d); setTimeout(() => d.remove(), 2600);
   }
   banner(text, sub = '', cls = '') { $('banner').innerHTML = `<div class="b ${cls}">${esc(text)}${sub ? `<small>${esc(sub)}</small>` : ''}</div>`; }
   toast(cls, title, text) {

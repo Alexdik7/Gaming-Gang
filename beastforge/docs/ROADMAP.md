@@ -41,11 +41,13 @@ Ziel: Spielgefühl und Umfang eines Top-Tower-Defense – mit eigener Welt, eige
 - **A1 ✅ (v0.9, Grundform)** Schichten-Gegner: Hüllen platzen ab und setzen kleinere Gegner frei (Knall, Funken, Ton) – das Herz des Genres. Gegner-Eigenschaften als kombinierbare Merkmale (getarnt, gepanzert, regenerierend, verstärkt).
 - **A2 ✅ (v0.20)** Leistung für 1.000+ Gegner: gemessen (Grafik ist der Engpass, Simulation 0,7 ms → kein Worker nötig), Massen-LOD + Massenmodus ohne Umrisse, mitwachsende Instanz-Puffer, laufende Auto-Qualität.
 - **A3 ✅ (v0.19)** Wellen 1–60 neu (Schwer 40, Meister 60, Boss-Varianten), freies Weiterspielen, Wirtschafts-Kreatur (Glückskatze v0.11). Offen: Super-Endausbau pro Kreatur.
+- **E1 ✅ (v0.27–0.30)** Upgrade-Optik-System, alle 20 Kreaturen, Stufe-5-Einblendung. ✅ Ahnenform (v0.31). Weiter: (Paragon-Prinzip: 3× Stufe 5 opfern, Grad 1–100).
 - **C1–C4** Kreaturen 9–16 (Schlangenmagier, Windmönch, Phönix, Leerenkatze …), Helden 4–6, Karten 4–10 in drei Schwierigkeitsgruppen, Bosse 2–5 mit Stufen. ✅ Karte 4 Frosttempel + Boss 2 Hyōga (v0.21), Karte 5 Himmelsinseln + Boss 3 Fūjin (v0.22); Helden 4–6 Hana/Gorō/Yoru (v0.23).
 - **D ✅ (v0.13, Grundform)** Herausforderungs-Modi (nur Grundkreaturen, halbes Geld, umgekehrter Weg, doppelte KP, „Seelenbrand“), tägliche Herausforderung, Boss-Events.
-- **E** Wissensbaum, Kräfte, Kosmetik-Shop, Quests, Wochen-Events.
+- **E** Wissensbaum, Kräfte, Kosmetik-Shop, Quests, Wochen-Events. ✅ Kräfte + Sofort-Kreaturen (v0.33). ✅ Wochen-Events, Truhen, Kosmetik (v0.35). Weiter: mehr Kosmetik-Arten (Kreaturen-Skins, Spuren).
 - **F** Koop 2–4 über Raumcode (Netzcode aus Cats TD übernehmen).
 - **G1 ✅ (v0.15)** Kampfgefühl: präzise Treffer (Lichtstern + Funkenstriche), Hiebsicheln, Angriffs-Posen je Kampfstil, scrollbare Kreaturen-Leiste. Offen: eigene Treffer-Töne je Element, Projektil-Spuren als Bänder.
+- **G2 ✅ (v0.34)** Lebendige Karten: Wind in Bäumen/Gras, Schmetterlinge, Vögel, Fische, Laternenflackern.
 - **G** Feinschliff: Balancing-Bot über alle Karten, Tutorials, Statistiken.
 
 ## Nächste Schritte (Content-Ausbau, je ein „Weiter“)

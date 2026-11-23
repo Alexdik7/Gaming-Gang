@@ -5,7 +5,33 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.26.0 – Hauptmenü im Genre-Stil
+## Stand: v0.35.0 – Truhen, Wochen-Event, Kosmetik
+**0.35:** `js/data/events.js`: Truhen `P.chests` (Sieg +1, Tageskampf +1, Event-Stufen 1/2/3; Start 1), `openChest` (40 % fehlende Kosmetik, sonst 2 Kräfte oder 300 Konto-XP). Wochen-Event je Kalenderwoche ab Montag (`weekKey`, `ensureEvent` beim Run-Start, Fortschritt = Statistik seit Wochenbeginn, `claimEvent`), 6 Events rotieren. Kosmetik `P.cos` (`COSMETICS.heart` Herzkristall-Farbe, `COSMETICS.pop` Plopp-Farben) → `GameView` opts `heart`/`pop` (`view.popCols`). Bildschirm `menus.s_chests` (Hub-Kachel „Truhen“, Truhe mit Wackel- und Öffnen-Animation), Ergebnis zeigt „+N Truhe“.
+
+## Stand davor: v0.34.0 – Lebendige Karten
+**0.34:** `js/render/ambient.js`: Wind-Wiegen für Bäume und Grasbüschel per Shader (`addSway(mat, amp, speed)`, gemeinsame Uhr `WIND`), Klasse `Ambient` (in `view.amb`): Schmetterlinge, kreisende Vögel mit Schatten am Kartenrand, springende Fische mit Spritzern im Wasser, flackernde Laternen. Glutkrater ohne Falter/Fische/Vögel, Frosttempel ohne Falter. Qualität 0 = aus.
+
+## Stand davor: v0.33.0 – Kräfte und Sofort-Kreaturen
+**0.33:** Verbrauchs-Kräfte (`js/data/powers.js`, Vorrat `P.powers`, Start `START_POWERS`): Seelenbombe (Ziel antippen, `BAL.power.bomb/bombWave/bombR`), Zeitstopp, Kampfrausch (Buff `rage`), Münzregen, Lebensquelle sowie Sofort-Kreaturen (Kitsune 3-0-2, Schildkröte 2-3-0, Donnertiger 0-3-2: `world.place(cid, x, y, { free, tiers })`, auch außerhalb des Teams). Simulation `world.usePower(id, x, y)` mit Abklingzeit `BAL.power.cd`, Ereignis `power` (Effekte in view.js, Banner in hud.js). HUD: ⚡-Knopf `#bPow` mit Zähler, Leiste `#powbar` (`hud.updPowers`), Zielmodus `game.aiming`, Sofort-Platzieren `game.placePow`. Nachschub: Rundenende `runPowerReward` (1 je 10 Wellen, max 4, +1 Sieg, +1 Schwer/Meister) → Ergebnis „Neue Kräfte“, jede abgeholte Tagesaufgabe +1 Kraft.
+
+**0.32:** Über dem Start-Knopf zeigt `#wprev` die nächste Welle (`world.peekWave()` inkl. Karten-Mix: Anzahl je Gegnerart, Boss, Merkmale fliegend/getarnt/gepanzert/schnell/Elite). Runder AUTO-Schalter `#bAuto` neben dem Start-Knopf (Einstellung `autoWave`, gold = an, startet beim Einschalten sofort). Ergebnis-Bildschirm mit „Beste Kreaturen“ (Top 5 nach Schaden, Balken, Medaillen). Plopp-Klänge je Schicht gab es schon (`A.play('pop', {layer})`).
+
+## v0.31.0 – Ahnenform (Ultra-Entwicklung)
+**0.31:** Paragon-Prinzip: Stehen für jeden der 3 Pfade Kreaturen derselben Art mit Stufe 5 auf der Karte, kann man sie im Upgrade-Fenster zur **Ahnenform** verschmelzen (`world.ascendInfo`/`ascend`, Kosten Kaufpreis × `BAL.run.ascendCost` = 40). Alle Kreaturen dieser Art werden geopfert; **Ahnen-Grad 1–100** aus investierten Münzen, Siegen und Anzahl. Werte: alle drei Stufe-5-Pfade gleichzeitig (`tiers` = [5,5,5]), Schaden ×2 × (1 + Grad·2 %), +Tempo, +Reichweite, Erkennung, Bossschaden ×1,5 (`stats.baseStats` über `t.ascended`). Neue Ultimate „Ahnenzorn“ (`ancestral`, ganze Karte). Optik: alle drei Stufe-5-Optiken, Modell ×1,45, goldene Aura + Runenring + Lichtsäule; Zwischensequenz `ascend` (Lichtstrahlen von den Geopferten, Säulen, Zeitlupe, Zoom) + Vollbild-Einblendung `hud.ascendSplash`. Eine Ahnenform pro Kreaturart.
+
+## v0.30.0 – Alle 20 Kreaturen mit sichtbaren Upgrades
+**0.30:** `KIT` für Phönix, Schlangenmagierin, Windmönch, Leerenkatze, Kappa, Komainu und Kirin (mit Kopfpositionen `head`). Damit zeigt jede der 20 Grund-Kreaturen alle 15 Pfadstufen sichtbar (Kitsune über eigene `LOOKS`, die anderen über den Baukasten). Fusionen erben die Optik ihres Körpers.
+
+## v0.29.0 – Upgrade-Optik für Drachenwolf, Mantis, Golem, Glückskatze
+**0.29:** Neue Bauteile `rocks`, `scythe`, `chest`, `lanterns`, `clover`; `KIT.dragonwolf/mantis/golem/neko`. Prozedurale Modelle ohne Knochen bekommen eine Kopfposition `KIT[cid].head` = [x, y, z] als Anteil der Höhe. Halsband schmaler. Damit haben 9 von 20 Kreaturen eigene Optiken für alle 15 Stufen.
+
+## v0.28.0 – Upgrade-Optik-Baukasten (Tiger, Schildkröte, Hirsch, Rabe)
+**0.28:** Neuer Baukasten `js/render/looks.js`: Bauteile (`PART`: horns, gem, mask, collar, halo, crown, orbs, shards, coins, ring, flames, bolts, cloud, drums, wings, pillar, shield, spikes, cannon, twin, crates, muzzle, stones, roots, leaves, trees, torii, blades, hole, eyes, claws, stripes) und je Kreatur eine Liste `KIT[cid].paths[pfad][stufe]` = [[bauteil, farbe, n], …]. `pathGear(R, tiers, sc, { cid })` bzw. `gearOn(m, tiers, cid)` nutzen automatisch den Baukasten; Größen richten sich nach der Modellhöhe (Breite gedeckelt, sonst zählen Schwänze/Flügel mit). Fertig: Donnertiger (Sturmwolke, Raijin-Trommeln, Flammenkrone …), Eisenschildkröte (Schutzschild, Kanonen, Menhire …), Geisthirsch (Wurzeln, Mini-Wald, Torii, Lichtflügel …), Schattenrabe (Mondschwingen, Klingenring, Schwarzes Loch …).
+
+## v0.27.0 – Jedes Upgrade sichtbar (Vorlage Kitsune)
+**0.27:** Upgrade-Optik-System `LOOKS` in assets.js (eine Funktion pro Kreatur, sonst Rückfall `pathGear`). Regel: Stufe 1–2 Zubehör · 3 Farbe/Material (`tintByTier`) · 4 Umriss · 5 eigene Gestalt; Kreuzpfade kombinieren sich. Kitsune komplett: Flamme (Rücken-Kunai → brennende Kunai → kreisendes Fuchsfeuer → Flammenring + Schulterflammen → Inferno-Fuchs mit Flammenmähne, Feuerflügeln, Glut), Geist (Stirnjuwel → Papierlaterne → Geisterklinge → Seelenbänder → Ahnenfuchs mit Geisterkopf + Torii), Shinobi (Schal → Stirnband → Schatten-Nachbild → Kunai-Fächer → Tausend Klingen mit Klingenring, Maske, Schattenmantel). Höhen je Modell (`adult`). Stufe-5-Kauf: Vollbild-Einblendung `hud.t5Splash` (Strahlen in Pfadfarbe, neues Porträt, Name, Wirkung) + Kamera-Fokus/Effekte in view. Porträts führen jetzt einen Animationsschritt aus (`icons.portrait` → `m.tick`), damit kreisende Teile sichtbar sind.
+
+## v0.26.0 – Hauptmenü im Genre-Stil
 **0.26:** Hub `menus.s_home` neu: Konto-Level als Stern `.bStar` + Titel/XP oben links, Logo in Comic-Schrift, oben rechts Shinobi-Punkte `.bCur` und runder Optionen-Knopf `.bGear`; links große Kacheln (Kreaturen, Helden, Entwicklung), rechts orange Kacheln (Täglich, Erfolge, Akademie, Statistik) mit roten Hinweis-Punkten, unten mittig großer grüner SPIELEN-Knopf `.bPlay`. Titel, Bildschirmköpfe, Zurück-Knopf und Sammlungs-Karten im gleichen Comic-Stil (`--cartoon`, `--ol`).
 
 ## v0.25.0 – HUD im Genre-Stil
