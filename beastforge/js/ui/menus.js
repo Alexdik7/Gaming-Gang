@@ -2,7 +2,7 @@
 import { BAL, VERSION, LEVEL_PERKS } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { POWER, givePowers } from '../data/powers.js';
-import { Coop, makeCode, cleanCode } from '../net.js';
+import { Coop, makeCode, cleanCode, explain } from '../net.js';
 import { academyFx } from '../data/academy.js';
 import { heroStartLevel } from '../meta/progression.js';
 import { COSMETICS, COS_KINDS, hasCos, ensureEvent, eventDef, eventProgress, claimEvent, eventDot, openChest, daysLeft, EVENT_CHESTS } from '../data/events.js';
@@ -109,7 +109,7 @@ export class Menus {
         <button class="big" id="cpHost">🏠 Raum erstellen</button>
         <div class="cpjoin"><span>BF-</span><input id="cpCode" inputmode="numeric" maxlength="4" placeholder="1234" autocomplete="off"><button class="btn pri" id="cpJoin">Beitreten</button></div>
         <small class="mut">Beide brauchen Internet. Der Gastgeber wählt Karte und Schwierigkeit.</small></div>`,
-      wait: `<div class="cpbox"><small class="mut">Dein Raumcode</small><div class="cpcode">${esc(N?.code || '')}</div><p>Sag deinem Mitspieler den Code. Er tippt in Beastforge auf <b>Koop → Beitreten</b>.</p><div class="cpwait">⏳ Warte auf Mitspieler …</div></div>`,
+      wait: `<div class="cpbox"><small class="mut">Dein Raumcode</small><div class="cpcode">${esc(N?.code || '')}</div><p>Sag deinem Mitspieler den Code. Er tippt in Beastforge auf <b>Koop → Beitreten</b>.</p>${navigator.share ? '<button class="btn pri" id="cpShare">📤 Code teilen</button>' : ''}<div class="cpwait" id="cpStat">⏳ Warte auf Mitspieler …</div><small class="mut">Du kannst kurz zu WhatsApp &amp; Co. wechseln – komm danach zurück in Beastforge und bleib auf diesem Bildschirm, bis dein Mitspieler da ist.</small></div>`,
       ready: `<div class="cpbox"><div class="cpmate">🤝 <b>${esc(N?.mate?.name || 'Mitspieler')}</b> · Konto-Lv ${+N?.mate?.lvl || 1} ist da!</div>
         <div class="wlabel">Karte</div><div class="cpsel">${maps.map(id => `<button class="btn ${id === sel ? 'pri' : ''}" data-cm="${id}">${esc(MAPS[id].name)}</button>`).join('')}</div>
         <div class="wlabel">Schwierigkeit</div><div class="cpsel">${diffs.map(d => `<button class="btn ${d === dsel ? 'pri' : ''}" data-cd="${d}">${esc(BAL.diff[d].name)}</button>`).join('')}</div>
@@ -119,10 +119,12 @@ export class Menus {
     }[state];
     this.render(`<div class="scr coopScr">${this.hdr('🤝 Koop')}${body}${this.coopErr ? `<p class="cperr">⚠ ${esc(this.coopErr)}</p>` : ''}</div>`, m => {
       this.coopErr = null;
-      const fail = e => { this.coopNet = null; this.coopErr = /timeout|unavailable|peer/i.test(String(e?.message || e?.type || e)) ? 'Keine Verbindung – Code prüfen und Internet an?' : 'Verbindung fehlgeschlagen.'; this.s_coop('start'); };
-      const wire = N2 => { N2.on.hello = () => { this.app.audio.play('levelup'); this.s_coop(); }; N2.on.leave = () => { this.coopNet = null; this.coopErr = 'Verbindung getrennt.'; if (this.cur === 'coop') this.s_coop('start'); };
+      const fail = e => { this.coopNet = null; this.coopErr = explain(e); this.s_coop('start'); };
+      const wire = N2 => { N2.on.hello = () => { this.app.audio.play('levelup'); this.s_coop(); }; N2.on.status = st => { const el = document.getElementById('cpStat'); if (el) el.textContent = st === 'open' ? '⏳ Raum offen – warte auf Mitspieler …' : '🔄 Verbindung kurz weg – Raum wird wiederhergestellt …'; };
+        N2.on.leave = () => { this.coopNet = null; this.coopErr = 'Verbindung getrennt.'; if (this.cur === 'coop') this.s_coop('start'); };
         N2.on.setup = s => { this.coopGo = true; const net = this.coopNet; this.coopNet = null; this.app.startRun(s.map, s.diff, 'std', { net, setup: s }).finally(() => { this.coopGo = false; }); }; };
-      m.querySelector('#cpHost')?.addEventListener('click', () => { this.app.audio.init(); this.s_coop('busy'); Coop.create(makeCode()).then(N2 => { this.coopNet = N2; wire(N2); this.s_coop(); }, fail); });
+      m.querySelector('#cpHost')?.addEventListener('click', () => { this.app.audio.init(); this.s_coop('busy'); const mk = (n) => Coop.create(makeCode()).catch(e => n > 0 && /unavailable-id/.test(e?.type) ? mk(n - 1) : Promise.reject(e)); mk(3).then(N2 => { this.coopNet = N2; wire(N2); this.s_coop(); }, fail); });
+      m.querySelector('#cpShare')?.addEventListener('click', () => { navigator.share({ title: 'Beastforge Koop', text: `Spiel Beastforge mit mir im Koop! Öffne Beastforge → Koop → Beitreten und gib ${this.coopNet?.code || ''} ein.` }).catch(() => {}); });
       m.querySelector('#cpJoin')?.addEventListener('click', () => { this.app.audio.init(); const code = cleanCode(m.querySelector('#cpCode').value); if (!code) { this.coopErr = 'Bitte die 4 Ziffern eingeben.'; this.s_coop('start'); return; }
         this.s_coop('busy'); Coop.join(code).then(N2 => { this.coopNet = N2; wire(N2); N2.hello(this.coopInfo()); this.s_coop(); }, fail); });
       m.querySelectorAll('[data-cm]').forEach(b => b.onclick = () => { this.coopMap = b.dataset.cm; this.click(); this.s_coop(); });
