@@ -35,7 +35,8 @@ export class World {
     this.paths = (this.map.paths || [this.map.path]).map(pts => this.buildPath(pts));
     ({ pts: this.pts, cum: this.cum, len: this.len } = this.paths[0]); this.spawnPi = 0;
     this.ac = o.academy || {};   // Shinobi-Akademie: dauerhafte Boni (data/academy.js)
-    this.coins = this.diff.start + (this.ac.startCoins || 0); this.lives = this.diff.lives + (this.ac.lives || 0); this.maxLives = this.lives;
+    // Geldbörsen: Solo 1, Koop 2 (jeder verdient und zahlt selbst). `who` = wer gerade einen Befehl ausführt; die Simulation selbst liest `who` nie.
+    this.players = o.players || 1; this.who = 0; this.wallet = Array(this.players).fill(this.diff.start + (this.ac.startCoins || 0)); this.lives = this.diff.lives + (this.ac.lives || 0); this.maxLives = this.lives;
     if (this.mods.soulburn) this.lives = this.maxLives = 1;
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
@@ -62,6 +63,15 @@ export class World {
     out.x = a.x + (b.x - a.x) * f; out.y = a.y + (b.y - a.y) * f; out.ang = Math.atan2(b.y - a.y, b.x - a.x);
     return out;
   }
+  get coins() { return this.wallet[this.who]; }
+  set coins(v) { this.wallet[this.who] = v; }
+  // Geld gutschreiben: an einen Spieler (Besitzer der Kreatur) oder – ohne Besitzer – an alle gleich aufgeteilt
+  gain(c, to = null) {
+    if (!(c > 0)) return; if (this.mods.halfCash) c *= 0.5; this.stats.coins += c;
+    if (to != null && this.wallet[to] != null) this.wallet[to] += c; else for (let i = 0; i < this.players; i++) this.wallet[i] += c / this.players;
+  }
+  // Koop: eigene Kreaturen verwalten, fremde nur ansehen
+  mine(t) { return !t || this.players < 2 || (t.owner || 0) === this.who; }
   emit(e) { if (this.events.length < 4000) this.events.push(e); }
 
   // ───────── Glutkrater: Flöße + Lava-Ausbrüche ─────────
@@ -169,7 +179,7 @@ export class World {
     const hero = cid === this.heroId && !!HEROES[cid];
     const t = { id: this.nid++, cid, hero, cx: Math.floor(x), cy: Math.floor(y), x, y, ground: c.kind, stage: 0, tiers: [0, 0, 0], spent: cost,
       target: 'first', cd: 0.2, mcd: 0.5, cnt: 0, kills: 0, dmg: 0, ang: Math.PI / 2, abCd: 0, ultCd: 0, disabledT: 0, buffs: [], orbT: 0, dashCd: 3, clonesT: 0,
-      hlvl: hero ? (this.hooks.heroStart?.() || 1) : 0, hxp: 0, s: null, prot: false, raft: c.raft };
+      hlvl: hero ? (this.hooks.heroStart?.() || 1) : 0, hxp: 0, s: null, prot: false, raft: c.raft, owner: this.who };
     if (o.tiers) { t.tiers = o.tiers.slice(); t.instant = true; }   // Sofort-Kreatur: fertige Upgrades
     if (c.raft != null) { const rf = this.rafts[c.raft]; t.ox = x - rf.x; t.oy = y - rf.y; }
     this.towers.push(t); this.stats.used.add(cid); this.dirty = true; this.refresh();
@@ -188,6 +198,7 @@ export class World {
   }
   upgrade(id, p) {
     const t = this.tower(id); if (!t) return { ok: false, why: 'Kein Turm' };
+    if (!this.mine(t)) return { ok: false, why: 'Gehört deinem Mitspieler' };
     const c = this.canUpgrade(t, p); if (!c.ok) return c;
     this.coins -= c.cost; t.spent += c.cost; t.tiers[p]++; this.stats.upgrades++;
     if (t.tiers[p] === 5) { this.stats.t5++; this.hooks.stat?.('t5', 1); }
@@ -206,6 +217,7 @@ export class World {
   }
   evolve(id) {
     const t = this.tower(id); if (!t) return { ok: false, why: 'Kein Turm' };
+    if (!this.mine(t)) return { ok: false, why: 'Gehört deinem Mitspieler' };
     if (this.mods.basic && !t.hero) return { ok: false, why: 'Herausforderung: nur Grundformen' };
     const n = this.nextEvo(t);
     if (!n) return { ok: false, why: 'Höchste Form' };
@@ -221,7 +233,8 @@ export class World {
   sell(id) {
     if (this.mods.soulburn) return { ok: false, why: 'Seelenbrand: kein Verkaufen' };
     const i = this.towers.findIndex(t => t.id === id); if (i < 0) return { ok: false };
-    const t = this.towers[i], v = Math.floor(t.spent * (BAL.run.sellRefund + (this.ac.sell || 0)));
+    const t = this.towers[i]; if (!this.mine(t)) return { ok: false, why: 'Gehört deinem Mitspieler' };
+    const v = Math.floor(t.spent * (BAL.run.sellRefund + (this.ac.sell || 0)));
     this.coins += v; this.towers.splice(i, 1); this.dirty = true; this.refresh();
     this.emit({ t: 'sell', tower: t, value: v });
     return { ok: true, value: v };
@@ -231,7 +244,8 @@ export class World {
   // ───────── Ahnenform: 3× Stufe 5 (je ein Pfad) derselben Kreatur verschmelzen ─────────
   ascendInfo(t) {
     if (!t || t.hero || t.ascended || CREATURES[t.cid]?.fusion) return null;
-    const same = this.towers.filter(o => o.cid === t.cid && !o.hero), def = CREATURES[t.cid];
+    if (!this.mine(t)) return null;
+    const same = this.towers.filter(o => o.cid === t.cid && !o.hero && (o.owner || 0) === (t.owner || 0)), def = CREATURES[t.cid];
     if (!same.some(o => o.tiers.includes(5))) return null;   // erst zeigen, wenn es eine Stufe 5 gibt
     const have = [0, 1, 2].map(p => same.some(o => o.tiers[p] === 5));
     const spent = same.reduce((a, o) => a + o.spent, 0), kills = same.reduce((a, o) => a + o.kills, 0);
@@ -246,7 +260,7 @@ export class World {
   }
   ascend(id) {
     const t = this.tower(id), info = this.ascendInfo(t); if (!info) return { ok: false, why: 'Nicht möglich' }; if (!info.ok) return { ok: false, why: info.why };
-    const same = this.towers.filter(o => o.cid === t.cid && !o.hero && o !== t), from = same.map(o => ({ x: o.x, y: o.y }));
+    const same = this.towers.filter(o => o.cid === t.cid && !o.hero && o !== t && (o.owner || 0) === (t.owner || 0)), from = same.map(o => ({ x: o.x, y: o.y }));
     this.coins -= info.cost;
     for (const o of same) { t.spent += o.spent; t.kills += o.kills; t.dmg += o.dmg; this.towers.splice(this.towers.indexOf(o), 1); }
     t.spent += info.cost; t.ascended = info.grade; t.tiers = [5, 5, 5]; t.stage = Math.max(t.stage, maxStage(t.cid, this.levelOf(t.cid), this.branchOf(t.cid)));
@@ -258,10 +272,10 @@ export class World {
   }
   // ───────── Fusion ─────────
   fuseOptions(t) {
-    if (!t || t.hero || CREATURES[t.cid]?.fusion) return [];
+    if (!t || t.hero || CREATURES[t.cid]?.fusion || !this.mine(t)) return [];
     return fusionsWith(t.cid).map(f => {
       const other = f.a === t.cid ? f.b : f.a, def = CREATURES[f.id];
-      const ps = this.towers.filter(o => o !== t && o.cid === other).sort((p, q) => Math.hypot(p.x - t.x, p.y - t.y) - Math.hypot(q.x - t.x, q.y - t.y));
+      const ps = this.towers.filter(o => o !== t && o.cid === other && (o.owner || 0) === (t.owner || 0)).sort((p, q) => Math.hypot(p.x - t.x, p.y - t.y) - Math.hypot(q.x - t.x, q.y - t.y));
       const p = ps[0], cost = f.cost;
       let why = '';
       if (!p) why = 'Platziere ' + CREATURES[other].name + ' daneben';
@@ -291,7 +305,7 @@ export class World {
     this.emit({ t: 'fuse', tower: keep, gone: { x: gone.x, y: gone.y, cid: gone.cid }, def: o.def });
     return { ok: true, tower: keep };
   }
-  setTarget(id, mode) { const t = this.tower(id); if (t && TARGETS.includes(mode)) { t.target = mode; return { ok: true }; } return { ok: false }; }
+  setTarget(id, mode) { const t = this.tower(id); if (t && this.mine(t) && TARGETS.includes(mode)) { t.target = mode; return { ok: true }; } return { ok: false }; }
   clearRock(cx, cy) {
     if (this.cellType(cx, cy) !== 'R') return { ok: false, why: 'Kein Fels' };
     if (this.coins < BAL.run.rockClear) return { ok: false, why: 'Zu wenig Münzen' };
@@ -308,7 +322,7 @@ export class World {
   }
   startWave() {
     if (!this.canStartWave()) return { ok: false };
-    if (this.enemies.length > 0 && this.wave > 0) { const b = BAL.run.earlyCall(this.wave); this.gain(b); this.emit({ t: 'early', coins: b }); }
+    if (this.enemies.length > 0 && this.wave > 0) { const b = BAL.run.earlyCall(this.wave); this.gain(b, this.who); this.emit({ t: 'early', coins: b }); }
     this.wave++;
     let def = waveDef(this.wave);
     const mx = this.map.mix?.(this.wave, def.groups); if (mx) def = { ...def, groups: mx.groups, tip: mx.tip || def.tip, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) };
@@ -525,7 +539,7 @@ export class World {
     if (r.slow) { e.slowPct = Math.max(e.slowPct, r.slow[0]); e.slowT = Math.max(e.slowT, r.slow[1]); }
     if (r.stun && !e.boss) e.stunT = Math.max(e.stunT, r.stun);
     if (r.burnMul) { e.burnDps = Math.max(e.burnDps, base * r.burnMul / 3); e.burnT = 3; e.burnSrc = src; }
-    if (r.coins) this.gain(r.coins);
+    if (r.coins) this.gain(r.coins, src?.owner);
     if (r.aoe) for (const o of this.enemies) if (o !== e && o.alive && Math.hypot(o.x - e.x, o.y - e.y) < r.aoe) this.damage(o, base * r.aoeMul, 'astral', src, { noReact: true });
   }
   applyStatus(e, s, src) {
@@ -540,10 +554,10 @@ export class World {
     if (!e.alive) return; e.alive = false;
     const def = e.def;
     const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul * BAL.lateCoins(e.wave || this.wave));
-    this.gain(coins);
+    this.gain(coins, src?.owner);
     this.stats.kills++; this.hooks.stat?.('kills', 1);
-    if (src) { src.kills++; if (src.s?.bounty) this.gain(src.s.bounty); }
-    for (const t of this.luckyT || []) if (Math.hypot(t.x - e.x, t.y - e.y) <= t.s.range) { this.gain(t.s.lucky); this.stats.income += t.s.lucky; }
+    if (src) { src.kills++; if (src.s?.bounty) this.gain(src.s.bounty, src.owner); }
+    for (const t of this.luckyT || []) if (Math.hypot(t.x - e.x, t.y - e.y) <= t.s.range) { this.gain(t.s.lucky, t.owner); this.stats.income += t.s.lucky; }
     // Charakter-XP nach Schadensanteil verteilen (mehrere Kreaturen am selben Gegner teilen fair)
     const base = (def.xp || 1) * (e.elite ? 2.5 : 1) * (1 + BAL.char.waveScale * this.wave) * (e.boss ? BAL.char.bossMul : 1);
     const total = Object.values(e.dmgBy).reduce((a, b) => a + b, 0);
@@ -573,7 +587,6 @@ export class World {
     const got = this.hooks.charXp ? this.hooks.charXp(cid, raw, this.wave) : raw;
     this.stats.xp[cid] = (this.stats.xp[cid] || 0) + (got || 0);
   }
-  gain(c) { if (c > 0) { if (this.mods.halfCash) c *= 0.5; this.coins += c; this.stats.coins += c; } }
 
   // ───────── Held ─────────
   heroXp(t, amt) {
@@ -860,6 +873,7 @@ export class World {
   }
   useAbility(id, slot = 'ab') {
     const t = this.tower(id); if (!t || this.over) return { ok: false };
+    if (!this.mine(t)) return { ok: false, why: 'Gehört deinem Mitspieler' };
     const info = this.abilityInfo(t).find(a => a.slot === slot);
     if (!info || !info.ready) return { ok: false, why: 'Noch nicht freigeschaltet' };
     if ((slot === 'ab' ? t.abCd : t.ultCd) > 0) return { ok: false, why: 'Lädt noch' };
@@ -923,7 +937,7 @@ export class World {
         for (const o of this.enemies) if (o !== best && o.alive && Math.hypot(o.x - best.x, o.y - best.y) < 1.4) { this.damage(o, s.dmg * 6, 'astral', t); if (o.alive && !o.boss) o.stunT = Math.max(o.stunT, 1); }
         break;
       }
-      case 'goldrain': { const c = 60 + 15 * this.wave; this.gain(c); this.stats.income += c; this.emit({ t: 'ability', id: 'goldrain', tower: t, coins: c }); break; }
+      case 'goldrain': { const c = 60 + 15 * this.wave; this.gain(c, t.owner); this.stats.income += c; this.emit({ t: 'ability', id: 'goldrain', tower: t, coins: c }); break; }
       case 'blessing': {
         this.emit({ t: 'ability', id: 'blessing', tower: t, r: 3.5 });
         for (const o of this.towers) if (Math.hypot(o.x - t.x, o.y - t.y) <= 3.5) o.buffs.push({ id: 'blessing', t: 8, fx: { mul: { rate: 1.4, dmg: 1.2 } } });
@@ -1084,9 +1098,10 @@ export class World {
     while (this.doneWave < this.wave) {
       this.doneWave++;
       const w = this.doneWave, bonus = Math.round(BAL.run.waveBonus(w) * this.diff.coins * (1 + (this.ac.waveBonus || 0)));
-      let income = 0, heal = 0; for (const t of this.towers) { income += t.s?.income || 0; heal += t.s?.lifeRegen || 0; if (t.s?.interest) income += Math.min(t.s.icap, Math.floor(this.coins * t.s.interest)); }
+      let income = 0, heal = 0; const inc = Array(this.players).fill(0);   // Einkommen + Zinsen gehören dem Besitzer der Kreatur
+      for (const t of this.towers) { const o = t.owner || 0; let v = t.s?.income || 0; heal += t.s?.lifeRegen || 0; if (t.s?.interest) v += Math.min(t.s.icap, Math.floor(this.wallet[o] * t.s.interest)); inc[o] += v; income += v; }
       if (heal && this.lives < this.maxLives) { this.lives = Math.min(this.maxLives, this.lives + heal); this.emit({ t: 'heal2', lives: heal }); }
-      this.gain(bonus + income); this.stats.income += income; if (income) this.hooks.stat?.('income', income);
+      this.gain(bonus * this.players); inc.forEach((v, i) => this.gain(v, i)); this.stats.income += income; if (income) this.hooks.stat?.('income', income);
       const used = new Set(this.towers.filter(t => !t.hero).map(t => t.cid));
       for (const cid of used) this.charXp(cid, BAL.char.survive(w));
       const ht = this.towers.find(t => t.hero); if (ht) this.heroXp(ht, BAL.hero.waveXp(w));

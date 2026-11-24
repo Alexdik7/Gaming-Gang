@@ -713,3 +713,11 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .cpmate { font-size: 16px; color: #fff; } .cpsel { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .cperr { text-align: center; color: #ff8a8a; font-weight: 800; }
 .pill.coop b { font-size: 13px; color: #9fe0ff; }
+.cpdiag { display: grid; gap: 4px; text-align: left; width: 100%; max-width: 420px; } .cpdiag > div { padding: 6px 10px; border-radius: 10px; background: rgba(0,0,0,.25); color: #fff; font-weight: 700; font-size: 13px; }
+.cpdiag .bad { background: rgba(255,90,90,.25); } .cpdiag .ok { background: rgba(90,220,120,.18); } .cpdiag small { display: block; font-weight: 400; color: #ffd0d0; }
+.cpverd { font-weight: 800; color: #ffd257 !important; margin-top: 6px !important; }
+/* v0.37 Koop: eigenes Geld, Besitzer-Farben (Spieler 1 blau, Spieler 2 orange) */
+#hud .runbox .pill.p0 { outline: 3px solid #4aa8ff; outline-offset: 1px; } #hud .runbox .pill.p1 { outline: 3px solid #ffa03a; outline-offset: 1px; }
+.pill.coop b { color: #fff; white-space: nowrap; } .pill.coop { white-space: nowrap; }
+#panel .own2 { margin: 0 0 6px; padding: 5px 10px; border-radius: 10px; background: rgba(255,160,58,.25); border: 2px solid #ffa03a; color: #fff; font-weight: 800; font-size: 12px; text-align: center; }
+#panel.foreign [data-up], #panel.foreign [data-sell], #panel.foreign [data-evo], #panel.foreign [data-fuse], #panel.foreign [data-ascend], #panel.foreign [data-tg] { pointer-events: none; opacity: .35; filter: grayscale(.7); }

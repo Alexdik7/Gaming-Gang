@@ -15,6 +15,7 @@ const TOWER_SCALE = 1.75, ENEMY_SCALE = 1.5;
 const backOut = k => { const c = 1.9; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
 const TINT = { flash: [1, 1, 1, 0.75], burn: [1, 0.45, 0.1, 0.32], frost: [0.45, 0.8, 1, 0.38], stun: [1, 0.95, 0.4, 0.4], shield: [0.7, 0.5, 1, 0.35], vuln: [1, 0.25, 0.35, 0.22], elite: [1, 0.82, 0.3, 0.16], none: [0, 0, 0, 0] };
 
+export const OWNER_COL = [0x4aa8ff, 0xffa03a];   // Koop-Farben: Spieler 1 (Gastgeber) blau, Spieler 2 orange
 export class GameView {
   constructor(stage, world, opts = {}) {
     this.stage = stage; this.world = world; this.scene = stage.scene; this.opts = opts;
@@ -88,7 +89,8 @@ export class GameView {
   }
 
   // ───────── Türme ─────────
-  towerKey(t) { return t.cid + (t.ascended ? 'A' : '') + '|' + (t.hero ? 'h' + (t.hlvl >= 20 ? 2 : t.hlvl >= 15 ? 1 : 0) : t.stage + ':' + t.tiers.join('') + ':' + (this.opts.branch?.(t.cid) || '') + (this.opts.skin?.(t.cid) || '')); }
+  towerKey(t) {   // (Besitzer ändert sich nie → kein Teil des Schlüssels)
+ return t.cid + (t.ascended ? 'A' : '') + '|' + (t.hero ? 'h' + (t.hlvl >= 20 ? 2 : t.hlvl >= 15 ? 1 : 0) : t.stage + ':' + t.tiers.join('') + ':' + (this.opts.branch?.(t.cid) || '') + (this.opts.skin?.(t.cid) || '')); }
   makeTower(t) {
     const m = buildModel(t.cid, { stage: t.stage, tiers: t.tiers, branch: this.opts.branch?.(t.cid), skin: this.opts.skin?.(t.cid), hlvl: t.hlvl });
     const g = new THREE.Group(), pose = new THREE.Group(); pose.rotation.order = 'YXZ'; pose.add(m.root); g.add(pose); g.scale.setScalar(TOWER_SCALE * (t.ascended ? 1.45 : 1));
@@ -102,6 +104,11 @@ export class GameView {
     const [x, z] = this.toW(t.x, t.y); g.position.set(x, this.ty(t), z);
     // Schatten-Kreis unter der Figur
     const sh = new THREE.Mesh(new THREE.CircleGeometry(0.34, 20).rotateX(-PI / 2), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18, depthWrite: false })); sh.position.y = 0.01; g.add(sh);
+    if (this.world.players > 1) {   // Koop: farbiger Besitzer-Ring (Spieler 1 blau, Spieler 2 orange)
+      const col = OWNER_COL[t.owner || 0];
+      g.add(mk(geo.torus(0.06), toon(col, { emissive: col, emissiveIntensity: 0.6 }), { p: [0, 0.04, 0], r: [PI / 2, 0, 0], s: 0.46, ol: false }));
+      g.add(mk(new THREE.CircleGeometry(0.42, 24).rotateX(-PI / 2), glow(col, 0.35), { p: [0, 0.02, 0], ol: false }));
+    }
     this.root.add(g);
     return { g, m, pose, key: this.towerKey(t), atk: 0, rot: t.ang, born: 0, evoT: 0, flash: 0, at: 9, flip: 1 };
   }
@@ -336,7 +343,7 @@ export class GameView {
         P.burst(x, 0.35, z, this.popCols || [col, 0xffffff], big ? 40 : (this.popCols ? 9 : 6), big ? 3.6 : 2, big ? 0.22 : 0.1, big ? 0.8 : 0.4, { grav: 4, up: 1.4 });
         this.flashes.add(x, 0.4, z, col, big ? 1.6 : 0.38, big ? 0.25 : 0.11, { k: 0.75 });
         if (big) this.rings.add(x, 0.05, z, 0.1, 2.2, col, 0.6); else this.rings.add(x, 0.05, z, 0.1, 0.5, col, 0.25, { alpha: 0.5 });
-        if (ev.coins && settings.dmgNums !== false) this.floaters.add(x, 0.9, z, '+' + ev.coins, 'coin', 0.8);
+        if (ev.coins && settings.dmgNums !== false && (this.world.players < 2 || (ev.src?.owner ?? this.world.who) === this.world.who)) this.floaters.add(x, 0.9, z, '+' + ev.coins, 'coin', 0.8);
         if (big) { this.stage.addShake(0.6); this.stage.zoomPunch = Math.max(this.stage.zoomPunch, 0.5); }
         break;
       }

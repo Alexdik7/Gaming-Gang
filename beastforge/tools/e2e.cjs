@@ -84,9 +84,10 @@ const S = {
     await h.waitForTimeout(600);
     await g.evaluate(() => { document.querySelector('.coach')?.remove(); const w = BF.world, p = w.suggestSpot('turtle', 3); BF.game.cmd('place', 'turtle', ...p); });
     await h.waitForTimeout(6000);
-    const T = p => p.evaluate(() => ({ n: BF.world.tickN, towers: BF.world.towers.map(t => t.cid).join(), coins: Math.round(BF.world.coins), wave: BF.world.wave, desync: !!BF.game.desync, net: !!BF.game.net }));
+    const T = p => p.evaluate(() => ({ n: BF.world.tickN, towers: BF.world.towers.map(t => t.cid + t.owner).join(), wallet: BF.world.wallet.map(Math.round).join(), wave: BF.world.wave, desync: !!BF.game.desync, net: !!BF.game.net, me: BF.game.me }));
     const a = await T(h), c = await T(g); await shot(g, 'co2_guest');
     assert(a.towers.split(',').length === 2 && a.towers === c.towers, 'beide Kreaturen auf beiden Seiten: ' + JSON.stringify([a, c]));
+    assert(a.towers === 'raven0,turtle1' && a.me === 0 && c.me === 1, 'Besitzer: Gastgeber = 0, Mitspieler = 1: ' + JSON.stringify([a, c]));
     assert(a.net && c.net && !c.desync && c.wave === 1 && Math.abs(a.n - c.n) < 120, 'Lockstep synchron: ' + JSON.stringify([a, c]));
     assert(!h.errs.length && !g.errs.length, [...h.errs, ...g.errs].join(' | '));
     await ctx.close();
