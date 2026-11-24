@@ -44,7 +44,8 @@ export class Game {
       heroStart: () => S ? S.heroStart : Math.min(20, heroStartLevel(P.heroes[this.heroId]?.rank || 1) + (this.ac.heroLvl || 0)),
     };
     const mods = S ? {} : this.ch === 'daily' ? Object.assign({}, ...dailyChallenge(P, id => unlocked(P, 'map', id)).mods.map(id => CH[id].mods)) : CH[this.ch].mods || {};
-    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, academy: S ? S.ac : this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: S ? S.seed : (Date.now() % 1e6) | 0 });
+    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, academy: S ? S.ac : this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: S ? S.seed : (Date.now() % 1e6) | 0, players: S ? 2 : 1 });
+    this.me = this.net && !this.net.host ? 1 : 0; this.world.who = this.me;   // Koop: Gastgeber = Spieler 0, Mitspieler = Spieler 1
     if (app.devGod && !S) this.world.god = true;
     if (this.net) { this.askedFree = true; this.net.on.leave = () => this.mateLeft(); }   // Koop: kein freies Spiel (würde die Welten trennen)
     app.stage.setMode('game');
@@ -227,10 +228,10 @@ export class Game {
   cmd(name, ...a) {
     const w = this.world, N = this.net;
     if (!N || N.gone) return w[name](...a);
-    if (N.host) { const r = w[name](...a); if (r?.ok) N.out.push([w.tickN, name, a]); return r; }
+    if (N.host) { const r = w[name](...a); if (r?.ok) N.out.push([w.tickN, name, a, 0]); return r; }
     N.send({ c: [name, a] }); return { ok: true, pending: true };   // Gast: Gastgeber reiht ein, Ergebnis kommt mit dem Takt zurück
   }
-  hostIn() { const N = this.net, w = this.world; for (const [name, a] of N.inbox.splice(0)) { const r = w[name](...a); if (r?.ok) N.out.push([w.tickN, name, a]); } }
+  hostIn() { const N = this.net, w = this.world; for (const [name, a] of N.inbox.splice(0)) { w.who = 1; const r = w[name](...a); w.who = this.me; if (r?.ok) N.out.push([w.tickN, name, a, 1]); } }
   hostOut() {
     const N = this.net, w = this.world; if (N.gone) return;
     if (w.tickN === N.lastSent && !N.out.length && this.paused === N.lastP) return;
@@ -241,7 +242,7 @@ export class Game {
   guestStep() {
     const N = this.net, w = this.world, q = N.inbox; let k = 0;
     while (w.tickN < N.hostN && k < 45 && !w.over) {
-      while (q.length && q[0][0] <= w.tickN) { const [, name, a] = q.shift(); w[name](...a); }
+      while (q.length && q[0][0] <= w.tickN) { const [, name, a, who] = q.shift(); w.who = who || 0; w[name](...a); w.who = this.me; }
       w.step(BAL.tick); k++;
       const h = N.hashes?.find(x => x[0] === w.tickN);
       if (h && h[1] !== worldHash(w) && !this.desync) { this.desync = true; this.hud.toast('acc', '⚠ Koop asynchron', 'Die Spielstände weichen ab – bitte neu starten.'); }

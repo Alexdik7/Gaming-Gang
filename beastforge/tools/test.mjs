@@ -561,3 +561,21 @@ test('Koop-Lockstep: gleiche Befehle zum gleichen Schritt → gleiche Welt', asy
   assert.ok(log.length >= 3, 'Befehle aufgezeichnet');
   assert.equal(A.tickN, B.tickN); assert.equal(worldHash(A), worldHash(B)); assert.equal(A.coins, B.coins); assert.equal(A.enemies.length, B.enemies.length);
 });
+
+test('Koop: jeder verdient und zahlt selbst, fremde Kreaturen gesperrt', () => {
+  const w = new World({ map: 'ahnenhain', diff: 'normal', loadout: ['kitsune', 'turtle', 'raven'], seed: 9, players: 2, hooks: { level: () => 10 } });
+  const start = w.wallet[0]; assert.equal(w.wallet[1], start);
+  w.who = 0; const a = w.place('raven', ...w.suggestSpot('raven', 3)); assert.ok(a.ok); assert.equal(a.tower.owner, 0);
+  w.who = 1; const p1 = w.suggestSpot('turtle', 3); const b = w.place('turtle', ...p1); assert.ok(b.ok, b.why); assert.equal(b.tower.owner, 1);
+  assert.equal(w.wallet[0], start - w.costOf('raven')); assert.equal(w.wallet[1], start - w.costOf('turtle'));
+  assert.equal(w.upgrade(a.tower.id, 0).why, 'Gehört deinem Mitspieler'); assert.equal(w.sell(a.tower.id).why, 'Gehört deinem Mitspieler');
+  w.who = 0; const before = [...w.wallet];
+  w.gain(100, 1); assert.equal(w.wallet[1], before[1] + 100); assert.equal(w.wallet[0], before[0]);
+  w.gain(100); assert.equal(w.wallet[0], before[0] + 50, 'ohne Besitzer: aufgeteilt');
+  // Kill-Geld geht an den Besitzer der Kreatur
+  w.startWave(); const w1 = [...w.wallet]; for (let i = 0; i < 60 * 25; i++) w.step(BAL.tick);
+  const k0 = a.tower.kills, k1 = b.tower.kills; assert.ok(k0 + k1 > 0);
+  if (k0 && !k1) assert.ok(w.wallet[0] > w1[0] && w.wallet[1] >= w1[1]);
+  // Solo unverändert: eine Börse
+  const s = new World({ map: 'ahnenhain', diff: 'normal', seed: 9 }); assert.equal(s.wallet.length, 1); s.coins += 5; assert.equal(s.wallet[0], s.diff.start + 5);
+});

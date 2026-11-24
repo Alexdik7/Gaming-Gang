@@ -52,6 +52,7 @@ class PeerTransport {    // echtes Internet: WebRTC über den öffentlichen Peer
   // Gastgeber: Raum bleibt offen, auch wenn iOS die App kurz in den Hintergrund schickt (Code per Nachricht teilen!)
   async host(code) {
     await this.lib(); this.isHost = true; this.code = code; this.closed = false;
+    this.onProgress?.('Erstelle Raum beim Vermittler …');
     await this.openHost(true);
     this.onVis = () => { if (!document.hidden) this.heal(); };
     document.addEventListener('visibilitychange', this.onVis);
@@ -83,6 +84,7 @@ class PeerTransport {    // echtes Internet: WebRTC über den öffentlichen Peer
     await this.lib(); this.isHost = false; this.code = code;
     let last;
     for (let i = 0; i < 3; i++) {
+      this.onProgress?.(`Verbinde mit dem Vermittler … (Versuch ${i + 1}/3)`);
       try { await this.joinOnce(); return; } catch (e) { last = e; try { this.peer?.destroy(); } catch { } if (i < 2) await new Promise(r => setTimeout(r, 2500)); }
     }
     throw last;
@@ -92,7 +94,7 @@ class PeerTransport {    // echtes Internet: WebRTC über den öffentlichen Peer
       const p = this.peer = new window.Peer(this.opts());
       const to = setTimeout(() => rej(new Error('timeout')), 15000);
       p.on('error', e => { clearTimeout(to); rej(e); });
-      p.on('open', () => this.dial().then(() => { clearTimeout(to); res(); }, e => { clearTimeout(to); rej(e); }));
+      p.on('open', () => { this.onProgress?.('Raum ' + this.code + ' gefunden? Baue Verbindung zum Gastgeber auf …'); this.dial().then(() => { clearTimeout(to); res(); }, e => { clearTimeout(to); rej(e); }); });
     });
   }
   dial() {
@@ -111,6 +113,28 @@ class PeerTransport {    // echtes Internet: WebRTC über den öffentlichen Peer
 }
 export const makeTransport = () => (typeof location !== 'undefined' && /net=local/.test(location.search)) ? new LocalTransport() : new PeerTransport();
 
+// Verbindungstest: Bibliothek, Vermittler, WebRTC und welche Wege (lokal / STUN / TURN-Relay) das Netz zulässt
+export async function diagnose(report) {
+  const out = {}, tr = new PeerTransport(), up = () => report({ ...out });
+  try { await tr.lib(); out.lib = true; } catch (e) { out.lib = false; up(); return out; }
+  up();
+  out.server = await new Promise(res => {
+    let p; try { p = new window.Peer(tr.opts()); } catch (e) { res(false); return; }
+    const end = v => { clearTimeout(to); res(v); setTimeout(() => { try { p.destroy(); } catch { } }, 100); };
+    const to = setTimeout(() => end(false), 10000); p.on('open', () => end(true)); p.on('error', () => end(false));
+  });
+  up();
+  const types = new Set();
+  try {
+    const pc = new RTCPeerConnection(tr.opts().config); pc.createDataChannel('t');
+    pc.onicecandidate = e => { const m = e.candidate && / typ (\w+)/.exec(e.candidate.candidate); if (m) { types.add(m[1]); out.host = types.has('host'); out.srflx = types.has('srflx'); out.relay = types.has('relay'); up(); } };
+    await pc.setLocalDescription(await pc.createOffer());
+    await new Promise(r => setTimeout(r, 8000)); pc.close(); out.rtc = true;
+  } catch (e) { out.rtc = false; }
+  out.host = types.has('host'); out.srflx = types.has('srflx'); out.relay = types.has('relay'); out.done = true; up();
+  return out;
+}
+
 // Verständliche Fehlermeldung je PeerJS-Fehlertyp
 export function explain(e) {
   const t = e?.type || e?.message || String(e);
@@ -127,8 +151,8 @@ export const CMDS = new Set(['place', 'upgrade', 'sell', 'evolve', 'ascend', 'fu
 
 export class Coop {
   constructor(tr, host) { this.tr = tr; this.host = host; this.out = []; this.inbox = []; this.hostN = 0; this.peer = null; this.on = {}; this.lastSent = -1; }
-  static async create(code) { const tr = makeTransport(); await tr.host(code); const c = new Coop(tr, true); c.code = code; c.wire(); return c; }
-  static async join(code) { const tr = makeTransport(); await tr.join(code); const c = new Coop(tr, false); c.code = code; c.wire(); return c; }
+  static async create(code, prog) { const tr = makeTransport(); tr.onProgress = prog; await tr.host(code); const c = new Coop(tr, true); c.code = code; c.wire(); return c; }
+  static async join(code, prog) { const tr = makeTransport(); tr.onProgress = prog; await tr.join(code); const c = new Coop(tr, false); c.code = code; c.wire(); return c; }
   wire() {
     this.tr.onStatus = st => this.on.status?.(st);
     this.tr.onJoin = id => { if (this.peer) return; this.peer = id; this.on.join?.(id); };
@@ -153,7 +177,7 @@ export class Coop {
 
 // Prüfsumme des Weltzustands (für die Asynchron-Warnung)
 export function worldHash(w) {
-  let h = Math.round(w.coins) * 31 + w.lives * 7 + w.enemies.length * 131 + w.towers.length * 1009 + w.wave * 17;
+  let h = (w.wallet || [w.coins]).reduce((a, c, i) => a + Math.round(c) * (31 + i * 977), 0) + w.lives * 7 + w.enemies.length * 131 + w.towers.length * 1009 + w.wave * 17;
   for (const e of w.enemies) h = (h * 33 + Math.round(e.hp) + Math.round(e.d * 100)) % 2147483647;
   for (const t of w.towers) h = (h * 33 + t.tiers[0] * 7 + t.tiers[1] * 11 + t.tiers[2] * 13 + Math.round(t.x * 100)) % 2147483647;
   return h;

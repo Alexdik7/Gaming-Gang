@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.36.2 – Koop-Verbindung robuster
+## Stand: v0.37.0 – Koop: eigenes Geld, klare Besitzer
+**0.37:** Geldbörsen `world.wallet[spieler]` (Solo 1, Koop 2), `world.coins` ist jetzt Getter/Setter auf `wallet[world.who]`; `who` = wer gerade einen Befehl ausführt (Gastgeber 0, Mitspieler 1; Befehls-Log trägt den Spieler mit). Die Simulation liest `who` nie: `gain(c, owner)` schreibt Kill-Geld, Kopfgeld, Glücks- und Goldregen-Münzen, Einkommen und Zinsen dem Besitzer der Kreatur gut, Wellenbonus bekommt jeder voll, Geld ohne Besitzer wird geteilt. Kreatur `t.owner`; `world.mine(t)` sperrt Upgrade/Verkauf/Erwecken/Ahnenform/Fusion/Ziel/Fähigkeit für fremde Kreaturen. Anzeige: farbiger Besitzer-Ring (`OWNER_COL` blau/orange), Mitspieler-Geld in der Koop-Pille (`#hMate`), eigenes Geld farbig umrandet, fremdes Panel „nur ansehen“ (`#panel.foreign`). Prüfsumme nutzt alle Börsen. Dazu (0.36.3) Verbindungsfortschritt mit Abbrechen und **🩺 Verbindungstest** (`diagnose()`: Vermittler, WebRTC, STUN, TURN).
+
+## Stand davor: v0.36.2 – Koop-Verbindung robuster
 **0.36.2:** Gastgeber-Raum überlebt den App-Wechsel auf dem iPhone (Code per WhatsApp teilen): `PeerTransport.heal()` stellt die Vermittler-Verbindung bei Rückkehr (`visibilitychange`) und alle 4 s wieder her, legt den Raum notfalls mit demselben Code neu an; Statusanzeige `#cpStat`, Knopf „Code teilen“ (`navigator.share`). Mitspieler versucht 3× beizutreten. Mehr STUN-Server + PeerJS-TURN ausdrücklich gesetzt (`opts()`), verständliche Fehler `explain(e)` je PeerJS-Fehlertyp; belegter Code → automatisch neuer Code.
 
 ## Stand davor: v0.36.1 – Update-Fix

@@ -2,7 +2,7 @@
 import { BAL, VERSION, LEVEL_PERKS } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { POWER, givePowers } from '../data/powers.js';
-import { Coop, makeCode, cleanCode, explain } from '../net.js';
+import { Coop, makeCode, cleanCode, explain, diagnose } from '../net.js';
 import { academyFx } from '../data/academy.js';
 import { heroStartLevel } from '../meta/progression.js';
 import { COSMETICS, COS_KINDS, hasCos, ensureEvent, eventDef, eventProgress, claimEvent, eventDot, openChest, daysLeft, EVENT_CHESTS } from '../data/events.js';
@@ -108,14 +108,15 @@ export class Menus {
       start: `<div class="cpbox"><p>Spielt zu zweit auf derselben Karte: <b>gemeinsame Münzen und Leben</b>, jeder setzt und verbessert Kreaturen. Euer Team besteht aus den Kreaturen von euch beiden.</p>
         <button class="big" id="cpHost">🏠 Raum erstellen</button>
         <div class="cpjoin"><span>BF-</span><input id="cpCode" inputmode="numeric" maxlength="4" placeholder="1234" autocomplete="off"><button class="btn pri" id="cpJoin">Beitreten</button></div>
-        <small class="mut">Beide brauchen Internet. Der Gastgeber wählt Karte und Schwierigkeit.</small></div>`,
+        <small class="mut">Beide brauchen Internet. Der Gastgeber wählt Karte und Schwierigkeit.</small><button class="btn" id="cpDiag">🩺 Verbindung testen</button></div>`,
       wait: `<div class="cpbox"><small class="mut">Dein Raumcode</small><div class="cpcode">${esc(N?.code || '')}</div><p>Sag deinem Mitspieler den Code. Er tippt in Beastforge auf <b>Koop → Beitreten</b>.</p>${navigator.share ? '<button class="btn pri" id="cpShare">📤 Code teilen</button>' : ''}<div class="cpwait" id="cpStat">⏳ Warte auf Mitspieler …</div><small class="mut">Du kannst kurz zu WhatsApp &amp; Co. wechseln – komm danach zurück in Beastforge und bleib auf diesem Bildschirm, bis dein Mitspieler da ist.</small></div>`,
       ready: `<div class="cpbox"><div class="cpmate">🤝 <b>${esc(N?.mate?.name || 'Mitspieler')}</b> · Konto-Lv ${+N?.mate?.lvl || 1} ist da!</div>
         <div class="wlabel">Karte</div><div class="cpsel">${maps.map(id => `<button class="btn ${id === sel ? 'pri' : ''}" data-cm="${id}">${esc(MAPS[id].name)}</button>`).join('')}</div>
         <div class="wlabel">Schwierigkeit</div><div class="cpsel">${diffs.map(d => `<button class="btn ${d === dsel ? 'pri' : ''}" data-cd="${d}">${esc(BAL.diff[d].name)}</button>`).join('')}</div>
         <button class="big" id="cpGo">⚔ Gemeinsam starten</button></div>`,
       joined: `<div class="cpbox"><div class="cpcode">${esc(N?.code || '')}</div><div class="cpwait">✓ Verbunden – der Gastgeber wählt die Karte …</div></div>`,
-      busy: `<div class="cpbox"><div class="cpwait">⏳ Verbinde …</div></div>`,
+      busy: `<div class="cpbox"><div class="cpwait">⏳ Verbinde …</div><p id="cpProg">${esc(this.coopProg || '')}</p><small class="mut" id="cpTime"></small><button class="btn" id="cpCancel">Abbrechen</button></div>`,
+      diag: `<div class="cpbox"><b>🩺 Verbindungstest</b><div class="cpdiag" id="cpDiagOut"></div><small class="mut">Dauert ca. 20 Sekunden. Macht den Test bei beiden Handys und schickt mir ein Bildschirmfoto.</small><button class="btn" id="cpBack">Zurück</button></div>`,
     }[state];
     this.render(`<div class="scr coopScr">${this.hdr('🤝 Koop')}${body}${this.coopErr ? `<p class="cperr">⚠ ${esc(this.coopErr)}</p>` : ''}</div>`, m => {
       this.coopErr = null;
@@ -123,10 +124,28 @@ export class Menus {
       const wire = N2 => { N2.on.hello = () => { this.app.audio.play('levelup'); this.s_coop(); }; N2.on.status = st => { const el = document.getElementById('cpStat'); if (el) el.textContent = st === 'open' ? '⏳ Raum offen – warte auf Mitspieler …' : '🔄 Verbindung kurz weg – Raum wird wiederhergestellt …'; };
         N2.on.leave = () => { this.coopNet = null; this.coopErr = 'Verbindung getrennt.'; if (this.cur === 'coop') this.s_coop('start'); };
         N2.on.setup = s => { this.coopGo = true; const net = this.coopNet; this.coopNet = null; this.app.startRun(s.map, s.diff, 'std', { net, setup: s }).finally(() => { this.coopGo = false; }); }; };
-      m.querySelector('#cpHost')?.addEventListener('click', () => { this.app.audio.init(); this.s_coop('busy'); const mk = (n) => Coop.create(makeCode()).catch(e => n > 0 && /unavailable-id/.test(e?.type) ? mk(n - 1) : Promise.reject(e)); mk(3).then(N2 => { this.coopNet = N2; wire(N2); this.s_coop(); }, fail); });
+      const tok = this.coopTok = (this.coopTok || 0) + 1, t0 = Date.now();
+      const prog = txt => { this.coopProg = txt; const el = document.getElementById('cpProg'); if (el) el.textContent = txt; };
+      if (state === 'busy') { const ti = setInterval(() => { const el = document.getElementById('cpTime'); if (!el || this.coopTok !== tok) { clearInterval(ti); return; } el.textContent = Math.round((Date.now() - t0) / 1000) + ' s'; }, 500); }
+      const live = N2 => { if (this.coopTok === tok + 1 && this.cur === 'coop') return true; N2.close(); return false; };   // abgebrochen → Verbindung wieder schließen
+      m.querySelector('#cpCancel')?.addEventListener('click', () => { this.coopTok++; this.s_coop('start'); });
+      m.querySelector('#cpBack')?.addEventListener('click', () => { this.coopTok++; this.s_coop('start'); });
+      m.querySelector('#cpDiag')?.addEventListener('click', () => {
+        this.s_coop('diag'); const my = this.coopTok;
+        const L = (ok, txt, bad) => `<div class="${ok === undefined ? 'wait' : ok ? 'ok' : 'bad'}">${ok === undefined ? '⏳' : ok ? '✅' : '❌'} ${txt}${ok === false && bad ? `<small>${bad}</small>` : ''}</div>`;
+        diagnose(o => {
+          const el = document.getElementById('cpDiagOut'); if (!el || this.coopTok !== my) return;
+          const verdict = !o.done ? '' : !o.server ? 'Der Vermittlungs-Server ist nicht erreichbar → Internet prüfen, VPN aus, später nochmal.' : o.rtc === false ? 'WebRTC ist auf diesem Gerät aus → Blockierungsmodus ausschalten.' : !o.srflx && !o.relay ? 'Das Netz blockiert alle Verbindungswege → anderes Netz (mobile Daten) probieren.' : !o.relay ? 'Direkte Wege gehen, das Relay nicht. Meist trotzdem ok – sonst Hotspot probieren.' : 'Alles erreichbar ✓ – an diesem Gerät liegt es nicht.';
+          el.innerHTML = L(o.lib, 'Koop-Baustein geladen', 'App neu laden') + L(o.lib ? o.server : undefined, 'Vermittlungs-Server erreichbar', 'Internet/VPN prüfen')
+            + L(o.server === undefined ? undefined : o.rtc ?? (o.host || o.srflx ? true : undefined), 'WebRTC verfügbar', 'Blockierungsmodus aus?')
+            + L(o.done ? o.srflx : o.srflx || undefined, 'Öffentliche Adresse (STUN)', 'Netz blockiert direkte Wege') + L(o.done ? o.relay : o.relay || undefined, 'Relay-Server (TURN)', 'Relay blockiert')
+            + (verdict ? `<p class="cpverd">${verdict}</p>` : '');
+        });
+      });
+      m.querySelector('#cpHost')?.addEventListener('click', () => { this.app.audio.init(); this.coopProg = ''; this.s_coop('busy'); const mk = (n) => Coop.create(makeCode(), prog).catch(e => n > 0 && /unavailable-id/.test(e?.type) ? mk(n - 1) : Promise.reject(e)); mk(3).then(N2 => { if (!live(N2)) return; this.coopNet = N2; wire(N2); this.s_coop(); }, e => { if (this.coopTok === tok + 1) fail(e); }); });
       m.querySelector('#cpShare')?.addEventListener('click', () => { navigator.share({ title: 'Beastforge Koop', text: `Spiel Beastforge mit mir im Koop! Öffne Beastforge → Koop → Beitreten und gib ${this.coopNet?.code || ''} ein.` }).catch(() => {}); });
       m.querySelector('#cpJoin')?.addEventListener('click', () => { this.app.audio.init(); const code = cleanCode(m.querySelector('#cpCode').value); if (!code) { this.coopErr = 'Bitte die 4 Ziffern eingeben.'; this.s_coop('start'); return; }
-        this.s_coop('busy'); Coop.join(code).then(N2 => { this.coopNet = N2; wire(N2); N2.hello(this.coopInfo()); this.s_coop(); }, fail); });
+        this.coopProg = ''; this.s_coop('busy'); Coop.join(code, prog).then(N2 => { if (!live(N2)) return; this.coopNet = N2; wire(N2); N2.hello(this.coopInfo()); this.s_coop(); }, e => { if (this.coopTok === tok + 1) fail(e); }); });
       m.querySelectorAll('[data-cm]').forEach(b => b.onclick = () => { this.coopMap = b.dataset.cm; this.click(); this.s_coop(); });
       m.querySelectorAll('[data-cd]').forEach(b => b.onclick = () => { this.coopDiff = b.dataset.cd; this.click(); this.s_coop(); });
       m.querySelector('#cpGo')?.addEventListener('click', () => { this.app.audio.init(); const s = this.coopSetup(sel, dsel); const net = this.coopNet; net.send({ setup: s }); this.coopGo = true; this.coopNet = null; this.app.startRun(s.map, s.diff, 'std', { net, setup: s }).finally(() => { this.coopGo = false; }); });

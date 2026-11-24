@@ -33,7 +33,7 @@ export class Hud {
     $('bEarly').onclick = () => this.early();
     this.buildTray(); this.updAcc();
     document.querySelector('.runbox .coop')?.remove();
-    if (game.net) { const c = document.createElement('div'); c.className = 'pill coop'; c.innerHTML = `<span class="ic">🤝</span><b>${game.net.host ? 'Gastgeber' : 'Koop'}</b>`; document.querySelector('.runbox').appendChild(c); }
+    if (game.net) { const c = document.createElement('div'); c.className = 'pill coop'; c.title = 'Geld deines Mitspielers'; c.innerHTML = `<span class="ic">🤝</span><b id="hMate">◈ 0</b>`; document.querySelector('.runbox').appendChild(c); document.querySelector('.runbox .coins')?.classList.add('p' + game.me); c.classList.add('p' + (1 - game.me)); }
     this.coachStep = this.P.seen.intro ? -1 : 0; this.coach();
     this.resizeObs = () => { this.insets(); this.coach(); }; addEventListener('resize', this.resizeObs); setTimeout(() => this.insets(), 0);
   }
@@ -88,6 +88,7 @@ export class Hud {
   update(dt) {
     const w = this.w;
     const coins = Math.floor(w.coins);
+    if (w.players > 1) { const mc = Math.floor(w.wallet[1 - this.g.me] || 0); if (mc !== this.last.mate) { this.last.mate = mc; const el = $('hMate'); if (el) el.textContent = '◈ ' + fmt(mc); } }
     if (coins !== this.last.coins) { $('hCoins').textContent = fmt(coins); if (coins > (this.last.coins ?? 0)) { const p = $('hCoins').parentElement; p.classList.remove('bump'); void p.offsetWidth; p.classList.add('bump'); } this.last.coins = coins; }
     if (w.lives !== this.last.lives) { $('hLives').textContent = w.lives; if (w.lives < (this.last.lives ?? 1e9)) { const p = $('hLives').parentElement; p.classList.remove('hurt'); void p.offsetWidth; p.classList.add('hurt'); } this.last.lives = w.lives; }
     const wl = `${Math.max(1, w.wave)}<small>/${w.maxWave === Infinity ? '∞' : w.maxWave}</small>`; if (wl !== this.last.wave) { $('hWave').innerHTML = wl; this.last.wave = wl; }
@@ -149,7 +150,7 @@ export class Hud {
   }
   updAbilities() {
     const list = [];
-    for (const t of this.w.towers) for (const a of this.w.abilityInfo(t)) if (a.ready) list.push({ t, a });
+    for (const t of this.w.towers) if (this.w.mine(t)) for (const a of this.w.abilityInfo(t)) if (a.ready) list.push({ t, a });
     const key = list.map(x => x.t.id + x.a.slot).join(',');
     const box = $('abilities');
     if (key !== this.last.abKey) {
@@ -248,6 +249,8 @@ export class Hud {
     el.innerHTML = `<div class="pinfo"><div class="ph"><img src="${this.icon(t)}" alt=""><div class="nm"><b>${esc(title)}</b><small>${sub}</small></div><button class="x" data-x>✕</button></div>${info}
       <div class="pact"><div class="tgt"><button data-tg="-1">◀</button><div><small>Ziel</small><b>${TARGET_NAMES[t.target]}</b></div><button data-tg="1">▶</button></div>
       <button class="sell" data-sell>Verkaufen <b>◈ ${fmt(t.spent * BAL.run.sellRefund)}</b></button></div></div><div class="pmain">${main || ''}</div>`;
+    const foreign = !w.mine(t); el.classList.toggle('foreign', foreign);   // Koop: Kreatur des Mitspielers nur ansehen
+    if (foreign) el.querySelector('.pinfo')?.insertAdjacentHTML('afterbegin', '<div class="own2">🤝 Kreatur deines Mitspielers – nur ansehen</div>');
     const guard = fn => e => { if (performance.now() - (this.panelFresh || 0) < 450) return; fn(e); };
     el.querySelector('[data-x]').onclick = () => this.g.select(null);
     el.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const i = TARGETS.indexOf(t.target), n = TARGETS.length; this.g.cmd('setTarget', t.id, TARGETS[(i + +b.dataset.tg + n) % n]); this.g.app.audio.play('click'); this.refreshPanel(); });
