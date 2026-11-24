@@ -16,20 +16,23 @@ import { POWER, givePowers, runPowerReward } from './data/powers.js';
 import { cosOf, ensureEvent } from './data/events.js';
 import { addCharXp, addAccXp, addHeroRankXp, heroStartLevel, unlocked, unlockedCreatures, addMastery, checkAchievements, formsFor } from './meta/progression.js';
 import { saveProfile } from './meta/profile.js';
+import { worldHash } from './net.js';
 
 export class Game {
-  constructor(app, { map = 'ahnenhain', diff = 'normal', ch = 'std' }) {
+  constructor(app, { map = 'ahnenhain', diff = 'normal', ch = 'std', coop = null }) {
     this.app = app; const P = this.P = app.profile;
+    const S = coop?.setup || null; this.net = coop?.net || null; this.coop = S;   // Koop: gemeinsame Startwerte vom Gastgeber
+    if (S) { map = S.map; diff = S.diff; ch = 'std'; }
     this.mapId = map; this.diffKey = diff; this.ch = CH[ch] || ch === 'daily' ? ch : 'std'; this.music = MAPS[map]?.music || 'forest';
-    this.loadout = unlockedCreatures(P);
+    this.loadout = S ? S.loadout.slice() : unlockedCreatures(P);
     if (!this.loadout.length) this.loadout = ['kitsune'];
-    this.heroId = unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
+    this.heroId = S ? S.hero : unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
     this.snap = { acc: { ...P.account }, chars: Object.fromEntries(Object.entries(P.chars).map(([k, c]) => [k, { level: c.level, xp: c.xp }])) };
     this.accGain = 0; this.charUps = []; this.accUps = []; this.achs = [];
     this.ac = academyFx(P); ensureEvent(P);   // Event-Woche vor dem Run festlegen, damit der Run mitzählt
     const hooks = {
-      level: cid => P.chars[cid]?.level ?? 1,
-      branch: cid => P.chars[cid]?.branch || 'spirit',
+      level: cid => S ? S.levels[cid] ?? 1 : P.chars[cid]?.level ?? 1,   // Koop: feste Tabelle, sonst laufen die Welten auseinander
+      branch: cid => S ? S.branch[cid] || 'spirit' : P.chars[cid]?.branch || 'spirit',
       charXp: (cid, raw, wave) => {
         const r = addCharXp(P, cid, raw * (1 + (this.ac.charXp || 0)), { wave, diff });
         for (const up of r.ups) this.onCharUp(up);
@@ -37,12 +40,13 @@ export class Game {
       },
       accXp: amt => this.giveAcc(amt),
       stat: (k, n, max) => { P.stats[k] = max ? Math.max(P.stats[k] || 0, n) : (P.stats[k] || 0) + n; },
-      heroXp: amt => { if (this.heroId) addHeroRankXp(P, this.heroId, amt * 0.5); },
-      heroStart: () => Math.min(20, heroStartLevel(P.heroes[this.heroId]?.rank || 1) + (this.ac.heroLvl || 0)),
+      heroXp: amt => { if (this.heroId && (!S || this.net?.host)) addHeroRankXp(P, this.heroId, amt * 0.5); },
+      heroStart: () => S ? S.heroStart : Math.min(20, heroStartLevel(P.heroes[this.heroId]?.rank || 1) + (this.ac.heroLvl || 0)),
     };
-    const mods = this.ch === 'daily' ? Object.assign({}, ...dailyChallenge(P, id => unlocked(P, 'map', id)).mods.map(id => CH[id].mods)) : CH[this.ch].mods || {};
-    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, academy: this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: (Date.now() % 1e6) | 0 });
-    if (app.devGod) this.world.god = true;
+    const mods = S ? {} : this.ch === 'daily' ? Object.assign({}, ...dailyChallenge(P, id => unlocked(P, 'map', id)).mods.map(id => CH[id].mods)) : CH[this.ch].mods || {};
+    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, academy: S ? S.ac : this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: S ? S.seed : (Date.now() % 1e6) | 0 });
+    if (app.devGod && !S) this.world.god = true;
+    if (this.net) { this.askedFree = true; this.net.on.leave = () => this.mateLeft(); }   // Koop: kein freies Spiel (würde die Welten trennen)
     app.stage.setMode('game');
     this.view = new GameView(app.stage, this.world, { branch: hooks.branch, skin: cid => this.skinOf(cid), heart: cosOf(P, 'heart'), pop: cosOf(P, 'pop') });
     this.speed = 1; this.paused = false; this.placing = null; this.sel = null; this.ghost = null; this.ghostPos = null;
@@ -150,7 +154,7 @@ export class Game {
   }
   aimPower(id) { this.aiming = id; if (!id) this.hud.hint(null); this.hud.updPowers(); }
   firePower(id, x, y) {
-    const r = this.world.usePower(id, x, y);
+    const r = this.cmd('usePower', id, x, y);
     if (!r.ok) { this.hud.err(r.why); return; }
     this.P.powers[id]--; this.P.stats.powers = (this.P.stats.powers || 0) + 1; saveProfile(this.P);
     this.app.audio.play(id === 'gold' ? 'coin' : 'ult'); this.aimPower(null);
@@ -201,13 +205,13 @@ export class Game {
   tryPlace() {
     const p = this.ghostPos; if (!p || !this.placing) return;
     const pw = POWER[this.placePow];
-    const r = this.world.place(this.placing, p.x, p.y, pw ? { free: true, tiers: pw.inst.tiers } : {});
+    const r = this.cmd('place', this.placing, p.x, p.y, pw ? { free: true, tiers: pw.inst.tiers } : {});
     if (!r.ok) { this.hud.err(r.why); return; }
     if (pw) { this.P.powers[pw.id]--; this.P.stats.powers = (this.P.stats.powers || 0) + 1; saveProfile(this.P); this.hud.toast('evo', pw.icon + ' ' + pw.name, 'Fertig ausgebaut: ' + pw.inst.tiers.join('-')); }
     this.app.audio.play('place');
     this.cancelPlace();
     // Hochformat: Shop offen lassen (weiter platzieren); Upgrades per Antippen der Kreatur
-    if (!this.app.stage.portrait) this.select(r.tower); else this.view.showSel?.(r.tower);
+    if (r.tower) { if (!this.app.stage.portrait) this.select(r.tower); else this.view.showSel?.(r.tower); }
     this.hud.coachEvent('placed');
   }
   cancelPlace() {
@@ -219,11 +223,44 @@ export class Game {
     this.sel = t; this.view.select(t); this.hud.showPanel(t);
   }
 
+  // ───────── Koop (Lockstep, net.js): alle Welt-Änderungen laufen über cmd() ─────────
+  cmd(name, ...a) {
+    const w = this.world, N = this.net;
+    if (!N || N.gone) return w[name](...a);
+    if (N.host) { const r = w[name](...a); if (r?.ok) N.out.push([w.tickN, name, a]); return r; }
+    N.send({ c: [name, a] }); return { ok: true, pending: true };   // Gast: Gastgeber reiht ein, Ergebnis kommt mit dem Takt zurück
+  }
+  hostIn() { const N = this.net, w = this.world; for (const [name, a] of N.inbox.splice(0)) { const r = w[name](...a); if (r?.ok) N.out.push([w.tickN, name, a]); } }
+  hostOut() {
+    const N = this.net, w = this.world; if (N.gone) return;
+    if (w.tickN === N.lastSent && !N.out.length && this.paused === N.lastP) return;
+    const m = { n: w.tickN, cmds: N.out.splice(0), p: this.paused };
+    if (Math.floor(w.tickN / 120) !== N.hk) { N.hk = Math.floor(w.tickN / 120); m.h = [w.tickN, worldHash(w)]; }
+    N.send(m); N.lastSent = w.tickN; N.lastP = this.paused;
+  }
+  guestStep() {
+    const N = this.net, w = this.world, q = N.inbox; let k = 0;
+    while (w.tickN < N.hostN && k < 45 && !w.over) {
+      while (q.length && q[0][0] <= w.tickN) { const [, name, a] = q.shift(); w[name](...a); }
+      w.step(BAL.tick); k++;
+      const h = N.hashes?.find(x => x[0] === w.tickN);
+      if (h && h[1] !== worldHash(w) && !this.desync) { this.desync = true; this.hud.toast('acc', '⚠ Koop asynchron', 'Die Spielstände weichen ab – bitte neu starten.'); }
+    }
+    this.lag = N.hostN - w.tickN;
+  }
+  mateLeft() {
+    if (this.finished || !this.net) return;
+    const host = this.net.host; this.net = null;
+    this.hud.toast('acc', '🤝 Mitspieler weg', host ? 'Du spielst allein weiter.' : 'Der Gastgeber hat das Spiel verlassen.');
+    if (!host && !this.world.over) { const w = this.world; w.over = true; w.won = false; }
+  }
+
   // ───────── Hauptschleife ─────────
   update(dt) {
     const w = this.world;
     if (this.slowT > 0) { this.slowT -= dt; if (this.slowT <= 0) w.timeScale = 1; }
-    if (!this.paused) w.tick(dt * this.speed);
+    if (this.net && !this.net.host) this.guestStep();
+    else { if (this.net) this.hostIn(); if (!this.paused) w.tick(dt * this.speed); if (this.net) this.hostOut(); }
     const S = this.settings();
     for (const e of w.events) { this.view.handle(e, S); this.sound(e); this.hud.handle(e); this.react(e); }
     w.events.length = 0;
@@ -256,7 +293,7 @@ export class Game {
         saveProfile(this.P);
         for (const a of checkAchievements(this.P)) { this.achs.push(a); this.hud.toast('ach', '🏆 ' + a.name, a.desc); this.giveAcc(a.xp); }
         if (!this.world.boss && this.app.audio.song?.name === 'boss') this.app.audio.playSong(this.music);
-        if (this.settings().autoWave && !this.world.over) setTimeout(() => { if (!this.world.over && !this.world.waveRunning()) this.world.startWave(); }, 900);
+        if (this.settings().autoWave && !this.world.over && (!this.net || this.net.host)) setTimeout(() => { if (!this.world.over && !this.world.waveRunning()) this.cmd('startWave'); }, 900);
         break;
       }
     }
@@ -360,6 +397,7 @@ export class Game {
   }
   quit() { this.world.over = true; this.finished = true; }
   destroy() {
+    if (this.net) { this.net.close(); this.net = null; }
     const cv = this.app.stage.canvas;
     cv.removeEventListener('pointerdown', this.onDown); removeEventListener('pointerup', this.onUp); removeEventListener('pointermove', this.onMove);
     removeEventListener('keydown', this.onKey);

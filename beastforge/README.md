@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.35.0 – Truhen, Wochen-Event, Kosmetik
+## Stand: v0.36.0 – Koop zu zweit
+**0.36:** `js/net.js` (Transport aus Cats TD: PeerJS `lib/peerjs.min.js`, Test `?net=local` über BroadcastChannel; Raumcode `BF-1234`). **Lockstep:** beide Geräte rechnen dieselbe Welt (Seed, fester Schritt, `world.tickN`). Alle Welt-Änderungen laufen über `game.cmd(name, …args)` (`CMDS` in net.js); der Gastgeber führt sie aus und verschickt `{n, cmds:[[tick, name, args]], p, h}`, der Gast rechnet in `game.guestStep()` bis zur Schrittzahl des Gastgebers nach und wendet Befehle vor dem passenden Schritt an. Prüfsumme `worldHash` alle 120 Schritte → Warnung „Koop asynchron“. Gemeinsame Startwerte `menus.coopSetup` (Team = beide Freischaltungen, Kreaturen-Stufe = jeweils die höhere, feste Tabelle statt Live-Level, Akademie/Held vom Gastgeber). Gemeinsame Münzen und Leben, Tempo und Pause beim Gastgeber, kein freies Spiel, Verlassen → `game.mateLeft`. Bildschirm `menus.s_coop` (Hub-Kachel „Koop“), HUD-Pille `.pill.coop`. Tests: Unit „Koop-Lockstep“, e2e `coop` (zwei Seiten).
+
+## Stand davor: v0.35.0 – Truhen, Wochen-Event, Kosmetik
 **0.35:** `js/data/events.js`: Truhen `P.chests` (Sieg +1, Tageskampf +1, Event-Stufen 1/2/3; Start 1), `openChest` (40 % fehlende Kosmetik, sonst 2 Kräfte oder 300 Konto-XP). Wochen-Event je Kalenderwoche ab Montag (`weekKey`, `ensureEvent` beim Run-Start, Fortschritt = Statistik seit Wochenbeginn, `claimEvent`), 6 Events rotieren. Kosmetik `P.cos` (`COSMETICS.heart` Herzkristall-Farbe, `COSMETICS.pop` Plopp-Farben) → `GameView` opts `heart`/`pop` (`view.popCols`). Bildschirm `menus.s_chests` (Hub-Kachel „Truhen“, Truhe mit Wackel- und Öffnen-Animation), Ergebnis zeigt „+N Truhe“.
 
 ## Stand davor: v0.34.0 – Lebendige Karten

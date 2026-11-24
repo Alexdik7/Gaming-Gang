@@ -39,7 +39,7 @@ export class World {
     if (this.mods.soulburn) this.lives = this.maxLives = 1;
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
-    this.t = 0; this.acc = 0; this.nid = 1; this.over = false; this.won = false; this.god = false;
+    this.t = 0; this.tickN = 0; this.acc = 0; this.nid = 1; this.over = false; this.won = false; this.god = false;
     this.dirty = true; this.synergies = []; this.packs = []; this.boss = null; this.timeScale = 1;
     this.rafts = (this.map.rafts || []).map(r => ({ ...r, x: r.a[0], y: r.a[1] })); this.updRafts();
     const L = this.map.lava; this.vents = (this.map.vents || []).map(([x, y], i) => ({ x: x + 0.5, y: y + 0.5, cd: L.every * (0.45 + i * 0.22), warned: false }));
@@ -374,7 +374,7 @@ export class World {
     if (n >= BAL.maxSubsteps) this.acc = 0;
   }
   step(dt) {
-    this.t += dt;
+    this.t += dt; this.tickN++;   // Schrittzähler für Koop-Lockstep (net.js)
     if (this.powCd > 0) this.powCd -= dt;
     for (const s of this.spawners) {
       s.t -= dt;

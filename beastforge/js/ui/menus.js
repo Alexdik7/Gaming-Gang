@@ -2,6 +2,9 @@
 import { BAL, VERSION, LEVEL_PERKS } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { POWER, givePowers } from '../data/powers.js';
+import { Coop, makeCode, cleanCode } from '../net.js';
+import { academyFx } from '../data/academy.js';
+import { heroStartLevel } from '../meta/progression.js';
 import { COSMETICS, COS_KINDS, hasCos, ensureEvent, eventDef, eventProgress, claimEvent, eventDot, openChest, daysLeft, EVENT_CHESTS } from '../data/events.js';
 import { HEROES } from '../data/heroes.js';
 import { MAPS } from '../data/maps.js';
@@ -37,7 +40,7 @@ export class Menus {
     // Gestaffeltes Einfliegen (Vorbereitung → Bewegung → Nachschwingen)
     m.querySelectorAll('.med, .btile, .bTop > *, .grid > *, .list > .li, .evorow, .tiles > *, .scr > .box, .hubTop > *, .ccard').forEach((el, i) => { el.style.animationDelay = Math.min(i, 14) * 38 + 'ms'; el.classList.add('pop'); });
   }
-  show(name, arg) { this.cur = name; this.app.showMenuScene(name); this['s_' + name](arg); }
+  show(name, arg) { if (name !== 'coop' && this.coopNet && !this.coopGo) { this.coopNet.close(); this.coopNet = null; } this.cur = name; this.app.showMenuScene(name); this['s_' + name](arg); }
   // Bildschirmwechsel mit Fuchsfeuer-Wipe: Kreis wächst vom Tipp-Punkt, Inhalt wechselt verdeckt, dann blendet er weg
   go(name, arg, e) {
     if (this.busy) return;
@@ -81,10 +84,51 @@ export class Menus {
         <div class="bRight"><button class="bCur" data-go="academy" title="Shinobi-Punkte"><span>⛩</span><b>${sp.free}</b></button><button class="bGear" data-go="settings" aria-label="Optionen">⚙</button></div>
       </div>
       <div class="bLeft">${tile('collection', pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch }), 'Kreaturen', 'big')}${tile('hero', pimg(hero, { hlvl: 1 }), 'Helden', 'big')}${tile('evo', pimg('golem', { stage: 2 }), 'Entwicklung', 'big')}</div>
-      <div class="bRightCol">${tile('chests', '🎁', 'Truhen', 'sq gold', eventDot(P))}${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('stats', '📜', 'Statistik', 'sq')}</div>
+      <div class="bRightCol">${tile('chests', '🎁', 'Truhen', 'sq gold', eventDot(P))}${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('coop', '🤝', 'Koop', 'sq')}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('stats', '📜', 'Statistik', 'sq')}</div>
       <button class="bPlay" data-go="play"><span>SPIELEN</span></button>
     </div>`);
     this.app.audio.playSong('menu');
+  }
+
+  // ───────── Koop zu zweit (net.js): Raum erstellen oder per Code beitreten ─────────
+  coopInfo() { const P = this.P, un = unlockedCreatures(P); return { name: TITLES[P.account.title] || 'Shinobi', lvl: P.account.level, unlocked: un, levels: Object.fromEntries(un.map(c => [c, P.chars[c].level])), branch: Object.fromEntries(un.map(c => [c, P.chars[c].branch])) }; }
+  coopSetup(map, diff) {   // gemeinsame Startwerte: Team = beide Freischaltungen, Stufe = jeweils die höhere
+    const P = this.P, mate = this.coopNet.mate || {}, mine = unlockedCreatures(P);
+    const loadout = [...new Set([...mine, ...(Array.isArray(mate.unlocked) ? mate.unlocked : []).filter(c => CREATURES[c])])];
+    const levels = {}, branch = {};
+    for (const c of loadout) { levels[c] = Math.max(1, Math.min(50, Math.max(mine.includes(c) ? P.chars[c].level : 0, Math.round(+mate.levels?.[c] || 0)))); branch[c] = mine.includes(c) ? P.chars[c].branch : (mate.branch?.[c] === 'shadow' ? 'shadow' : 'spirit'); }
+    const ac = academyFx(P), hero = unlocked(P, 'hero', P.hero) ? P.hero : unlocked(P, 'hero', 'kairo') ? 'kairo' : null;
+    return { map, diff, seed: (Date.now() % 1e6) | 0, loadout, levels, branch, hero, heroStart: hero ? Math.min(20, heroStartLevel(P.heroes[hero]?.rank || 1) + (ac.heroLvl || 0)) : 1, ac };
+  }
+  s_coop(state) {
+    const P = this.P, N = this.coopNet; state = state || (N ? (N.host ? (N.mate ? 'ready' : 'wait') : 'joined') : 'start');
+    const maps = Object.keys(MAPS).filter(id => unlocked(P, 'map', id)), sel = this.coopMap && maps.includes(this.coopMap) ? this.coopMap : maps[0];
+    const diffs = ['normal', ...(unlocked(P, 'mode', 'hard') ? ['hard'] : [])], dsel = diffs.includes(this.coopDiff) ? this.coopDiff : 'normal';
+    const body = {
+      start: `<div class="cpbox"><p>Spielt zu zweit auf derselben Karte: <b>gemeinsame Münzen und Leben</b>, jeder setzt und verbessert Kreaturen. Euer Team besteht aus den Kreaturen von euch beiden.</p>
+        <button class="big" id="cpHost">🏠 Raum erstellen</button>
+        <div class="cpjoin"><span>BF-</span><input id="cpCode" inputmode="numeric" maxlength="4" placeholder="1234" autocomplete="off"><button class="btn pri" id="cpJoin">Beitreten</button></div>
+        <small class="mut">Beide brauchen Internet. Der Gastgeber wählt Karte und Schwierigkeit.</small></div>`,
+      wait: `<div class="cpbox"><small class="mut">Dein Raumcode</small><div class="cpcode">${esc(N?.code || '')}</div><p>Sag deinem Mitspieler den Code. Er tippt in Beastforge auf <b>Koop → Beitreten</b>.</p><div class="cpwait">⏳ Warte auf Mitspieler …</div></div>`,
+      ready: `<div class="cpbox"><div class="cpmate">🤝 <b>${esc(N?.mate?.name || 'Mitspieler')}</b> · Konto-Lv ${+N?.mate?.lvl || 1} ist da!</div>
+        <div class="wlabel">Karte</div><div class="cpsel">${maps.map(id => `<button class="btn ${id === sel ? 'pri' : ''}" data-cm="${id}">${esc(MAPS[id].name)}</button>`).join('')}</div>
+        <div class="wlabel">Schwierigkeit</div><div class="cpsel">${diffs.map(d => `<button class="btn ${d === dsel ? 'pri' : ''}" data-cd="${d}">${esc(BAL.diff[d].name)}</button>`).join('')}</div>
+        <button class="big" id="cpGo">⚔ Gemeinsam starten</button></div>`,
+      joined: `<div class="cpbox"><div class="cpcode">${esc(N?.code || '')}</div><div class="cpwait">✓ Verbunden – der Gastgeber wählt die Karte …</div></div>`,
+      busy: `<div class="cpbox"><div class="cpwait">⏳ Verbinde …</div></div>`,
+    }[state];
+    this.render(`<div class="scr coopScr">${this.hdr('🤝 Koop')}${body}${this.coopErr ? `<p class="cperr">⚠ ${esc(this.coopErr)}</p>` : ''}</div>`, m => {
+      this.coopErr = null;
+      const fail = e => { this.coopNet = null; this.coopErr = /timeout|unavailable|peer/i.test(String(e?.message || e?.type || e)) ? 'Keine Verbindung – Code prüfen und Internet an?' : 'Verbindung fehlgeschlagen.'; this.s_coop('start'); };
+      const wire = N2 => { N2.on.hello = () => { this.app.audio.play('levelup'); this.s_coop(); }; N2.on.leave = () => { this.coopNet = null; this.coopErr = 'Verbindung getrennt.'; if (this.cur === 'coop') this.s_coop('start'); };
+        N2.on.setup = s => { this.coopGo = true; const net = this.coopNet; this.coopNet = null; this.app.startRun(s.map, s.diff, 'std', { net, setup: s }).finally(() => { this.coopGo = false; }); }; };
+      m.querySelector('#cpHost')?.addEventListener('click', () => { this.app.audio.init(); this.s_coop('busy'); Coop.create(makeCode()).then(N2 => { this.coopNet = N2; wire(N2); this.s_coop(); }, fail); });
+      m.querySelector('#cpJoin')?.addEventListener('click', () => { this.app.audio.init(); const code = cleanCode(m.querySelector('#cpCode').value); if (!code) { this.coopErr = 'Bitte die 4 Ziffern eingeben.'; this.s_coop('start'); return; }
+        this.s_coop('busy'); Coop.join(code).then(N2 => { this.coopNet = N2; wire(N2); N2.hello(this.coopInfo()); this.s_coop(); }, fail); });
+      m.querySelectorAll('[data-cm]').forEach(b => b.onclick = () => { this.coopMap = b.dataset.cm; this.click(); this.s_coop(); });
+      m.querySelectorAll('[data-cd]').forEach(b => b.onclick = () => { this.coopDiff = b.dataset.cd; this.click(); this.s_coop(); });
+      m.querySelector('#cpGo')?.addEventListener('click', () => { this.app.audio.init(); const s = this.coopSetup(sel, dsel); const net = this.coopNet; net.send({ setup: s }); this.coopGo = true; this.coopNet = null; this.app.startRun(s.map, s.diff, 'std', { net, setup: s }).finally(() => { this.coopGo = false; }); });
+    });
   }
 
   // ───────── Truhen, Wochen-Event, Kosmetik ─────────

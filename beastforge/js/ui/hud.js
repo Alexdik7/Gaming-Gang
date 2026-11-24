@@ -32,6 +32,8 @@ export class Hud {
     $('powbar').classList.add('hidden'); this.updPowers();
     $('bEarly').onclick = () => this.early();
     this.buildTray(); this.updAcc();
+    document.querySelector('.runbox .coop')?.remove();
+    if (game.net) { const c = document.createElement('div'); c.className = 'pill coop'; c.innerHTML = `<span class="ic">🤝</span><b>${game.net.host ? 'Gastgeber' : 'Koop'}</b>`; document.querySelector('.runbox').appendChild(c); }
     this.coachStep = this.P.seen.intro ? -1 : 0; this.coach();
     this.resizeObs = () => { this.insets(); this.coach(); }; addEventListener('resize', this.resizeObs); setTimeout(() => this.insets(), 0);
   }
@@ -125,11 +127,11 @@ export class Hud {
   playBtn() {
     this.g.app.audio.init();
     const w = this.w;
-    if (!w.waveRunning()) { if (w.startWave().ok) this.g.app.audio.play('click'); return; }
+    if (!w.waveRunning()) { if (this.g.cmd('startWave').ok) this.g.app.audio.play('click'); return; }
     this.cycleSpeed();
   }
-  early() { if (this.w.waveRunning() && this.w.startWave().ok) this.g.app.audio.play('click'); }
-  cycleSpeed() { this.g.speed = this.g.speed >= 3 ? 1 : this.g.speed + 1; this.g.app.audio.play('click'); }
+  early() { if (this.w.waveRunning() && this.g.cmd('startWave').ok) this.g.app.audio.play('click'); }
+  cycleSpeed() { if (this.g.net && !this.g.net.host) { this.tip('Das Tempo bestimmt der Gastgeber', 1.5); return; } this.g.speed = this.g.speed >= 3 ? 1 : this.g.speed + 1; this.g.app.audio.play('click'); }
   // Kräfte-Leiste: Vorrat aus dem Profil, Tippen = einsetzen (Ziel-Kräfte: danach auf die Karte tippen)
   updPowers() {
     const P = this.P, tot = POWERS.reduce((a, p) => a + (P.powers[p.id] || 0), 0);
@@ -154,7 +156,7 @@ export class Hud {
       this.last.abKey = key;
       box.innerHTML = list.slice(0, 8).map(({ t, a }) => `<button class="ab ${a.slot === 'ult' ? 'ult' : ''}" data-id="${t.id}" data-slot="${a.slot}" title="${esc(a.name)}"><img src="${this.icon(t)}" alt=""><span class="cd"></span><small>${esc(a.name.split(' ')[0])}</small></button>`).join('');
       box.querySelectorAll('.ab').forEach(el => el.onclick = () => {
-        const r = this.w.useAbility(+el.dataset.id, el.dataset.slot);
+        const r = this.g.cmd('useAbility', +el.dataset.id, el.dataset.slot);
         if (!r.ok) this.err(r.why); else this.coachEvent('ability');
       });
     }
@@ -248,12 +250,12 @@ export class Hud {
       <button class="sell" data-sell>Verkaufen <b>◈ ${fmt(t.spent * BAL.run.sellRefund)}</b></button></div></div><div class="pmain">${main || ''}</div>`;
     const guard = fn => e => { if (performance.now() - (this.panelFresh || 0) < 450) return; fn(e); };
     el.querySelector('[data-x]').onclick = () => this.g.select(null);
-    el.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const i = TARGETS.indexOf(t.target), n = TARGETS.length; w.setTarget(t.id, TARGETS[(i + +b.dataset.tg + n) % n]); this.g.app.audio.play('click'); this.refreshPanel(); });
-    el.querySelector('[data-sell]').onclick = guard(() => this.confirm('Verkaufen?', `Du bekommst ◈${fmt(t.spent * BAL.run.sellRefund)} zurück. Die Charakter-XP bleiben erhalten.`, 'Verkaufen', () => { w.sell(t.id); this.g.select(null); }));
-    el.querySelectorAll('[data-up]').forEach(b => b.onclick = guard(() => { const r = w.upgrade(t.id, +b.dataset.up); if (!r.ok) this.err(r.why); else this.coachEvent('upgrade'); this.refreshPanel(); }));
-    el.querySelector('[data-ascend]')?.addEventListener('click', guard(() => { const r = w.ascend(t.id); if (!r.ok) this.err(r.why); else this.g.select(r.tower); }));
-    el.querySelectorAll('[data-fuse]').forEach(b => b.onclick = guard(() => { const r = w.fuse(t.id, b.dataset.fuse); if (!r.ok) this.err(r.why); else { this.g.select(r.tower); this.toast('evo', '⚭ Fusion gelungen!', CREATURES[r.tower.cid].name + ' ist erwacht'); } }));
-    const ev = el.querySelector('[data-evo]'); if (ev) ev.onclick = guard(() => { const r = w.evolve(t.id); if (!r.ok) this.err(r.why); this.refreshPanel(); });
+    el.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const i = TARGETS.indexOf(t.target), n = TARGETS.length; this.g.cmd('setTarget', t.id, TARGETS[(i + +b.dataset.tg + n) % n]); this.g.app.audio.play('click'); this.refreshPanel(); });
+    el.querySelector('[data-sell]').onclick = guard(() => this.confirm('Verkaufen?', `Du bekommst ◈${fmt(t.spent * BAL.run.sellRefund)} zurück. Die Charakter-XP bleiben erhalten.`, 'Verkaufen', () => { this.g.cmd('sell', t.id); this.g.select(null); }));
+    el.querySelectorAll('[data-up]').forEach(b => b.onclick = guard(() => { const r = this.g.cmd('upgrade', t.id, +b.dataset.up); if (!r.ok) this.err(r.why); else this.coachEvent('upgrade'); this.refreshPanel(); }));
+    el.querySelector('[data-ascend]')?.addEventListener('click', guard(() => { const r = this.g.cmd('ascend', t.id); if (!r.ok) this.err(r.why); else if (r.tower) this.g.select(r.tower); }));
+    el.querySelectorAll('[data-fuse]').forEach(b => b.onclick = guard(() => { const r = this.g.cmd('fuse', t.id, b.dataset.fuse); if (!r.ok) this.err(r.why); else if (r.tower) { this.g.select(r.tower); this.toast('evo', '⚭ Fusion gelungen!', CREATURES[r.tower.cid].name + ' ist erwacht'); } }));
+    const ev = el.querySelector('[data-evo]'); if (ev) ev.onclick = guard(() => { const r = this.g.cmd('evolve', t.id); if (!r.ok) this.err(r.why); this.refreshPanel(); });
   }
 
   // ───────── Ereignisse ─────────
@@ -317,7 +319,7 @@ export class Hud {
   updBubbles() {
     for (const d of $('bubbles').children) { const t = this.w.tower(+d.dataset.tid); if (!t) { d.remove(); continue; } const [x, y] = this.g.view.screenPos(t.x, t.y, 1.4); d.style.left = x + 'px'; d.style.top = y + 'px'; }
   }
-  rockPrompt(c) { this.confirm('Felsbrocken räumen?', `Kostet ◈${BAL.run.rockClear}. Danach ist hier Platz für eine Kreatur.`, 'Räumen', () => { const r = this.w.clearRock(c.x, c.y); if (!r.ok) this.err(r.why); }); }
+  rockPrompt(c) { this.confirm('Felsbrocken räumen?', `Kostet ◈${BAL.run.rockClear}. Danach ist hier Platz für eine Kreatur.`, 'Räumen', () => { const r = this.g.cmd('clearRock', c.x, c.y); if (!r.ok) this.err(r.why); }); }
   confirm(title, text, ok, fn) {
     const m = $('modal'); m.classList.remove('hidden');
     m.innerHTML = `<div class="mbox"><h3>${esc(title)}</h3><p>${esc(text)}</p><button class="btn pri" data-ok>${esc(ok)}</button><button class="btn" data-no>Abbrechen</button></div>`;
@@ -325,13 +327,13 @@ export class Hud {
     m.querySelector('[data-no]').onclick = () => m.classList.add('hidden');
   }
   pause() {
-    const g = this.g; g.paused = true; const m = $('modal'); m.classList.remove('hidden');
+    const g = this.g; g.paused = true; const m = $('modal'); m.classList.remove('hidden'); const co = g.net && !g.net.gone;
     m.innerHTML = `<div class="mbox"><h3>Pause</h3><p>${esc(this.w.map.name)} · ${esc(this.w.diff.name)} · Welle ${this.w.wave}</p>
       <button class="btn pri" data-r>▶ Weiter</button><button class="btn" data-s>⚙ Optionen</button><button class="btn danger" data-q>Aufgeben</button>
-      <p style="font-size:12px">Charakter- und Konto-XP sind bereits gespeichert.</p></div>`;
+      <p style="font-size:12px">${co ? (g.net.host ? '🤝 Koop: dein Mitspieler wartet, solange du pausierst.' : '🤝 Koop: das Spiel läuft beim Gastgeber weiter.') + ' Aufgeben beendet den Koop.' : 'Charakter- und Konto-XP sind bereits gespeichert.'}</p></div>`;
     m.querySelector('[data-r]').onclick = () => { m.classList.add('hidden'); g.paused = false; };
     m.querySelector('[data-s]').onclick = () => { m.classList.add('hidden'); g.app.menus.settingsModal(() => this.pause()); };
-    m.querySelector('[data-q]').onclick = () => { m.classList.add('hidden'); g.paused = false; this.w.lives = 0; this.w.over = true; this.w.won = false; };
+    m.querySelector('[data-q]').onclick = () => { m.classList.add('hidden'); g.paused = false; if (g.net) { g.net.close(); g.net = null; } this.w.lives = 0; this.w.over = true; this.w.won = false; };
   }
 
   // ───────── Tutorial (erster Run) ─────────

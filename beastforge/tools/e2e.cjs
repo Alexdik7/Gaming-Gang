@@ -71,6 +71,26 @@ const S = {
     assert(!p.errs.length, p.errs.join(' | '));
     await p.context().close();
   },
+  async coop(b) {   // Koop-Lockstep: zwei Seiten im selben Browser (BroadcastChannel, ?net=local)
+    const h = await open(b, '?net=local', LAND), ctx = h.context(), g = await ctx.newPage(); g.errs = [];
+    g.on('pageerror', e => g.errs.push('pageerror: ' + e.message));
+    await g.goto(URL + '?net=local'); await g.waitForFunction(() => window.BF && document.getElementById('boot').style.display === 'none', null, { timeout: 60000 });
+    await h.evaluate(() => { BF.level(10); BF.menu('coop'); }); await h.click('#cpHost'); await h.waitForSelector('.cpcode');
+    const code = (await h.textContent('.cpcode')).replace(/\D/g, '');
+    await g.evaluate(() => BF.menu('coop')); await g.fill('#cpCode', code); await g.click('#cpJoin');
+    await h.waitForSelector('#cpGo', { timeout: 8000 }); await shot(h, 'co1_lobby'); await h.click('#cpGo');
+    await h.waitForFunction(() => BF.game && BF.game.world, null, { timeout: 30000 }); await g.waitForFunction(() => BF.game && BF.game.world, null, { timeout: 30000 });
+    await h.evaluate(() => { document.querySelector('.coach')?.remove(); const w = BF.world, p = w.suggestSpot('raven', 3); BF.game.cmd('place', 'raven', ...p); BF.game.cmd('startWave'); });
+    await h.waitForTimeout(600);
+    await g.evaluate(() => { document.querySelector('.coach')?.remove(); const w = BF.world, p = w.suggestSpot('turtle', 3); BF.game.cmd('place', 'turtle', ...p); });
+    await h.waitForTimeout(6000);
+    const T = p => p.evaluate(() => ({ n: BF.world.tickN, towers: BF.world.towers.map(t => t.cid).join(), coins: Math.round(BF.world.coins), wave: BF.world.wave, desync: !!BF.game.desync, net: !!BF.game.net }));
+    const a = await T(h), c = await T(g); await shot(g, 'co2_guest');
+    assert(a.towers.split(',').length === 2 && a.towers === c.towers, 'beide Kreaturen auf beiden Seiten: ' + JSON.stringify([a, c]));
+    assert(a.net && c.net && !c.desync && c.wave === 1 && Math.abs(a.n - c.n) < 120, 'Lockstep synchron: ' + JSON.stringify([a, c]));
+    assert(!h.errs.length && !g.errs.length, [...h.errs, ...g.errs].join(' | '));
+    await ctx.close();
+  },
   async crowd(b) {   // A2: 400 Wölfe + 300 gemischte → Puffer wachsen mit, Massenmodus mit LOD, keine Fehler
     const p = await open(b, '', LAND);
     await p.evaluate(() => { BF.start('normal'); const w = BF.world; w.wave = 30; for (let i = 0; i < 400; i++) w.spawn('wolf', [], i * 0.09); for (let i = 0; i < 300; i++) w.spawn(['slime', 'boar', 'golem'][i % 3], [], i * 0.12); });
