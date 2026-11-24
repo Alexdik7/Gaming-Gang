@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.36.1 – Update-Fix
+## Stand: v0.36.2 – Koop-Verbindung robuster
+**0.36.2:** Gastgeber-Raum überlebt den App-Wechsel auf dem iPhone (Code per WhatsApp teilen): `PeerTransport.heal()` stellt die Vermittler-Verbindung bei Rückkehr (`visibilitychange`) und alle 4 s wieder her, legt den Raum notfalls mit demselben Code neu an; Statusanzeige `#cpStat`, Knopf „Code teilen“ (`navigator.share`). Mitspieler versucht 3× beizutreten. Mehr STUN-Server + PeerJS-TURN ausdrücklich gesetzt (`opts()`), verständliche Fehler `explain(e)` je PeerJS-Fehlertyp; belegter Code → automatisch neuer Code.
+
+## Stand davor: v0.36.1 – Update-Fix
 **0.36.1:** iPhone zeigte nach dem Merge weiter die alte Version: sw.js lieferte zuerst aus dem Cache, und beim Installieren konnte der Browser-Puffer alte Dateien in den neuen Cache legen. Jetzt: Code/HTML/CSS zuerst aus dem Netz (offline aus dem Cache), Modelle/Bilder zuerst aus dem Cache, Install mit `cache: 'reload'`, `reg.update()` beim Start und beim Zurückkehren in die App, bei neuer Version einmal automatisch neu laden (nur im Menü).
 
 ## Stand davor: v0.36.0 – Koop zu zweit
