@@ -176,4 +176,10 @@ window.BF = {
   models: () => Object.keys(ASSETS),
   put: (cid, r = 3) => { const w = app.game?.world, p = w?.suggestSpot(cid, r); return p ? w.place(cid, ...p) : { ok: false }; },
 };
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  // Update sofort holen: beim Start und wenn die App wieder in den Vordergrund kommt; neue Version übernimmt → einmal neu laden (nur im Menü)
+  const had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js').then(r => { r.update().catch(() => {}); document.addEventListener('visibilitychange', () => { if (!document.hidden) r.update().catch(() => {}); }); }).catch(() => {});
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had || reloaded || app.game) return; reloaded = true; location.reload(); });
+}

@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.36.0 – Koop zu zweit
+## Stand: v0.36.1 – Update-Fix
+**0.36.1:** iPhone zeigte nach dem Merge weiter die alte Version: sw.js lieferte zuerst aus dem Cache, und beim Installieren konnte der Browser-Puffer alte Dateien in den neuen Cache legen. Jetzt: Code/HTML/CSS zuerst aus dem Netz (offline aus dem Cache), Modelle/Bilder zuerst aus dem Cache, Install mit `cache: 'reload'`, `reg.update()` beim Start und beim Zurückkehren in die App, bei neuer Version einmal automatisch neu laden (nur im Menü).
+
+## Stand davor: v0.36.0 – Koop zu zweit
 **0.36:** `js/net.js` (Transport aus Cats TD: PeerJS `lib/peerjs.min.js`, Test `?net=local` über BroadcastChannel; Raumcode `BF-1234`). **Lockstep:** beide Geräte rechnen dieselbe Welt (Seed, fester Schritt, `world.tickN`). Alle Welt-Änderungen laufen über `game.cmd(name, …args)` (`CMDS` in net.js); der Gastgeber führt sie aus und verschickt `{n, cmds:[[tick, name, args]], p, h}`, der Gast rechnet in `game.guestStep()` bis zur Schrittzahl des Gastgebers nach und wendet Befehle vor dem passenden Schritt an. Prüfsumme `worldHash` alle 120 Schritte → Warnung „Koop asynchron“. Gemeinsame Startwerte `menus.coopSetup` (Team = beide Freischaltungen, Kreaturen-Stufe = jeweils die höhere, feste Tabelle statt Live-Level, Akademie/Held vom Gastgeber). Gemeinsame Münzen und Leben, Tempo und Pause beim Gastgeber, kein freies Spiel, Verlassen → `game.mateLeft`. Bildschirm `menus.s_coop` (Hub-Kachel „Koop“), HUD-Pille `.pill.coop`. Tests: Unit „Koop-Lockstep“, e2e `coop` (zwei Seiten).
 
 ## Stand davor: v0.35.0 – Truhen, Wochen-Event, Kosmetik
