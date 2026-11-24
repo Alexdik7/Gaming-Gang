@@ -47,7 +47,7 @@ export class Game {
     this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, academy: S ? S.ac : this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: S ? S.seed : (Date.now() % 1e6) | 0, players: S ? 2 : 1 });
     this.me = this.net && !this.net.host ? 1 : 0; this.world.who = this.me;   // Koop: Gastgeber = Spieler 0, Mitspieler = Spieler 1
     if (app.devGod && !S) this.world.god = true;
-    if (this.net) { this.askedFree = true; this.net.on.leave = () => this.mateLeft(); }   // Koop: kein freies Spiel (würde die Welten trennen)
+    if (this.net) { this.net.on.leave = () => this.mateLeft(); this.net.on.fin = () => { this.hostDone = true; }; if (!this.net.host) this.askedFree = true; }   // Koop: der Gastgeber entscheidet über freies Spiel
     app.stage.setMode('game');
     this.view = new GameView(app.stage, this.world, { branch: hooks.branch, skin: cid => this.skinOf(cid), heart: cosOf(P, 'heart'), pop: cosOf(P, 'pop') });
     this.speed = 1; this.paused = false; this.placing = null; this.sel = null; this.ghost = null; this.ghostPos = null;
@@ -241,8 +241,12 @@ export class Game {
   }
   guestStep() {
     const N = this.net, w = this.world, q = N.inbox; let k = 0;
-    while (w.tickN < N.hostN && k < 45 && !w.over) {
-      while (q.length && q[0][0] <= w.tickN) { const [, name, a, who] = q.shift(); w.who = who || 0; w[name](...a); w.who = this.me; }
+    for (;;) {
+      while (q.length && q[0][0] <= w.tickN) {   // Befehle vor dem Schritt anwenden – auch wenn die Welt gerade vorbei ist (freies Spiel)
+        const [, name, a, who] = q.shift(); w.who = who || 0; const r = w[name](...a); w.who = this.me;
+        if (name === 'freeplay' && r?.ok && !this.freeplay) { this.winRes = this.finish(true); this.freeplay = true; this.hud.banner('FREIES SPIEL', 'Wie lange haltet ihr durch?', 'boss'); }
+      }
+      if (w.over || w.tickN >= N.hostN || k >= 45) break;
       w.step(BAL.tick); k++;
       const h = N.hashes?.find(x => x[0] === w.tickN);
       if (h && h[1] !== worldHash(w) && !this.desync) { this.desync = true; this.hud.toast('acc', '⚠ Koop asynchron', 'Die Spielstände weichen ab – bitte neu starten.'); }
@@ -254,6 +258,7 @@ export class Game {
     const host = this.net.host; this.net = null;
     this.hud.toast('acc', '🤝 Mitspieler weg', host ? 'Du spielst allein weiter.' : 'Der Gastgeber hat das Spiel verlassen.');
     if (!host && !this.world.over) { const w = this.world; w.over = true; w.won = false; }
+    this.hostDone = true;
   }
 
   // ───────── Hauptschleife ─────────
@@ -274,6 +279,10 @@ export class Game {
     this.saveT += dt; if (this.saveT > 20) { this.saveT = 0; saveProfile(this.P); }
     if (w.over && !this.finished) {
       if (w.won && !this.freeplay && !this.askedFree && this.diffKey !== 'endless') { this.askedFree = true; this.askFree(); return; }
+      if (w.won && this.net && !this.net.host && !this.freeplay && !this.hostDone && this.diffKey !== 'endless') {   // Koop-Gast: wartet auf die Entscheidung des Gastgebers
+        if (!this.waitShown) { this.waitShown = true; this.app.audio.play('win'); this.hud.banner('🏆 SIEG!', 'Der Gastgeber entscheidet: freies Spiel oder Abschließen …', 'evo'); }
+        return;
+      }
       if (this.endT < 0) { this.endT = 2.2; this.app.audio.play(w.won ? 'win' : 'lose'); this.hud.banner(w.won ? 'SIEG!' : this.freeplay ? 'FREIES SPIEL ENDE' : 'NIEDERLAGE', w.won ? 'Der Schrein ist sicher' : this.freeplay ? 'Bis Welle ' + w.doneWave + ' durchgehalten' : 'Der Herzkristall ist erloschen', w.won ? 'evo' : 'boss'); }
       this.endT -= dt; if (this.endT <= 0) { this.finished = true; this.finish(); }
     }
@@ -326,13 +335,14 @@ export class Game {
   askFree() {
     this.paused = true; this.app.audio.play('win');
     const m = document.getElementById('modal'); m.classList.remove('hidden');
-    m.innerHTML = `<div class="mbox"><h3>🏆 Sieg!</h3><p>Der Schrein ist sicher. Willst du im <b>freien Spiel</b> weiterkämpfen? Die Wellen werden immer härter – XP gibt es weiter, dein Sieg ist schon gespeichert.</p>
+    const co = this.net && !this.net.gone ? '<br><small>🤝 Ihr spielt gemeinsam weiter – dein Mitspieler wartet auf deine Wahl.</small>' : '';
+    m.innerHTML = `<div class="mbox"><h3>🏆 Sieg!</h3><p>Der Schrein ist sicher. Wollt ihr im <b>freien Spiel</b> weiterkämpfen, bis ihr verliert? Die Wellen werden immer härter – XP gibt es weiter, der Sieg ist schon gespeichert.${co}</p>
       <button class="btn pri" data-f>⚔ Weiterspielen</button><button class="btn" data-e>Abschließen</button></div>`;
-    m.querySelector('[data-e]').onclick = () => { m.classList.add('hidden'); this.paused = false; };
+    m.querySelector('[data-e]').onclick = () => { m.classList.add('hidden'); this.paused = false; if (this.net && !this.net.gone) this.net.send({ n: this.world.tickN, fin: 1 }); };
     m.querySelector('[data-f]').onclick = () => {
       m.classList.add('hidden'); this.winRes = this.finish(true);
-      const w = this.world; w.over = false; w.won = false; w.maxWave = Infinity; this.freeplay = true; this.paused = false;
-      this.hud.banner('FREIES SPIEL', 'Wie lange hältst du durch?', 'boss');
+      this.cmd('freeplay'); this.freeplay = true; this.paused = false;
+      this.hud.banner('FREIES SPIEL', this.net ? 'Wie lange haltet ihr durch?' : 'Wie lange hältst du durch?', 'boss');
     };
   }
   finish(silent = false) {

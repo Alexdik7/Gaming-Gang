@@ -147,7 +147,7 @@ export function explain(e) {
 }
 
 // Befehle, die die Welt verändern dürfen (alles andere wird verworfen)
-export const CMDS = new Set(['place', 'upgrade', 'sell', 'evolve', 'ascend', 'fuse', 'setTarget', 'clearRock', 'startWave', 'useAbility', 'usePower']);
+export const CMDS = new Set(['place', 'upgrade', 'sell', 'evolve', 'ascend', 'fuse', 'setTarget', 'clearRock', 'startWave', 'useAbility', 'usePower', 'freeplay']);
 
 export class Coop {
   constructor(tr, host) { this.tr = tr; this.host = host; this.out = []; this.inbox = []; this.hostN = 0; this.peer = null; this.on = {}; this.lastSent = -1; }
@@ -165,7 +165,7 @@ export class Coop {
         else if (m.bye) { this.gone = true; this.on.leave?.(); }
       } else {
         if (m.setup) this.on.setup?.(m.setup);
-        else if (typeof m.n === 'number') { this.hostN = Math.max(this.hostN, m.n); if (m.cmds) this.inbox.push(...m.cmds); if (m.h) this.hashes = [...(this.hashes || []).slice(-8), m.h]; this.hostPaused = !!m.p; if (m.end) this.on.end?.(); }
+        else if (typeof m.n === 'number') { this.hostN = Math.max(this.hostN, m.n); if (m.cmds) this.inbox.push(...m.cmds); if (m.h) this.hashes = [...(this.hashes || []).slice(-8), m.h]; this.hostPaused = !!m.p; if (m.end) this.on.end?.(); if (m.fin) this.on.fin?.(); }
         else if (m.bye) { this.gone = true; this.on.leave?.(); }
       }
     };
