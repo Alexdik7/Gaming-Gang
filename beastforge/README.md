@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.37.0 – Koop: eigenes Geld, klare Besitzer
+## Stand: v0.37.1 – Koop: freies Spiel nach dem Sieg
+**0.37.1:** Neuer Welt-Befehl `world.freeplay()` (in `CMDS`). Nach dem Sieg fragt nur der Gastgeber (`askFree`); „Weiterspielen“ läuft über `game.cmd('freeplay')`, der Gast übernimmt ihn in `guestStep` (Befehle werden jetzt auch angewendet, wenn die Welt gerade vorbei ist) und verbucht seinen Sieg mit `finish(true)`. „Abschließen“ schickt `{fin:1}` → Gast beendet ebenfalls. Bis dahin zeigt der Gast „Der Gastgeber entscheidet …“. Test „Koop: freies Spiel nach dem Sieg bleibt synchron“.
+
+## Stand davor: v0.37.0 – Koop: eigenes Geld, klare Besitzer
 **0.37:** Geldbörsen `world.wallet[spieler]` (Solo 1, Koop 2), `world.coins` ist jetzt Getter/Setter auf `wallet[world.who]`; `who` = wer gerade einen Befehl ausführt (Gastgeber 0, Mitspieler 1; Befehls-Log trägt den Spieler mit). Die Simulation liest `who` nie: `gain(c, owner)` schreibt Kill-Geld, Kopfgeld, Glücks- und Goldregen-Münzen, Einkommen und Zinsen dem Besitzer der Kreatur gut, Wellenbonus bekommt jeder voll, Geld ohne Besitzer wird geteilt. Kreatur `t.owner`; `world.mine(t)` sperrt Upgrade/Verkauf/Erwecken/Ahnenform/Fusion/Ziel/Fähigkeit für fremde Kreaturen. Anzeige: farbiger Besitzer-Ring (`OWNER_COL` blau/orange), Mitspieler-Geld in der Koop-Pille (`#hMate`), eigenes Geld farbig umrandet, fremdes Panel „nur ansehen“ (`#panel.foreign`). Prüfsumme nutzt alle Börsen. Dazu (0.36.3) Verbindungsfortschritt mit Abbrechen und **🩺 Verbindungstest** (`diagnose()`: Vermittler, WebRTC, STUN, TURN).
 
 ## Stand davor: v0.36.2 – Koop-Verbindung robuster

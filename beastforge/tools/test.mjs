@@ -579,3 +579,22 @@ test('Koop: jeder verdient und zahlt selbst, fremde Kreaturen gesperrt', () => {
   // Solo unverändert: eine Börse
   const s = new World({ map: 'ahnenhain', diff: 'normal', seed: 9 }); assert.equal(s.wallet.length, 1); s.coins += 5; assert.equal(s.wallet[0], s.diff.start + 5);
 });
+
+test('Koop: freies Spiel nach dem Sieg bleibt synchron', async () => {
+  const { worldHash } = await import('../js/net.js');
+  const mk = () => { const w = new World({ map: 'ahnenhain', diff: 'normal', loadout: ['kitsune', 'turtle'], seed: 77, players: 2, hooks: { level: () => 30 } }); w.maxWave = 1; return w; };
+  const A = mk(), B = mk(), log = [];
+  const doCmd = (w, who, name, ...a) => { w.who = who; const r = w[name](...a); w.who = 0; if (r?.ok) log.push([w.tickN, name, a, who]); return r; };
+  A.wallet = [5000, 5000]; B.wallet = [5000, 5000];
+  doCmd(A, 0, 'place', 'kitsune', ...A.suggestSpot('kitsune', 3)); doCmd(A, 1, 'place', 'turtle', ...A.suggestSpot('turtle', 3));
+  doCmd(A, 0, 'startWave');
+  let guard = 0; while (!A.over && guard++ < 60 * 300) A.step(BAL.tick);
+  assert.ok(A.over && A.won, 'Welle 1 gewonnen');
+  assert.equal(A.freeplay().ok, true); log.push([A.tickN, 'freeplay', [], 0]);
+  assert.ok(!A.over && A.maxWave === Infinity);
+  doCmd(A, 1, 'startWave'); for (let i = 0; i < 600; i++) A.step(BAL.tick);
+  // Gast spielt das Protokoll nach (Befehle vor dem Schritt, auch wenn die Welt gerade vorbei ist)
+  const q = log.slice();
+  for (;;) { while (q.length && q[0][0] <= B.tickN) { const [, n, a, who] = q.shift(); B.who = who; B[n](...a); B.who = 0; } if (B.tickN >= A.tickN) break; if (B.over && !q.length) break; B.step(BAL.tick); }
+  assert.equal(B.tickN, A.tickN); assert.equal(B.wave, 2); assert.equal(worldHash(A), worldHash(B));
+});

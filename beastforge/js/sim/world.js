@@ -354,6 +354,8 @@ export class World {
     this.powCd = BAL.power.cd; this.stats.powers = (this.stats.powers || 0) + 1;
     return { ok: true };
   }
+  // Freies Spiel nach dem Sieg (auch im Koop als Befehl, damit beide Welten gleich bleiben)
+  freeplay() { if (!this.over || !this.won) return { ok: false, why: 'Noch nicht gewonnen' }; this.over = false; this.won = false; this.maxWave = Infinity; return { ok: true }; }
   peekWave() { const n = this.wave + 1; if (n > this.maxWave) return null; let def = waveDef(n); const mx = this.map.mix?.(n, def.groups); if (mx) def = { ...def, groups: mx.groups, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) }; return { n, def }; }
   waveRunning() { return this.spawners.length > 0 || this.enemies.length > 0; }
 
