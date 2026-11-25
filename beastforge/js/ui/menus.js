@@ -91,14 +91,16 @@ export class Menus {
   }
 
   // ───────── Koop zu zweit (net.js): Raum erstellen oder per Code beitreten ─────────
-  coopInfo() { const P = this.P, un = unlockedCreatures(P); return { name: TITLES[P.account.title] || 'Shinobi', lvl: P.account.level, unlocked: un, levels: Object.fromEntries(un.map(c => [c, P.chars[c].level])), branch: Object.fromEntries(un.map(c => [c, P.chars[c].branch])) }; }
+  coopInfo() { const P = this.P, un = unlockedCreatures(P), hero = unlocked(P, 'hero', P.hero) ? P.hero : unlocked(P, 'hero', 'kairo') ? 'kairo' : null;
+    return { name: TITLES[P.account.title] || 'Shinobi', lvl: P.account.level, unlocked: un, hero, heroStart: hero ? Math.min(20, heroStartLevel(P.heroes[hero]?.rank || 1) + (academyFx(P).heroLvl || 0)) : 1, levels: Object.fromEntries(un.map(c => [c, P.chars[c].level])), branch: Object.fromEntries(un.map(c => [c, P.chars[c].branch])) }; }
   coopSetup(map, diff) {   // gemeinsame Startwerte: Team = beide Freischaltungen, Stufe = jeweils die höhere
     const P = this.P, mate = this.coopNet.mate || {}, mine = unlockedCreatures(P);
     const loadout = [...new Set([...mine, ...(Array.isArray(mate.unlocked) ? mate.unlocked : []).filter(c => CREATURES[c])])];
     const levels = {}, branch = {};
     for (const c of loadout) { levels[c] = Math.max(1, Math.min(50, Math.max(mine.includes(c) ? P.chars[c].level : 0, Math.round(+mate.levels?.[c] || 0)))); branch[c] = mine.includes(c) ? P.chars[c].branch : (mate.branch?.[c] === 'shadow' ? 'shadow' : 'spirit'); }
     const ac = academyFx(P), hero = unlocked(P, 'hero', P.hero) ? P.hero : unlocked(P, 'hero', 'kairo') ? 'kairo' : null;
-    return { map, diff, seed: (Date.now() % 1e6) | 0, loadout, levels, branch, hero, heroStart: hero ? Math.min(20, heroStartLevel(P.heroes[hero]?.rank || 1) + (ac.heroLvl || 0)) : 1, ac };
+    const mh = HEROES[mate.hero] ? mate.hero : null;   // jeder bringt seinen eigenen Helden mit
+    return { map, diff, seed: (Date.now() % 1e6) | 0, loadout, levels, branch, heroes: [hero, mh], heroStarts: [hero ? Math.min(20, heroStartLevel(P.heroes[hero]?.rank || 1) + (ac.heroLvl || 0)) : 1, Math.max(1, Math.min(20, Math.round(+mate.heroStart || 1)))], ac };
   }
   s_coop(state) {
     const P = this.P, N = this.coopNet; state = state || (N ? (N.host ? (N.mate ? 'ready' : 'wait') : 'joined') : 'start');
@@ -111,6 +113,7 @@ export class Menus {
         <small class="mut">Beide brauchen Internet. Der Gastgeber wählt Karte und Schwierigkeit.</small><button class="btn" id="cpDiag">🩺 Verbindung testen</button></div>`,
       wait: `<div class="cpbox"><small class="mut">Dein Raumcode</small><div class="cpcode">${esc(N?.code || '')}</div><p>Sag deinem Mitspieler den Code. Er tippt in Beastforge auf <b>Koop → Beitreten</b>.</p>${navigator.share ? '<button class="btn pri" id="cpShare">📤 Code teilen</button>' : ''}<div class="cpwait" id="cpStat">⏳ Warte auf Mitspieler …</div><small class="mut">Du kannst kurz zu WhatsApp &amp; Co. wechseln – komm danach zurück in Beastforge und bleib auf diesem Bildschirm, bis dein Mitspieler da ist.</small></div>`,
       ready: `<div class="cpbox"><div class="cpmate">🤝 <b>${esc(N?.mate?.name || 'Mitspieler')}</b> · Konto-Lv ${+N?.mate?.lvl || 1} ist da!</div>
+        <div class="cpheroes">${(() => { const myH = unlocked(P, 'hero', P.hero) ? P.hero : unlocked(P, 'hero', 'kairo') ? 'kairo' : null, mh = HEROES[N?.mate?.hero] ? N.mate.hero : null; const hh = (id, who, c) => `<div class="cph" style="--c:${c}">${id ? `<img src="${portrait(id, { hlvl: 1 })}" alt="">` : '<span>–</span>'}<small>${who}</small><b>${id ? esc(HEROES[id].name) : 'kein Held'}</b></div>`; return hh(myH, 'Dein Held', '#4aa8ff') + hh(mh, 'Held deines Mitspielers', '#ffa03a'); })()}</div>
         <div class="wlabel">Karte</div><div class="cpsel">${maps.map(id => `<button class="btn ${id === sel ? 'pri' : ''}" data-cm="${id}">${esc(MAPS[id].name)}</button>`).join('')}</div>
         <div class="wlabel">Schwierigkeit</div><div class="cpsel">${diffs.map(d => `<button class="btn ${d === dsel ? 'pri' : ''}" data-cd="${d}">${esc(BAL.diff[d].name)}</button>`).join('')}</div>
         <button class="big" id="cpGo">⚔ Gemeinsam starten</button></div>`,

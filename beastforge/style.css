@@ -721,3 +721,5 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .pill.coop b { color: #fff; white-space: nowrap; } .pill.coop { white-space: nowrap; }
 #panel .own2 { margin: 0 0 6px; padding: 5px 10px; border-radius: 10px; background: rgba(255,160,58,.25); border: 2px solid #ffa03a; color: #fff; font-weight: 800; font-size: 12px; text-align: center; }
 #panel.foreign [data-up], #panel.foreign [data-sell], #panel.foreign [data-evo], #panel.foreign [data-fuse], #panel.foreign [data-ascend], #panel.foreign [data-tg] { pointer-events: none; opacity: .35; filter: grayscale(.7); }
+.cpheroes { display: flex; gap: 10px; justify-content: center; } .cph { display: grid; justify-items: center; gap: 2px; padding: 6px 10px; border-radius: 14px; background: rgba(0,0,0,.25); border: 3px solid var(--c); min-width: 110px; }
+.cph img { width: 54px; height: 54px; border-radius: 50%; object-fit: cover; background: rgba(255,255,255,.15); } .cph span { font-size: 30px; } .cph small { color: #dfe8ff; font-size: 10px; } .cph b { color: #fff; font-size: 13px; }

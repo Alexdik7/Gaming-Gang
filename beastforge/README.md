@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.37.1 – Koop: freies Spiel nach dem Sieg
+## Stand: v0.37.2 – Koop: jeder mit eigenem Helden
+**0.37.2:** `world.heroIds[spieler]` (Option `heroes`, Solo `[hero]`), `isHeroId(cid)`; im Koop darf jeder nur seinen eigenen Helden setzen („Das ist der Held deines Mitspielers“, „Nur ein Held pro Spieler“), Startlevel je Spieler über `hooks.heroStart(cid, who)` / `setup.heroStarts`, Wellen- und Schadens-XP für alle Helden, Rang-XP nur für den eigenen (`hooks.heroXp(amt, t)`). Gast schickt Held + Startlevel im `hello`, Lobby zeigt beide Helden (`.cpheroes`).
+
+## Stand davor: v0.37.1 – Koop: freies Spiel nach dem Sieg
 **0.37.1:** Neuer Welt-Befehl `world.freeplay()` (in `CMDS`). Nach dem Sieg fragt nur der Gastgeber (`askFree`); „Weiterspielen“ läuft über `game.cmd('freeplay')`, der Gast übernimmt ihn in `guestStep` (Befehle werden jetzt auch angewendet, wenn die Welt gerade vorbei ist) und verbucht seinen Sieg mit `finish(true)`. „Abschließen“ schickt `{fin:1}` → Gast beendet ebenfalls. Bis dahin zeigt der Gast „Der Gastgeber entscheidet …“. Test „Koop: freies Spiel nach dem Sieg bleibt synchron“.
 
 ## Stand davor: v0.37.0 – Koop: eigenes Geld, klare Besitzer

@@ -76,7 +76,7 @@ export class Hud {
     const coins = Math.floor(this.w.coins); if (coins === this.last.trayCoins) return; this.last.trayCoins = coins;
     $('tray').querySelectorAll('.card').forEach(b => {
       const id = b.dataset.id; b.classList.toggle('poor', coins < this.w.costOf(id));
-      b.classList.toggle('used', id === this.g.heroId && this.w.towers.some(t => t.hero));
+      b.classList.toggle('used', id === this.g.heroId && this.w.towers.some(t => t.hero && (t.owner || 0) === this.g.me));
     });
   }
   updAcc() {
