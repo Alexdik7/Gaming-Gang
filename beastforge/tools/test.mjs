@@ -598,3 +598,16 @@ test('Koop: freies Spiel nach dem Sieg bleibt synchron', async () => {
   for (;;) { while (q.length && q[0][0] <= B.tickN) { const [, n, a, who] = q.shift(); B.who = who; B[n](...a); B.who = 0; } if (B.tickN >= A.tickN) break; if (B.over && !q.length) break; B.step(BAL.tick); }
   assert.equal(B.tickN, A.tickN); assert.equal(B.wave, 2); assert.equal(worldHash(A), worldHash(B));
 });
+
+test('Koop: jeder Spieler setzt seinen eigenen Helden', () => {
+  const w = new World({ map: 'ahnenhain', diff: 'normal', loadout: ['kitsune'], seed: 3, players: 2, heroes: ['kairo', 'raizen'], hooks: { level: () => 5, heroStart: (cid, who) => who ? 4 : 2 } });
+  w.wallet = [9000, 9000];
+  w.who = 1; assert.equal(w.canPlace('kairo', 3, 4.5).why, 'Das ist der Held deines Mitspielers');
+  const r = w.place('raizen', ...w.suggestSpot('raizen', 3)); assert.ok(r.ok, r.why); assert.equal(r.tower.hlvl, 4); assert.equal(r.tower.owner, 1);
+  assert.equal(w.canPlace('raizen', ...w.suggestSpot('kitsune', 3)).why, 'Nur ein Held pro Spieler');
+  w.who = 0; const k = w.place('kairo', ...w.suggestSpot('kairo', 3)); assert.ok(k.ok, k.why); assert.equal(k.tower.hlvl, 2);
+  assert.equal(w.towers.filter(t => t.hero).length, 2);
+  w.waveEnd(); w.wave = 1; w.waveEnd(); assert.ok(r.tower.hxp > 0 && k.tower.hxp > 0, 'beide Helden bekommen Wellen-XP');
+  // Solo: weiterhin nur ein Held
+  const s = new World({ map: 'ahnenhain', diff: 'normal', hero: 'kairo', seed: 3 }); s.coins = 9000; assert.ok(s.place('kairo', ...s.suggestSpot('kairo', 3)).ok); assert.equal(s.canPlace('kairo', ...s.suggestSpot('kitsune', 3)).why, 'Nur ein Held pro Run');
+});

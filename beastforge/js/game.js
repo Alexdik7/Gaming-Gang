@@ -21,12 +21,12 @@ import { worldHash } from './net.js';
 export class Game {
   constructor(app, { map = 'ahnenhain', diff = 'normal', ch = 'std', coop = null }) {
     this.app = app; const P = this.P = app.profile;
-    const S = coop?.setup || null; this.net = coop?.net || null; this.coop = S;   // Koop: gemeinsame Startwerte vom Gastgeber
+    const S = coop?.setup || null; this.net = coop?.net || null; this.coop = S; const me = this.net && !this.net.host ? 1 : 0;   // Koop: gemeinsame Startwerte vom Gastgeber
     if (S) { map = S.map; diff = S.diff; ch = 'std'; }
     this.mapId = map; this.diffKey = diff; this.ch = CH[ch] || ch === 'daily' ? ch : 'std'; this.music = MAPS[map]?.music || 'forest';
     this.loadout = S ? S.loadout.slice() : unlockedCreatures(P);
     if (!this.loadout.length) this.loadout = ['kitsune'];
-    this.heroId = S ? S.hero : unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
+    this.heroId = S ? (S.heroes?.[me] ?? null) : unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
     this.snap = { acc: { ...P.account }, chars: Object.fromEntries(Object.entries(P.chars).map(([k, c]) => [k, { level: c.level, xp: c.xp }])) };
     this.accGain = 0; this.charUps = []; this.accUps = []; this.achs = [];
     this.ac = academyFx(P); ensureEvent(P);   // Event-Woche vor dem Run festlegen, damit der Run mitzählt
@@ -40,11 +40,11 @@ export class Game {
       },
       accXp: amt => this.giveAcc(amt),
       stat: (k, n, max) => { P.stats[k] = max ? Math.max(P.stats[k] || 0, n) : (P.stats[k] || 0) + n; },
-      heroXp: amt => { if (this.heroId && (!S || this.net?.host)) addHeroRankXp(P, this.heroId, amt * 0.5); },
-      heroStart: () => S ? S.heroStart : Math.min(20, heroStartLevel(P.heroes[this.heroId]?.rank || 1) + (this.ac.heroLvl || 0)),
+      heroXp: (amt, t) => { if (this.heroId && t?.cid === this.heroId && (t.owner || 0) === me) addHeroRankXp(P, this.heroId, amt * 0.5); },   // nur der eigene Held bringt Rang-XP
+      heroStart: (cid, who) => S ? (S.heroStarts?.[who] ?? 1) : Math.min(20, heroStartLevel(P.heroes[this.heroId]?.rank || 1) + (this.ac.heroLvl || 0)),
     };
     const mods = S ? {} : this.ch === 'daily' ? Object.assign({}, ...dailyChallenge(P, id => unlocked(P, 'map', id)).mods.map(id => CH[id].mods)) : CH[this.ch].mods || {};
-    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, hooks, academy: S ? S.ac : this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: S ? S.seed : (Date.now() % 1e6) | 0, players: S ? 2 : 1 });
+    this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, heroes: S ? S.heroes : undefined, hooks, academy: S ? S.ac : this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: S ? S.seed : (Date.now() % 1e6) | 0, players: S ? 2 : 1 });
     this.me = this.net && !this.net.host ? 1 : 0; this.world.who = this.me;   // Koop: Gastgeber = Spieler 0, Mitspieler = Spieler 1
     if (app.devGod && !S) this.world.god = true;
     if (this.net) { this.net.on.leave = () => this.mateLeft(); this.net.on.fin = () => { this.hostDone = true; }; if (!this.net.host) this.askedFree = true; }   // Koop: der Gastgeber entscheidet über freies Spiel
@@ -166,7 +166,7 @@ export class Game {
     this.select(null); this.cancelPlace(); this.aimPower(null);
     if (!pow && this.world.coins < this.world.costOf(cid)) { this.hud.err('Zu wenig Münzen'); return; }
     this.placePow = pow;
-    if (cid === this.heroId && this.world.towers.some(t => t.hero)) { this.hud.err(HEROES[cid].name + ' ist schon im Einsatz'); return; }
+    if (cid === this.heroId && this.world.towers.some(t => t.hero && (t.owner || 0) === this.me)) { this.hud.err(HEROES[cid].name + ' ist schon im Einsatz'); return; }
     this.placing = cid; this.dragging = drag; this.app.audio.play('click');
     this.view.showArrows(1.5);
     this.hud.buildTray(); this.hud.coachEvent('pick');
@@ -396,7 +396,7 @@ export class Game {
     P.stats.coins = (P.stats.coins || 0) + w.stats.coins;
     const powGot = givePowers(P, runPowerReward(w.doneWave, won, d));
     saveProfile(P);
-    const hero = w.towers.find(t => t.hero);
+    const hero = w.towers.find(t => t.hero && (t.owner || 0) === this.me);
     const res = ({
       won, perfect, firstClear, map: w.map.name, mapId: this.mapId, diff: D.name, diffKey: d, wave: w.doneWave, maxWave: w.maxWave, lives: w.lives, maxLives: w.maxLives,
       kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves,

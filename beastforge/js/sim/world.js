@@ -28,7 +28,7 @@ export class World {
     this.diffKey = o.diff || 'normal'; this.diff = BAL.diff[this.diffKey];
     this.hooks = o.hooks || {};
     this.loadout = o.loadout || Object.keys(CREATURES);
-    this.heroId = o.hero || null;
+    this.heroIds = o.heroes || [o.hero || null]; this.heroId = this.heroIds[0] || null;   // Koop: ein Held je Spieler (heroIds[spieler])
     this.rng = mulberry(o.seed ?? 12345);
     this.grid = this.map.grid.map(r => r.split(''));
     this.H = this.grid.length; this.W = this.grid[0].length;
@@ -130,7 +130,8 @@ export class World {
     }
     return best;
   }
-  costOf(cid) { return cid === this.heroId ? BAL.hero.cost : Math.round(CREATURES[cid].cost * (1 - (this.ac.cost || 0))); }
+  isHeroId(cid) { return !!HEROES[cid] && this.heroIds.includes(cid); }
+  costOf(cid) { return this.isHeroId(cid) ? BAL.hero.cost : Math.round(CREATURES[cid].cost * (1 - (this.ac.cost || 0))); }
   upCost(c) { return Math.round(c * (1 - (this.ac.upCost || 0))); }
   // Bester freier Platz (max. Pfadlänge in Reichweite) – für Bot, Tests und Hinweise
   suggestSpot(cid, range = 3, preferEnd = false) {
@@ -155,7 +156,7 @@ export class World {
   }
   canPlace(cid, x, y, free = false) {
     if (this.over) return { ok: false, why: 'Run ist vorbei' };
-    const isHero = cid === this.heroId && HEROES[cid];
+    const isHero = this.isHeroId(cid);
     if (!isHero && !free && !this.loadout.includes(cid)) return { ok: false, why: 'Nicht im Team' };
     if (x < TOWER_R || y < TOWER_R || x > this.W - TOWER_R || y > this.H - TOWER_R) return { ok: false, why: 'Außerhalb der Karte' };
     if (this.pathDist(x, y) < PATH_HALF + TOWER_R * 0.75) return { ok: false, why: 'Zu nah am Pfad' };
@@ -168,7 +169,8 @@ export class World {
     const allowed = isHero ? HEROES[cid].place : CREATURES[cid].place;
     if (!allowed.includes(kind)) return { ok: false, why: kind === 'water' ? 'Nur Wasserkreaturen im Wasser' : 'Ungeeigneter Boden' };
     if (this.towers.some(t => Math.hypot(t.x - x, t.y - y) < TOWER_R * 2)) return { ok: false, why: 'Zu nah an einer Kreatur' };
-    if (isHero && this.towers.some(t => t.hero)) return { ok: false, why: 'Nur ein Held pro Run' };
+    if (isHero && this.players > 1 && this.heroIds[this.who] !== cid) return { ok: false, why: 'Das ist der Held deines Mitspielers' };
+    if (isHero && this.towers.some(t => t.hero && (this.players < 2 || (t.owner || 0) === this.who))) return { ok: false, why: this.players > 1 ? 'Nur ein Held pro Spieler' : 'Nur ein Held pro Run' };
     if (this.towers.length >= BAL.run.maxTowers) return { ok: false, why: 'Zu viele Kreaturen' };
     if (!free && this.coins < this.costOf(cid)) return { ok: false, why: 'Zu wenig Münzen' };
     return { ok: true, kind, raft: raft >= 0 ? raft : null };
@@ -176,10 +178,10 @@ export class World {
   place(cid, x, y, o = {}) {
     const c = this.canPlace(cid, x, y, o.free); if (!c.ok) return c;
     const cost = o.free ? 0 : this.costOf(cid); this.coins -= cost;
-    const hero = cid === this.heroId && !!HEROES[cid];
+    const hero = this.isHeroId(cid);
     const t = { id: this.nid++, cid, hero, cx: Math.floor(x), cy: Math.floor(y), x, y, ground: c.kind, stage: 0, tiers: [0, 0, 0], spent: cost,
       target: 'first', cd: 0.2, mcd: 0.5, cnt: 0, kills: 0, dmg: 0, ang: Math.PI / 2, abCd: 0, ultCd: 0, disabledT: 0, buffs: [], orbT: 0, dashCd: 3, clonesT: 0,
-      hlvl: hero ? (this.hooks.heroStart?.() || 1) : 0, hxp: 0, s: null, prot: false, raft: c.raft, owner: this.who };
+      hlvl: hero ? (this.hooks.heroStart?.(cid, this.who) || 1) : 0, hxp: 0, s: null, prot: false, raft: c.raft, owner: this.who };
     if (o.tiers) { t.tiers = o.tiers.slice(); t.instant = true; }   // Sofort-Kreatur: fertige Upgrades
     if (c.raft != null) { const rf = this.rafts[c.raft]; t.ox = x - rf.x; t.oy = y - rf.y; }
     this.towers.push(t); this.stats.used.add(cid); this.dirty = true; this.refresh();
@@ -565,7 +567,7 @@ export class World {
     const total = Object.values(e.dmgBy).reduce((a, b) => a + b, 0);
     if (total > 0) for (const k in e.dmgBy) {
       const share = base * e.dmgBy[k] / total;
-      if (k === this.heroId) { const ht = this.towers.find(t => t.hero); if (ht) this.heroXp(ht, share * 3); }
+      if (this.isHeroId(k)) { for (const ht of this.towers) if (ht.hero && ht.cid === k) this.heroXp(ht, share * 3); }
       else this.charXp(k, share);
     }
     if (e.boss) { this.stats.bossKills++; this.hooks.stat?.('bossKills', 1); this.hooks.accXp?.(BAL.acc.bossKill * this.diff.acc, 'boss'); this.boss = null; this.emit({ t: 'bossDie', e }); }
@@ -593,7 +595,7 @@ export class World {
   // ───────── Held ─────────
   heroXp(t, amt) {
     if (amt <= 0) return;
-    t.hxp += amt; this.stats.heroXp += amt; this.hooks.heroXp?.(amt);
+    t.hxp += amt; this.stats.heroXp += amt; this.hooks.heroXp?.(amt, t);
     const h = HEROES[t.cid];
     while (t.hlvl < BAL.hero.maxLevel && t.hxp >= BAL.hero.need(t.hlvl)) {
       t.hxp -= BAL.hero.need(t.hlvl); t.hlvl++;
@@ -1106,7 +1108,7 @@ export class World {
       this.gain(bonus * this.players); inc.forEach((v, i) => this.gain(v, i)); this.stats.income += income; if (income) this.hooks.stat?.('income', income);
       const used = new Set(this.towers.filter(t => !t.hero).map(t => t.cid));
       for (const cid of used) this.charXp(cid, BAL.char.survive(w));
-      const ht = this.towers.find(t => t.hero); if (ht) this.heroXp(ht, BAL.hero.waveXp(w));
+      for (const ht of this.towers) if (ht.hero) this.heroXp(ht, BAL.hero.waveXp(w));
       this.hooks.accXp?.(BAL.acc.wave(w) * this.diff.acc, 'wave');
       this.hooks.stat?.('waves', 1);
       this.emit({ t: 'waveEnd', wave: w, bonus, income });
