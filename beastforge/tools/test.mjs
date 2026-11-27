@@ -611,3 +611,18 @@ test('Koop: jeder Spieler setzt seinen eigenen Helden', () => {
   // Solo: weiterhin nur ein Held
   const s = new World({ map: 'ahnenhain', diff: 'normal', hero: 'kairo', seed: 3 }); s.coins = 9000; assert.ok(s.place('kairo', ...s.suggestSpot('kairo', 3)).ok); assert.equal(s.canPlace('kairo', ...s.suggestSpot('kitsune', 3)).why, 'Nur ein Held pro Run');
 });
+
+test('Combo: Kills in Folge geben Stufen-Bonus und enden nach dem Zeitfenster', () => {
+  const w = new World({ map: 'ahnenhain', diff: 'normal', seed: 5 });
+  const c0 = w.coins, C = BAL.combo;
+  for (let i = 0; i < 10; i++) { const e = w.spawn('slime'); w.kill(e, null); }
+  assert.equal(w.comboN, 10); const ev = w.events.find(x => x.t === 'combo'); assert.ok(ev && ev.n === 10);
+  assert.ok(w.coins >= c0 + C.coins[0], 'Stufen-Bonus gezahlt');
+  for (let i = 0; i < 60 * 2; i++) w.step(BAL.tick);
+  assert.equal(w.comboN, 0); assert.equal(w.bestCombo, 10); assert.ok(w.events.some(x => x.t === 'comboEnd' && x.n === 10));
+  // Koop: Bonus für jeden Spieler voll
+  const k = new World({ map: 'ahnenhain', diff: 'normal', seed: 5, players: 2 }), s0 = [...k.wallet];
+  for (let i = 0; i < 10; i++) k.kill(k.spawn('slime'), null);
+  const bonus = Math.round(C.coins[0] * (1 + k.wave * 0.03));
+  assert.ok(k.wallet[0] - s0[0] >= bonus && k.wallet[1] - s0[1] >= bonus);
+});

@@ -400,6 +400,10 @@ export class GameView {
         if (big) this.rings.add(x, 0.05, z, 0.1, 2.2, col, 0.6); else this.rings.add(x, 0.05, z, 0.1, 0.5, col, 0.25, { alpha: 0.5 });
         if (ev.coins && settings.dmgNums !== false && (this.world.players < 2 || (ev.src?.owner ?? this.world.who) === this.world.who)) this.floaters.add(x, 0.9, z, '+' + ev.coins, 'coin', 0.8);
         if (big) { this.stage.addShake(0.6); this.stage.zoomPunch = Math.max(this.stage.zoomPunch, 0.5); }
+        if (!this.crowd && this.stage.quality > 0 && this.fxBudget-- > 0) {   // Seele steigt auf; Elite: goldener Sternenkranz
+          P.spawn(x, 0.5, z, 0, 0.9, 0, 0x9ff6ff, 0.09, 0.9, { drag: 0.6, grow: -0.4 });
+          if (e.elite) { P.burst(x, 0.5, z, [0xffd257, 0xffffff], 14, 2.6, 0.08, 0.5, { up: 1.6 }); this.rings.add(x, 0.06, z, 0.1, 0.9, 0xffd257, 0.35); this.floaters.add(x, 1.2, z, '★ ELITE', 'lvl', 0.9); }
+        }
         break;
       }
       case 'shot': { const st = projStyle(ev.special ? 'fireball' : ev.tower.s?.proj); this.atkStart(ev.tower, ev.extra ? null : st.trail); if (ev.special) { const [x, z] = at(ev.tower.x, ev.tower.y); this.flashes.add(x, 0.7, z, 0xffa030, 0.6, 0.16); P.burst(x, 0.7, z, [0xffa030, 0xffe0a0], 6, 1.6, 0.12, 0.35); } break; }
@@ -695,7 +699,7 @@ export class GameView {
     this.fxBudget = this.stage.quality >= 2 ? 24 : 10;   // Einschlag-Effekte je Bild begrenzen (Lesbarkeit + Leistung)
     this.t += dt;
     this.syncTowers(dt); this.syncEnemies(dt);
-    this.projs.sync(this.world.projs, (x, y) => this.toW(x, y), this.t, this.parts, this.stage.quality);
+    this.projs.sync(this.world.projs, (x, y) => this.toW(x, y), this.t, this.parts, this.crowd ? 0 : this.stage.quality, p => p.src && this.towers.get(p.src.id)?.fx);
     this.updGhost(dt);
     // Pfeile
     if (this.arrowT > 0) {

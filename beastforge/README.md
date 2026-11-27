@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.38.0 – Kampfgefühl, Teil 1 (Vision P1, siehe docs/VISION.md)
+## Stand: v0.39.0 – Kampfgefühl Teil 2 + HUD-Juice + Combo (Vision P1/P2)
+**0.39:** Geschoss-Spuren mit Pfad-Identität (`Projectiles.sync(…, fxOf)`: Pfad 1 Glut fällt, Pfad 2 Geist steigt, Pfad 3 Schattenrauch, Kreuzpfad-Akzent). Kill-Feedback: aufsteigende Seele, Elite = goldener Kranz + „★ ELITE“ + Treffer-Stopp (`game.react` → `slow`). `js/ui/anim.js` (Easings, `punch`, `shake`, `ring`, `flyTo` über Web Animations API). HUD: Münzen fliegen vom Gegner zum Zähler (gedrosselt, nur eigenes Geld), Zähler-Punch, roter Rand `#vig` + Herz-Wackeln bei Leck, Ring wenn Fähigkeit/Ultimate bereit wird, Wellenbonus-Münzregen. **Combo** in der Simulation (`world.comboHit/comboEnd`, `BAL.combo`: Fenster 1,4 s, Stufen ×10/25/50/100/200 → Münzen für jeden Spieler + Fähigkeiten-Abklingzeit −1…4 s), Anzeige `#combo` (Farbe/Größe je Stufe), Ergebnis „Beste Combo“, Statistik `bestCombo`. Fix: große Schadenszahl nutzte die Knopf-Klasse `.big` → `.fbig`.
+
+## Stand davor: v0.38.0 – Kampfgefühl, Teil 1 (Vision P1, siehe docs/VISION.md)
 **0.38:** `js/render/attackfx.js` (`AFX` je Kreatur: Grund-/Pfadfarben, Art der Energie-Sammlung `gather` flame/spark/swirl/dust/glint/leaf/smoke/star, Signatur `sig` foxfire/thunder/splash/quake; `afxFor(t)` mischt Farbe nach dominantem Pfad, zweiter Pfad = Akzent). `view.charge(v,t,dt)` liest `t.cd`: kurz vor dem Schuss Ladekugel am Maul, einströmende Partikel, Ausholen/Ducken + Zittern in `atkPose`; `view.release` beim Auslösen (Blitz, Funkenfächer, Signatur). Einschlag-Effekte je Element in `handle('hit')` mit Budget `fxBudget` je Bild; im Massenmodus/Qualität 0 reduziert. Simulation unverändert.
 
 ## Stand davor: v0.37.2 – Koop: jeder mit eigenem Helden

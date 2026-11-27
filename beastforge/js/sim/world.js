@@ -40,7 +40,7 @@ export class World {
     if (this.mods.soulburn) this.lives = this.maxLives = 1;
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
-    this.t = 0; this.tickN = 0; this.acc = 0; this.nid = 1; this.over = false; this.won = false; this.god = false;
+    this.t = 0; this.tickN = 0; this.acc = 0; this.nid = 1; this.comboN = 0; this.comboT = 0; this.bestCombo = 0; this.over = false; this.won = false; this.god = false;
     this.dirty = true; this.synergies = []; this.packs = []; this.boss = null; this.timeScale = 1;
     this.rafts = (this.map.rafts || []).map(r => ({ ...r, x: r.a[0], y: r.a[1] })); this.updRafts();
     const L = this.map.lava; this.vents = (this.map.vents || []).map(([x, y], i) => ({ x: x + 0.5, y: y + 0.5, cd: L.every * (0.45 + i * 0.22), warned: false }));
@@ -69,6 +69,21 @@ export class World {
   gain(c, to = null) {
     if (!(c > 0)) return; if (this.mods.halfCash) c *= 0.5; this.stats.coins += c;
     if (to != null && this.wallet[to] != null) this.wallet[to] += c; else for (let i = 0; i < this.players; i++) this.wallet[i] += c / this.players;
+  }
+  // Combo: Kills in Folge innerhalb von BAL.combo.window; Stufen geben Münzen (jeder Spieler voll) und kürzere Abklingzeiten
+  comboHit() {
+    const C = BAL.combo; this.comboN++; this.comboT = C.window;
+    const i = C.steps.indexOf(this.comboN);
+    if (i >= 0) {
+      const c = Math.round(C.coins[i] * (1 + this.wave * 0.03)); this.gain(c * this.players);
+      if (C.cdr[i]) for (const t of this.towers) { t.abCd = Math.max(0, t.abCd - C.cdr[i]); t.ultCd = Math.max(0, t.ultCd - C.cdr[i]); }
+      this.emit({ t: 'combo', n: this.comboN, coins: c, step: i });
+    }
+  }
+  comboEnd() {
+    const n = this.comboN; this.comboN = 0; this.comboT = 0;
+    if (n > this.bestCombo) { this.bestCombo = n; this.hooks.stat?.('bestCombo', n, true); }
+    if (n >= BAL.combo.show) this.emit({ t: 'comboEnd', n });
   }
   // Koop: eigene Kreaturen verwalten, fremde nur ansehen
   mine(t) { return !t || this.players < 2 || (t.owner || 0) === this.who; }
@@ -393,6 +408,7 @@ export class World {
   }
   step(dt) {
     this.t += dt; this.tickN++;   // Schrittzähler für Koop-Lockstep (net.js)
+    if (this.comboT > 0 && (this.comboT -= dt) <= 0) this.comboEnd();
     if (this.powCd > 0) this.powCd -= dt;
     for (const s of this.spawners) {
       s.t -= dt;
@@ -557,6 +573,7 @@ export class World {
   kill(e, src, over = 0, type = 'phys') {
     if (!e.alive) return; e.alive = false;
     const def = e.def;
+    this.comboHit();
     const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul * BAL.lateCoins(e.wave || this.wave));
     this.gain(coins, src?.owner);
     this.stats.kills++; this.hooks.stat?.('kills', 1);

@@ -78,7 +78,7 @@ Das Spiel soll ein kleines, überraschend hochwertiges Anime-Strategiespiel sein
 ## Fahrplan (je „Weiter“ ein Schritt, jeweils komplett poliert)
 1. **P1 Kampfgefühl** – ✅ Teil 1 (v0.38): Vorbereitung vor dem Schuss für alle 16 Kreaturen, Fusionen und Helden (`render/attackfx.js`, `view.charge/release`), Pfadfarbe + Kreuzpfad-Akzent, Signaturen Fuchsfeuer/Donner/Spritzer, Einschlag je Element mit Budget. Offen: eigene Projektil-Spuren je Pfad, Kill-Feedback, Animations-Werkzeug (→ mit P2).
    Ursprünglicher Plan: Animations-Werkzeug (`render/anim.js`: tween, spring, punch, shake, easeOutBack …). Angriffs-Choreografie als Daten (`ATTACK_FX` je Kreatur und Pfad: Vorbereitung, Auslösen, Spur, Treffer). Effekt-Budget mit Prioritäten. Zuerst Kitsune, Donnertiger, Schildkröte, dann alle 16.
-2. **P2 HUD-Juice + Combo:**
+2. **P2 HUD-Juice + Combo** – ✅ v0.39 (dazu P1 Teil 2: Spuren je Pfad, Seele/Elite-Kill, Treffer-Stopp):
    - Münzflug, Herz-Blinken mit rotem Rand, Bereit-Puls und Ult-Ring.
    - Combo-Zähler deterministisch in der Simulation, mit Bonus-Münzen und Abklingen.
 3. **P3 Audio 2.0:** Klangsignatur je Kreatur, Prioritäten/Pooling, Musik-Ebenen je Karte.

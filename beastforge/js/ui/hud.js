@@ -4,6 +4,7 @@ import { BAL } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
 import { POWERS } from '../data/powers.js';
+import { punch, shake, ring, flyTo } from './anim.js';
 import { MOD_NAMES } from '../data/waves.js';
 import { ENEMIES, BOSSES, ELEMENT_NAMES, ELEMENT_COLORS } from '../data/enemies.js';
 import { TARGETS, TARGET_NAMES } from '../sim/world.js';
@@ -89,7 +90,8 @@ export class Hud {
     const w = this.w;
     const coins = Math.floor(w.coins);
     if (w.players > 1) { const mc = Math.floor(w.wallet[1 - this.g.me] || 0); if (mc !== this.last.mate) { this.last.mate = mc; const el = $('hMate'); if (el) el.textContent = '◈ ' + fmt(mc); } }
-    if (coins !== this.last.coins) { $('hCoins').textContent = fmt(coins); if (coins > (this.last.coins ?? 0)) { const p = $('hCoins').parentElement; p.classList.remove('bump'); void p.offsetWidth; p.classList.add('bump'); } this.last.coins = coins; }
+    if (coins !== this.last.coins) { $('hCoins').textContent = fmt(coins); if (coins > (this.last.coins ?? 0) && performance.now() - (this.punchT || 0) > 120) { this.punchT = performance.now(); punch($('hCoins').parentElement, 1.14, 220); } this.last.coins = coins; }
+    this.updCombo();
     if (w.lives !== this.last.lives) { $('hLives').textContent = w.lives; if (w.lives < (this.last.lives ?? 1e9)) { const p = $('hLives').parentElement; p.classList.remove('hurt'); void p.offsetWidth; p.classList.add('hurt'); } this.last.lives = w.lives; }
     const wl = `${Math.max(1, w.wave)}<small>/${w.maxWave === Infinity ? '∞' : w.maxWave}</small>`; if (wl !== this.last.wave) { $('hWave').innerHTML = wl; this.last.wave = wl; }
     this.updTray(); this.updAcc();
@@ -148,6 +150,27 @@ export class Hud {
       bar.classList.add('hidden'); this.g.usePower(id); this.updPowers();
     });
   }
+  // Münzen fliegen vom besiegten Gegner zum Zähler (eigenes Geld, gedrosselt)
+  coinFly(e) {
+    const w = this.w; if (!e.coins || w.enemies.length > 120 || this.g.view.crowd) return;
+    if (w.players > 1 && (e.src?.owner ?? w.who) !== w.who) return;
+    const now = performance.now(); if (now - (this.flyT || 0) < 110) return; this.flyT = now;
+    const p = this.g.view.screenPos(e.x, e.y, 0.5); if (p) flyTo(p[0], p[1], $('hCoins').parentElement, '◈');
+  }
+  // Combo-Anzeige: wächst mit der Serie, Stufen knallen mit Bonus
+  updCombo() {
+    const n = this.w.comboN, el = $('combo'), show = n >= BAL.combo.show;
+    if (n !== this.last.combo) {
+      this.last.combo = n;
+      if (show) { el.className = 'on c' + Math.min(4, Math.floor(Math.log2(n / 5 + 1))); el.innerHTML = `<small>COMBO</small><b>×${n}</b>${this.comboBonus ? `<i>+◈${fmt(this.comboBonus)}</i>` : ''}`; if (n % 5 === 0) punch(el, 1.12, 200); }
+      else if (el.classList.contains('on')) { el.classList.remove('on'); el.classList.add('off'); this.comboBonus = 0; }
+    }
+  }
+  comboPop(e) {
+    this.comboBonus = e.coins; this.last.combo = -1; this.updCombo(); punch($('combo'), 1.45, 420);
+    this.g.app.audio.play(e.step >= 2 ? 'tier5' : 'upgrade');
+    if (e.step >= 1) this.toast('syn', `🔥 COMBO ×${e.n}!`, `+◈${fmt(e.coins)}${BAL.combo.cdr[e.step] ? ` · Fähigkeiten −${BAL.combo.cdr[e.step]} s` : ''}`);
+  }
   updAbilities() {
     const list = [];
     for (const t of this.w.towers) if (this.w.mine(t)) for (const a of this.w.abilityInfo(t)) if (a.ready) list.push({ t, a });
@@ -167,7 +190,8 @@ export class Hud {
       const cd = el.dataset.slot === 'ab' ? t.abCd : t.ultCd, cdr = t.hero ? this.w.heroCdr(t) : 0;
       const p = cd > 0 ? cd / (info.cd * (1 - cdr)) * 100 : 0;
       el.querySelector('.cd').style.setProperty('--p', p + '%'); el.querySelector('.cd').textContent = cd > 0 ? Math.ceil(cd) : '';
-      el.classList.toggle('ready', cd <= 0);
+      const rdy = cd <= 0; if (rdy && el.dataset.r === '0') ring(el, el.classList.contains('ult') ? '#ffd257' : '#5fe6ff'); el.dataset.r = rdy ? '1' : '0';   // Bereit-Moment: Ring
+      el.classList.toggle('ready', rdy);
     });
   }
   icon(t, tiers) {
@@ -278,12 +302,14 @@ export class Hud {
       case 'bossWarn': this.banner('⚠ BOSS ⚠', BOSSES[e.boss]?.warn || 'Vharox erwacht', 'boss'); this.g.app.stage.addShake(0.5); break;
       case 'bossPhase': this.banner(e.name.toUpperCase(), e.desc, 'boss'); break;
       case 'bossDie': this.banner('BOSS BESIEGT!', (e.e?.def?.name || 'Vharox').split(',')[0] + ({ wolf: ' zerfällt zu Schnee', owl: ' verweht im Sturm' }[e.e?.def?.model] || ' fällt in die Tiefe'), 'evo'); break;
-      case 'waveEnd': this.toast('syn', `Welle ${e.wave} geschafft · +◈${fmt(e.bonus + e.income)}`, e.income ? `Wellenbonus ${fmt(e.bonus)} · Einkommen ${fmt(e.income)}` : ''); break;
+      case 'waveEnd': for (let i = 0; i < 5; i++) setTimeout(() => flyTo(innerWidth * (0.4 + Math.random() * 0.2), innerHeight * 0.45, $('hCoins').parentElement, '◈'), i * 70); this.toast('syn', `Welle ${e.wave} geschafft · +◈${fmt(e.bonus + e.income)}`, e.income ? `Wellenbonus ${fmt(e.bonus)} · Einkommen ${fmt(e.income)}` : ''); break;
       case 'synergy': this.toast('syn', '✦ Synergie: ' + e.sy.name, e.sy.desc); break;
       case 'say': this.bubble(e.tower, e.text); break;
       case 'heroLevel': if (e.milestone) this.toast('char', `${HEROES[e.tower.cid].name} Lv ${e.lvl}: ${e.milestone.name}`, e.milestone.desc); if (this.sel === e.tower) this.refreshPanel(); break;
       case 'evolve': if (this.sel === e.tower) this.refreshPanel(); this.coachEvent('evolve'); break;
-      case 'leak': this.flash(0.15, '#ff2040'); break;
+      case 'leak': { const v = $('vig'); v.getAnimations?.().forEach(a => a.cancel()); v.animate?.([{ opacity: e.e.boss ? 1 : 0.75 }, { opacity: 0 }], { duration: e.e.boss ? 900 : 550, easing: 'ease-out' }); shake($('hLives').parentElement, e.e.boss ? 9 : 5); break; }   // roter Rand + Herz wackelt
+      case 'kill': this.coinFly(e); break;
+      case 'combo': this.comboPop(e); break;
       case 'gust': this.banner('🌬 WINDBÖE', 'Bodengegner auf Brücken werden zurückgedrückt · Fliegende schneller', 'boss'); break;
       case 'upgrade': if (e.tier === 5) this.t5Splash(e); break;
       case 'ascend': this.ascendSplash(e); break;
