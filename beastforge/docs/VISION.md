@@ -76,7 +76,8 @@ Das Spiel soll ein kleines, überraschend hochwertiges Anime-Strategiespiel sein
 | Endgame | Endlos, freies Spiel, Herausforderungen | Boss Rush, Prüfungen (Fusion, Mega, Akademie), Bestenliste fehlen |
 
 ## Fahrplan (je „Weiter“ ein Schritt, jeweils komplett poliert)
-1. **P1 Kampfgefühl:** Animations-Werkzeug (`render/anim.js`: tween, spring, punch, shake, easeOutBack …). Angriffs-Choreografie als Daten (`ATTACK_FX` je Kreatur und Pfad: Vorbereitung, Auslösen, Spur, Treffer). Effekt-Budget mit Prioritäten. Zuerst Kitsune, Donnertiger, Schildkröte, dann alle 16.
+1. **P1 Kampfgefühl** – ✅ Teil 1 (v0.38): Vorbereitung vor dem Schuss für alle 16 Kreaturen, Fusionen und Helden (`render/attackfx.js`, `view.charge/release`), Pfadfarbe + Kreuzpfad-Akzent, Signaturen Fuchsfeuer/Donner/Spritzer, Einschlag je Element mit Budget. Offen: eigene Projektil-Spuren je Pfad, Kill-Feedback, Animations-Werkzeug (→ mit P2).
+   Ursprünglicher Plan: Animations-Werkzeug (`render/anim.js`: tween, spring, punch, shake, easeOutBack …). Angriffs-Choreografie als Daten (`ATTACK_FX` je Kreatur und Pfad: Vorbereitung, Auslösen, Spur, Treffer). Effekt-Budget mit Prioritäten. Zuerst Kitsune, Donnertiger, Schildkröte, dann alle 16.
 2. **P2 HUD-Juice + Combo:**
    - Münzflug, Herz-Blinken mit rotem Rand, Bereit-Puls und Ult-Ring.
    - Combo-Zähler deterministisch in der Simulation, mit Bonus-Münzen und Abklingen.

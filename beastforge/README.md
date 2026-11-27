@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.37.2 – Koop: jeder mit eigenem Helden
+## Stand: v0.38.0 – Kampfgefühl, Teil 1 (Vision P1, siehe docs/VISION.md)
+**0.38:** `js/render/attackfx.js` (`AFX` je Kreatur: Grund-/Pfadfarben, Art der Energie-Sammlung `gather` flame/spark/swirl/dust/glint/leaf/smoke/star, Signatur `sig` foxfire/thunder/splash/quake; `afxFor(t)` mischt Farbe nach dominantem Pfad, zweiter Pfad = Akzent). `view.charge(v,t,dt)` liest `t.cd`: kurz vor dem Schuss Ladekugel am Maul, einströmende Partikel, Ausholen/Ducken + Zittern in `atkPose`; `view.release` beim Auslösen (Blitz, Funkenfächer, Signatur). Einschlag-Effekte je Element in `handle('hit')` mit Budget `fxBudget` je Bild; im Massenmodus/Qualität 0 reduziert. Simulation unverändert.
+
+## Stand davor: v0.37.2 – Koop: jeder mit eigenem Helden
 **0.37.2:** `world.heroIds[spieler]` (Option `heroes`, Solo `[hero]`), `isHeroId(cid)`; im Koop darf jeder nur seinen eigenen Helden setzen („Das ist der Held deines Mitspielers“, „Nur ein Held pro Spieler“), Startlevel je Spieler über `hooks.heroStart(cid, who)` / `setup.heroStarts`, Wellen- und Schadens-XP für alle Helden, Rang-XP nur für den eigenen (`hooks.heroXp(amt, t)`). Gast schickt Held + Startlevel im `hello`, Lobby zeigt beide Helden (`.cpheroes`).
 
 ## Stand davor: v0.37.1 – Koop: freies Spiel nach dem Sieg

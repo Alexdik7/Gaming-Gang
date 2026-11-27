@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { MapView, HEIGHT } from './mapview.js';
 import { Ambient } from './ambient.js';
+import { afxFor } from './attackfx.js';
 import { Particles, Rings, Bolts, Pillars, Projectiles, Floaters, Flashes, Sparks, Arcs, projStyle } from './fx.js';
 import { RAFT_TOP } from './mapview.js';
 import { ENEMY_MODELS, bakeFrames, buildBig } from './assets.js';
@@ -110,7 +111,7 @@ export class GameView {
       g.add(mk(new THREE.CircleGeometry(0.42, 24).rotateX(-PI / 2), glow(col, 0.35), { p: [0, 0.02, 0], ol: false }));
     }
     this.root.add(g);
-    return { g, m, pose, key: this.towerKey(t), atk: 0, rot: t.ang, born: 0, evoT: 0, flash: 0, at: 9, flip: 1 };
+    return { g, m, pose, key: this.towerKey(t), atk: 0, rot: t.ang, born: 0, evoT: 0, flash: 0, at: 9, flip: 1, chg: 0, lastFire: -9 };
   }
   // Angriffs-Bewegung je Kampfstil: Ausholen → Zuschlagen → Nachfedern (auf der Zwischengruppe `pose`)
   atkPose(v, t) {
@@ -128,6 +129,10 @@ export class GameView {
       } else if (st === 'breath') { lean = -0.24 * ant + 0.2 * hit; fwd = -0.04 * ant + 0.06 * hit; sy = 1 + 0.04 * ant - 0.04 * hit; sxz = 1 + 0.05 * hit; }
       else if (st === 'slash') { fwd = 0.2 * hit - 0.02 * ant; twist = v.flip * (-0.35 * ant + 0.5 * hit); lean = 0.12 * hit; sy = 1 - 0.05 * ant; }
       sy += 0; lean += wob * 0.06;
+    } else if (v.chg > 0) {   // Vorbereitung: zurücklehnen, ducken, Spannung aufbauen (Auslösen = Schlag oben)
+      const c = v.chg * v.chg, pu = st === 'pulse' ? 1.6 : 1;
+      lean = (st === 'slash' ? 0.05 : -0.13) * c; sy = 1 - 0.07 * c * pu; sxz = 1 + 0.035 * c * pu; twist = st === 'slash' ? -v.flip * 0.3 * c : 0;
+      if (v.chg > 0.85) { const j = Math.sin(this.t * 70) * 0.012; sxz += j; }   // kurzes Zittern kurz vor dem Schuss
     }
     P.rotation.set(lean, v.rot + twist, 0);
     P.position.set(Math.sin(v.rot) * fwd, lift, Math.cos(v.rot) * fwd);
@@ -137,8 +142,49 @@ export class GameView {
   atkStart(t, color, delay = 0) {
     const v = this.towers.get(t.id); if (!v) return null;
     v.atk = 1; v.at = -delay; v.flip = -v.flip;
+    if (v.fx && v.chg > 0.15 && this.stage.quality > 0) this.release(v, t);
+    v.lastFire = this.t; v.chg = 0;
     if (color != null) { const [x, z] = this.toW(t.x, t.y), h = this.ty(t), f = 0.32 * TOWER_SCALE; this.flashes.add(x + Math.sin(v.rot) * f, h + 0.55, z + Math.cos(v.rot) * f, color, 0.22, 0.09, { k: 0.8 }); }
     return v;
+  }
+  // ───────── Angriffs-Choreografie (attackfx.js): Vorbereitung vor dem Schuss, Auslösen, Signatur ─────────
+  // Liest nur t.cd (Abklingzeit) aus der Simulation – ändert nie den Spielzustand.
+  mouth(v, t) { const s = t.s, pulse = s?.atk === 'pulse', f = pulse ? 0 : 0.32 * TOWER_SCALE, [x, z] = this.toW(t.x, t.y), h = this.ty(t); return [x + Math.sin(v.rot) * f, h + (pulse ? 0.3 : 0.55), z + Math.cos(v.rot) * f, x, h, z, f]; }
+  charge(v, t, dt) {
+    const s = t.s; if (!s || s.atk === 'none' || t.disabledT > 0) { v.chg = 0; if (v.orb) v.orb.visible = false; return; }
+    if (!v.fx || v.fxKey !== v.key) { v.fx = afxFor(t); v.fxKey = v.key; }
+    const W = Math.min(0.42, 0.65 / Math.max(0.5, s.rate)), engaged = this.t - v.lastFire < 2.2;
+    const c = engaged && W >= 0.14 && t.cd > 0 && t.cd < W ? 1 - t.cd / W : 0;
+    v.chg = c;
+    const F = v.fx, [mx, my, mz, x, h, z] = this.mouth(v, t), sc = v.g.scale.x;
+    if (!v.orb) { v.orb = mk(geo.sphere(10), new THREE.MeshBasicMaterial({ color: F.col, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }), { ol: false }); v.g.add(v.orb); }
+    v.orb.visible = c > 0;
+    if (c <= 0) return;
+    const k = c * c; v.orb.position.set((mx - x) / sc, (my - h) / sc, (mz - z) / sc); v.orb.material.color.setHex(F.col);
+    v.orb.scale.setScalar((0.05 + 0.15 * k * Math.min(1.7, F.power)) * (1 + Math.sin(this.t * 40) * 0.08) / sc); v.orb.material.opacity = 0.3 + 0.65 * k;
+    if (this.stage.quality === 0 || this.crowd) return;
+    const rate = 16 * F.power * (this.world.enemies.length > 120 ? 0.35 : 1);
+    if (Math.random() < dt * rate) this.gatherFx(F.gather, mx, my, mz, x, h, z, F.accent && Math.random() < 0.35 ? F.accent : F.col);
+  }
+  gatherFx(kind, mx, my, mz, x, h, z, col) {
+    const P = this.parts, r = Math.random;
+    if (kind === 'spark') { const a = r() * PI * 2, R = 0.22 + r() * 0.2; this.sparks.add(x + Math.cos(a) * R, h + 0.2 + r() * 0.5, z + Math.sin(a) * R, (r() - 0.5) * 2, 1 + r() * 2, (r() - 0.5) * 2, col, 0.12, 0.025); return; }
+    if (kind === 'swirl') { const a = r() * PI * 2, R = 0.45; P.spawn(x + Math.cos(a) * R, h + 0.22 + r() * 0.2, z + Math.sin(a) * R, -Math.sin(a) * 2.2 - Math.cos(a) * 0.6, 0.45, Math.cos(a) * 2.2 - Math.sin(a) * 0.6, col, 0.1, 0.4, { drag: 0.5 }); return; }
+    if (kind === 'dust') { const a = r() * PI * 2, R = 0.4 + r() * 0.15; P.spawn(x + Math.cos(a) * R, h + 0.03, z + Math.sin(a) * R, -Math.cos(a) * 0.6, 0.9 + r() * 0.6, -Math.sin(a) * 0.6, col, 0.08, 0.45, { drag: 1 }); return; }
+    if (kind === 'glint') { if (r() < 0.35) this.flashes.add(mx + (r() - 0.5) * 0.25, my + 0.05, mz + (r() - 0.5) * 0.25, col, 0.12, 0.08, { k: 0.9 }); return; }
+    // flame / leaf / smoke / star: Energie strömt von außen ins Maul
+    const a = r() * PI * 2, b = (r() - 0.3) * 1.2, R = 0.38, L = 0.28, px = mx + Math.cos(a) * Math.cos(b) * R, py = my + Math.sin(b) * R, pz = mz + Math.sin(a) * Math.cos(b) * R;
+    P.spawn(px, py, pz, (mx - px) / L, (my - py) / L + (kind === 'flame' ? 0.3 : 0), (mz - pz) / L, col, kind === 'smoke' ? 0.14 : kind === 'star' ? 0.07 : 0.09, L, { drag: 0, grow: kind === 'smoke' ? 0.8 : -1.2 });
+  }
+  // Auslösen: Mündungsblitz in Pfadfarbe, Funkenfächer (+ Kreuzpfad-Akzent), Signatur je Kreatur
+  release(v, t) {
+    const F = v.fx, [mx, my, mz, x, h, z] = this.mouth(v, t), dx = Math.sin(v.rot), dz = Math.cos(v.rot), pw = Math.min(1.8, F.power) * (0.6 + 0.4 * v.chg);
+    this.flashes.add(mx, my, mz, F.col, 0.38 * pw, 0.11, { k: 0.85 });
+    if (this.crowd) return;
+    this.sparks.fan(mx, my, mz, dx, dz, F.accent ? [F.col, F.accent, 0xffffff] : [F.col, 0xffffff], 3 + Math.round(pw * 2), 3.2, 0.45, { len: 0.03, life: 0.16 });
+    if (F.sig === 'thunder') { this.rings.add(x, h + 0.05, z, 0.1, 0.55 + 0.25 * pw, F.col, 0.22, { alpha: 0.8 }); if (F.top >= 3) this.bolts.add([{ x, y: h + 1.6, z }, { x: x + (Math.random() - 0.5) * 0.2, y: h + 0.8, z }, { x, y: h + 0.2, z }], 0xfff6c0, 0.05, 0.12); }
+    else if (F.sig === 'splash') this.parts.burst(mx, my, mz, [F.col, 0xffffff], 6, 1.6, 0.06, 0.4, { grav: 5, up: 1.4 });
+    else if (F.sig === 'foxfire' && F.top >= 3) for (let i = 0; i < 2; i++) { const a = v.rot + (i ? 0.8 : -0.8); this.parts.spawn(x + Math.sin(a) * 0.35, h + 0.6, z + Math.cos(a) * 0.35, dx * 2.5, 0.3, dz * 2.5, F.col, 0.12, 0.35, { drag: 1.5, grow: -0.8 }); }
   }
   after(d, fn) { this.later.push({ t: this.t + d, fn }); }
   syncTowers(dt) {
@@ -154,6 +200,7 @@ export class GameView {
       // drehen zum Ziel
       const target = PI / 2 - t.ang; let d = target - v.rot; d = Math.atan2(Math.sin(d), Math.cos(d)); v.rot += d * Math.min(1, dt * 12);
       v.atk = Math.max(0, v.atk - dt * 5); v.at += dt;
+      this.charge(v, t, dt);
       this.atkPose(v, t);
       if (v.born < 1) { v.born = Math.min(1, v.born + dt * 3); if (v.evoT <= 0) v.m.root.scale.setScalar(backOut(v.born)); }
       if (t.raft != null) { const [x, z] = this.toW(t.x, t.y); v.g.position.set(x, RAFT_TOP, z); }
@@ -317,6 +364,14 @@ export class GameView {
         if (ev.crit) P.burst(x, y, z, [col, 0xffffff], 4, 1.6, 0.08, 0.22);
         if (settings.dmgNums && (ev.crit || ev.big || ev.dmg >= 25 || (this.numCount++ % 4 === 0))) this.floaters.add(x, y + 0.3, z, Math.round(ev.dmg), ev.crit ? 'crit' : ev.big ? 'big' : '', ev.crit ? 0.95 : 0.7);
         if (ev.crit && ev.dmg > 60) this.stage.addShake(0.08);
+        if (!many && this.fxBudget-- > 0 && this.stage.quality > 0) switch (ev.type) {   // Einschlag je Element (Budget je Bild)
+          case 'fire': P.burst(x, y, z, [0xff7a2f, 0xffd27a, 0xff4a10], 4, 1.2, 0.07, 0.35, { up: 2, grav: -1 }); break;
+          case 'lightning': if (Math.random() < 0.5) this.bolts.add([{ x: x + (Math.random() - 0.5) * 0.25, y: y + 0.8, z }, { x, y, z }], 0xfff27a, 0.03, 0.09); break;
+          case 'ice': this.rings.add(x, 0.05, z, 0.05, 0.38, 0x9fe8ff, 0.25, { alpha: 0.6 }); P.burst(x, y, z, [0xffffff, 0x9fe8ff], 4, 1.4, 0.05, 0.35, { grav: 5, up: 1.5 }); break;
+          case 'shadow': P.burst(x, y, z, [0x3a2a5a, 0xb07bff], 3, 0.6, 0.12, 0.45, { grow: 0.8 }); break;
+          case 'earth': P.burst(x, 0.1, z, [0xc8b090, 0x8a7a68], 4, 1, 0.08, 0.35, { flat: true }); break;
+          case 'spirit': case 'light': case 'astral': this.rings.add(x, y, z, 0.05, 0.3, col, 0.18, { alpha: 0.7 }); break;
+        }
         break;
       }
       case 'ventWarn': { const [x, z] = at(ev.x, ev.y); this.rings.add(x, 0.06, z, ev.r, 0.3, 0xff6a20, 1.5); P.burst(x, 0, z, [0xff8a2a, 0xffd060], 10, 1.2, 0.1, 0.8, { up: 1 }); break; }
@@ -637,6 +692,7 @@ export class GameView {
   }
 
   update(dt, settings) {
+    this.fxBudget = this.stage.quality >= 2 ? 24 : 10;   // Einschlag-Effekte je Bild begrenzen (Lesbarkeit + Leistung)
     this.t += dt;
     this.syncTowers(dt); this.syncEnemies(dt);
     this.projs.sync(this.world.projs, (x, y) => this.toW(x, y), this.t, this.parts, this.stage.quality);
