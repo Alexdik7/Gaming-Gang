@@ -501,7 +501,8 @@ export class GameView {
         if (ev.r >= 1) this.stage.addShake(0.12);
         break;
       }
-      case 'react': { const [x, z] = at(ev.x, ev.y); this.floaters.add(x, 1.1, z, ev.name + '!', 'react', 0.9); this.floaters.live[this.floaters.live.length - 1].d.style.color = ev.color; P.burst(x, 0.5, z, ev.color, 16, 3, 0.2, 0.45); this.rings.add(x, 0.07, z, 0.1, 1.2, ev.color, 0.35); break; }
+      case 'react': { const [x, z] = at(ev.x, ev.y); this.floaters.add(x, 1.1, z, (ev.icon ? ev.icon + ' ' : '') + ev.name + '!' + (ev.chain >= 2 ? ` ×${ev.chain}` : ''), 'react', 0.9);
+        if (ev.chain >= 2) { this.floaters.add(x, 1.55, z, 'CHAIN REACTION ×' + ev.chain, 'lvl', 1.1); this.rings.add(x, 0.07, z, 0.1, 1.6 + ev.chain * 0.3, 0xffffff, 0.45); this.stage.addShake(0.08 + ev.chain * 0.04); } this.floaters.live[this.floaters.live.length - 1].d.style.color = ev.color; P.burst(x, 0.5, z, ev.color, 16, 3, 0.2, 0.45); this.rings.add(x, 0.07, z, 0.1, 1.2, ev.color, 0.35); break; }
       case 'stun': { const [x, z] = at(ev.e.x, ev.e.y); for (let i = 0; i < 3; i++) P.spawn(x + Math.cos(i * 2.1) * 0.2, 0.8, z + Math.sin(i * 2.1) * 0.2, 0, 0.2, 0, 0xffe14d, 0.14, 0.6); break; }
       case 'heal': case 'shield': case 'cry': { const [x, z] = at(ev.x, ev.y); const c = ev.t === 'heal' ? 0x7aff9a : ev.t === 'shield' ? 0xb07bff : 0xff4a3a; this.rings.add(x, 0.06, z, 0.2, ev.r, c, 0.6); P.burst(x, 0.6, z, c, 10, 1.4, 0.16, 0.6, { lift: 0.8 }); break; }
       case 'leak': this.stage.addShake(ev.e.boss ? 1 : 0.25); break;

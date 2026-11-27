@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.44.0 – Ergebnis „Noch ein Run“ (Vision P10)
+## Stand: v0.45.0 – Elemente 2.0 (Vision P7)
+**0.45:** 6 neue Reaktionen in `data/meta.js` (Höllenbrand fire+shadow, Reinigung light+spirit, Verderbnis astral+shadow, Seelenfrost ice+spirit, Sonnenglut fire+light, Sternfall astral+light) – jetzt 16, alle mit Symbol `icon`. Neue Wirkungen in `world.react`: `vuln` (Verwundbarkeit), `strip` (Schild/Wache brechen). **Kettenreaktion:** weitere Reaktion auf demselben Gegner innerhalb `BAL.elem.chainWin` (2,5 s) → `e.chainN`, +25 % je Glied (`chainMul`), Anzeige „CHAIN REACTION ×N“ mit Ring und kleinem Ruck, Statistik `chains`. Codex zählt die neuen Reaktionen automatisch mit.
+
+## Stand davor: v0.44.0 – Ergebnis „Noch ein Run“ (Vision P10)
 **0.44:** Ergebnis-Bildschirm: „🏅 NEUER REKORD“ (höchste Welle je Karte/Modus, beste Combo, meiste Kills, meiste Münzen; Stand vor dem Run in `game.rec0`, neu `P.stats.bestKills`/`bestCoins`), Abschnitt „🎯 Nächste Ziele“ (`menus.goals`: Konto-Level, nächste Form einer eingesetzten Kreatur, Codex-Truhe, Wochen-Event-Stufe) mit animierten Balken, Hauptknopf „▶ NOCH EIN RUN“ (pulsiert). Combo-Anzeige verschwindet bei Spielende.
 
 ## Stand davor: v0.43.0 – Mega-Formen (Vision P6)

@@ -653,3 +653,14 @@ test('Mega-Form: Bedingungen, Kosten, Werte, nur eine je Kreatur', async () => {
   const low = mkWorld(defaultProfile(), { hooks: { level: () => 5 } }).w; low.coins = 1e6; const u = low.place('kitsune', ...low.suggestSpot('kitsune', 3)).tower; for (let i = 0; i < 5; i++) low.upgrade(u.id, 1); u.kills = 999;
   assert.match(low.megaInfo(u).why, /Charakter-Lv/);
 });
+
+test('Elemente 2.0: neue Reaktionen, Verwundbarkeit, Schild brechen, Kettenreaktion', async () => {
+  const { REACTIONS } = await import('../js/data/meta.js');
+  assert.ok(Object.keys(REACTIONS).length >= 16 && Object.values(REACTIONS).every(r => r.icon && r.name && r.desc));
+  const w = new World({ map: 'ahnenhain', diff: 'normal', seed: 2 });
+  const e = w.spawn('golem'); e.shield = 50; e.hp = e.maxHp = 1e6;
+  w.react(e, REACTIONS['light+spirit'], 40, null); assert.equal(e.shield, 0, 'Reinigung bricht Schild');
+  w.react(e, REACTIONS['astral+shadow'], 40, null); assert.ok(e.vuln >= 0.35 && e.vulnT > 0); assert.equal(e.chainN, 2, 'zweite Reaktion = Kette');
+  for (let i = 0; i < 60 * 3; i++) w.step(BAL.tick);
+  w.react(e, REACTIONS['fire+ice'], 40, null); assert.equal(e.chainN, 1, 'Fenster abgelaufen → neue Kette');
+});

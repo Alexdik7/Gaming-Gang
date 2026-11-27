@@ -461,6 +461,7 @@ export class World {
     if (e.brkT > 0) e.brkT -= dt;
     if (e.elemT > 0 && (e.elemT -= dt) <= 0) e.elem = null;
     if (e.reactT > 0) e.reactT -= dt;
+    if (e.chainT > 0) e.chainT -= dt;
     if (e.cryT > 0) e.cryT -= dt;
     if (e.guardT > 0) e.guardT -= dt;
     if (e.burnT > 0) { e.burnT -= dt; this.damage(e, e.burnDps * dt, e.burnType || 'fire', e.burnSrc, { dot: true }); if (!e.alive) return; }
@@ -572,8 +573,14 @@ export class World {
   }
   react(e, r, dmg, src) {
     e.reactT = BAL.elem.reactCd; this.stats.reactions++; this.hooks.stat?.('reactions', 1);
-    this.emit({ t: 'react', e, x: e.x, y: e.y, name: r.name, color: r.color });
-    const base = Math.max(6, dmg);
+    // Kettenreaktion: weitere Reaktion auf demselben Gegner innerhalb des Fensters verstärkt sich
+    e.chainN = e.chainT > 0 ? (e.chainN || 1) + 1 : 1; e.chainT = BAL.elem.chainWin;
+    const cm = 1 + (e.chainN - 1) * BAL.elem.chainMul;
+    this.emit({ t: 'react', e, x: e.x, y: e.y, name: r.name, color: r.color, icon: r.icon, chain: e.chainN });
+    if (e.chainN >= 2) { this.stats.chains = (this.stats.chains || 0) + 1; this.hooks.stat?.('chains', 1); }
+    const base = Math.max(6, dmg) * cm;
+    if (r.vuln) { e.vuln = Math.max(e.vuln, r.vuln[0]); e.vulnT = Math.max(e.vulnT, r.vuln[1]); }
+    if (r.strip) { e.shield = 0; if (e.guard > 0) { e.guard = 0; this.emit({ t: 'guardBreak', e, x: e.x, y: e.y }); } }
     if (r.bonus) this.damage(e, base * r.bonus * (1 + (this.ac.react || 0)), 'astral', src, { noReact: true });
     if (r.brk) e.brkT = r.brk;
     if (r.slow) { e.slowPct = Math.max(e.slowPct, r.slow[0]); e.slowT = Math.max(e.slowT, r.slow[1]); }

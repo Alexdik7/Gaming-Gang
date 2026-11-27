@@ -1,5 +1,5 @@
 // BEASTFORGE – alle Balance-Regler an EINEM Ort. Keine Zahlen in der Logik verstreuen.
-export const VERSION = '0.44.0';
+export const VERSION = '0.45.0';
 
 export const BAL = {
   tick: 1 / 60,               // fester Simulationsschritt (s)
@@ -76,7 +76,7 @@ export const BAL = {
   mastery: [0, 1, 4, 10, 22, 45],
 
   // Elemente: Status hält so lange; Reaktion pro Gegner höchstens alle x s
-  elem: { mark: 3.0, reactCd: 1.2 },
+  elem: { mark: 3.0, reactCd: 1.2, chainWin: 2.5, chainMul: 0.25 },   // Kettenreaktion: Fenster (s), +25 % je weitere Reaktion
 
   ability: { slowMo: 0.3, slowMoTime: 0.45 },
 };
