@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.40.0 – Audio 2.0 (Vision P3)
+## Stand: v0.41.0 – Upgrade-Fenster: „Was du bekommst“ (Vision P4)
+**0.41:** Jeder Upgrade-Knopf zeigt bis zu 3 Wert-Chips (`hud.gains`: Schaden alt→neu, Tempo %, Reichweite, Durchschlag, Geschosse, Kette, Krit, Brand, Verlangsamung, Betäubung, Fläche, Einkommen, Panzer ignorieren, Getarnte/Fliegende, gegen Bosse; Vergleich `baseStats` mit aktuellen vs. nächsten Stufen). Kauf-Moment `hud.upFx`: Knopf springt, Ring in Pfadfarbe an der Kreatur, Münze fliegt vom Zähler zur Kreatur; zu wenig Geld = Knopf wackelt. Porträt im Fenster größer.
+
+## Stand davor: v0.40.0 – Audio 2.0 (Vision P3)
 **0.40:** Klangsignatur je Kreatur als leise Schicht über dem Angriffsklang (`audio.voice(cid, stufe)`, Tabelle `VOICE`: Kitsune Glöckchen, Tiger Donner-Wumms, Schildkröte Blubb, Kirin Glockenspiel, Mantis Klingen-Shing, Golem Felsschlag …; Fusion = Körper, höher je Stufe, gedrosselt). Prioritäten: `audio.admit` mit abklingender Last – bei Klangflut fallen Treffer/Plopp/Münze (`LOWPRIO`) weg, Boss/Ultimate/Entwicklung bleiben.
 
 ## Stand davor: v0.39.0 – Kampfgefühl Teil 2 + HUD-Juice + Combo (Vision P1/P2)

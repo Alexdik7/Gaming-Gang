@@ -8,7 +8,7 @@ import { punch, shake, ring, flyTo } from './anim.js';
 import { MOD_NAMES } from '../data/waves.js';
 import { ENEMIES, BOSSES, ELEMENT_NAMES, ELEMENT_COLORS } from '../data/enemies.js';
 import { TARGETS, TARGET_NAMES } from '../sim/world.js';
-import { canTier } from '../sim/stats.js';
+import { canTier, baseStats } from '../sim/stats.js';
 import { charNeed, accNeed, nextFormByLevel, formAt } from '../meta/progression.js';
 import { portrait } from '../render/icons.js';
 import { appSize } from '../render/stage.js';
@@ -150,6 +150,34 @@ export class Hud {
       bar.classList.add('hidden'); this.g.usePower(id); this.updPowers();
     });
   }
+  // „Was du bekommst“: Wertänderung des nächsten Upgrades als Chips (gleiche Basis: baseStats ohne Buffs)
+  gains(t, nt, level, br) {
+    const a = baseStats({ ...t, tiers: t.tiers }, level, br), b = baseStats({ ...t, tiers: nt }, level, br), out = [];
+    const pct = (x, y) => Math.round((y / x - 1) * 100), num = (v, d = 1) => +v.toFixed(d);
+    if (b.dmg > a.dmg * 1.001) out.push(`⚔ ${num(a.dmg)}→${num(b.dmg)}`);
+    if (b.rate > a.rate * 1.001) out.push(`⏱ +${pct(a.rate, b.rate)} %`);
+    if (b.range > a.range + 0.01) out.push(`◎ +${num(b.range - a.range)}`);
+    if (b.pierce > a.pierce) out.push(`➹ +${b.pierce - a.pierce} Durchschlag`);
+    if (b.shots > a.shots) out.push(`✦ +${b.shots - a.shots} Geschoss`);
+    if (b.chain.n > a.chain.n) out.push(`⚡ +${b.chain.n - a.chain.n} Kette`);
+    if (b.crit.ch > a.crit.ch + 0.001) out.push(`✷ +${Math.round((b.crit.ch - a.crit.ch) * 100)} % Krit`);
+    if (b.burn.dps > a.burn.dps) out.push(`🔥 Brand ${num(b.burn.dps)}/s`);
+    if (b.slow.pct > a.slow.pct) out.push(`❄ −${Math.round(b.slow.pct * 100)} % Tempo`);
+    if (b.stun.ch > a.stun.ch) out.push(`💫 ${Math.round(b.stun.ch * 100)} % Betäubung`);
+    if (b.aoe > a.aoe + 0.01) out.push(`💥 Fläche +${num(b.aoe - a.aoe)}`);
+    if ((b.income || 0) > (a.income || 0)) out.push(`◈ +${Math.round(b.income - (a.income || 0))}/Welle`);
+    if ((b.pierceArmor || 0) > (a.pierceArmor || 0) + 0.001) out.push(`🛡 ignoriert ${Math.round(b.pierceArmor * 100)} % Panzer`);
+    if (b.camo && !a.camo) out.push('👁 erkennt Getarnte');
+    if (b.flying && !a.flying) out.push('🪽 trifft Fliegende');
+    if ((b.bossMul || 1) > (a.bossMul || 1) + 0.001) out.push(`👑 +${pct(a.bossMul || 1, b.bossMul)} % gegen Bosse`);
+    return out.length ? `<span class="gain2">${out.slice(0, 3).map(x => `<em>${x}</em>`).join('')}</span>` : '';
+  }
+  // Kauf-Moment: Knopf springt, Ring + Münzen fliegen zur Kreatur
+  upFx(t, p) {
+    const sp = this.g.view.screenPos(t.x, t.y, 0.6), pc = PATH_COLORS[p];
+    const btn = document.querySelector(`#panel [data-up="${p}"]`); punch(btn, 1.06, 200);
+    if (sp) { const fake = { getBoundingClientRect: () => ({ left: sp[0] - 20, top: sp[1] - 20, width: 40, height: 40 }), animate: true }; ring(fake, pc); const c = $('hCoins').parentElement.getBoundingClientRect(); flyTo(c.left + 30, c.top + 20, fake, '◈'); }
+  }
   // Münzen fliegen vom besiegten Gegner zum Zähler (eigenes Geld, gedrosselt)
   coinFly(e) {
     const w = this.w; if (!e.coins || w.enemies.length > 120 || this.g.view.crowd) return;
@@ -251,7 +279,7 @@ export class Hud {
           const img = this.icon(t, nt.map(x => Math.min(x, 4)));
           const poor = w.coins < w.upCost(next.cost);
           right = !chk.ok ? `<div class="up lock"><img src="${img}" alt=""><div><b>${esc(next.name)}</b><small>🔒 ${esc(chk.why)}</small></div></div>`
-            : `<button class="up ${poor ? 'poor' : ''}" data-up="${i}"><img src="${img}" alt=""><div><b>${esc(next.name)}</b><small>${esc(next.desc)}</small></div><span class="price">◈ ${fmt(w.upCost(next.cost))}</span></button>`;
+            : `<button class="up ${poor ? 'poor' : ''}" data-up="${i}"><img src="${img}" alt=""><div><b>${esc(next.name)}</b><small>${esc(next.desc)}</small>${this.gains(t, nt, c.level, br)}</div><span class="price">◈ ${fmt(w.upCost(next.cost))}</span></button>`;
         }
         return `<div class="prow2" style="--pc:${PATH_COLORS[i]}"><div class="pl"><b>${p.icon} ${esc(p.name)}</b><div class="pips">${pips}</div><small>${esc(cur)}</small></div>${right}</div>`;
       }).join('');
@@ -279,7 +307,7 @@ export class Hud {
     el.querySelector('[data-x]').onclick = () => this.g.select(null);
     el.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const i = TARGETS.indexOf(t.target), n = TARGETS.length; this.g.cmd('setTarget', t.id, TARGETS[(i + +b.dataset.tg + n) % n]); this.g.app.audio.play('click'); this.refreshPanel(); });
     el.querySelector('[data-sell]').onclick = guard(() => this.confirm('Verkaufen?', `Du bekommst ◈${fmt(t.spent * BAL.run.sellRefund)} zurück. Die Charakter-XP bleiben erhalten.`, 'Verkaufen', () => { this.g.cmd('sell', t.id); this.g.select(null); }));
-    el.querySelectorAll('[data-up]').forEach(b => b.onclick = guard(() => { const r = this.g.cmd('upgrade', t.id, +b.dataset.up); if (!r.ok) this.err(r.why); else this.coachEvent('upgrade'); this.refreshPanel(); }));
+    el.querySelectorAll('[data-up]').forEach(b => b.onclick = guard(() => { const r = this.g.cmd('upgrade', t.id, +b.dataset.up); if (!r.ok) { this.err(r.why); shake(b, 4); } else { this.coachEvent('upgrade'); this.upFx(t, +b.dataset.up); } this.refreshPanel(); }));
     el.querySelector('[data-ascend]')?.addEventListener('click', guard(() => { const r = this.g.cmd('ascend', t.id); if (!r.ok) this.err(r.why); else if (r.tower) this.g.select(r.tower); }));
     el.querySelectorAll('[data-fuse]').forEach(b => b.onclick = guard(() => { const r = this.g.cmd('fuse', t.id, b.dataset.fuse); if (!r.ok) this.err(r.why); else if (r.tower) { this.g.select(r.tower); this.toast('evo', '⚭ Fusion gelungen!', CREATURES[r.tower.cid].name + ' ist erwacht'); } }));
     const ev = el.querySelector('[data-evo]'); if (ev) ev.onclick = guard(() => { const r = this.g.cmd('evolve', t.id); if (!r.ok) this.err(r.why); this.refreshPanel(); });

@@ -734,3 +734,7 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 #combo b { font: 44px/1 var(--cartoon, inherit); color: #ffd257; text-shadow: 0 0 12px rgba(255,160,40,.8), var(--ol); }
 #combo i { font: 16px var(--cartoon, inherit); font-style: normal; color: #9fffb0; text-shadow: var(--ol); }
 #combo.c1 b { color: #ffb43a; font-size: 50px; } #combo.c2 b { color: #ff7a3d; font-size: 56px; } #combo.c3 b { color: #ff4a7a; font-size: 62px; } #combo.c4 b { color: #c39bff; font-size: 68px; text-shadow: 0 0 18px rgba(195,155,255,1), var(--ol); }
+/* v0.41 Upgrade-Fenster: „Was du bekommst“ */
+.up .gain2 { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; } .up .gain2 em { font-style: normal; font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 6px; background: rgba(8,40,20,.72); color: #fff; border: 1px solid rgba(160,255,170,.7); white-space: nowrap; }
+.up.poor .gain2 em { opacity: .7; }
+#panel .ph img { width: 62px; height: 62px; }
