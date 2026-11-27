@@ -83,7 +83,7 @@ Das Spiel soll ein kleines, überraschend hochwertiges Anime-Strategiespiel sein
    - Combo-Zähler deterministisch in der Simulation, mit Bonus-Münzen und Abklingen.
 3. **P3 Audio 2.0** – ✅ v0.40 Klangsignatur je Kreatur (`audio.voice`, `VOICE`), Prioritäten/Last (`audio.admit`, `LOWPRIO`); Musik-Intensität gab es schon. Offen: getrennte Musik-Ebenen je Karte: Klangsignatur je Kreatur, Prioritäten/Pooling, Musik-Ebenen je Karte.
 4. **P4 Upgrade-Fenster 2.0** – ✅ Teil 1 v0.41: „Was du bekommst“-Chips (`hud.gains`, Vergleich über `baseStats`), Kauf-Moment (`hud.upFx`: Knopf-Punch, Ring + Münzflug zur Kreatur, Wackeln bei zu wenig Geld), größeres Porträt. Offen: Angriffs-Vorschau-Animation: großes 3D-Porträt, Vorschau „Was du bekommst“ mit kommendem Aussehen und Angriff, Kreuzpfad-Akzente.
-5. **P5 Codex:** Kreaturen, Formen, Fusionen, Gegner, Bosse, Reaktionen. Unentdecktes erscheint als „??? + ???“. Dazu Fusions-Varianten je Ausgangs-Build.
+5. **P5 Codex** – ✅ Teil 1 v0.42: `data/codex.js` (87 Einträge in 7 Reitern, `P.codex.seen`, Truhe je 10 Einträge), Entdecken im Run (`game.found`: Setzen, Kill, Boss, Reaktion, Synergie, Fusion), Bildschirm `s_codex` mit Silhouetten und „??? + ???“. Offen: Fusions-Varianten je Ausgangs-Build: Kreaturen, Formen, Fusionen, Gegner, Bosse, Reaktionen. Unentdecktes erscheint als „??? + ???“. Dazu Fusions-Varianten je Ausgangs-Build.
 6. **P6 Mega-Formen:** System + Mega-Moment, zuerst Kitsune (3 Formen), dann weitere Kreaturen.
 7. **P7 Elemente 2.0:** neue Reaktionen (Überladung, Höllenbrand, Schneesturm, Reinigung, Verderbnis, toxischer Brand) und „CHAIN REACTION“.
 8. **P8 Bosse 2.0:** Boden-Warnungen, Schwachpunkt, inszenierter Phasenwechsel (Farbe, Musik, Umgebung).

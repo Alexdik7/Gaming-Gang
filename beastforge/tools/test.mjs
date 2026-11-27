@@ -626,3 +626,14 @@ test('Combo: Kills in Folge geben Stufen-Bonus und enden nach dem Zeitfenster', 
   const bonus = Math.round(C.coins[0] * (1 + k.wave * 0.03));
   assert.ok(k.wallet[0] - s0[0] >= bonus && k.wallet[1] - s0[1] >= bonus);
 });
+
+test('Codex: Entdecken, Zählen, Truhe je 10 Einträge, alte Spielstände', async () => {
+  const cx = await import('../js/data/codex.js');
+  const P = defaultProfile(); const all = cx.codexEntries();
+  assert.ok(all.length >= 70 && new Set(all.map(x => x.key)).size === all.length, 'eindeutige Schlüssel');
+  assert.equal(cx.discover(P, 'c:kitsune'), true); assert.equal(cx.discover(P, 'c:kitsune'), false);
+  for (const x of all.slice(0, 21)) cx.discover(P, x.key);
+  assert.equal(cx.codexClaimable(P), 2); const ch = P.chests; assert.equal(cx.claimCodex(P), 2); assert.equal(P.chests, ch + 2); assert.equal(cx.codexClaimable(P), 0);
+  assert.equal(cx.reactionKey('Plasma'), 'fire+lightning');
+  const old = defaultProfile(); delete old.codex; assert.deepEqual(migrate(old).codex, { seen: {}, claimed: 0 });
+});

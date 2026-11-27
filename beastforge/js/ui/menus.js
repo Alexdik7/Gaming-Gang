@@ -2,6 +2,7 @@
 import { BAL, VERSION, LEVEL_PERKS } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { POWER, givePowers } from '../data/powers.js';
+import { CODEX_TABS, CODEX_STEP, codexEntries, codexSeen, discover, codexCount, codexClaimable, claimCodex } from '../data/codex.js';
 import { Coop, makeCode, cleanCode, explain, diagnose } from '../net.js';
 import { academyFx } from '../data/academy.js';
 import { heroStartLevel } from '../meta/progression.js';
@@ -84,7 +85,7 @@ export class Menus {
         <div class="bRight"><button class="bCur" data-go="academy" title="Shinobi-Punkte"><span>⛩</span><b>${sp.free}</b></button><button class="bGear" data-go="settings" aria-label="Optionen">⚙</button></div>
       </div>
       <div class="bLeft">${tile('collection', pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch }), 'Kreaturen', 'big')}${tile('hero', pimg(hero, { hlvl: 1 }), 'Helden', 'big')}${tile('evo', pimg('golem', { stage: 2 }), 'Entwicklung', 'big')}</div>
-      <div class="bRightCol">${tile('chests', '🎁', 'Truhen', 'sq gold', eventDot(P))}${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('coop', '🤝', 'Koop', 'sq')}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('stats', '📜', 'Statistik', 'sq')}</div>
+      <div class="bRightCol">${tile('chests', '🎁', 'Truhen', 'sq gold', eventDot(P))}${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('coop', '🤝', 'Koop', 'sq')}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('codex', '📖', 'Codex', 'sq', codexClaimable(P) > 0)}</div>
       <button class="bPlay" data-go="play"><span>SPIELEN</span></button>
     </div>`);
     this.app.audio.playSong('menu');
@@ -422,6 +423,38 @@ export class Menus {
   }
 
   // ───────── Erfolge / Statistik ─────────
+  // ───────── Beastforge-Codex: alles Entdeckte, Unentdecktes als „???“ ─────────
+  s_codex(tab = this.codexTab || 'c') {
+    const P = this.P; this.codexTab = tab;
+    for (const id of unlockedCreatures(P)) discover(P, 'c:' + id);
+    for (const id in HEROES) if (unlocked(P, 'hero', id)) discover(P, 'h:' + id);
+    const all = codexEntries(), list = all.filter(x => x.tab === tab), n = codexCount(P), N = all.length, cl = codexClaimable(P);
+    const nextAt = (Math.floor(n / CODEX_STEP) + 1) * CODEX_STEP;
+    const pimg = (id, o = {}, dark) => `<img class="${dark ? 'sil' : ''}" src="${portrait(id, o)}" alt="">`;
+    const dots = parts => parts.map(e => `<i style="background:${ELEMENT_COLORS[e]}"></i>`).join('');
+    const card = x => {
+      const seen = codexSeen(P, x.key);
+      let pic = '';
+      if (x.tab === 'c' || x.tab === 'f') pic = pimg(x.id, { stage: x.tab === 'c' ? 0 : undefined }, !seen);
+      else if (x.tab === 'h') pic = pimg(x.id, { hlvl: 1 }, !seen);
+      else if (x.tab === 'r') pic = `<span class="cxdots">${dots(x.parts)}</span>`;
+      else if (x.tab === 's') pic = `<span class="cxpair">${x.parents.map(p => pimg(p, CREATURES[p] ? { stage: 0 } : { hlvl: 1 }, !seen)).join('')}</span>`;
+      else pic = `<span class="cxemo">${x.tab === 'b' ? '👑' : '👾'}</span>`;
+      const nm = seen ? esc(x.name) : x.tab === 'f' || x.tab === 'r' || x.tab === 's' ? '??? + ???' : '???';
+      const ds = seen ? esc(x.desc || '') : x.tab === 'f' ? 'Zwei erweckte Kreaturen nebeneinander …' : x.tab === 'r' ? 'Zwei Elemente treffen aufeinander …' : x.tab === 'e' || x.tab === 'b' ? 'Noch nie begegnet.' : 'Noch nicht entdeckt.';
+      return `<div class="cxc ${seen ? 'on' : 'off'}" style="${x.color ? '--cx:' + x.color : ''}">${pic}<b>${nm}</b><small>${ds}</small></div>`;
+    };
+    const tabN = id => { const L = all.filter(x => x.tab === id); return `${L.filter(x => codexSeen(P, x.key)).length}/${L.length}`; };
+    this.render(`<div class="scr codexScr">${this.hdr('📖 Beastforge-Codex <button class="btn" data-go="stats" style="margin-left:8px;font-size:12px">📜 Statistik</button>')}
+      <div class="cxtop"><div class="cxprog"><b>${n} / ${N} entdeckt</b><div class="bar"><u style="width:${n / N * 100}%"></u></div><small>${cl > 0 ? '' : `Nächste Truhe bei ${nextAt} Einträgen`}</small></div>${cl > 0 ? `<button class="big" id="cxClaim">🎁 ${cl} Truhe${cl > 1 ? 'n' : ''} abholen</button>` : ''}</div>
+      <div class="cxtabs">${CODEX_TABS.map(t => `<button class="btn ${t.id === tab ? 'pri' : ''}" data-cx="${t.id}">${t.icon} ${t.name} <small>${tabN(t.id)}</small></button>`).join('')}</div>
+      <div class="cxgrid">${list.map(card).join('')}</div></div>`, m => {
+      m.querySelectorAll('[data-cx]').forEach(b => b.onclick = () => { this.click(); this.s_codex(b.dataset.cx); });
+      m.querySelector('#cxClaim')?.addEventListener('click', () => { const k = claimCodex(P); if (k) { saveProfile(P); this.app.audio.play('levelup'); this.s_codex(tab); } });
+    });
+    saveProfile(P);
+  }
+
   s_ach() {
     const P = this.P, done = ACHIEVEMENTS.filter(a => P.ach[a.id]).length;
     this.render(`<div class="scr">${this.hdr(`Erfolge <small style="color:var(--mut);font-size:14px">${done}/${ACHIEVEMENTS.length}</small>`)}

@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.41.0 – Upgrade-Fenster: „Was du bekommst“ (Vision P4)
+## Stand: v0.42.0 – Beastforge-Codex (Vision P5)
+**0.42:** `js/data/codex.js`: 87 Einträge (Kreaturen, Fusionen, Helden, Gegner, Bosse, Reaktionen, Synergien), Profil `P.codex = { seen, claimed }`, `discover`, alle 10 Entdeckungen 1 Truhe (`claimCodex`). Im Run entdeckt `game.found(key)` (Setzen, Kill, Boss-Kill, Reaktion, Synergie, Fusion) mit Hinweis „📖 Neu im Codex“. Bildschirm `menus.s_codex` (Hub-Kachel „Codex“ statt „Statistik“, Statistik als Knopf im Codex): Fortschritt, Reiter mit Zählern, Unentdecktes als schwarze Silhouette mit „???“ bzw. „??? + ???“, Reaktionen zeigen ihre Element-Farben als Hinweis.
+
+## Stand davor: v0.41.0 – Upgrade-Fenster: „Was du bekommst“ (Vision P4)
 **0.41:** Jeder Upgrade-Knopf zeigt bis zu 3 Wert-Chips (`hud.gains`: Schaden alt→neu, Tempo %, Reichweite, Durchschlag, Geschosse, Kette, Krit, Brand, Verlangsamung, Betäubung, Fläche, Einkommen, Panzer ignorieren, Getarnte/Fliegende, gegen Bosse; Vergleich `baseStats` mit aktuellen vs. nächsten Stufen). Kauf-Moment `hud.upFx`: Knopf springt, Ring in Pfadfarbe an der Kreatur, Münze fliegt vom Zähler zur Kreatur; zu wenig Geld = Knopf wackelt. Porträt im Fenster größer.
 
 ## Stand davor: v0.40.0 – Audio 2.0 (Vision P3)

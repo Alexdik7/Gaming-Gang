@@ -14,6 +14,7 @@ import { ensureDaily, dailyChallenge, DAILY_XP } from './data/daily.js';
 import { HEROES } from './data/heroes.js';
 import { POWER, givePowers, runPowerReward } from './data/powers.js';
 import { cosOf, ensureEvent } from './data/events.js';
+import { discover, reactionKey, codexEntries } from './data/codex.js';
 import { addCharXp, addAccXp, addHeroRankXp, heroStartLevel, unlocked, unlockedCreatures, addMastery, checkAchievements, formsFor } from './meta/progression.js';
 import { saveProfile } from './meta/profile.js';
 import { worldHash } from './net.js';
@@ -287,11 +288,23 @@ export class Game {
       this.endT -= dt; if (this.endT <= 0) { this.finished = true; this.finish(); }
     }
   }
+  // Codex: neue Entdeckung → kurzer Hinweis (gedrosselt, nicht im Massengefecht zugemüllt)
+  found(key) {
+    const en = (this.codexMap ||= Object.fromEntries(codexEntries().map(x => [x.key, x])))[key];
+    if (!en || !discover(this.P, key)) return false;
+    const now = performance.now(); if (en && now - (this.foundT || 0) > 1500) { this.foundT = now; this.hud.toast('syn', '📖 Neu im Codex', en.name); }
+    return true;
+  }
   slow(scale, sec) { if (!this.settings().shake && scale < 1) return; this.world.timeScale = scale; this.slowT = sec; }
   react(e) {
     switch (e.t) {
       case 'ascend': this.slow(0.2, 1.8); setTimeout(() => this.hud.flash(0.8, '#ffd257'), 1100); break;
-      case 'fuse': this.slow(0.25, 1.2); this.hud.banner(e.def.name.toUpperCase(), '⚭ Fusion!', 'evo'); setTimeout(() => this.hud.flash(0.6, e.def.color), 1000); break;
+      case 'fuse': this.found('f:' + e.def.id); this.slow(0.25, 1.2); this.hud.banner(e.def.name.toUpperCase(), '⚭ Fusion!', 'evo'); setTimeout(() => this.hud.flash(0.6, e.def.color), 1000); break;
+      case 'place': this.found((e.tower.hero ? 'h:' : 'c:') + e.tower.cid); break;
+      case 'kill': if (e.e.boss) this.found('b:' + e.e.kind); else this.found('e:' + e.e.kind); break;
+      case 'bossWarn': break;
+      case 'react': { const k = reactionKey(e.name); if (k) this.found('r:' + k); break; }
+      case 'synergy': this.found('s:' + e.sy.id); break;
       case 'evolve': this.slow(0.2, 0.9); this.hud.banner(e.form.name.toUpperCase(), 'Evolution!', 'evo'); this.hud.flash(0.5); break;
       case 'ability': this.slow(0.35, 0.45); if (e.id === 'judgement') this.hud.flash(0.6); break;
       case 'bossDie': this.slow(0.25, 1.4); this.hud.flash(0.8); break;

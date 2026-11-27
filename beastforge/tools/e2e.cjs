@@ -22,7 +22,7 @@ const S = {
     const p = await open(b, '', LAND);
     await p.evaluate(() => { BF.level(16); BF.profile.account.level = 8; BF.profile.chars.kitsune.mastery = 3; BF.app.refreshShowcase(); BF.menu('home'); });
     await p.waitForTimeout(500); await shot(p, 'm1_home');
-    for (const s of ['collection', 'hero', 'account', 'ach', 'stats', 'settings', 'daily', 'evo', 'academy', 'play']) { await p.evaluate(n => BF.menu(n), s); await p.waitForTimeout(700); await shot(p, 'm_' + s); }
+    for (const s of ['collection', 'hero', 'account', 'ach', 'stats', 'codex', 'chests', 'coop', 'settings', 'daily', 'evo', 'academy', 'play']) { await p.evaluate(n => BF.menu(n), s); await p.waitForTimeout(700); await shot(p, 'm_' + s); }
     await p.click('[data-map=ahnenhain]'); await p.waitForTimeout(1200); await shot(p, 'm_diff');
     await p.evaluate(() => BF.menu('academy')); await p.click('[data-n=k1]'); await p.click('#alearn'); await p.waitForTimeout(300); await shot(p, 'm_academy');
     assert(await p.evaluate(() => !!BF.profile.academy.owned.k1), 'Akademie: Knoten erlernt');
