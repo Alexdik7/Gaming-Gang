@@ -311,6 +311,9 @@ export class Game {
   }
   sound(e) {
     const A = this.app.audio;
+    if (e.tower && !e.tower.hero && (e.t === 'shot' || e.t === 'pulse' || e.t === 'cone' || e.t === 'slash' || e.t === 'bolt' || e.t === 'mortar') && !e.extra) {   // Klangsignatur der Kreatur
+      const d = CREATURES[e.tower.cid]; A.voice(d?.fusion ? d.parents[0] : e.tower.cid, Math.max(...e.tower.tiers));
+    }
     switch (e.t) {
       case 'shot': { const k = e.tower.s?.proj || ''; A.play(e.special ? 'fire' : k.includes('fire') || k === 'foxfire' ? 'fire' : k === 'feather' ? 'feather' : k === 'leaf' || k === 'light' ? 'leaf' : k.includes('shuriken') ? 'shuriken' : 'kunai'); break; }
       case 'bolt': A.play('zap'); break; case 'pulse': A.play('pulse'); break; case 'mortar': A.play('mortar'); break;

@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.39.0 – Kampfgefühl Teil 2 + HUD-Juice + Combo (Vision P1/P2)
+## Stand: v0.40.0 – Audio 2.0 (Vision P3)
+**0.40:** Klangsignatur je Kreatur als leise Schicht über dem Angriffsklang (`audio.voice(cid, stufe)`, Tabelle `VOICE`: Kitsune Glöckchen, Tiger Donner-Wumms, Schildkröte Blubb, Kirin Glockenspiel, Mantis Klingen-Shing, Golem Felsschlag …; Fusion = Körper, höher je Stufe, gedrosselt). Prioritäten: `audio.admit` mit abklingender Last – bei Klangflut fallen Treffer/Plopp/Münze (`LOWPRIO`) weg, Boss/Ultimate/Entwicklung bleiben.
+
+## Stand davor: v0.39.0 – Kampfgefühl Teil 2 + HUD-Juice + Combo (Vision P1/P2)
 **0.39:** Geschoss-Spuren mit Pfad-Identität (`Projectiles.sync(…, fxOf)`: Pfad 1 Glut fällt, Pfad 2 Geist steigt, Pfad 3 Schattenrauch, Kreuzpfad-Akzent). Kill-Feedback: aufsteigende Seele, Elite = goldener Kranz + „★ ELITE“ + Treffer-Stopp (`game.react` → `slow`). `js/ui/anim.js` (Easings, `punch`, `shake`, `ring`, `flyTo` über Web Animations API). HUD: Münzen fliegen vom Gegner zum Zähler (gedrosselt, nur eigenes Geld), Zähler-Punch, roter Rand `#vig` + Herz-Wackeln bei Leck, Ring wenn Fähigkeit/Ultimate bereit wird, Wellenbonus-Münzregen. **Combo** in der Simulation (`world.comboHit/comboEnd`, `BAL.combo`: Fenster 1,4 s, Stufen ×10/25/50/100/200 → Münzen für jeden Spieler + Fähigkeiten-Abklingzeit −1…4 s), Anzeige `#combo` (Farbe/Größe je Stufe), Ergebnis „Beste Combo“, Statistik `bestCombo`. Fix: große Schadenszahl nutzte die Knopf-Klasse `.big` → `.fbig`.
 
 ## Stand davor: v0.38.0 – Kampfgefühl, Teil 1 (Vision P1, siehe docs/VISION.md)
