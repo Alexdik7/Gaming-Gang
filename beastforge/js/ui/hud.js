@@ -188,7 +188,7 @@ export class Hud {
   }
   // Combo-Anzeige: wächst mit der Serie, Stufen knallen mit Bonus
   updCombo() {
-    const n = this.w.comboN, el = $('combo'), show = n >= BAL.combo.show;
+    const n = this.w.over ? 0 : this.w.comboN, el = $('combo'), show = n >= BAL.combo.show;
     if (n !== this.last.combo) {
       this.last.combo = n;
       if (show) { el.className = 'on c' + Math.min(4, Math.floor(Math.log2(n / 5 + 1))); el.innerHTML = `<small>COMBO</small><b>×${n}</b>${this.comboBonus ? `<i>+◈${fmt(this.comboBonus)}</i>` : ''}`; if (n % 5 === 0) punch(el, 1.12, 200); }

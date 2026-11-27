@@ -29,6 +29,7 @@ export class Game {
     this.loadout = S ? S.loadout.slice() : unlockedCreatures(P);
     if (!this.loadout.length) this.loadout = ['kitsune'];
     this.heroId = S ? (S.heroes?.[me] ?? null) : unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
+    this.rec0 = { combo: P.stats.bestCombo || 0, kills: P.stats.bestKills || 0, coins: P.stats.bestCoins || 0, wave: P.maps[map]?.[diff] || 0 };   // Rekorde vor dem Run
     this.snap = { acc: { ...P.account }, chars: Object.fromEntries(Object.entries(P.chars).map(([k, c]) => [k, { level: c.level, xp: c.xp }])) };
     this.accGain = 0; this.charUps = []; this.accUps = []; this.achs = [];
     this.ac = academyFx(P); ensureEvent(P);   // Event-Woche vor dem Run festlegen, damit der Run mitzählt
@@ -388,6 +389,13 @@ export class Game {
     if (d === 'endless') P.stats.bestEndless = Math.max(P.stats.bestEndless || 0, w.doneWave);
     const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, master: 0, endless: 0 };
     const firstClear = won && !(mp[d] >= w.maxWave);
+    // Persönliche Rekorde (Vision P10)
+    const R0 = this.rec0, records = [], bc = Math.max(w.bestCombo, w.comboN);
+    if (w.doneWave > R0.wave && R0.wave > 0) records.push(`Höchste Welle hier: ${w.doneWave}`);
+    if (bc > R0.combo && bc >= BAL.combo.show) records.push(`Beste Combo: ×${bc}`);
+    if (w.stats.kills > R0.kills && R0.kills > 0) records.push(`Meiste Kills in einem Run: ${w.stats.kills}`);
+    if (w.stats.coins > R0.coins && R0.coins > 0) records.push(`Meiste Münzen in einem Run: ◈${Math.round(w.stats.coins)}`);
+    P.stats.bestKills = Math.max(R0.kills, w.stats.kills); P.stats.bestCoins = Math.max(R0.coins, Math.round(w.stats.coins));
     let medal = null;
     let daily = false;
     let chests = won ? 1 : 0;   // Truhen: Sieg +1, Tageskampf +1
@@ -421,7 +429,7 @@ export class Game {
       won, perfect, firstClear, map: w.map.name, mapId: this.mapId, diff: D.name, diffKey: d, wave: w.doneWave, maxWave: w.maxWave, lives: w.lives, maxLives: w.maxLives,
       kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves, combo: Math.max(w.bestCombo, w.comboN),
       used, xp: w.stats.xp, winBonus, snap: this.snap, charUps: this.charUps, accGain: this.accGain, accUps: this.accUps, achs: this.achs, masteryUps,
-      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch], daily, powGot, chests,
+      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch], daily, powGot, chests, records,
     });
     if (silent) return res;
     this.app.results(res);

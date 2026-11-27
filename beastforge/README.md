@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.43.0 – Mega-Formen (Vision P6)
+## Stand: v0.44.0 – Ergebnis „Noch ein Run“ (Vision P10)
+**0.44:** Ergebnis-Bildschirm: „🏅 NEUER REKORD“ (höchste Welle je Karte/Modus, beste Combo, meiste Kills, meiste Münzen; Stand vor dem Run in `game.rec0`, neu `P.stats.bestKills`/`bestCoins`), Abschnitt „🎯 Nächste Ziele“ (`menus.goals`: Konto-Level, nächste Form einer eingesetzten Kreatur, Codex-Truhe, Wochen-Event-Stufe) mit animierten Balken, Hauptknopf „▶ NOCH EIN RUN“ (pulsiert). Combo-Anzeige verschwindet bei Spielende.
+
+## Stand davor: v0.43.0 – Mega-Formen (Vision P6)
 **0.43:** `js/data/megas.js`: je Kreatur 3 Mega-Formen (A Zorn = Pfad 1, B Bann = Pfad 2, C Klinge = Pfad 3; eigene Namen für Kitsune/Tiger/Schildkröte/Phönix/Kirin, sonst „Mega-<Stufe-5-Name>“) = 48. `world.megaInfo(t)`/`mega(id)` (Befehl in `CMDS`): Stufe 5 auf einem Pfad + `BAL.run.mega.kills` (100) Besiegte im Run + Charakter-Lv 20, Kosten Kaufpreis × 14; schließt Ahnenform aus. Werte in `stats.baseStats` (`t.mega`). Optik: leuchtender Riesen-Geist der Kreatur in Pfadfarbe hinter ihr (`view.makeTower` → `spirit`, schlägt beim Angriff mit aus). Mega-Moment (`view.handle('mega')` + `game.react`): Zeitlupe, Dunkel, Energie strömt ein, Lichtsäule, Aura-Ringe, Name, Banner, Klangfolge. Upgrade-Fenster zeigt Mega-Knopf mit Fortschritt (☠ x/100). Codex-Reiter „Mega-Formen“.
 
 ## Stand davor: v0.42.0 – Beastforge-Codex (Vision P5)

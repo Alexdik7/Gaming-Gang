@@ -88,7 +88,7 @@ Das Spiel soll ein kleines, überraschend hochwertiges Anime-Strategiespiel sein
 7. **P7 Elemente 2.0:** neue Reaktionen (Überladung, Höllenbrand, Schneesturm, Reinigung, Verderbnis, toxischer Brand) und „CHAIN REACTION“.
 8. **P8 Bosse 2.0:** Boden-Warnungen, Schwachpunkt, inszenierter Phasenwechsel (Farbe, Musik, Umgebung).
 9. **P9 Akademie 2.0:** Spezialisierungen, geheime Knoten, Meisterprüfungen.
-10. **P10 „Noch ein Run“:**
+10. **P10 „Noch ein Run“** – ✅ Teil 1 v0.44: persönliche Rekorde (Welle je Karte, Combo, Kills, Münzen), „🎯 Nächste Ziele“ (Konto, nächste Form, Codex-Truhe, Wochen-Event), Knopf „▶ NOCH EIN RUN“. Offen: Truhen-Seltenheiten, Aufgaben/Events mit eigenen Regeln:
     - Ergebnis-Bildschirm mit Zielbalken und persönlichen Rekorden.
     - Truhen-Seltenheiten (Selten, Episch, Legendär, Mythisch).
     - Abwechslungsreichere Tagesaufgaben und Events mit eigenen Regeln.

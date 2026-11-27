@@ -423,6 +423,18 @@ export class Menus {
   }
 
   // ───────── Erfolge / Statistik ─────────
+  // „Noch ein Run“: die nächsten Ziele mit Fortschritt (Konto, Kreatur, Codex, Wochen-Event)
+  goals(r) {
+    const P = this.P, out = [], a = P.account, need = accNeed(a.level);
+    out.push({ ic: '✦', t: `Konto-Level ${a.level + 1}`, f: a.xp / need, s: `${Math.round(a.xp / need * 100)} %` });
+    const cand = (r.used || []).map(cid => { const c = P.chars[cid], nf = c && nextFormByLevel(cid, c.level, c.branch); return nf ? { cid, c, nf, gap: nf.lvl - c.level - c.xp / charNeed(c.level) } : null; }).filter(Boolean).sort((x, y) => x.gap - y.gap)[0];
+    if (cand) out.push({ ic: '🦊', t: `${CREATURES[cand.cid].name}: ${cand.nf.name} ab Lv ${cand.nf.lvl}`, f: Math.max(0, 1 - cand.gap / Math.max(1, cand.nf.lvl - 1)), s: `Lv ${cand.c.level}` });
+    const n = codexCount(P), nx = (Math.floor(n / CODEX_STEP) + 1) * CODEX_STEP;
+    out.push({ ic: '📖', t: codexClaimable(P) > 0 ? 'Codex-Truhe bereit!' : `Codex-Truhe bei ${nx} Einträgen`, f: codexClaimable(P) > 0 ? 1 : (n % CODEX_STEP) / CODEX_STEP, s: `${n} entdeckt` });
+    const E = ensureEvent(P), d = eventDef(P), v = eventProgress(P), gi = d.goals.findIndex((g, i) => !E.claimed.includes(i));
+    if (gi >= 0) out.push({ ic: d.icon, t: `${d.name}: Stufe ${gi + 1} (${EVENT_CHESTS[gi]} 🎁)`, f: Math.min(1, v / d.goals[gi]), s: `${fmt(Math.min(v, d.goals[gi]))}/${fmt(d.goals[gi])}` });
+    return `<div class="sect goals"><h3>🎯 NÄCHSTE ZIELE</h3>${out.slice(0, 4).map(g => `<div class="goal"><span>${g.ic}</span><div><b>${esc(g.t)}</b><div class="bar"><u data-w="${Math.round(g.f * 100)}" style="width:0"></u></div></div><small>${g.s}</small></div>`).join('')}</div>`;
+  }
   // ───────── Beastforge-Codex: alles Entdeckte, Unentdecktes als „???“ ─────────
   s_codex(tab = this.codexTab || 'c') {
     const P = this.P; this.codexTab = tab;
@@ -521,6 +533,7 @@ export class Menus {
     this.render(`<div class="scr res">
       <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.daily ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">📅 Tageskampf geschafft! +1 Shinobi-Punkt</p>` : ''}${r.medal ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">🏅 Neue Medaille: ${esc(r.medal.name)} · +1 Shinobi-Punkt</p>` : r.ch && r.ch.id !== 'std' ? `<p style="margin:0;color:var(--mut)">${r.ch.icon} ${esc(r.ch.name)}</p>` : ''}${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
       <p style="text-align:center;margin:0;color:var(--mut)">${esc(r.map)} · ${esc(r.diff)} · Welle ${r.wave}${r.maxWave === Infinity ? '' : '/' + r.maxWave}${r.perfect ? ' · <b style="color:var(--run)">PERFEKT!</b>' : ''}</p>
+      ${r.records?.length ? `<div class="sect recs">${r.records.map(x => `<div class="newrec">🏅 NEUER REKORD · ${esc(x)}</div>`).join('')}</div>` : ''}${this.goals(r)}
       ${mvp}<div class="rgrid"><div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.combo >= 5 ? `<span>Beste Combo</span><b>×${r.combo}</b>` : ''}${r.hero ? `<span>${esc(HEROES[r.hero.id]?.name || 'Held')} erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>
       <div class="sect char"><h3>CHARAKTER-XP</h3>${xpRows}${r.won ? '<small style="color:var(--mut)">inkl. +25 % Siegbonus</small>' : '<small style="color:var(--mut)">Alle verdienten XP bleiben erhalten.</small>'}
         ${r.masteryUps.map(m => `<div class="newform">★ ${esc(CREATURES[m.cid].name)}: Meisterschaft ${m.m}!</div>`).join('')}</div>
@@ -530,7 +543,7 @@ export class Menus {
         ${r.achs.map(x => `<div class="newform">🏆 ${esc(x.name)} <small>+${x.xp}</small></div>`).join('')}
         ${r.chests ? `<div class="newform" style="color:#ffe9a0">🎁 +${r.chests} Truhe${r.chests > 1 ? 'n' : ''} – im Menü unter „Truhen“ öffnen</div>` : ''}
         ${r.powGot?.length ? `<h3 style="margin-top:8px">⚡ NEUE KRÄFTE</h3><div class="rpow">${r.powGot.map(id => `<span>${POWER[id].icon} ${esc(POWER[id].name)}</span>`).join('')}</div>` : ''}</div>
-      </div><div class="seg" style="grid-template-columns:1fr 1fr;max-width:520px;margin:0 auto;width:100%"><button class="btn" data-go="home">Menü</button><button class="big" id="again" style="font-size:18px;padding:12px">↻ Nochmal</button></div>
+      </div><div class="seg" style="grid-template-columns:1fr 1fr;max-width:520px;margin:0 auto;width:100%"><button class="btn" data-go="home">Menü</button><button class="big again2" id="again" style="font-size:20px;padding:12px">▶ NOCH EIN RUN</button></div>
       ${r.charUps.some(u => u.forms.length) ? '<button class="btn" data-go="collection">🦊 Neue Form in der Sammlung ansehen</button>' : ''}</div>`, m => {
       $('again').onclick = () => { this.app.audio.init(); this.app.startRun(r.mapId || 'ahnenhain', r.diffKey); };
       setTimeout(() => m.querySelectorAll('[data-w]').forEach(u => u.style.width = u.dataset.w + '%'), 250);

@@ -756,3 +756,9 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .megab.off { animation: none; opacity: .75; box-shadow: 0 3px 0 rgba(0,0,0,.35); } .megab b { font: 14px var(--cartoon, inherit); } .megab small { display: block; font-size: 10px; opacity: .9; } .megab .aseal { font-size: 22px; }
 @keyframes megaGlow { to { box-shadow: 0 0 28px var(--mc), 0 4px 0 rgba(0,0,0,.4); } }
 .cxmega { display: grid; place-items: center; border-radius: 14px; box-shadow: 0 0 14px var(--cx); } .cxc.off .cxmega { box-shadow: none; }
+/* v0.44 Ergebnis „Noch ein Run“ */
+.sect.recs { display: grid; gap: 4px; } .newrec { padding: 6px 10px; border-radius: 10px; background: linear-gradient(90deg, rgba(255,210,87,.35), rgba(255,210,87,.05)); border: 2px solid #ffd257; color: #fff; font-weight: 900; animation: recIn .5s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes recIn { from { transform: scale(.7); opacity: 0; } }
+.sect.goals .goal { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; margin: 4px 0; } .goal > span { font-size: 20px; text-align: center; } .goal b { font-size: 12px; color: #fff; } .goal small { color: #ffd257; font-weight: 800; font-size: 11px; }
+.goal .bar u { background: linear-gradient(90deg, #5fe6ff, #b98cff); }
+.big.again2 { animation: pwPulse 1s infinite alternate; }
