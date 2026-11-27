@@ -4,6 +4,7 @@ import { BAL } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
 import { POWERS } from '../data/powers.js';
+import { megaDef } from '../data/megas.js';
 import { punch, shake, ring, flyTo } from './anim.js';
 import { MOD_NAMES } from '../data/waves.js';
 import { ENEMIES, BOSSES, ELEMENT_NAMES, ELEMENT_COLORS } from '../data/enemies.js';
@@ -287,6 +288,10 @@ export class Hud {
       const ai = w.ascendInfo(t);
       const asc = ai ? (ai.ok ? `<button class="ascend" data-ascend><span class="aseal">⛩</span><div><b>Ahnenform erwecken</b><small>${esc(ai.name)} · Grad ${ai.grade} · verschmilzt ${ai.n} Kreaturen</small></div><span class="price">◈ ${fmt(ai.cost)}</span></button>`
         : `<div class="ascend off"><span class="aseal">⛩</span><div><b>Ahnenform</b><small>${esc(ai.why)} · ${ai.have.map((h, i) => (h ? '✓' : '✗') + ' ' + esc(def.paths[i].name)).join(' · ')}</small></div></div>`) : '';
+      const mi = w.megaInfo(t), md = mi && megaDef(t.cid, mi.p);
+      const mega = mi ? (mi.ok ? `<button class="megab" data-mega style="--mc:${['#ff6a2a', '#5fe6ff', '#b07bff'][mi.p]}"><span class="aseal">✦</span><div><b>MEGA: ${esc(md.name)}</b><small>${esc(md.desc)}</small></div><span class="price">◈ ${fmt(mi.cost)}</span></button>`
+        : `<div class="megab off" style="--mc:${['#ff6a2a', '#5fe6ff', '#b07bff'][mi.p]}"><span class="aseal">✦</span><div><b>MEGA: ${esc(md.name)}</b><small>${esc(mi.why)} · ☠ ${Math.min(mi.kills, mi.need)}/${mi.need}</small></div></div>`) : '';
+      if (t.mega != null) { const m2 = megaDef(t.cid, t.mega); title = m2.name; sub = '✦ Mega-Form · ' + m2.kind.name; }
       if (t.ascended) { title = 'Ahnen-' + def.name; sub = '⛩ Ahnenform · Grad ' + t.ascended; }
       const fus = w.fuseOptions(t).map(o => o.ok
         ? `<button class="fuse" data-fuse="${o.f.id}" style="--fa:${o.def.color}"><img src="${portrait(o.f.id)}" alt=""><div><b>⚭ Fusion: ${esc(o.def.name)}</b><small>mit ${esc(CREATURES[o.other].name)} · ${esc(o.def.role)}</small></div><span class="price">◈ ${fmt(o.cost)}</span></button>`
@@ -295,7 +300,7 @@ export class Hud {
       const ab = w.abilityInfo(t).map(a => `<div class="abi ${a.ready ? 'on' : ''}"><b>${a.slot === 'ult' ? '★ ' : ''}${esc(a.name)}</b> <small>${a.ready ? (a.left > 0 ? Math.ceil(a.left) + ' s' : 'bereit') : '🔒 ' + esc(a.need)}</small></div>`).join('');
       body = `<div class="xpline"><b>${esc(def.name)} Lv ${c.level}</b><div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / need * 100}%"></u></div><small>${c.level >= 50 ? 'MAX' : fmt(c.xp) + ' / ' + fmt(need) + ' XP'}${nx ? ' · ' + esc(nx.name) + ' bei Lv ' + nx.lvl : ''}</small></div>
         <div class="chips">${chips}${s.camo ? '<span>👁 Erkennung</span>' : ''}${!s.flying ? '<span class="warn">⛔ keine Fliegenden</span>' : ''}${t.disabledT > 0 ? '<span class="warn">🔥 Gestört!</span>' : ''}${t.pack > 1 ? `<span class="pack" title="Rudel-Bonus">🐾 Rudel ${t.pack} · <b>×${s.packMul.toFixed(2)}</b></span>` : ''}${def.fusion ? '<span class="fz">⚭ Fusion</span>' : ''}</div>${auraTxt}<!--main-->
-        ${t.ascended ? '' : evo}${asc}${fus ? `<div class="fuses">${fus}</div>` : ''}<div class="prows">${rows}</div>${ab ? `<div class="abis">${ab}</div>` : ''}`;
+        ${t.ascended ? '' : evo}${mega}${asc}${fus ? `<div class="fuses">${fus}</div>` : ''}<div class="prows">${rows}</div>${ab ? `<div class="abis">${ab}</div>` : ''}`;
     }
     const [info, main] = body.split('<!--main-->');
     el.innerHTML = `<div class="pinfo"><div class="ph"><img src="${this.icon(t)}" alt=""><div class="nm"><b>${esc(title)}</b><small>${sub}</small></div><button class="x" data-x>✕</button></div>${info}
@@ -308,6 +313,7 @@ export class Hud {
     el.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const i = TARGETS.indexOf(t.target), n = TARGETS.length; this.g.cmd('setTarget', t.id, TARGETS[(i + +b.dataset.tg + n) % n]); this.g.app.audio.play('click'); this.refreshPanel(); });
     el.querySelector('[data-sell]').onclick = guard(() => this.confirm('Verkaufen?', `Du bekommst ◈${fmt(t.spent * BAL.run.sellRefund)} zurück. Die Charakter-XP bleiben erhalten.`, 'Verkaufen', () => { this.g.cmd('sell', t.id); this.g.select(null); }));
     el.querySelectorAll('[data-up]').forEach(b => b.onclick = guard(() => { const r = this.g.cmd('upgrade', t.id, +b.dataset.up); if (!r.ok) { this.err(r.why); shake(b, 4); } else { this.coachEvent('upgrade'); this.upFx(t, +b.dataset.up); } this.refreshPanel(); }));
+    el.querySelector('[data-mega]')?.addEventListener('click', guard(() => { const r = this.g.cmd('mega', t.id); if (!r.ok) this.err(r.why); else if (r.tower) this.g.select(r.tower); }));
     el.querySelector('[data-ascend]')?.addEventListener('click', guard(() => { const r = this.g.cmd('ascend', t.id); if (!r.ok) this.err(r.why); else if (r.tower) this.g.select(r.tower); }));
     el.querySelectorAll('[data-fuse]').forEach(b => b.onclick = guard(() => { const r = this.g.cmd('fuse', t.id, b.dataset.fuse); if (!r.ok) this.err(r.why); else if (r.tower) { this.g.select(r.tower); this.toast('evo', '⚭ Fusion gelungen!', CREATURES[r.tower.cid].name + ' ist erwacht'); } }));
     const ev = el.querySelector('[data-evo]'); if (ev) ev.onclick = guard(() => { const r = this.g.cmd('evolve', t.id); if (!r.ok) this.err(r.why); this.refreshPanel(); });

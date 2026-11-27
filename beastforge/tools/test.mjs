@@ -637,3 +637,19 @@ test('Codex: Entdecken, Zählen, Truhe je 10 Einträge, alte Spielstände', asyn
   assert.equal(cx.reactionKey('Plasma'), 'fire+lightning');
   const old = defaultProfile(); delete old.codex; assert.deepEqual(migrate(old).codex, { seen: {}, claimed: 0 });
 });
+
+test('Mega-Form: Bedingungen, Kosten, Werte, nur eine je Kreatur', async () => {
+  const { megaDef, ALL_MEGAS } = await import('../js/data/megas.js');
+  assert.equal(ALL_MEGAS().length, 48); assert.equal(megaDef('kitsune', 0).name, 'Amaterasu-Kitsune');
+  const { w } = mkWorld(defaultProfile(), { hooks: { level: () => 25 } }); w.coins = 1e6;
+  const t = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower;
+  assert.equal(w.megaInfo(t), null, 'ohne Stufe 5 kein Angebot');
+  for (let i = 0; i < 5; i++) w.upgrade(t.id, 0);
+  assert.match(w.megaInfo(t).why, /Gegner besiegen/);
+  t.kills = BAL.run.mega.kills; const d0 = t.s.dmg, c0 = w.coins;
+  const r = w.mega(t.id); assert.ok(r.ok, r.why); assert.equal(t.mega, 0); assert.ok(t.s.dmg > d0 * 2, 'Zorn: viel mehr Schaden');
+  assert.equal(c0 - w.coins, Math.round(CREATURES.kitsune.cost * BAL.run.mega.cost));
+  assert.equal(w.megaInfo(t), null, 'nur einmal'); assert.equal(w.ascendInfo(t), null, 'Mega schließt Ahnenform aus');
+  const low = mkWorld(defaultProfile(), { hooks: { level: () => 5 } }).w; low.coins = 1e6; const u = low.place('kitsune', ...low.suggestSpot('kitsune', 3)).tower; for (let i = 0; i < 5; i++) low.upgrade(u.id, 1); u.kills = 999;
+  assert.match(low.megaInfo(u).why, /Charakter-Lv/);
+});

@@ -5,9 +5,10 @@ import { HEROES } from './heroes.js';
 import { FUSIONS } from './fusions.js';
 import { ENEMIES, BOSSES } from './enemies.js';
 import { REACTIONS, SYNERGIES } from './meta.js';
+import { ALL_MEGAS } from './megas.js';
 
 export const CODEX_TABS = [
-  { id: 'c', name: 'Kreaturen', icon: '🦊' }, { id: 'f', name: 'Fusionen', icon: '⚭' }, { id: 'h', name: 'Helden', icon: '🥷' },
+  { id: 'c', name: 'Kreaturen', icon: '🦊' }, { id: 'f', name: 'Fusionen', icon: '⚭' }, { id: 'm', name: 'Mega-Formen', icon: '✦' }, { id: 'h', name: 'Helden', icon: '🥷' },
   { id: 'e', name: 'Gegner', icon: '👾' }, { id: 'b', name: 'Bosse', icon: '👑' }, { id: 'r', name: 'Reaktionen', icon: '🌈' }, { id: 's', name: 'Synergien', icon: '🔗' },
 ];
 export const CODEX_STEP = 10;   // alle 10 Entdeckungen eine Truhe
@@ -15,6 +16,7 @@ export const CODEX_STEP = 10;   // alle 10 Entdeckungen eine Truhe
 export function codexEntries() {
   return [
     ...Object.values(CREATURES).map(d => ({ key: 'c:' + d.id, tab: 'c', id: d.id, name: d.name, desc: d.role })),
+    ...ALL_MEGAS().map(m => ({ key: 'm:' + m.id, tab: 'm', id: m.cid, name: m.name, desc: m.desc, color: ['#ff6a2a', '#5fe6ff', '#b07bff'][m.p] })),
     ...FUSIONS.map(f => ({ key: 'f:' + f.id, tab: 'f', id: f.id, name: f.name, desc: f.desc, parents: [f.a, f.b], color: f.color })),
     ...Object.entries(HEROES).map(([id, h]) => ({ key: 'h:' + id, tab: 'h', id, name: h.name, desc: h.title })),
     ...Object.entries(ENEMIES).map(([id, e]) => ({ key: 'e:' + id, tab: 'e', id, name: e.name, desc: e.desc || '' })),

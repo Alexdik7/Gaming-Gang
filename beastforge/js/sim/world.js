@@ -260,7 +260,7 @@ export class World {
   knock(e, amt) { const a = Math.min(amt, BAL.run.knockCap - (e.kb || 0)); if (a <= 0) return; e.kb = (e.kb || 0) + a; e.d = Math.max(0, e.d - a); this.posAt(e.d, e, e.pi); }
   // ───────── Ahnenform: 3× Stufe 5 (je ein Pfad) derselben Kreatur verschmelzen ─────────
   ascendInfo(t) {
-    if (!t || t.hero || t.ascended || CREATURES[t.cid]?.fusion) return null;
+    if (!t || t.hero || t.ascended || t.mega != null || CREATURES[t.cid]?.fusion) return null;
     if (!this.mine(t)) return null;
     const same = this.towers.filter(o => o.cid === t.cid && !o.hero && (o.owner || 0) === (t.owner || 0)), def = CREATURES[t.cid];
     if (!same.some(o => o.tiers.includes(5))) return null;   // erst zeigen, wenn es eine Stufe 5 gibt
@@ -274,6 +274,26 @@ export class World {
     else if (this.mods.basic) why = 'Herausforderung: nur Grundformen';
     else if (this.coins < cost) why = 'Zu wenig Münzen';
     return { ok: !why, why, cost, grade, have, n: same.length, name: 'Ahnen-' + def.name };
+  }
+  // ───────── Mega-Form: Stufe 5 auf einem Pfad + Besiegte + Charakter-Level → einzigartige Endform ─────────
+  megaInfo(t) {
+    if (!t || t.hero || t.ascended || t.mega != null || CREATURES[t.cid]?.fusion || !this.mine(t)) return null;
+    const p = t.tiers.indexOf(5); if (p < 0) return null;
+    const M = BAL.run.mega, cost = Math.round(CREATURES[t.cid].cost * M.cost), lvl = this.levelOf(t.cid);
+    let why = '';
+    if (lvl < M.lvl) why = `Ab Charakter-Lv ${M.lvl}`;
+    else if (t.kills < M.kills) why = `Noch ${M.kills - t.kills} Gegner besiegen`;
+    else if (this.mods.basic) why = 'Herausforderung: nur Grundformen';
+    else if (this.coins < cost) why = 'Zu wenig Münzen';
+    return { ok: !why, why, p, cost, kills: t.kills, need: M.kills, lvl };
+  }
+  mega(id) {
+    const t = this.tower(id), info = this.megaInfo(t); if (!info) return { ok: false, why: 'Nicht möglich' }; if (!info.ok) return { ok: false, why: info.why };
+    this.coins -= info.cost; t.spent += info.cost; t.mega = info.p; t.abCd = 0; t.ultCd = 0;
+    this.stats.megas = (this.stats.megas || 0) + 1; this.hooks.stat?.('megas', 1);
+    this.dirty = true; this.refresh();
+    this.emit({ t: 'mega', tower: t, p: info.p });
+    return { ok: true, tower: t };
   }
   ascend(id) {
     const t = this.tower(id), info = this.ascendInfo(t); if (!info) return { ok: false, why: 'Nicht möglich' }; if (!info.ok) return { ok: false, why: info.why };

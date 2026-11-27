@@ -750,3 +750,9 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .cxemo { font-size: 40px; line-height: 64px; } .cxc.off .cxemo { filter: brightness(0) drop-shadow(0 0 2px rgba(160,200,255,.6)); }
 .cxdots { display: flex; gap: 4px; height: 64px; align-items: center; } .cxdots i { width: 24px; height: 24px; border-radius: 50%; border: 3px solid #10162a; }
 .cxpair { display: flex; gap: 2px; } .cxpair img { width: 46px; height: 46px; }
+/* v0.43 Mega-Formen */
+.megab { display: flex; align-items: center; gap: 8px; width: 100%; margin: 6px 0; padding: 8px 10px; border-radius: 14px; border: 3px solid #10162a; color: #fff; text-align: left;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--mc) 70%, #10162a), #2a1650); box-shadow: 0 0 16px color-mix(in srgb, var(--mc) 60%, transparent), 0 4px 0 rgba(0,0,0,.4); animation: megaGlow 1.6s infinite alternate; }
+.megab.off { animation: none; opacity: .75; box-shadow: 0 3px 0 rgba(0,0,0,.35); } .megab b { font: 14px var(--cartoon, inherit); } .megab small { display: block; font-size: 10px; opacity: .9; } .megab .aseal { font-size: 22px; }
+@keyframes megaGlow { to { box-shadow: 0 0 28px var(--mc), 0 4px 0 rgba(0,0,0,.4); } }
+.cxmega { display: grid; place-items: center; border-radius: 14px; box-shadow: 0 0 14px var(--cx); } .cxc.off .cxmega { box-shadow: none; }

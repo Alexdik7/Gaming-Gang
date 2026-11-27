@@ -1,8 +1,8 @@
 // Offline-Cache für Beastforge. Bei jeder Änderung CACHE erhöhen!
-const CACHE = 'beastforge-v0.42.0';
+const CACHE = 'beastforge-v0.43.0';
 const FILES = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',
   'js/main.js', 'js/game.js', 'js/audio.js', 'js/config.js',
-  'js/data/creatures.js', 'js/data/enemies.js', 'js/data/heroes.js', 'js/data/maps.js', 'js/data/meta.js', 'js/data/waves.js', 'js/data/academy.js', 'js/data/challenges.js', 'js/data/daily.js', 'js/data/powers.js', 'js/data/events.js', 'js/data/codex.js', 'js/net.js', 'lib/peerjs.min.js', 'js/data/fusions.js',
+  'js/data/creatures.js', 'js/data/enemies.js', 'js/data/heroes.js', 'js/data/maps.js', 'js/data/meta.js', 'js/data/waves.js', 'js/data/academy.js', 'js/data/challenges.js', 'js/data/daily.js', 'js/data/powers.js', 'js/data/events.js', 'js/data/codex.js', 'js/data/megas.js', 'js/net.js', 'lib/peerjs.min.js', 'js/data/fusions.js',
   'js/meta/profile.js', 'js/meta/progression.js', 'js/sim/world.js', 'js/sim/stats.js',
   'js/render/stage.js', 'js/render/view.js', 'js/render/mapview.js', 'js/render/models.js', 'js/render/toon.js', 'js/render/fx.js', 'js/render/icons.js', 'js/render/assets.js', 'js/render/looks.js', 'js/render/ambient.js', 'js/render/attackfx.js', 'js/render/beasts.js',
   'js/ui/hud.js', 'js/ui/menus.js', 'js/ui/loading.js', 'js/ui/anim.js',

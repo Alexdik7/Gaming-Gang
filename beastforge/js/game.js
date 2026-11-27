@@ -15,6 +15,7 @@ import { HEROES } from './data/heroes.js';
 import { POWER, givePowers, runPowerReward } from './data/powers.js';
 import { cosOf, ensureEvent } from './data/events.js';
 import { discover, reactionKey, codexEntries } from './data/codex.js';
+import { megaDef } from './data/megas.js';
 import { addCharXp, addAccXp, addHeroRankXp, heroStartLevel, unlocked, unlockedCreatures, addMastery, checkAchievements, formsFor } from './meta/progression.js';
 import { saveProfile } from './meta/profile.js';
 import { worldHash } from './net.js';
@@ -299,6 +300,7 @@ export class Game {
   react(e) {
     switch (e.t) {
       case 'ascend': this.slow(0.2, 1.8); setTimeout(() => this.hud.flash(0.8, '#ffd257'), 1100); break;
+      case 'mega': { const md = megaDef(e.tower.cid, e.p); this.found('m:' + md.id); this.slow(0.2, 1.5); setTimeout(() => { this.hud.banner(md.name.toUpperCase(), '✦ MEGA-ENTWICKLUNG · ' + md.kind.name, 'evo'); this.hud.flash(0.7, ['#ff6a2a', '#5fe6ff', '#b07bff'][e.p]); }, 950); break; }
       case 'fuse': this.found('f:' + e.def.id); this.slow(0.25, 1.2); this.hud.banner(e.def.name.toUpperCase(), '⚭ Fusion!', 'evo'); setTimeout(() => this.hud.flash(0.6, e.def.color), 1000); break;
       case 'place': this.found((e.tower.hero ? 'h:' : 'c:') + e.tower.cid); break;
       case 'kill': if (e.e.boss) this.found('b:' + e.e.kind); else this.found('e:' + e.e.kind); break;
@@ -337,6 +339,7 @@ export class Game {
       case 'upgrade': A.play(e.tier === 5 ? 'tier5' : 'upgrade', { tier: e.tier }); break;
       case 'rebirth': A.play('ult'); A.play('evolve'); break;
       case 'fuse': A.play('ult'); setTimeout(() => A.play('evolve'), 900); break;
+      case 'mega': A.play('ult'); setTimeout(() => A.play('tier5'), 700); setTimeout(() => A.play('evolve'), 1000); break;
       case 'ascend': A.play('ult'); setTimeout(() => A.play('tier5'), 500); setTimeout(() => A.play('evolve'), 1100); break;
       case 'evolve': A.play('evolve'); break; case 'sell': A.play('sell'); break; case 'rock': A.play('boom'); break;
       case 'wave': A.play('wave'); break; case 'waveEnd': A.play('waveEnd'); break;

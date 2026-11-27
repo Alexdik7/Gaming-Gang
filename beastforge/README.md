@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.42.0 – Beastforge-Codex (Vision P5)
+## Stand: v0.43.0 – Mega-Formen (Vision P6)
+**0.43:** `js/data/megas.js`: je Kreatur 3 Mega-Formen (A Zorn = Pfad 1, B Bann = Pfad 2, C Klinge = Pfad 3; eigene Namen für Kitsune/Tiger/Schildkröte/Phönix/Kirin, sonst „Mega-<Stufe-5-Name>“) = 48. `world.megaInfo(t)`/`mega(id)` (Befehl in `CMDS`): Stufe 5 auf einem Pfad + `BAL.run.mega.kills` (100) Besiegte im Run + Charakter-Lv 20, Kosten Kaufpreis × 14; schließt Ahnenform aus. Werte in `stats.baseStats` (`t.mega`). Optik: leuchtender Riesen-Geist der Kreatur in Pfadfarbe hinter ihr (`view.makeTower` → `spirit`, schlägt beim Angriff mit aus). Mega-Moment (`view.handle('mega')` + `game.react`): Zeitlupe, Dunkel, Energie strömt ein, Lichtsäule, Aura-Ringe, Name, Banner, Klangfolge. Upgrade-Fenster zeigt Mega-Knopf mit Fortschritt (☠ x/100). Codex-Reiter „Mega-Formen“.
+
+## Stand davor: v0.42.0 – Beastforge-Codex (Vision P5)
 **0.42:** `js/data/codex.js`: 87 Einträge (Kreaturen, Fusionen, Helden, Gegner, Bosse, Reaktionen, Synergien), Profil `P.codex = { seen, claimed }`, `discover`, alle 10 Entdeckungen 1 Truhe (`claimCodex`). Im Run entdeckt `game.found(key)` (Setzen, Kill, Boss-Kill, Reaktion, Synergie, Fusion) mit Hinweis „📖 Neu im Codex“. Bildschirm `menus.s_codex` (Hub-Kachel „Codex“ statt „Statistik“, Statistik als Knopf im Codex): Fortschritt, Reiter mit Zählern, Unentdecktes als schwarze Silhouette mit „???“ bzw. „??? + ???“, Reaktionen zeigen ihre Element-Farben als Hinweis.
 
 ## Stand davor: v0.41.0 – Upgrade-Fenster: „Was du bekommst“ (Vision P4)

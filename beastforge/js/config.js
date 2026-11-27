@@ -1,5 +1,5 @@
 // BEASTFORGE – alle Balance-Regler an EINEM Ort. Keine Zahlen in der Logik verstreuen.
-export const VERSION = '0.42.0';
+export const VERSION = '0.43.0';
 
 export const BAL = {
   tick: 1 / 60,               // fester Simulationsschritt (s)
@@ -15,6 +15,7 @@ export const BAL = {
     maxTowers: 40,
     knockCap: 4,
     ascendCost: 40,           // Ahnenform: Kosten = Kaufpreis × 40
+    mega: { cost: 14, kills: 100, lvl: 20 },   // Mega-Form: Kosten = Kaufpreis × 14, Besiegte im Run, Charakter-Level
               // Rückstoß insgesamt pro Gegner (Felder)
     packR: 1.35,              // Rudel: Kreaturen bis zu diesem Abstand gelten als Nachbarn (zusammenhängende Gruppe)
     packDmg: 0.06, packRate: 0.025, // je weiterer Kreatur im Rudel: ×1,06 Schaden, ×1,025 Tempo – multiplikativ, OHNE Obergrenze

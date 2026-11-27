@@ -436,6 +436,7 @@ export class Menus {
       const seen = codexSeen(P, x.key);
       let pic = '';
       if (x.tab === 'c' || x.tab === 'f') pic = pimg(x.id, { stage: x.tab === 'c' ? 0 : undefined }, !seen);
+      else if (x.tab === 'm') pic = `<span class="cxmega" style="--cx:${x.color}">${pimg(x.id, { stage: 2 }, !seen)}</span>`;
       else if (x.tab === 'h') pic = pimg(x.id, { hlvl: 1 }, !seen);
       else if (x.tab === 'r') pic = `<span class="cxdots">${dots(x.parts)}</span>`;
       else if (x.tab === 's') pic = `<span class="cxpair">${x.parents.map(p => pimg(p, CREATURES[p] ? { stage: 0 } : { hlvl: 1 }, !seen)).join('')}</span>`;

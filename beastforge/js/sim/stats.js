@@ -32,6 +32,12 @@ export function baseStats(t, level = 1, branch = 'spirit') {
   for (const f of formsFor(t.cid, branch)) if (f.stage > 0 && f.stage <= t.stage) applyFx(s, f.fx);
   def.paths.forEach((p, i) => { for (let k = 0; k < t.tiers[i]; k++) applyFx(s, p.tiers[k].fx); });
   for (const fx of levelFx(t.cid, level)) applyFx(s, fx);
+  if (t.mega != null) {   // Mega-Form (data/megas.js): A Zorn · B Bann · C Klinge
+    s.dmg *= 1.6; s.rate *= 1.15; s.range += 0.4; s.camo = true;
+    if (t.mega === 0) { s.dmg *= 1.5; s.pierce += 3; s.aoe = (s.aoe || 0) + 0.4; }
+    else if (t.mega === 1) { s.slow.pct = Math.max(s.slow.pct, 0.4); s.slow.dur = Math.max(s.slow.dur, 1.5); s.stun.ch += 0.1; s.stun.dur = Math.max(s.stun.dur, 0.6); s.support.range = Math.max(s.support.range, 1.6); s.support.dmg += 0.12; s.support.rate += 0.08; }
+    else { s.crit.ch += 0.3; s.crit.mult += 1; s.rate *= 1.25; s.bossMul *= 1.6; }
+  }
   if (t.ascended) { const g = t.ascended; s.dmg *= 2 * (1 + g * 0.02); s.rate *= 1 + g * 0.005; s.range += 0.5; s.camo = true; s.bossMul *= 1.5; s.pierce += 2; }   // Ahnenform
   return s;
 }

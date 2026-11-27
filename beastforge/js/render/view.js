@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { MapView, HEIGHT } from './mapview.js';
 import { Ambient } from './ambient.js';
 import { afxFor } from './attackfx.js';
+import { megaDef } from '../data/megas.js';
+const MEGA_COL = [0xff6a2a, 0x5fe6ff, 0xb07bff];
 import { Particles, Rings, Bolts, Pillars, Projectiles, Floaters, Flashes, Sparks, Arcs, projStyle } from './fx.js';
 import { RAFT_TOP } from './mapview.js';
 import { ENEMY_MODELS, bakeFrames, buildBig } from './assets.js';
@@ -91,7 +93,7 @@ export class GameView {
 
   // ───────── Türme ─────────
   towerKey(t) {   // (Besitzer ändert sich nie → kein Teil des Schlüssels)
- return t.cid + (t.ascended ? 'A' : '') + '|' + (t.hero ? 'h' + (t.hlvl >= 20 ? 2 : t.hlvl >= 15 ? 1 : 0) : t.stage + ':' + t.tiers.join('') + ':' + (this.opts.branch?.(t.cid) || '') + (this.opts.skin?.(t.cid) || '')); }
+ return t.cid + (t.ascended ? 'A' : '') + (t.mega != null ? 'M' + t.mega : '') + '|' + (t.hero ? 'h' + (t.hlvl >= 20 ? 2 : t.hlvl >= 15 ? 1 : 0) : t.stage + ':' + t.tiers.join('') + ':' + (this.opts.branch?.(t.cid) || '') + (this.opts.skin?.(t.cid) || '')); }
   makeTower(t) {
     const m = buildModel(t.cid, { stage: t.stage, tiers: t.tiers, branch: this.opts.branch?.(t.cid), skin: this.opts.skin?.(t.cid), hlvl: t.hlvl });
     const g = new THREE.Group(), pose = new THREE.Group(); pose.rotation.order = 'YXZ'; pose.add(m.root); g.add(pose); g.scale.setScalar(TOWER_SCALE * (t.ascended ? 1.45 : 1));
@@ -102,6 +104,14 @@ export class GameView {
       const col = mk(geo.cyl(16), glow(0xffd257, 0.12), { p: [0, 0.9, 0], s: [0.5, 1.8, 0.5], ol: false }); g.add(col);
       const tick0 = m.tick; m.tick = (tt, dt, s) => { tick0(tt, dt, s); aura.rotation.y = tt * 0.6; col.material.opacity = 0.09 + Math.sin(tt * 2.2) * 0.04; };
     }
+    let spirit = null;
+    if (t.mega != null) {   // Mega-Form: riesiger leuchtender Geist der Kreatur hinter ihr (bewegt sich mit, schlägt beim Angriff mit aus)
+      const sm = buildModel(t.cid, { stage: t.stage, tiers: t.tiers, branch: this.opts.branch?.(t.cid), hlvl: 1 }), col = MEGA_COL[t.mega];
+      const mat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false });
+      sm.root.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = false; } });
+      spirit = { m: sm, mat, g: new THREE.Group() }; spirit.g.add(sm.root); spirit.g.position.set(0, 0.12, -0.32); spirit.g.scale.setScalar(2.1); pose.add(spirit.g);
+      g.add(mk(geo.torus(0.035), glow(col, 0.9), { r: [PI / 2, 0, 0], s: 0.6, p: [0, 0.04, 0], ol: false }));
+    }
     const [x, z] = this.toW(t.x, t.y); g.position.set(x, this.ty(t), z);
     // Schatten-Kreis unter der Figur
     const sh = new THREE.Mesh(new THREE.CircleGeometry(0.34, 20).rotateX(-PI / 2), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18, depthWrite: false })); sh.position.y = 0.01; g.add(sh);
@@ -111,7 +121,7 @@ export class GameView {
       g.add(mk(new THREE.CircleGeometry(0.42, 24).rotateX(-PI / 2), glow(col, 0.35), { p: [0, 0.02, 0], ol: false }));
     }
     this.root.add(g);
-    return { g, m, pose, key: this.towerKey(t), atk: 0, rot: t.ang, born: 0, evoT: 0, flash: 0, at: 9, flip: 1, chg: 0, lastFire: -9 };
+    return { g, m, pose, spirit, key: this.towerKey(t), atk: 0, rot: t.ang, born: 0, evoT: 0, flash: 0, at: 9, flip: 1, chg: 0, lastFire: -9 };
   }
   // Angriffs-Bewegung je Kampfstil: Ausholen → Zuschlagen → Nachfedern (auf der Zwischengruppe `pose`)
   atkPose(v, t) {
@@ -206,6 +216,7 @@ export class GameView {
       if (t.raft != null) { const [x, z] = this.toW(t.x, t.y); v.g.position.set(x, RAFT_TOP, z); }
       const dis = t.disabledT > 0;
       v.m.tick(this.t, dt, { atk: v.atk, dis, cannon: v.rot, hlvl: t.hlvl });
+      if (v.spirit) { const S = v.spirit; S.m.tick?.(this.t, dt, { atk: v.atk }); S.g.position.y = 0.12 + Math.sin(this.t * 1.6) * 0.05; S.g.scale.setScalar(2.1 + v.atk * 0.35 + v.chg * 0.15); S.mat.opacity = 0.32 + 0.1 * Math.sin(this.t * 2.4) + v.atk * 0.3; }
       if (dis && Math.random() < dt * 14) { const [x, z] = this.toW(t.x, t.y); this.parts.spawn(x + (Math.random() - 0.5) * 0.4, 0.4, z + (Math.random() - 0.5) * 0.4, 0, 0.8, 0, Math.random() < 0.5 ? (t.disCol || 0xff6a20) : (t.disCol ? 0xffffff : 0x3a3030), 0.22, 0.6, { drag: 1 }); }
     }
     for (const [id, v] of this.towers) if (!alive.has(id)) { this.root.remove(v.g); this.towers.delete(id); }
@@ -526,6 +537,14 @@ export class GameView {
           this.stage.addShake(0.7);
         }, 520);
         this.stage.focus = new THREE.Vector3(x, h, z); this.stage.zoomPunch = 1;
+        break;
+      }
+      case 'mega': {   // Mega-Moment (~1,5 s): Dunkel → Energie strömt ein → Lichtsäule + Aura-Explosion → Name
+        const t = ev.tower, [x, z] = at(t.x, t.y), h = this.ty(t), col = MEGA_COL[ev.p], md = megaDef(t.cid, ev.p);
+        this.darken = 1.9; this.stage.focus = new THREE.Vector3(x, h, z); this.stage.zoomPunch = 1.2;
+        for (let i = 0; i < 40; i++) this.after(i * 0.018, () => { const a = Math.random() * PI * 2, R = 1.6 + Math.random(), px = x + Math.cos(a) * R, pz = z + Math.sin(a) * R, py = h + 0.2 + Math.random() * 1.2, L = 0.45; P.spawn(px, py, pz, (x - px) / L, (h + 0.6 - py) / L, (z - pz) / L, i % 3 ? col : 0xffffff, 0.1, L, { drag: 0, grow: -1 }); });
+        this.after(0.75, () => { this.pillars.add(x, z, 0.8, 10, col, 1.6); this.pillars.add(x, z, 0.4, 10, 0xffffff, 1.2, 0.08); this.flashes.add(x, h + 1, z, 0xffffff, 4.5, 0.45); this.flashes.add(x, h + 1, z, col, 3, 0.8, { delay: 0.08 }); });
+        this.after(1.0, () => { P.burst(x, h + 0.8, z, [col, 0xffffff, 0xffd257], 150, 6.5, 0.3, 1.2, { up: 1.4 }); for (let i = 0; i < 3; i++) this.rings.add(x, h + 0.06 + i * 0.1, z, 0.3, 4 + i * 1.6, i ? 0xffffff : col, 0.8 + i * 0.2); this.floaters.add(x, 2.1, z, '✦ ' + (md?.name || 'MEGA').toUpperCase(), 'lvl', 2.2); this.flashSky = 0.6; this.stage.addShake(1.2); });
         break;
       }
       case 'ascend': {
