@@ -505,12 +505,17 @@ export class World {
     }
     if (e.phase >= 2 && e.flyT <= 0) {
       const b = def.phases[2].breath;
-      if ((e.breathCd -= dt) <= 0) {
+      if (e.teleT > 0) {   // Vorwarnung läuft → danach ausführen (falls nicht unterbrochen)
+        if ((e.teleT -= dt) <= 0) {
+          const ts = (e.teleIds || []).map(id => this.tower(id)).filter(t => t && !t.prot);
+          for (const t of ts) { t.disabledT = b.dur; t.disCol = def.breathColor || 0; }
+          e.teleIds = []; e.roarT = Math.max(e.roarT, 0.9);
+          this.emit({ t: 'breath', e, targets: ts });
+        }
+      } else if ((e.breathCd -= dt) <= 0) {
         e.breathCd = b.every;
         const ts = this.towers.filter(t => !t.prot).map(t => ({ t, d: Math.hypot(t.x - e.x, t.y - e.y) })).filter(o => o.d < 4).sort((a, c) => a.d - c.d).slice(0, b.n);
-        for (const o of ts) { o.t.disabledT = b.dur; o.t.disCol = def.breathColor || 0; }
-        e.roarT = Math.max(e.roarT, 0.9);
-        this.emit({ t: 'breath', e, targets: ts.map(o => o.t) });
+        if (ts.length) { e.teleIds = ts.map(o => o.t.id); e.teleT = BAL.boss.tele; e.weakDmg = 0; e.roarT = Math.max(e.roarT, BAL.boss.tele); this.emit({ t: 'bossTele', e, targets: ts.map(o => o.t), dur: BAL.boss.tele }); }
       }
     }
     if (e.phase >= 3) {
@@ -541,6 +546,7 @@ export class World {
     if (o.ignoreRes) mul = 1;
     let dmg = amount * mul * (o.mul || 1) * (src ? BAL.run.dmgMul : 1);
     if (e.vulnT > 0) dmg *= 1 + e.vuln;
+    if (e.teleT > 0) dmg *= 1 + BAL.boss.weakMul;   // Boss lädt auf: Schwachpunkt offen
     if (s && (e.boss || e.miniboss)) dmg *= s.bossMul;
     let crit = false;
     if (!o.dot && s && s.crit.ch > 0 && this.rng() < s.crit.ch) { dmg *= s.crit.mult; crit = true; this.stats.crits++; }
@@ -554,6 +560,10 @@ export class World {
     if (e.shield > 0) { const a = Math.min(e.shield, dmg); e.shield -= a; dmg -= a; if (dmg <= 0) { e.hitT = 0.08; return 0; } }
     const real = Math.min(e.hp, dmg);
     e.hp -= dmg; e.hitT = o.dot ? e.hitT : 0.09;
+    if (e.teleT > 0 && (e.weakDmg = (e.weakDmg || 0) + real) >= e.maxHp * BAL.boss.breakPct) {   // genug Schaden im Aufladen → Angriff unterbrochen, Boss taumelt
+      e.teleT = 0; e.teleIds = []; e.stunT = Math.max(e.stunT, BAL.boss.stagger); this.stats.staggers = (this.stats.staggers || 0) + 1;
+      this.emit({ t: 'bossStagger', e, x: e.x, y: e.y });
+    }
     if (src) {
       const k = src.cid; e.dmgBy[k] = (e.dmgBy[k] || 0) + real; src.dmg += real;
       this.stats.dmg[k] = (this.stats.dmg[k] || 0) + real;

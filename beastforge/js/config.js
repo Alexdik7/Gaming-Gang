@@ -1,5 +1,5 @@
 // BEASTFORGE – alle Balance-Regler an EINEM Ort. Keine Zahlen in der Logik verstreuen.
-export const VERSION = '0.45.0';
+export const VERSION = '0.46.0';
 
 export const BAL = {
   tick: 1 / 60,               // fester Simulationsschritt (s)
@@ -36,6 +36,7 @@ export const BAL = {
 
   // Kreuzpfade: ein Pfad bis 5, ein zweiter bis 2, der dritte bleibt zu
   cross: { main: 5, second: 2 },
+  boss: { tele: 1.6, weakMul: 0.6, breakPct: 0.035, stagger: 1.5 },   // Bosse 2.0: Vorwarnung (s), Schwachpunkt +60 %, Unterbrechen ab 3,5 % Max-KP Schaden, Taumeln (s)
   combo: { window: 1.4, steps: [10, 25, 50, 100, 200], coins: [15, 40, 100, 250, 600], cdr: [0, 1, 2, 3, 4], show: 5 },   // Combo: Kills in Folge (Zeitfenster s), Belohnung je Stufe, Fähigkeiten-Abklingzeit −s
   power: { cd: 1.5, bomb: 500, bombWave: 70, bombR: 2.4, gold: 250, goldWave: 25 },   // Kräfte (data/powers.js)
 

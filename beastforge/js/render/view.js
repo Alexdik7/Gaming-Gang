@@ -586,7 +586,15 @@ export class GameView {
         if (ev.e.boss || ev.e.miniboss) { const [x, z] = at(ev.e.x, ev.e.y); P.burst(x, 0.2, z, [0x3a1050, 0xff4a20, 0x1a0a20], 80, 3, 0.4, 1.4, { up: 2 }); this.rings.add(x, 0.05, z, 0.3, 3.5, 0xff4a20, 1.0); this.stage.addShake(0.8); }
         break;
       }
-      case 'bossPhase': { const [x, z] = at(ev.e.x, ev.e.y); this.rings.add(x, 0.06, z, 0.4, 5, 0xff3a20, 0.8); P.burst(x, 1.5, z, [0xff6a20, 0xffd27a], 60, 5, 0.3, 0.8); this.stage.addShake(1); this.stage.focus = new THREE.Vector3(x, 0, z); this.stage.zoomPunch = 0.8; break; }
+      case 'bossTele': {   // Vorwarnung: rote Zielkreise ziehen sich unter den Kreaturen zusammen, Warnlinie vom Boss, Schwachpunkt leuchtet
+        const [bx, bz] = at(ev.e.x, ev.e.y), by = (ev.e.h || 1) * 0.9;
+        this.floaters.add(bx, by + 1.2, bz, '◎ SCHWACHPUNKT!', 'crit', ev.dur);
+        for (let k = 0; k < 4; k++) this.after(k * ev.dur / 4, () => this.flashes.add(bx, by, bz, 0xffd257, 0.9, 0.25));
+        for (const t of ev.targets) { const [x, z] = at(t.x, t.y); for (let k = 0; k < 4; k++) this.after(k * ev.dur / 4, () => this.rings.add(x, 0.07, z, 0.9, 0.25, 0xff2a3a, ev.dur / 4, { alpha: 0.9 })); this.rings.add(x, 0.05, z, 0.55, 0.55, 0xff2a3a, ev.dur, { disc: true, alpha: 0.25 }); this.bolts.add([{ x: bx, y: by, z: bz }, { x, y: 0.5, z }], 0xff4a4a, 0.025, 0.25); }
+        break;
+      }
+      case 'bossStagger': { const [x, z] = at(ev.x, ev.y); this.floaters.add(x, 2.2, z, '💥 UNTERBROCHEN!', 'lvl', 1.6); P.burst(x, 1.2, z, [0xffd257, 0xffffff], 70, 5, 0.22, 0.8, { up: 1.5 }); this.rings.add(x, 0.07, z, 0.3, 3.2, 0xffd257, 0.6); this.flashSky = 0.4; this.stage.addShake(0.8); break; }
+      case 'bossPhase': { const [x, z] = at(ev.e.x, ev.e.y); this.darken = 1.3; this.pillars.add(x, z, 0.9, 8, 0xff3a20, 1.2); for (let i = 0; i < 12; i++) { const a = i / 12 * PI * 2; this.sparks.add(x, 0.08, z, Math.cos(a) * 9, 0.2, Math.sin(a) * 9, 0xff6a2a, 0.35, 0.06); } this.floaters.add(x, 2.6, z, 'PHASE ' + (ev.phase + 1), 'lvl', 1.6); this.rings.add(x, 0.06, z, 0.4, 5, 0xff3a20, 0.8); P.burst(x, 1.5, z, [0xff6a20, 0xffd27a], 60, 5, 0.3, 0.8); this.stage.addShake(1); this.stage.focus = new THREE.Vector3(x, 0, z); this.stage.zoomPunch = 0.8; break; }
       case 'bossFly': { const [x, z] = at(ev.e.x, ev.e.y); P.burst(x, 0.2, z, [0xc8b8a8, 0x8a7a6a], 40, 4, 0.3, 0.7, { flat: true }); break; }
       case 'breath': {
         const [bx, bz] = at(ev.e.x, ev.e.y), bc = ev.e.def.breathColor;

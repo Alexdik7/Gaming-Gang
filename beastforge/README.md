@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.45.0 – Elemente 2.0 (Vision P7)
+## Stand: v0.46.0 – Bosse 2.0 (Vision P8)
+**0.46:** Boss-Atem mit Vorwarnung: `updBoss` wählt Ziele, setzt `e.teleT = BAL.boss.tele` (1,6 s) und `e.teleIds`, Ereignis `bossTele` (rote, sich zusammenziehende Zielkreise unter den Kreaturen, Warnlinien, „◎ SCHWACHPUNKT!“, Hinweis beim ersten Mal); erst danach `breath`. Schwachpunkt: während `teleT` +60 % Schaden (`weakMul`); erreicht der Schaden `breakPct` (3,5 %) der Max-KP → Angriff abgebrochen, Boss taumelt `stagger` s (`bossStagger`: „💥 UNTERBROCHEN!“, Zeitlupe, Klang). Phasenwechsel: Verdunkelung, rote Säule, Bodenriss-Funken, „PHASE N“. Gilt für alle 9 Boss-Varianten.
+
+## Stand davor: v0.45.0 – Elemente 2.0 (Vision P7)
 **0.45:** 6 neue Reaktionen in `data/meta.js` (Höllenbrand fire+shadow, Reinigung light+spirit, Verderbnis astral+shadow, Seelenfrost ice+spirit, Sonnenglut fire+light, Sternfall astral+light) – jetzt 16, alle mit Symbol `icon`. Neue Wirkungen in `world.react`: `vuln` (Verwundbarkeit), `strip` (Schild/Wache brechen). **Kettenreaktion:** weitere Reaktion auf demselben Gegner innerhalb `BAL.elem.chainWin` (2,5 s) → `e.chainN`, +25 % je Glied (`chainMul`), Anzeige „CHAIN REACTION ×N“ mit Ring und kleinem Ruck, Statistik `chains`. Codex zählt die neuen Reaktionen automatisch mit.
 
 ## Stand davor: v0.44.0 – Ergebnis „Noch ein Run“ (Vision P10)

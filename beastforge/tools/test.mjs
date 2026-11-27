@@ -664,3 +664,21 @@ test('Elemente 2.0: neue Reaktionen, Verwundbarkeit, Schild brechen, Kettenreakt
   for (let i = 0; i < 60 * 3; i++) w.step(BAL.tick);
   w.react(e, REACTIONS['fire+ice'], 40, null); assert.equal(e.chainN, 1, 'Fenster abgelaufen → neue Kette');
 });
+
+test('Bosse 2.0: Vorwarnung vor dem Atem, Schwachpunkt, Unterbrechen', () => {
+  const mk = () => { const w = new World({ map: 'ahnenhain', diff: 'normal', loadout: ['kitsune'], seed: 4 }); w.coins = 1e5; return w; };
+  const prep = w => { const e = w.spawn('vharox'); e.hp = e.maxHp * 0.45; w.updBoss(e, 0); e.flyT = 0; e.flyCd = 99; e.breathCd = 0.01; const t = w.place('kitsune', e.x + 1.4, e.y); return { e, t }; };
+  // ohne Eingreifen: erst Vorwarnung, dann lahmgelegt
+  let w = mkp();
+  function mkp() { return mk(); }
+  let { e, t } = prep(w); if (!t.ok) { const p = w.suggestSpot('kitsune', 3); t = w.place('kitsune', ...p); e.x = t.tower.x - 1; e.y = t.tower.y; }
+  w.updBoss(e, 0.02); assert.ok(e.teleT > 0, 'Vorwarnung läuft'); assert.ok(w.events.some(x => x.t === 'bossTele'));
+  assert.ok(!(t.tower.disabledT > 0), 'noch nicht lahmgelegt');
+  w.updBoss(e, BAL.boss.tele + 0.01); assert.ok(t.tower.disabledT > 0, 'nach der Vorwarnung lahmgelegt');
+  // mit genug Schaden im Aufladen: unterbrochen
+  w = mk(); ({ e, t } = prep(w)); if (!t.ok) { const p = w.suggestSpot('kitsune', 3); t = w.place('kitsune', ...p); e.x = t.tower.x - 1; e.y = t.tower.y; }
+  w.updBoss(e, 0.02); assert.ok(e.teleT > 0);
+  const hp0 = e.hp; w.damage(e, e.maxHp * 0.03, 'astral', null); assert.ok(hp0 - e.hp > e.maxHp * 0.03 * 1.5, 'Schwachpunkt +60 %');
+  assert.equal(e.teleT, 0); assert.ok(e.stunT > 0); assert.ok(w.events.some(x => x.t === 'bossStagger'));
+  w.updBoss(e, 2); assert.ok(!(t.tower.disabledT > 0), 'Angriff fand nicht statt');
+});

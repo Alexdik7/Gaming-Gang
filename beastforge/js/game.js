@@ -311,6 +311,8 @@ export class Game {
       case 'evolve': this.slow(0.2, 0.9); this.hud.banner(e.form.name.toUpperCase(), 'Evolution!', 'evo'); this.hud.flash(0.5); break;
       case 'ability': this.slow(0.35, 0.45); if (e.id === 'judgement') this.hud.flash(0.6); break;
       case 'bossDie': this.slow(0.25, 1.4); this.hud.flash(0.8); break;
+      case 'bossTele': if (!this.teleTip) { this.teleTip = true; this.hud.tip('⚠ Der Boss lädt einen Angriff auf! <b>Schwachpunkt offen</b>: jetzt Fähigkeiten einsetzen – genug Schaden <b>unterbricht</b> ihn.', 4); } break;
+      case 'bossStagger': this.slow(0.35, 0.35); this.hud.flash(0.35, '#ffd257'); break;
       case 'kill': if (e.e.elite || e.e.miniboss) this.slow(0.35, 0.12); break;   // kurzer Treffer-Stopp für wichtige Kills
       case 'bossPhase': this.slow(0.4, 0.6); break;
       case 'upgrade': if (e.tier === 5) { this.slow(0.3, 0.6); this.hud.flash(0.35); } break;
@@ -344,6 +346,7 @@ export class Game {
       case 'ascend': A.play('ult'); setTimeout(() => A.play('tier5'), 500); setTimeout(() => A.play('evolve'), 1100); break;
       case 'evolve': A.play('evolve'); break; case 'sell': A.play('sell'); break; case 'rock': A.play('boom'); break;
       case 'wave': A.play('wave'); break; case 'waveEnd': A.play('waveEnd'); break;
+      case 'bossTele': A.play('bossWarn'); break; case 'bossStagger': A.play('tier5'); A.play('crit'); break;
       case 'bossWarn': A.play('bossWarn'); break; case 'bossPhase': A.play('roar'); break; case 'breath': A.play('breath'); break; case 'bossDie': A.play('roar'); break;
       case 'ability': A.play(['judgement', 'whirl', 'thunderfall', 'sanctuary'].includes(e.id) ? 'ult' : 'ability'); if (e.id === 'roar' || e.id === 'storm' || e.id === 'thunderfall') A.play('thunder'); break;
       case 'cone': A.play(e.type === 'fire' ? 'fire' : 'frost'); break; case 'slash': A.play('slash'); break; case 'heal2': A.play('levelup'); break;
