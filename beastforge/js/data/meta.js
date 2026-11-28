@@ -2,16 +2,23 @@
 
 // Reaktion: Gegner trägt Element-Mal A, Treffer mit Element B (Schlüssel alphabetisch sortiert)
 export const REACTIONS = {
-  'fire+lightning':   { name: 'Plasma',       color: '#ffb84d', aoe: 1.3, aoeMul: 0.6, desc: 'Explosion trifft Gegner in der Nähe.' },
-  'fire+spirit':      { name: 'Seelenfeuer',  color: '#7df3ff', burnMul: 3, desc: 'Starker Brand, der Panzer ignoriert.' },
-  'shadow+spirit':    { name: 'Seelenraub',   color: '#d07bff', bonus: 0.6, coins: 2, desc: '+60 % Schaden, +2 Münzen.' },
-  'earth+lightning':  { name: 'Magnetbruch',  color: '#ffe14d', brk: 4, desc: 'Panzer bricht für 4 s.' },
-  'earth+fire':       { name: 'Magma',        color: '#ff5a2a', bonus: 0.3, slow: [0.4, 2], desc: '+30 % Schaden, verlangsamt.' },
-  'light+shadow':     { name: 'Zwielicht',    color: '#fff2a8', bonus: 0.4, stun: 0.6, desc: '+40 % Schaden, betäubt kurz.' },
-  'lightning+spirit': { name: 'Geistblitz',   color: '#a9f6ff', aoe: 1.6, aoeMul: 0.4, desc: 'Blitz springt auf Nahe über.' },
-  'fire+ice':         { name: 'Dampfstoß',    color: '#e8f4ff', aoe: 1.4, aoeMul: 0.7, desc: 'Heißer Dampf explodiert.' },
-  'ice+lightning':    { name: 'Frostblitz',   color: '#bff4ff', bonus: 0.3, stun: 0.8, desc: '+30 % Schaden, erstarrt kurz.' },
-  'earth+ice':        { name: 'Gletscherbruch', color: '#d8f0ff', brk: 3, bonus: 0.2, desc: 'Panzer bricht, +20 % Schaden.' },
+  'fire+lightning':   { icon: '⚡', name: 'Plasma',       color: '#ffb84d', aoe: 1.3, aoeMul: 0.6, desc: 'Explosion trifft Gegner in der Nähe.' },
+  'fire+spirit':      { icon: '💠', name: 'Seelenfeuer',  color: '#7df3ff', burnMul: 3, desc: 'Starker Brand, der Panzer ignoriert.' },
+  'shadow+spirit':    { icon: '👻', name: 'Seelenraub',   color: '#d07bff', bonus: 0.6, coins: 2, desc: '+60 % Schaden, +2 Münzen.' },
+  'earth+lightning':  { icon: '🧲', name: 'Magnetbruch',  color: '#ffe14d', brk: 4, desc: 'Panzer bricht für 4 s.' },
+  'earth+fire':       { icon: '🌋', name: 'Magma',        color: '#ff5a2a', bonus: 0.3, slow: [0.4, 2], desc: '+30 % Schaden, verlangsamt.' },
+  'light+shadow':     { icon: '🌗', name: 'Zwielicht',    color: '#fff2a8', bonus: 0.4, stun: 0.6, desc: '+40 % Schaden, betäubt kurz.' },
+  'lightning+spirit': { icon: '🌩', name: 'Geistblitz',   color: '#a9f6ff', aoe: 1.6, aoeMul: 0.4, desc: 'Blitz springt auf Nahe über.' },
+  'fire+ice':         { icon: '♨', name: 'Dampfstoß',    color: '#e8f4ff', aoe: 1.4, aoeMul: 0.7, desc: 'Heißer Dampf explodiert.' },
+  'ice+lightning':    { icon: '❄', name: 'Frostblitz',   color: '#bff4ff', bonus: 0.3, stun: 0.8, desc: '+30 % Schaden, erstarrt kurz.' },
+  'earth+ice':        { icon: '🧊', name: 'Gletscherbruch', color: '#d8f0ff', brk: 3, bonus: 0.2, desc: 'Panzer bricht, +20 % Schaden.' },
+  // Elemente 2.0 (v0.45)
+  'fire+shadow':      { icon: '😈', name: 'Höllenbrand', color: '#ff3a6a', burnMul: 4, vuln: [0.2, 3], desc: 'Schwarzes Feuer brennt lange, Ziel nimmt +20 % Schaden.' },
+  'light+spirit':     { icon: '✨', name: 'Reinigung',   color: '#ffffff', strip: true, bonus: 0.5, desc: 'Bricht Schilde, +50 % Schaden.' },
+  'astral+shadow':    { icon: '🌑', name: 'Verderbnis',  color: '#7a4aff', vuln: [0.35, 4], desc: 'Ziel nimmt 4 s lang +35 % Schaden.' },
+  'ice+spirit':       { icon: '🌨', name: 'Seelenfrost', color: '#bfe8ff', slow: [0.55, 2.5], bonus: 0.2, desc: 'Starke Verlangsamung, +20 % Schaden.' },
+  'fire+light':       { icon: '☀', name: 'Sonnenglut',  color: '#ffd257', aoe: 1.5, aoeMul: 0.6, desc: 'Sonnen-Explosion trifft Gegner in der Nähe.' },
+  'astral+light':     { icon: '🌠', name: 'Sternfall',   color: '#c8d8ff', aoe: 2.0, aoeMul: 0.8, stun: 0.4, desc: 'Sterne schlagen ein und betäuben kurz.' },
 };
 
 // Synergien: zwei Kreaturen im Abstand ≤ BAL.run.synergyRange

@@ -26,7 +26,7 @@ export function defaultProfile() {
     seen: { intro: false, tips: {} },
     academy: { owned: {} },   // Shinobi-Akademie: erlernte Knoten
     powers: { ...START_POWERS },   // Kräfte-Vorrat (data/powers.js)
-    chests: 1, cos: { owned: {}, heart: 'default', pop: 'default' }, event: null,   // Truhen, Kosmetik, Wochen-Event (data/events.js)
+    chests: 1, cos: { owned: {}, heart: 'default', pop: 'default' }, event: null, codex: { seen: {}, claimed: 0 },   // Truhen, Kosmetik, Wochen-Event (data/events.js)
   };
 }
 

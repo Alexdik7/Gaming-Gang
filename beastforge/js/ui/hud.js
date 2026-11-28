@@ -4,10 +4,12 @@ import { BAL } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
 import { POWERS } from '../data/powers.js';
+import { megaDef } from '../data/megas.js';
+import { punch, shake, ring, flyTo } from './anim.js';
 import { MOD_NAMES } from '../data/waves.js';
 import { ENEMIES, BOSSES, ELEMENT_NAMES, ELEMENT_COLORS } from '../data/enemies.js';
 import { TARGETS, TARGET_NAMES } from '../sim/world.js';
-import { canTier } from '../sim/stats.js';
+import { canTier, baseStats } from '../sim/stats.js';
 import { charNeed, accNeed, nextFormByLevel, formAt } from '../meta/progression.js';
 import { portrait } from '../render/icons.js';
 import { appSize } from '../render/stage.js';
@@ -33,7 +35,7 @@ export class Hud {
     $('bEarly').onclick = () => this.early();
     this.buildTray(); this.updAcc();
     document.querySelector('.runbox .coop')?.remove();
-    if (game.net) { const c = document.createElement('div'); c.className = 'pill coop'; c.title = 'Geld deines Mitspielers'; c.innerHTML = `<span class="ic">🤝</span><b id="hMate">◈ 0</b>`; document.querySelector('.runbox').appendChild(c); document.querySelector('.runbox .coins')?.classList.add('p' + game.me); c.classList.add('p' + (1 - game.me)); }
+    if (game.net) { const c = document.createElement('div'), mh = game.coop?.heroes?.[1 - game.me]; c.className = 'pill coop mate'; c.id = 'hMateBox'; c.title = 'Dein Mitspieler: Held, Geld, Kreaturen'; c.innerHTML = `<span class="mport">${mh ? `<img src="${portrait(mh, { hlvl: 1 })}" alt="">` : '🤝'}<i class="mdot"></i></span><span class="mtx"><small>${game.me ? 'GASTGEBER' : 'MITSPIELER'}</small><b id="hMate">◈ 0</b></span><span class="mcnt" id="hMateN">0🐾</span>`; document.querySelector('.runbox').appendChild(c); document.querySelector('.runbox .coins')?.classList.add('p' + game.me); c.classList.add('p' + (1 - game.me)); }
     this.coachStep = this.P.seen.intro ? -1 : 0; this.coach();
     this.resizeObs = () => { this.insets(); this.coach(); }; addEventListener('resize', this.resizeObs); setTimeout(() => this.insets(), 0);
   }
@@ -88,8 +90,11 @@ export class Hud {
   update(dt) {
     const w = this.w;
     const coins = Math.floor(w.coins);
-    if (w.players > 1) { const mc = Math.floor(w.wallet[1 - this.g.me] || 0); if (mc !== this.last.mate) { this.last.mate = mc; const el = $('hMate'); if (el) el.textContent = '◈ ' + fmt(mc); } }
-    if (coins !== this.last.coins) { $('hCoins').textContent = fmt(coins); if (coins > (this.last.coins ?? 0)) { const p = $('hCoins').parentElement; p.classList.remove('bump'); void p.offsetWidth; p.classList.add('bump'); } this.last.coins = coins; }
+    if (w.players > 1) { const mc = Math.floor(w.wallet[1 - this.g.me] || 0); if (mc !== this.last.mate) { this.last.mate = mc; const el = $('hMate'); if (el) el.textContent = '◈ ' + fmt(mc); }
+      const mo = 1 - this.g.me, mn = w.towers.reduce((a, t) => a + ((t.owner || 0) === mo && !t.hero ? 1 : 0), 0), off = !this.g.net;
+      if (mn !== this.last.mateN || off !== this.last.mateOff) { this.last.mateN = mn; this.last.mateOff = off; const e2 = $('hMateN'); if (e2) e2.textContent = mn + '🐾'; $('hMateBox')?.classList.toggle('off', off); } }
+    if (coins !== this.last.coins) { $('hCoins').textContent = fmt(coins); if (coins > (this.last.coins ?? 0) && performance.now() - (this.punchT || 0) > 120) { this.punchT = performance.now(); punch($('hCoins').parentElement, 1.14, 220); } this.last.coins = coins; }
+    this.updCombo();
     if (w.lives !== this.last.lives) { $('hLives').textContent = w.lives; if (w.lives < (this.last.lives ?? 1e9)) { const p = $('hLives').parentElement; p.classList.remove('hurt'); void p.offsetWidth; p.classList.add('hurt'); } this.last.lives = w.lives; }
     const wl = `${Math.max(1, w.wave)}<small>/${w.maxWave === Infinity ? '∞' : w.maxWave}</small>`; if (wl !== this.last.wave) { $('hWave').innerHTML = wl; this.last.wave = wl; }
     this.updTray(); this.updAcc();
@@ -148,6 +153,55 @@ export class Hud {
       bar.classList.add('hidden'); this.g.usePower(id); this.updPowers();
     });
   }
+  // „Was du bekommst“: Wertänderung des nächsten Upgrades als Chips (gleiche Basis: baseStats ohne Buffs)
+  gains(t, nt, level, br) {
+    const a = baseStats({ ...t, tiers: t.tiers }, level, br), b = baseStats({ ...t, tiers: nt }, level, br), out = [];
+    const pct = (x, y) => Math.round((y / x - 1) * 100), num = (v, d = 1) => +v.toFixed(d);
+    if (b.dmg > a.dmg * 1.001) out.push(`⚔ ${num(a.dmg)}→${num(b.dmg)}`);
+    if (b.rate > a.rate * 1.001) out.push(`⏱ +${pct(a.rate, b.rate)} %`);
+    if (b.range > a.range + 0.01) out.push(`◎ +${num(b.range - a.range)}`);
+    if (b.pierce > a.pierce) out.push(`➹ +${b.pierce - a.pierce} Durchschlag`);
+    if (b.shots > a.shots) out.push(`✦ +${b.shots - a.shots} Geschoss`);
+    if (b.chain.n > a.chain.n) out.push(`⚡ +${b.chain.n - a.chain.n} Kette`);
+    if (b.crit.ch > a.crit.ch + 0.001) out.push(`✷ +${Math.round((b.crit.ch - a.crit.ch) * 100)} % Krit`);
+    if (b.burn.dps > a.burn.dps) out.push(`🔥 Brand ${num(b.burn.dps)}/s`);
+    if (b.slow.pct > a.slow.pct) out.push(`❄ −${Math.round(b.slow.pct * 100)} % Tempo`);
+    if (b.stun.ch > a.stun.ch) out.push(`💫 ${Math.round(b.stun.ch * 100)} % Betäubung`);
+    if (b.aoe > a.aoe + 0.01) out.push(`💥 Fläche +${num(b.aoe - a.aoe)}`);
+    if ((b.income || 0) > (a.income || 0)) out.push(`◈ +${Math.round(b.income - (a.income || 0))}/Welle`);
+    if ((b.pierceArmor || 0) > (a.pierceArmor || 0) + 0.001) out.push(`🛡 ignoriert ${Math.round(b.pierceArmor * 100)} % Panzer`);
+    if (b.camo && !a.camo) out.push('👁 erkennt Getarnte');
+    if (b.flying && !a.flying) out.push('🪽 trifft Fliegende');
+    if ((b.bossMul || 1) > (a.bossMul || 1) + 0.001) out.push(`👑 +${pct(a.bossMul || 1, b.bossMul)} % gegen Bosse`);
+    return out.length ? `<span class="gain2">${out.slice(0, 3).map(x => `<em>${x}</em>`).join('')}</span>` : '';
+  }
+  // Kauf-Moment: Knopf springt, Ring + Münzen fliegen zur Kreatur
+  upFx(t, p) {
+    const sp = this.g.view.screenPos(t.x, t.y, 0.6), pc = PATH_COLORS[p];
+    const btn = document.querySelector(`#panel [data-up="${p}"]`); punch(btn, 1.06, 200);
+    if (sp) { const fake = { getBoundingClientRect: () => ({ left: sp[0] - 20, top: sp[1] - 20, width: 40, height: 40 }), animate: true }; ring(fake, pc); const c = $('hCoins').parentElement.getBoundingClientRect(); flyTo(c.left + 30, c.top + 20, fake, '◈'); }
+  }
+  // Münzen fliegen vom besiegten Gegner zum Zähler (eigenes Geld, gedrosselt)
+  coinFly(e) {
+    const w = this.w; if (!e.coins || w.enemies.length > 120 || this.g.view.crowd) return;
+    if (w.players > 1 && (e.src?.owner ?? w.who) !== w.who) return;
+    const now = performance.now(); if (now - (this.flyT || 0) < 110) return; this.flyT = now;
+    const p = this.g.view.screenPos(e.x, e.y, 0.5); if (p) flyTo(p[0], p[1], $('hCoins').parentElement, '◈');
+  }
+  // Combo-Anzeige: wächst mit der Serie, Stufen knallen mit Bonus
+  updCombo() {
+    const n = this.w.over ? 0 : this.w.comboN, el = $('combo'), show = n >= BAL.combo.show;
+    if (n !== this.last.combo) {
+      this.last.combo = n;
+      if (show) { el.className = 'on c' + Math.min(4, Math.floor(Math.log2(n / 5 + 1))); el.innerHTML = `<small>COMBO</small><b>×${n}</b>${this.comboBonus ? `<i>+◈${fmt(this.comboBonus)}</i>` : ''}`; if (n % 5 === 0) punch(el, 1.12, 200); }
+      else if (el.classList.contains('on')) { el.classList.remove('on'); el.classList.add('off'); this.comboBonus = 0; }
+    }
+  }
+  comboPop(e) {
+    this.comboBonus = e.coins; this.last.combo = -1; this.updCombo(); punch($('combo'), 1.45, 420);
+    this.g.app.audio.play(e.step >= 2 ? 'tier5' : 'upgrade');
+    if (e.step >= 1) this.toast('syn', `🔥 COMBO ×${e.n}!`, `+◈${fmt(e.coins)}${BAL.combo.cdr[e.step] ? ` · Fähigkeiten −${BAL.combo.cdr[e.step]} s` : ''}`);
+  }
   updAbilities() {
     const list = [];
     for (const t of this.w.towers) if (this.w.mine(t)) for (const a of this.w.abilityInfo(t)) if (a.ready) list.push({ t, a });
@@ -167,7 +221,8 @@ export class Hud {
       const cd = el.dataset.slot === 'ab' ? t.abCd : t.ultCd, cdr = t.hero ? this.w.heroCdr(t) : 0;
       const p = cd > 0 ? cd / (info.cd * (1 - cdr)) * 100 : 0;
       el.querySelector('.cd').style.setProperty('--p', p + '%'); el.querySelector('.cd').textContent = cd > 0 ? Math.ceil(cd) : '';
-      el.classList.toggle('ready', cd <= 0);
+      const rdy = cd <= 0; if (rdy && el.dataset.r === '0') ring(el, el.classList.contains('ult') ? '#ffd257' : '#5fe6ff'); el.dataset.r = rdy ? '1' : '0';   // Bereit-Moment: Ring
+      el.classList.toggle('ready', rdy);
     });
   }
   icon(t, tiers) {
@@ -227,7 +282,7 @@ export class Hud {
           const img = this.icon(t, nt.map(x => Math.min(x, 4)));
           const poor = w.coins < w.upCost(next.cost);
           right = !chk.ok ? `<div class="up lock"><img src="${img}" alt=""><div><b>${esc(next.name)}</b><small>🔒 ${esc(chk.why)}</small></div></div>`
-            : `<button class="up ${poor ? 'poor' : ''}" data-up="${i}"><img src="${img}" alt=""><div><b>${esc(next.name)}</b><small>${esc(next.desc)}</small></div><span class="price">◈ ${fmt(w.upCost(next.cost))}</span></button>`;
+            : `<button class="up ${poor ? 'poor' : ''}" data-up="${i}"><img src="${img}" alt=""><div><b>${esc(next.name)}</b><small>${esc(next.desc)}</small>${this.gains(t, nt, c.level, br)}</div><span class="price">◈ ${fmt(w.upCost(next.cost))}</span></button>`;
         }
         return `<div class="prow2" style="--pc:${PATH_COLORS[i]}"><div class="pl"><b>${p.icon} ${esc(p.name)}</b><div class="pips">${pips}</div><small>${esc(cur)}</small></div>${right}</div>`;
       }).join('');
@@ -235,6 +290,10 @@ export class Hud {
       const ai = w.ascendInfo(t);
       const asc = ai ? (ai.ok ? `<button class="ascend" data-ascend><span class="aseal">⛩</span><div><b>Ahnenform erwecken</b><small>${esc(ai.name)} · Grad ${ai.grade} · verschmilzt ${ai.n} Kreaturen</small></div><span class="price">◈ ${fmt(ai.cost)}</span></button>`
         : `<div class="ascend off"><span class="aseal">⛩</span><div><b>Ahnenform</b><small>${esc(ai.why)} · ${ai.have.map((h, i) => (h ? '✓' : '✗') + ' ' + esc(def.paths[i].name)).join(' · ')}</small></div></div>`) : '';
+      const mi = w.megaInfo(t), md = mi && megaDef(t.cid, mi.p);
+      const mega = mi ? (mi.ok ? `<button class="megab" data-mega style="--mc:${['#ff6a2a', '#5fe6ff', '#b07bff'][mi.p]}"><span class="aseal">✦</span><div><b>MEGA: ${esc(md.name)}</b><small>${esc(md.desc)}</small></div><span class="price">◈ ${fmt(mi.cost)}</span></button>`
+        : `<div class="megab off" style="--mc:${['#ff6a2a', '#5fe6ff', '#b07bff'][mi.p]}"><span class="aseal">✦</span><div><b>MEGA: ${esc(md.name)}</b><small>${esc(mi.why)} · ☠ ${Math.min(mi.kills, mi.need)}/${mi.need}</small></div></div>`) : '';
+      if (t.mega != null) { const m2 = megaDef(t.cid, t.mega); title = m2.name.split(' · ')[0]; sub = (m2.fusion ? '✦ Mega-Fusion · ' : '✦ Mega-Form · ') + m2.kind.name; }
       if (t.ascended) { title = 'Ahnen-' + def.name; sub = '⛩ Ahnenform · Grad ' + t.ascended; }
       const fus = w.fuseOptions(t).map(o => o.ok
         ? `<button class="fuse" data-fuse="${o.f.id}" style="--fa:${o.def.color}"><img src="${portrait(o.f.id)}" alt=""><div><b>⚭ Fusion: ${esc(o.def.name)}</b><small>mit ${esc(CREATURES[o.other].name)} · ${esc(o.def.role)}</small></div><span class="price">◈ ${fmt(o.cost)}</span></button>`
@@ -243,7 +302,7 @@ export class Hud {
       const ab = w.abilityInfo(t).map(a => `<div class="abi ${a.ready ? 'on' : ''}"><b>${a.slot === 'ult' ? '★ ' : ''}${esc(a.name)}</b> <small>${a.ready ? (a.left > 0 ? Math.ceil(a.left) + ' s' : 'bereit') : '🔒 ' + esc(a.need)}</small></div>`).join('');
       body = `<div class="xpline"><b>${esc(def.name)} Lv ${c.level}</b><div class="bar"><u style="width:${c.level >= 50 ? 100 : c.xp / need * 100}%"></u></div><small>${c.level >= 50 ? 'MAX' : fmt(c.xp) + ' / ' + fmt(need) + ' XP'}${nx ? ' · ' + esc(nx.name) + ' bei Lv ' + nx.lvl : ''}</small></div>
         <div class="chips">${chips}${s.camo ? '<span>👁 Erkennung</span>' : ''}${!s.flying ? '<span class="warn">⛔ keine Fliegenden</span>' : ''}${t.disabledT > 0 ? '<span class="warn">🔥 Gestört!</span>' : ''}${t.pack > 1 ? `<span class="pack" title="Rudel-Bonus">🐾 Rudel ${t.pack} · <b>×${s.packMul.toFixed(2)}</b></span>` : ''}${def.fusion ? '<span class="fz">⚭ Fusion</span>' : ''}</div>${auraTxt}<!--main-->
-        ${t.ascended ? '' : evo}${asc}${fus ? `<div class="fuses">${fus}</div>` : ''}<div class="prows">${rows}</div>${ab ? `<div class="abis">${ab}</div>` : ''}`;
+        ${t.ascended ? '' : evo}${mega}${asc}${fus ? `<div class="fuses">${fus}</div>` : ''}<div class="prows">${rows}</div>${ab ? `<div class="abis">${ab}</div>` : ''}`;
     }
     const [info, main] = body.split('<!--main-->');
     el.innerHTML = `<div class="pinfo"><div class="ph"><img src="${this.icon(t)}" alt=""><div class="nm"><b>${esc(title)}</b><small>${sub}</small></div><button class="x" data-x>✕</button></div>${info}
@@ -255,7 +314,8 @@ export class Hud {
     el.querySelector('[data-x]').onclick = () => this.g.select(null);
     el.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const i = TARGETS.indexOf(t.target), n = TARGETS.length; this.g.cmd('setTarget', t.id, TARGETS[(i + +b.dataset.tg + n) % n]); this.g.app.audio.play('click'); this.refreshPanel(); });
     el.querySelector('[data-sell]').onclick = guard(() => this.confirm('Verkaufen?', `Du bekommst ◈${fmt(t.spent * BAL.run.sellRefund)} zurück. Die Charakter-XP bleiben erhalten.`, 'Verkaufen', () => { this.g.cmd('sell', t.id); this.g.select(null); }));
-    el.querySelectorAll('[data-up]').forEach(b => b.onclick = guard(() => { const r = this.g.cmd('upgrade', t.id, +b.dataset.up); if (!r.ok) this.err(r.why); else this.coachEvent('upgrade'); this.refreshPanel(); }));
+    el.querySelectorAll('[data-up]').forEach(b => b.onclick = guard(() => { const r = this.g.cmd('upgrade', t.id, +b.dataset.up); if (!r.ok) { this.err(r.why); shake(b, 4); } else { this.coachEvent('upgrade'); this.upFx(t, +b.dataset.up); } this.refreshPanel(); }));
+    el.querySelector('[data-mega]')?.addEventListener('click', guard(() => { const r = this.g.cmd('mega', t.id); if (!r.ok) this.err(r.why); else if (r.tower) this.g.select(r.tower); }));
     el.querySelector('[data-ascend]')?.addEventListener('click', guard(() => { const r = this.g.cmd('ascend', t.id); if (!r.ok) this.err(r.why); else if (r.tower) this.g.select(r.tower); }));
     el.querySelectorAll('[data-fuse]').forEach(b => b.onclick = guard(() => { const r = this.g.cmd('fuse', t.id, b.dataset.fuse); if (!r.ok) this.err(r.why); else if (r.tower) { this.g.select(r.tower); this.toast('evo', '⚭ Fusion gelungen!', CREATURES[r.tower.cid].name + ' ist erwacht'); } }));
     const ev = el.querySelector('[data-evo]'); if (ev) ev.onclick = guard(() => { const r = this.g.cmd('evolve', t.id); if (!r.ok) this.err(r.why); this.refreshPanel(); });
@@ -278,17 +338,21 @@ export class Hud {
       case 'bossWarn': this.banner('⚠ BOSS ⚠', BOSSES[e.boss]?.warn || 'Vharox erwacht', 'boss'); this.g.app.stage.addShake(0.5); break;
       case 'bossPhase': this.banner(e.name.toUpperCase(), e.desc, 'boss'); break;
       case 'bossDie': this.banner('BOSS BESIEGT!', (e.e?.def?.name || 'Vharox').split(',')[0] + ({ wolf: ' zerfällt zu Schnee', owl: ' verweht im Sturm' }[e.e?.def?.model] || ' fällt in die Tiefe'), 'evo'); break;
-      case 'waveEnd': this.toast('syn', `Welle ${e.wave} geschafft · +◈${fmt(e.bonus + e.income)}`, e.income ? `Wellenbonus ${fmt(e.bonus)} · Einkommen ${fmt(e.income)}` : ''); break;
+      case 'waveEnd': for (let i = 0; i < 5; i++) setTimeout(() => flyTo(innerWidth * (0.4 + Math.random() * 0.2), innerHeight * 0.45, $('hCoins').parentElement, '◈'), i * 70); this.toast('syn', `Welle ${e.wave} geschafft · +◈${fmt(e.bonus + e.income)}`, e.income ? `Wellenbonus ${fmt(e.bonus)} · Einkommen ${fmt(e.income)}` : ''); break;
       case 'synergy': this.toast('syn', '✦ Synergie: ' + e.sy.name, e.sy.desc); break;
       case 'say': this.bubble(e.tower, e.text); break;
       case 'heroLevel': if (e.milestone) this.toast('char', `${HEROES[e.tower.cid].name} Lv ${e.lvl}: ${e.milestone.name}`, e.milestone.desc); if (this.sel === e.tower) this.refreshPanel(); break;
       case 'evolve': if (this.sel === e.tower) this.refreshPanel(); this.coachEvent('evolve'); break;
-      case 'leak': this.flash(0.15, '#ff2040'); break;
+      case 'leak': { const v = $('vig'); v.getAnimations?.().forEach(a => a.cancel()); v.animate?.([{ opacity: e.e.boss ? 1 : 0.75 }, { opacity: 0 }], { duration: e.e.boss ? 900 : 550, easing: 'ease-out' }); shake($('hLives').parentElement, e.e.boss ? 9 : 5); break; }   // roter Rand + Herz wackelt
+      case 'kill': this.coinFly(e); break;
+      case 'combo': this.comboPop(e); break;
       case 'gust': this.banner('🌬 WINDBÖE', 'Bodengegner auf Brücken werden zurückgedrückt · Fliegende schneller', 'boss'); break;
       case 'upgrade': if (e.tier === 5) this.t5Splash(e); break;
       case 'ascend': this.ascendSplash(e); break;
       case 'storm': if (e.on) this.banner('❄ SCHNEESTURM ❄', 'Gegner langsamer · Eiskreaturen schneller · andere frieren', 'boss'); else this.toast('syn', 'Der Sturm legt sich', ''); break;
       case 'power': { const pw = POWERS.find(x => x.id === e.id); this.flash(e.id === 'bomb' ? 0.45 : 0.3, pw?.color || '#fff'); if (pw) this.banner(pw.icon + ' ' + pw.name.toUpperCase(), e.id === 'gold' ? '+◈' + e.coins : e.id === 'heal' ? '+' + e.lives + ' Leben' : '', 'evo'); this.updPowers(); break; }
+      case 'coopLink': this.toast('syn', '🔗 SEELENBAND!', `Eure Kreaturen nebeneinander: +${Math.round(BAL.coop.linkDmg * 100)} % Schaden, +${Math.round(BAL.coop.linkRate * 100)} % Tempo`); break;
+      case 'rushGold': setTimeout(() => { this.banner('💰 KRIEGSKASSE', '+◈' + fmt(e.coins) + ' – der nächste Boss naht', 'evo'); for (let i = 0; i < 8; i++) setTimeout(() => flyTo(innerWidth * (0.4 + Math.random() * 0.2), innerHeight * 0.4, $('hCoins').parentElement, '◈'), i * 60); }, 1400); break;
       case 'rebirth': this.flash(0.5, '#ffb43a'); this.banner('WIEDERGEBURT', 'Der Phönix schenkt dir ' + e.lives + ' Leben', 'evo'); break;
       case 'early': this.toast('syn', `+◈${e.coins} früh gerufen`, ''); break;
     }

@@ -8,12 +8,15 @@ import { Hud } from './ui/hud.js';
 import { BAL } from './config.js';
 import { CREATURES } from './data/creatures.js';
 import { MAPS } from './data/maps.js';
-import { academyFx } from './data/academy.js';
+import { academyFx, TRIAL, passTrial } from './data/academy.js';
+import { FLOOR, clearFloor } from './data/tower.js';
 import { CH, reversedMap } from './data/challenges.js';
 import { ensureDaily, dailyChallenge, DAILY_XP } from './data/daily.js';
 import { HEROES } from './data/heroes.js';
 import { POWER, givePowers, runPowerReward } from './data/powers.js';
-import { cosOf, ensureEvent } from './data/events.js';
+import { cosOf, ensureEvent, eventDef, winEventFight } from './data/events.js';
+import { discover, reactionKey, codexEntries } from './data/codex.js';
+import { megaDef } from './data/megas.js';
 import { addCharXp, addAccXp, addHeroRankXp, heroStartLevel, unlocked, unlockedCreatures, addMastery, checkAchievements, formsFor } from './meta/progression.js';
 import { saveProfile } from './meta/profile.js';
 import { worldHash } from './net.js';
@@ -23,10 +26,11 @@ export class Game {
     this.app = app; const P = this.P = app.profile;
     const S = coop?.setup || null; this.net = coop?.net || null; this.coop = S; const me = this.net && !this.net.host ? 1 : 0;   // Koop: gemeinsame Startwerte vom Gastgeber
     if (S) { map = S.map; diff = S.diff; ch = 'std'; }
-    this.mapId = map; this.diffKey = diff; this.ch = CH[ch] || ch === 'daily' ? ch : 'std'; this.music = MAPS[map]?.music || 'forest';
+    this.mapId = map; this.diffKey = diff; this.ch = CH[ch] || TRIAL[ch] || FLOOR[ch] || ch === 'daily' || ch === 'event' ? ch : 'std'; this.music = MAPS[map]?.music || 'forest';
     this.loadout = S ? S.loadout.slice() : unlockedCreatures(P);
     if (!this.loadout.length) this.loadout = ['kitsune'];
     this.heroId = S ? (S.heroes?.[me] ?? null) : unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
+    this.rec0 = { combo: P.stats.bestCombo || 0, kills: P.stats.bestKills || 0, coins: P.stats.bestCoins || 0, wave: P.maps[map]?.[diff] || 0 };   // Rekorde vor dem Run
     this.snap = { acc: { ...P.account }, chars: Object.fromEntries(Object.entries(P.chars).map(([k, c]) => [k, { level: c.level, xp: c.xp }])) };
     this.accGain = 0; this.charUps = []; this.accUps = []; this.achs = [];
     this.ac = academyFx(P); ensureEvent(P);   // Event-Woche vor dem Run festlegen, damit der Run mitzählt
@@ -43,7 +47,7 @@ export class Game {
       heroXp: (amt, t) => { if (this.heroId && t?.cid === this.heroId && (t.owner || 0) === me) addHeroRankXp(P, this.heroId, amt * 0.5); },   // nur der eigene Held bringt Rang-XP
       heroStart: (cid, who) => S ? (S.heroStarts?.[who] ?? 1) : Math.min(20, heroStartLevel(P.heroes[this.heroId]?.rank || 1) + (this.ac.heroLvl || 0)),
     };
-    const mods = S ? {} : this.ch === 'daily' ? Object.assign({}, ...dailyChallenge(P, id => unlocked(P, 'map', id)).mods.map(id => CH[id].mods)) : CH[this.ch].mods || {};
+    const mods = S ? {} : this.ch === 'daily' ? Object.assign({}, ...dailyChallenge(P, id => unlocked(P, 'map', id)).mods.map(id => CH[id].mods)) : TRIAL[this.ch] ? { ...TRIAL[this.ch].mods } : FLOOR[this.ch] ? { ...FLOOR[this.ch].mods } : this.ch === 'event' ? JSON.parse(JSON.stringify(eventDef(P).fight.mods)) : CH[this.ch].mods || {};
     this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, heroes: S ? S.heroes : undefined, hooks, academy: S ? S.ac : this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: S ? S.seed : (Date.now() % 1e6) | 0, players: S ? 2 : 1 });
     this.me = this.net && !this.net.host ? 1 : 0; this.world.who = this.me;   // Koop: Gastgeber = Spieler 0, Mitspieler = Spieler 1
     if (app.devGod && !S) this.world.god = true;
@@ -287,14 +291,30 @@ export class Game {
       this.endT -= dt; if (this.endT <= 0) { this.finished = true; this.finish(); }
     }
   }
+  // Codex: neue Entdeckung → kurzer Hinweis (gedrosselt, nicht im Massengefecht zugemüllt)
+  found(key) {
+    const en = (this.codexMap ||= Object.fromEntries(codexEntries().map(x => [x.key, x])))[key];
+    if (!en || !discover(this.P, key)) return false;
+    const now = performance.now(); if (en && now - (this.foundT || 0) > 1500) { this.foundT = now; this.hud.toast('syn', '📖 Neu im Codex', en.name); }
+    return true;
+  }
   slow(scale, sec) { if (!this.settings().shake && scale < 1) return; this.world.timeScale = scale; this.slowT = sec; }
   react(e) {
     switch (e.t) {
       case 'ascend': this.slow(0.2, 1.8); setTimeout(() => this.hud.flash(0.8, '#ffd257'), 1100); break;
-      case 'fuse': this.slow(0.25, 1.2); this.hud.banner(e.def.name.toUpperCase(), '⚭ Fusion!', 'evo'); setTimeout(() => this.hud.flash(0.6, e.def.color), 1000); break;
+      case 'mega': { const md = megaDef(e.tower.cid, e.p); this.found('m:' + md.id); this.slow(0.2, 1.5); setTimeout(() => { this.hud.banner(md.name.toUpperCase(), (md.fusion ? '✦ MEGA-FUSION · ' : '✦ MEGA-ENTWICKLUNG · ') + md.kind.name, 'evo'); this.hud.flash(0.7, ['#ff6a2a', '#5fe6ff', '#b07bff'][e.p]); }, 950); break; }
+      case 'fuse': this.found('f:' + e.def.id); this.slow(0.25, 1.2); this.hud.banner(e.def.name.toUpperCase(), '⚭ Fusion!', 'evo'); setTimeout(() => this.hud.flash(0.6, e.def.color), 1000); break;
+      case 'place': this.found((e.tower.hero ? 'h:' : 'c:') + e.tower.cid); break;
+      case 'kill': if (e.e.boss) this.found('b:' + e.e.kind); else this.found('e:' + e.e.kind); break;
+      case 'bossWarn': break;
+      case 'react': { const k = reactionKey(e.name); if (k) this.found('r:' + k); break; }
+      case 'synergy': this.found('s:' + e.sy.id); break;
       case 'evolve': this.slow(0.2, 0.9); this.hud.banner(e.form.name.toUpperCase(), 'Evolution!', 'evo'); this.hud.flash(0.5); break;
       case 'ability': this.slow(0.35, 0.45); if (e.id === 'judgement') this.hud.flash(0.6); break;
       case 'bossDie': this.slow(0.25, 1.4); this.hud.flash(0.8); break;
+      case 'bossTele': if (!this.teleTip) { this.teleTip = true; this.hud.tip('⚠ Der Boss lädt einen Angriff auf! <b>Schwachpunkt offen</b>: jetzt Fähigkeiten einsetzen – genug Schaden <b>unterbricht</b> ihn.', 4); } break;
+      case 'bossStagger': this.slow(0.35, 0.35); this.hud.flash(0.35, '#ffd257'); break;
+      case 'kill': if (e.e.elite || e.e.miniboss) this.slow(0.35, 0.12); break;   // kurzer Treffer-Stopp für wichtige Kills
       case 'bossPhase': this.slow(0.4, 0.6); break;
       case 'upgrade': if (e.tier === 5) { this.slow(0.3, 0.6); this.hud.flash(0.35); } break;
       case 'boss': this.app.audio.playSong('boss'); break;
@@ -310,6 +330,9 @@ export class Game {
   }
   sound(e) {
     const A = this.app.audio;
+    if (e.tower && !e.tower.hero && (e.t === 'shot' || e.t === 'pulse' || e.t === 'cone' || e.t === 'slash' || e.t === 'bolt' || e.t === 'mortar') && !e.extra) {   // Klangsignatur der Kreatur
+      const d = CREATURES[e.tower.cid]; A.voice(d?.fusion ? d.parents[0] : e.tower.cid, Math.max(...e.tower.tiers));
+    }
     switch (e.t) {
       case 'shot': { const k = e.tower.s?.proj || ''; A.play(e.special ? 'fire' : k.includes('fire') || k === 'foxfire' ? 'fire' : k === 'feather' ? 'feather' : k === 'leaf' || k === 'light' ? 'leaf' : k.includes('shuriken') ? 'shuriken' : 'kunai'); break; }
       case 'bolt': A.play('zap'); break; case 'pulse': A.play('pulse'); break; case 'mortar': A.play('mortar'); break;
@@ -320,9 +343,11 @@ export class Game {
       case 'upgrade': A.play(e.tier === 5 ? 'tier5' : 'upgrade', { tier: e.tier }); break;
       case 'rebirth': A.play('ult'); A.play('evolve'); break;
       case 'fuse': A.play('ult'); setTimeout(() => A.play('evolve'), 900); break;
+      case 'mega': A.play('ult'); setTimeout(() => A.play('tier5'), 700); setTimeout(() => A.play('evolve'), 1000); break;
       case 'ascend': A.play('ult'); setTimeout(() => A.play('tier5'), 500); setTimeout(() => A.play('evolve'), 1100); break;
       case 'evolve': A.play('evolve'); break; case 'sell': A.play('sell'); break; case 'rock': A.play('boom'); break;
       case 'wave': A.play('wave'); break; case 'waveEnd': A.play('waveEnd'); break;
+      case 'bossTele': A.play('bossWarn'); break; case 'megaAtk': A.play(['crit', 'freeze', 'tier5'][e.k] || 'crit'); break; case 'bossStagger': A.play('tier5'); A.play('crit'); break;
       case 'bossWarn': A.play('bossWarn'); break; case 'bossPhase': A.play('roar'); break; case 'breath': A.play('breath'); break; case 'bossDie': A.play('roar'); break;
       case 'ability': A.play(['judgement', 'whirl', 'thunderfall', 'sanctuary'].includes(e.id) ? 'ult' : 'ability'); if (e.id === 'roar' || e.id === 'storm' || e.id === 'thunderfall') A.play('thunder'); break;
       case 'cone': A.play(e.type === 'fire' ? 'fire' : 'frost'); break; case 'slash': A.play('slash'); break; case 'heal2': A.play('levelup'); break;
@@ -368,10 +393,24 @@ export class Game {
     if (d === 'endless') P.stats.bestEndless = Math.max(P.stats.bestEndless || 0, w.doneWave);
     const mp = P.maps[this.mapId] ||= { normal: 0, hard: 0, master: 0, endless: 0 };
     const firstClear = won && !(mp[d] >= w.maxWave);
+    // Persönliche Rekorde (Vision P10)
+    const R0 = this.rec0, records = [], bc = Math.max(w.bestCombo, w.comboN);
+    if (w.doneWave > R0.wave && R0.wave > 0) records.push(`Höchste Welle hier: ${w.doneWave}`);
+    if (bc > R0.combo && bc >= BAL.combo.show) records.push(`Beste Combo: ×${bc}`);
+    if (w.stats.kills > R0.kills && R0.kills > 0) records.push(`Meiste Kills in einem Run: ${w.stats.kills}`);
+    if (w.stats.coins > R0.coins && R0.coins > 0) records.push(`Meiste Münzen in einem Run: ◈${Math.round(w.stats.coins)}`);
+    if (w.mods.rush) { const nb = w.stats.bossKills || 0; if (nb > (P.stats.bestRush || 0)) { if (nb) records.push(`Boss-Rush: ${nb} Bosse besiegt`); P.stats.bestRush = nb; } }
+    P.stats.bestKills = Math.max(R0.kills, w.stats.kills); P.stats.bestCoins = Math.max(R0.coins, Math.round(w.stats.coins));
     let medal = null;
     let daily = false;
     let chests = won ? 1 : 0;   // Truhen: Sieg +1, Tageskampf +1
     if (won && this.ch === 'daily') { const D0 = ensureDaily(P); if (!D0.won) { D0.won = true; D0.sp = (D0.sp || 0) + 1; daily = true; chests++; this.giveAcc(DAILY_XP); } }
+    let trial = null;   // Meisterprüfung bestanden → Siegel + Truhe (Vision P9)
+    if (won && TRIAL[this.ch] && passTrial(P, this.ch)) { trial = TRIAL[this.ch]; chests++; this.giveAcc(BAL.acc.firstMapClear); }
+    let evWin = 0; if (won && this.ch === 'event') evWin = winEventFight(P);   // Event-Kampf: Truhen einmal pro Woche
+    let floor = null;   // Prüfungsturm: neue Etage → Truhe (+1 Shinobi-Punkt je 5 Etagen)
+    if (won && FLOOR[this.ch] && clearFloor(P, this.ch)) { floor = FLOOR[this.ch]; chests++; this.giveAcc(BAL.acc.firstMapClear); }
+    P.stats.staggers = (P.stats.staggers || 0) + (w.stats.staggers || 0);
     P.chests = (P.chests || 0) + chests; ensureEvent(P);
     if (won && CH[this.ch] && this.ch !== 'std') { mp.medals ||= {}; if (!mp.medals[this.ch]) { mp.medals[this.ch] = 1; medal = CH[this.ch]; this.giveAcc(BAL.acc.firstMapClear); } }
     mp[d] = Math.max(mp[d] || 0, w.doneWave);
@@ -399,9 +438,9 @@ export class Game {
     const hero = w.towers.find(t => t.hero && (t.owner || 0) === this.me);
     const res = ({
       won, perfect, firstClear, map: w.map.name, mapId: this.mapId, diff: D.name, diffKey: d, wave: w.doneWave, maxWave: w.maxWave, lives: w.lives, maxLives: w.maxLives,
-      kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves,
+      kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves, combo: Math.max(w.bestCombo, w.comboN),
       used, xp: w.stats.xp, winBonus, snap: this.snap, charUps: this.charUps, accGain: this.accGain, accUps: this.accUps, achs: this.achs, masteryUps,
-      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch], daily, powGot, chests,
+      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch], daily, powGot, chests, records, trial, floor, evWin, evName: this.ch === 'event' ? eventDef(P).name : null,
     });
     if (silent) return res;
     this.app.results(res);

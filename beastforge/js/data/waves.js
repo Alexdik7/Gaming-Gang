@@ -88,3 +88,14 @@ export function waveDef(w) {
 }
 
 export const MOD_NAMES = { fast: '⚡ Schnell', armored: '🛡 Gepanzert', regen: '✚ Regeneration', elite: '👑 Elite', camo: '👁 Getarnt' };
+
+// Boss-Rush (Vision P11): nur Bosse mit kleinem Gefolge, dazwischen Kriegskasse (BAL.rush)
+export const RUSH = [
+  { groups: [g('wolf', 14, 0.35), g('vharox', 1, 1, 3)], boss: 'vharox' },
+  { groups: [g('oni', 2, 5), g('hyoga', 1, 1, 4)], boss: 'hyoga' },
+  { groups: [g('wisp', 18, 0.3, 0, ['fast']), g('fujin', 1, 1, 3)], boss: 'fujin' },
+  { groups: [g('golem', 3, 3), g('vharox2', 1, 1, 6)], boss: 'vharox2', mods: ['elite'] },
+  { groups: [g('whale', 2, 5), g('hyoga2', 1, 1, 6)], boss: 'hyoga2' },
+  { groups: [g('oni', 3, 4, 0, ['elite']), g('fujin2', 1, 1, 6)], boss: 'fujin2' },
+];
+export const rushDef = n => RUSH[n - 1] || null;

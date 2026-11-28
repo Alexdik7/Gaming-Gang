@@ -5,7 +5,58 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.37.2 – Koop: jeder mit eigenem Helden
+## Stand: v0.54.0 – eigene Mega-Attacken (Vision P6 Teil 2)
+**0.54:** Jede Mega-Form (auch Mega-Fusionen) hat eine Spezialattacke im Takt (`world.megaAttack`, Zeitgeber `t.megaT`, läuft auch bei Unterstützern ohne Angriff): **A Zornschlag** (Explosion am stärksten Gegner, `zornMul` × Schaden, Radius `zornR`), **B Bannkreis** (alle Gegner in Reichweite betäubt/verlangsamt, Bosse kürzer), **C Klingensturm** (kritische Klingen auf die `klingeN` stärksten Gegner). Regler `BAL.run.megaAtk`, Ereignis `megaAtk` (view: Blitz + Explosion / Ringe + Funkenkreis / Klingenblitze, Schriftzug, Ton), Statistik `megaAtks`. `MEGA_KIND[].atk/atkDesc` erscheinen in der Mega-Beschreibung.
+
+## Stand davor: v0.53.0 – Events mit eigenen Regeln (Vision P10 Teil 3)
+**0.53:** Jedes Wochen-Event in `data/events.js` hat einen **Event-Kampf** (`fight`: Karte, Schwierigkeit, Regeltexte `rules`, Welt-Mods). Neue generische Mods in `world.js`: `addGroup` (Zusatzgruppe je Welle, optional `every`), `countMul` (mehr Gegner), `hpMul`, `speedMul`, `coinMul` (Münzen je Besiegtem), `reactMul` (Reaktionsschaden) – alles in `world.waveDef`/`spawn`/`kill`/`react`, deterministisch. Run-Kennung `ch = 'event'`, erster Sieg pro Woche → `winEventFight` (🎁×2, `P.event.won`). Karte im Truhen-Bildschirm (`.evf`); gesperrte Event-Karte → Ahnenhain. Tagesaufgaben: 7 neue (Fusion, Mega, Kettenreaktionen, Ultimates, Mini-Bosse, Boss unterbrechen, Synergien) → 19.
+
+## Stand davor: v0.52.0 – Mega-Fusionen (Vision P11 Teil 3)
+**0.52:** Fusionen können jetzt Mega werden: `megaDef` kennt Fusionen (`fusion: true`, eigene Namen `FUSE_NAMES` + Art, z. B. „Ur-Hydra · Zorn“), `ALL_MEGAS` = 48 + 36 (Codex-Reiter Mega zählt mit), `world.megaInfo` nimmt für Fusionen `BAL.run.megaFuse` (Kosten Fusionspreis × 7, 150 Besiegte, Charakter-Lv 25), `stats.js` gibt Mega-Fusionen zusätzlich ×1,3 Schaden, +0,25 Reichweite, +1 Durchschlag, ×1,15 Boss. Banner „✦ MEGA-FUSION“, Fenster-Unterzeile „Mega-Fusion · Art“.
+
+## Stand davor: v0.51.0 – Prüfungsturm (Vision P11 Teil 2)
+**0.51:** `data/tower.js`: `FLOORS` (10 Etagen mit Karte, Schwierigkeit, Wellenzahl `mods.waves` und Regeln aus vorhandenen Mods, Etage 10 = Boss-Rush), offen ab Konto-Lv `TOWER_LVL` 15 und nur der Reihe nach (`floorOpen`), Sieg → `clearFloor` (`P.tower.best`), Truhe je neuer Etage, alle 5 Etagen +1 Shinobi-Punkt (in `shinobiPoints`). Welt: `mods.waves` kürzt `maxWave`. Run-Kennung `ch = 'tower_<n>'`. Bildschirm `s_tower` (Hub-Kachel 🗼 Turm), Ergebnis-Zeile. Fix: Bonus-Kräfte aus Truhen nutzen den eigenen Zufall `rr` (Test war wackelig).
+
+## Stand davor: v0.50.0 – Truhen-Seltenheiten (Vision P10 Teil 2)
+**0.50:** `data/events.js`: `RARITY` (Gewöhnlich 58 %, Selten 27 %, Episch 11 %, Legendär 3,4 %, Mythisch 0,6 %), `rollRarity(x)`, `openChest(P, r, rr)` würfelt die Seltenheit getrennt (Typ-Wahl unverändert): mehr Kräfte/XP, ab Episch Bonus-Kräfte (`extra`), ab Legendär Shinobi-Punkte `P.chestSp` (zählt in `shinobiPoints`). Anzeige: Seltenheits-Schriftzug, Truhe/Leuchten in Seltenheitsfarbe, gleiche Kräfte als „×N“.
+
+## Stand davor: v0.49.0 – Koop-Extras (Vision P12)
+**0.49:** **Seelenband** in `world.refresh`: Kreaturen verschiedener Spieler im Abstand `BAL.coop.linkR` (2,2) → je +10 % Schaden, +6 % Tempo (nicht stapelnd), `world.coopLinks`, Ereignis `coopLink` (Hinweis beim ersten Mal), Funken in beiden Spielerfarben (view). **Spieler-Leiste** `#hMateBox`: Porträt des Mitspieler-Helden, Rolle, Geld `#hMate`, Kreaturen-Anzahl `#hMateN`, Status-Punkt (grau = getrennt). e2e `coop` prüft Seelenband + Leiste.
+
+## Stand davor: v0.48.0 – Boss-Rush (Vision P11 Teil 1)
+**0.48:** Herausforderung `rush` in `data/challenges.js` (frei nach Sieg auf Schwer, `endgame: true` → nicht im Tageskampf): `RUSH` in `data/waves.js` = 6 Bosswellen (Vharox, Hyōga, Fūjin, dann die Erwacht-Stufen) mit Gefolge; `world.waveDef(n)` nimmt im Rush `rushDef`, Karten-`mix` ist aus. `BAL.rush`: Start-Kasse 7500, 100 Leben, Boss-KP ×0,65, Kriegskasse nach jedem Boss (Ereignis `rushGold` → Banner + Münzflug). Rekord `P.stats.bestRush`. Balance-Bot: `RUSH=1 node tools/balance.mjs hard 30 4` (Lv 30 gewinnt, Lv 15 nicht).
+
+## Stand davor: v0.47.0 – Akademie 2.0 (Vision P9)
+**0.47:** `data/academy.js` erweitert: **Meisterprüfung** je Schule (`TRIALS`, offen ab Stufe `TRIAL_NEED` = 4; Start über `startRun(map, diff, 'trial_<schule>')`, `game.ch` → `TRIAL[ch].mods`), neue Regeln in der Welt `mods.physWeak` (Physisch −60 %), `lifeCap` (feste Leben), `noSell`. Sieg → `passTrial` = Siegel `P.academy.master[schule]` (+`TRIAL_SP` 2 Shinobi-Punkte, Truhe, bleibt beim Neuverteilen). **Spezialisierungen** `SPECS` (2 je Schule, eine aktiv `P.academy.spec[schule]`, `SPEC_COST` 2, Wechsel kostenlos) mit neuen Welt-Boni `critMul`, `chain`, `bounty`, `heroDmg`. **Geheime Knoten** `SECRETS` (als „?“ mit Hinweis, enthüllt durch Combo ×50, 40 Codex-Einträge, Mega-Form, 5 Boss-Unterbrechungen `P.stats.staggers`), Bonus `comboWin`. Bildschirm `s_academy`: Raute = Prüfung, Quadrate = Spezialisierungen, Reihe „✧ Geheime Knoten“.
+
+## Stand davor: v0.46.0 – Bosse 2.0 (Vision P8)
+**0.46:** Boss-Atem mit Vorwarnung: `updBoss` wählt Ziele, setzt `e.teleT = BAL.boss.tele` (1,6 s) und `e.teleIds`, Ereignis `bossTele` (rote, sich zusammenziehende Zielkreise unter den Kreaturen, Warnlinien, „◎ SCHWACHPUNKT!“, Hinweis beim ersten Mal); erst danach `breath`. Schwachpunkt: während `teleT` +60 % Schaden (`weakMul`); erreicht der Schaden `breakPct` (3,5 %) der Max-KP → Angriff abgebrochen, Boss taumelt `stagger` s (`bossStagger`: „💥 UNTERBROCHEN!“, Zeitlupe, Klang). Phasenwechsel: Verdunkelung, rote Säule, Bodenriss-Funken, „PHASE N“. Gilt für alle 9 Boss-Varianten.
+
+## Stand davor: v0.45.0 – Elemente 2.0 (Vision P7)
+**0.45:** 6 neue Reaktionen in `data/meta.js` (Höllenbrand fire+shadow, Reinigung light+spirit, Verderbnis astral+shadow, Seelenfrost ice+spirit, Sonnenglut fire+light, Sternfall astral+light) – jetzt 16, alle mit Symbol `icon`. Neue Wirkungen in `world.react`: `vuln` (Verwundbarkeit), `strip` (Schild/Wache brechen). **Kettenreaktion:** weitere Reaktion auf demselben Gegner innerhalb `BAL.elem.chainWin` (2,5 s) → `e.chainN`, +25 % je Glied (`chainMul`), Anzeige „CHAIN REACTION ×N“ mit Ring und kleinem Ruck, Statistik `chains`. Codex zählt die neuen Reaktionen automatisch mit.
+
+## Stand davor: v0.44.0 – Ergebnis „Noch ein Run“ (Vision P10)
+**0.44:** Ergebnis-Bildschirm: „🏅 NEUER REKORD“ (höchste Welle je Karte/Modus, beste Combo, meiste Kills, meiste Münzen; Stand vor dem Run in `game.rec0`, neu `P.stats.bestKills`/`bestCoins`), Abschnitt „🎯 Nächste Ziele“ (`menus.goals`: Konto-Level, nächste Form einer eingesetzten Kreatur, Codex-Truhe, Wochen-Event-Stufe) mit animierten Balken, Hauptknopf „▶ NOCH EIN RUN“ (pulsiert). Combo-Anzeige verschwindet bei Spielende.
+
+## Stand davor: v0.43.0 – Mega-Formen (Vision P6)
+**0.43:** `js/data/megas.js`: je Kreatur 3 Mega-Formen (A Zorn = Pfad 1, B Bann = Pfad 2, C Klinge = Pfad 3; eigene Namen für Kitsune/Tiger/Schildkröte/Phönix/Kirin, sonst „Mega-<Stufe-5-Name>“) = 48. `world.megaInfo(t)`/`mega(id)` (Befehl in `CMDS`): Stufe 5 auf einem Pfad + `BAL.run.mega.kills` (100) Besiegte im Run + Charakter-Lv 20, Kosten Kaufpreis × 14; schließt Ahnenform aus. Werte in `stats.baseStats` (`t.mega`). Optik: leuchtender Riesen-Geist der Kreatur in Pfadfarbe hinter ihr (`view.makeTower` → `spirit`, schlägt beim Angriff mit aus). Mega-Moment (`view.handle('mega')` + `game.react`): Zeitlupe, Dunkel, Energie strömt ein, Lichtsäule, Aura-Ringe, Name, Banner, Klangfolge. Upgrade-Fenster zeigt Mega-Knopf mit Fortschritt (☠ x/100). Codex-Reiter „Mega-Formen“.
+
+## Stand davor: v0.42.0 – Beastforge-Codex (Vision P5)
+**0.42:** `js/data/codex.js`: 87 Einträge (Kreaturen, Fusionen, Helden, Gegner, Bosse, Reaktionen, Synergien), Profil `P.codex = { seen, claimed }`, `discover`, alle 10 Entdeckungen 1 Truhe (`claimCodex`). Im Run entdeckt `game.found(key)` (Setzen, Kill, Boss-Kill, Reaktion, Synergie, Fusion) mit Hinweis „📖 Neu im Codex“. Bildschirm `menus.s_codex` (Hub-Kachel „Codex“ statt „Statistik“, Statistik als Knopf im Codex): Fortschritt, Reiter mit Zählern, Unentdecktes als schwarze Silhouette mit „???“ bzw. „??? + ???“, Reaktionen zeigen ihre Element-Farben als Hinweis.
+
+## Stand davor: v0.41.0 – Upgrade-Fenster: „Was du bekommst“ (Vision P4)
+**0.41:** Jeder Upgrade-Knopf zeigt bis zu 3 Wert-Chips (`hud.gains`: Schaden alt→neu, Tempo %, Reichweite, Durchschlag, Geschosse, Kette, Krit, Brand, Verlangsamung, Betäubung, Fläche, Einkommen, Panzer ignorieren, Getarnte/Fliegende, gegen Bosse; Vergleich `baseStats` mit aktuellen vs. nächsten Stufen). Kauf-Moment `hud.upFx`: Knopf springt, Ring in Pfadfarbe an der Kreatur, Münze fliegt vom Zähler zur Kreatur; zu wenig Geld = Knopf wackelt. Porträt im Fenster größer.
+
+## Stand davor: v0.40.0 – Audio 2.0 (Vision P3)
+**0.40:** Klangsignatur je Kreatur als leise Schicht über dem Angriffsklang (`audio.voice(cid, stufe)`, Tabelle `VOICE`: Kitsune Glöckchen, Tiger Donner-Wumms, Schildkröte Blubb, Kirin Glockenspiel, Mantis Klingen-Shing, Golem Felsschlag …; Fusion = Körper, höher je Stufe, gedrosselt). Prioritäten: `audio.admit` mit abklingender Last – bei Klangflut fallen Treffer/Plopp/Münze (`LOWPRIO`) weg, Boss/Ultimate/Entwicklung bleiben.
+
+## Stand davor: v0.39.0 – Kampfgefühl Teil 2 + HUD-Juice + Combo (Vision P1/P2)
+**0.39:** Geschoss-Spuren mit Pfad-Identität (`Projectiles.sync(…, fxOf)`: Pfad 1 Glut fällt, Pfad 2 Geist steigt, Pfad 3 Schattenrauch, Kreuzpfad-Akzent). Kill-Feedback: aufsteigende Seele, Elite = goldener Kranz + „★ ELITE“ + Treffer-Stopp (`game.react` → `slow`). `js/ui/anim.js` (Easings, `punch`, `shake`, `ring`, `flyTo` über Web Animations API). HUD: Münzen fliegen vom Gegner zum Zähler (gedrosselt, nur eigenes Geld), Zähler-Punch, roter Rand `#vig` + Herz-Wackeln bei Leck, Ring wenn Fähigkeit/Ultimate bereit wird, Wellenbonus-Münzregen. **Combo** in der Simulation (`world.comboHit/comboEnd`, `BAL.combo`: Fenster 1,4 s, Stufen ×10/25/50/100/200 → Münzen für jeden Spieler + Fähigkeiten-Abklingzeit −1…4 s), Anzeige `#combo` (Farbe/Größe je Stufe), Ergebnis „Beste Combo“, Statistik `bestCombo`. Fix: große Schadenszahl nutzte die Knopf-Klasse `.big` → `.fbig`.
+
+## Stand davor: v0.38.0 – Kampfgefühl, Teil 1 (Vision P1, siehe docs/VISION.md)
+**0.38:** `js/render/attackfx.js` (`AFX` je Kreatur: Grund-/Pfadfarben, Art der Energie-Sammlung `gather` flame/spark/swirl/dust/glint/leaf/smoke/star, Signatur `sig` foxfire/thunder/splash/quake; `afxFor(t)` mischt Farbe nach dominantem Pfad, zweiter Pfad = Akzent). `view.charge(v,t,dt)` liest `t.cd`: kurz vor dem Schuss Ladekugel am Maul, einströmende Partikel, Ausholen/Ducken + Zittern in `atkPose`; `view.release` beim Auslösen (Blitz, Funkenfächer, Signatur). Einschlag-Effekte je Element in `handle('hit')` mit Budget `fxBudget` je Bild; im Massenmodus/Qualität 0 reduziert. Simulation unverändert.
+
+## Stand davor: v0.37.2 – Koop: jeder mit eigenem Helden
 **0.37.2:** `world.heroIds[spieler]` (Option `heroes`, Solo `[hero]`), `isHeroId(cid)`; im Koop darf jeder nur seinen eigenen Helden setzen („Das ist der Held deines Mitspielers“, „Nur ein Held pro Spieler“), Startlevel je Spieler über `hooks.heroStart(cid, who)` / `setup.heroStarts`, Wellen- und Schadens-XP für alle Helden, Rang-XP nur für den eigenen (`hooks.heroXp(amt, t)`). Gast schickt Held + Startlevel im `hello`, Lobby zeigt beide Helden (`.cpheroes`).
 
 ## Stand davor: v0.37.1 – Koop: freies Spiel nach dem Sieg

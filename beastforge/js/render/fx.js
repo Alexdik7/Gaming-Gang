@@ -160,7 +160,7 @@ export class Projectiles {
       if (st.glow) { const h = new THREE.InstancedMesh(orbG, glow(st.trail, 0.35), 256); h.count = 0; h.frustumCulled = false; scene.add(h); this.meshes[k + ':h'] = h; }
     }
   }
-  sync(projs, toW, t, parts, quality) {
+  sync(projs, toW, t, parts, quality, fxOf = null) {
     for (const k in this.meshes) this.meshes[k].count = 0;
     for (const p of projs) {
       const k = PROJ_STYLE[p.kind] ? p.kind : 'kunai', st = PROJ_STYLE[k], m = this.meshes[k];
@@ -172,7 +172,16 @@ export class Projectiles {
       this.M.compose(this.V.set(x, y, z), this.Q, this.SC.set(s, s, s)); m.setMatrixAt(m.count++, this.M);
       const h = this.meshes[k + ':h'];
       if (h) { const hs = (st.orb ? 0.13 : 0.07) * st.s * (1 + Math.sin(t * 30 + p.id) * 0.1); this.M.compose(this.V.set(x, y, z), this.Q, this.SC.set(hs, hs, hs)); h.setMatrixAt(h.count++, this.M); }
-      if (quality > 0 && Math.random() < (st.orb ? 0.7 : 0.3)) parts.spawn(x, y, z, (Math.random() - 0.5) * 0.12, 0.08, (Math.random() - 0.5) * 0.12, st.trail, st.orb ? 0.1 * st.s : 0.05, 0.2, { drag: 4 });
+      if (quality <= 0) continue;
+      // Spur mit Pfad-Identität der Kreatur (attackfx.js): 1 Glut fällt · 2 Geist steigt auf · 3 Schattenrauch quillt; Kreuzpfad = Akzent
+      const F = fxOf?.(p), top = F?.top || 0, R = Math.random;
+      if (R() < (st.orb ? 0.7 : 0.3) * (1 + top * 0.18)) {
+        const col = top ? F.col : st.trail, sz = (st.orb ? 0.1 * st.s : 0.05) * (1 + top * 0.08);
+        if (!top || F.dom === 0) parts.spawn(x, y, z, (R() - 0.5) * 0.12, top ? -0.2 : 0.08, (R() - 0.5) * 0.12, col, sz, 0.2 + top * 0.03, { drag: 4 });
+        else if (F.dom === 1) parts.spawn(x, y, z, (R() - 0.5) * 0.08, 0.5, (R() - 0.5) * 0.08, col, sz * 1.2, 0.32, { drag: 2, grow: 0.4 });
+        else parts.spawn(x, y, z, (R() - 0.5) * 0.2, 0.05, (R() - 0.5) * 0.2, R() < 0.5 ? col : 0x2a2038, sz * 1.4, 0.3, { drag: 3, grow: 0.9 });
+        if (F?.accent && R() < 0.3) parts.spawn(x, y, z, (R() - 0.5) * 0.3, 0.1, (R() - 0.5) * 0.3, F.accent, sz * 0.7, 0.18, { drag: 3 });
+      }
     }
     for (const k in this.meshes) { const m = this.meshes[k]; m.visible = m.count > 0; m.instanceMatrix.needsUpdate = true; }
   }
@@ -187,7 +196,7 @@ export class Floaters {
   add(wx, wy, wz, text, cls = '', dur = 0.8) {
     let d = this.pool.pop();
     if (!d) { const old = this.live.shift(); if (!old) return; d = old.d; }
-    d.textContent = text; d.className = 'fl ' + cls; d.style.display = 'block';
+    d.textContent = text; d.className = 'fl ' + (cls === 'big' ? 'fbig' : cls);   // .big ist der grüne Knopf – eigener Name d.style.display = 'block';
     this.live.push({ d, p: new THREE.Vector3(wx, wy, wz), t: 0, dur, dx: (Math.random() - 0.5) * 20 });
   }
   update(dt, cam, w, h) {

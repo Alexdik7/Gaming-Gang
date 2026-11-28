@@ -6,7 +6,7 @@ import { CREATURES } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
 import { ENEMIES, BOSSES } from '../data/enemies.js';
 import { MAPS, PATH_HALF, raftPos } from '../data/maps.js';
-import { waveDef } from '../data/waves.js';
+import { waveDef as waveDef0, rushDef, RUSH } from '../data/waves.js';
 import { REACTIONS, SYNERGIES } from '../data/meta.js';
 import { baseStats, applyFx, canTier } from './stats.js';
 import { FUSE, fusionFor, fusionsWith } from '../data/fusions.js';
@@ -38,9 +38,12 @@ export class World {
     // Geldbörsen: Solo 1, Koop 2 (jeder verdient und zahlt selbst). `who` = wer gerade einen Befehl ausführt; die Simulation selbst liest `who` nie.
     this.players = o.players || 1; this.who = 0; this.wallet = Array(this.players).fill(this.diff.start + (this.ac.startCoins || 0)); this.lives = this.diff.lives + (this.ac.lives || 0); this.maxLives = this.lives;
     if (this.mods.soulburn) this.lives = this.maxLives = 1;
+    if (this.mods.lifeCap) this.lives = this.maxLives = this.mods.lifeCap;   // Meisterprüfung des Schreins
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
+    if (this.mods.waves) this.maxWave = Math.min(this.maxWave, this.mods.waves);   // Prüfungsturm: kürzere Etagen
+    if (this.mods.rush) { this.maxWave = RUSH.length; this.wallet.fill(BAL.rush.start + (this.ac.startCoins || 0)); this.lives = this.maxLives = BAL.rush.lives + (this.ac.lives || 0); }   // Boss-Rush
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
-    this.t = 0; this.tickN = 0; this.acc = 0; this.nid = 1; this.over = false; this.won = false; this.god = false;
+    this.t = 0; this.tickN = 0; this.acc = 0; this.nid = 1; this.comboN = 0; this.comboT = 0; this.bestCombo = 0; this.over = false; this.won = false; this.god = false;
     this.dirty = true; this.synergies = []; this.packs = []; this.boss = null; this.timeScale = 1;
     this.rafts = (this.map.rafts || []).map(r => ({ ...r, x: r.a[0], y: r.a[1] })); this.updRafts();
     const L = this.map.lava; this.vents = (this.map.vents || []).map(([x, y], i) => ({ x: x + 0.5, y: y + 0.5, cd: L.every * (0.45 + i * 0.22), warned: false }));
@@ -69,6 +72,21 @@ export class World {
   gain(c, to = null) {
     if (!(c > 0)) return; if (this.mods.halfCash) c *= 0.5; this.stats.coins += c;
     if (to != null && this.wallet[to] != null) this.wallet[to] += c; else for (let i = 0; i < this.players; i++) this.wallet[i] += c / this.players;
+  }
+  // Combo: Kills in Folge innerhalb von BAL.combo.window; Stufen geben Münzen (jeder Spieler voll) und kürzere Abklingzeiten
+  comboHit() {
+    const C = BAL.combo; this.comboN++; this.comboT = C.window + (this.ac.comboWin || 0);
+    const i = C.steps.indexOf(this.comboN);
+    if (i >= 0) {
+      const c = Math.round(C.coins[i] * (1 + this.wave * 0.03)); this.gain(c * this.players);
+      if (C.cdr[i]) for (const t of this.towers) { t.abCd = Math.max(0, t.abCd - C.cdr[i]); t.ultCd = Math.max(0, t.ultCd - C.cdr[i]); }
+      this.emit({ t: 'combo', n: this.comboN, coins: c, step: i });
+    }
+  }
+  comboEnd() {
+    const n = this.comboN; this.comboN = 0; this.comboT = 0;
+    if (n > this.bestCombo) { this.bestCombo = n; this.hooks.stat?.('bestCombo', n, true); }
+    if (n >= BAL.combo.show) this.emit({ t: 'comboEnd', n });
   }
   // Koop: eigene Kreaturen verwalten, fremde nur ansehen
   mine(t) { return !t || this.players < 2 || (t.owner || 0) === this.who; }
@@ -234,6 +252,7 @@ export class World {
   }
   sell(id) {
     if (this.mods.soulburn) return { ok: false, why: 'Seelenbrand: kein Verkaufen' };
+    if (this.mods.noSell) return { ok: false, why: 'Prüfung: kein Verkaufen' };
     const i = this.towers.findIndex(t => t.id === id); if (i < 0) return { ok: false };
     const t = this.towers[i]; if (!this.mine(t)) return { ok: false, why: 'Gehört deinem Mitspieler' };
     const v = Math.floor(t.spent * (BAL.run.sellRefund + (this.ac.sell || 0)));
@@ -245,7 +264,7 @@ export class World {
   knock(e, amt) { const a = Math.min(amt, BAL.run.knockCap - (e.kb || 0)); if (a <= 0) return; e.kb = (e.kb || 0) + a; e.d = Math.max(0, e.d - a); this.posAt(e.d, e, e.pi); }
   // ───────── Ahnenform: 3× Stufe 5 (je ein Pfad) derselben Kreatur verschmelzen ─────────
   ascendInfo(t) {
-    if (!t || t.hero || t.ascended || CREATURES[t.cid]?.fusion) return null;
+    if (!t || t.hero || t.ascended || t.mega != null || CREATURES[t.cid]?.fusion) return null;
     if (!this.mine(t)) return null;
     const same = this.towers.filter(o => o.cid === t.cid && !o.hero && (o.owner || 0) === (t.owner || 0)), def = CREATURES[t.cid];
     if (!same.some(o => o.tiers.includes(5))) return null;   // erst zeigen, wenn es eine Stufe 5 gibt
@@ -259,6 +278,26 @@ export class World {
     else if (this.mods.basic) why = 'Herausforderung: nur Grundformen';
     else if (this.coins < cost) why = 'Zu wenig Münzen';
     return { ok: !why, why, cost, grade, have, n: same.length, name: 'Ahnen-' + def.name };
+  }
+  // ───────── Mega-Form: Stufe 5 auf einem Pfad + Besiegte + Charakter-Level → einzigartige Endform ─────────
+  megaInfo(t) {
+    if (!t || t.hero || t.ascended || t.mega != null || !this.mine(t)) return null;
+    const p = t.tiers.indexOf(5); if (p < 0) return null;
+    const M = CREATURES[t.cid]?.fusion ? BAL.run.megaFuse : BAL.run.mega, cost = Math.round(CREATURES[t.cid].cost * M.cost), lvl = this.levelOf(t.cid);
+    let why = '';
+    if (lvl < M.lvl) why = `Ab Charakter-Lv ${M.lvl}`;
+    else if (t.kills < M.kills) why = `Noch ${M.kills - t.kills} Gegner besiegen`;
+    else if (this.mods.basic) why = 'Herausforderung: nur Grundformen';
+    else if (this.coins < cost) why = 'Zu wenig Münzen';
+    return { ok: !why, why, p, cost, kills: t.kills, need: M.kills, lvl };
+  }
+  mega(id) {
+    const t = this.tower(id), info = this.megaInfo(t); if (!info) return { ok: false, why: 'Nicht möglich' }; if (!info.ok) return { ok: false, why: info.why };
+    this.coins -= info.cost; t.spent += info.cost; t.mega = info.p; t.megaT = 2.5; t.abCd = 0; t.ultCd = 0;
+    this.stats.megas = (this.stats.megas || 0) + 1; this.hooks.stat?.('megas', 1);
+    this.dirty = true; this.refresh();
+    this.emit({ t: 'mega', tower: t, p: info.p });
+    return { ok: true, tower: t };
   }
   ascend(id) {
     const t = this.tower(id), info = this.ascendInfo(t); if (!info) return { ok: false, why: 'Nicht möglich' }; if (!info.ok) return { ok: false, why: info.why };
@@ -326,8 +365,8 @@ export class World {
     if (!this.canStartWave()) return { ok: false };
     if (this.enemies.length > 0 && this.wave > 0) { const b = BAL.run.earlyCall(this.wave); this.gain(b, this.who); this.emit({ t: 'early', coins: b }); }
     this.wave++;
-    let def = waveDef(this.wave);
-    const mx = this.map.mix?.(this.wave, def.groups); if (mx) def = { ...def, groups: mx.groups, tip: mx.tip || def.tip, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) };
+    let def = this.waveDef(this.wave);
+    const mx = !this.mods.rush && this.map.mix?.(this.wave, def.groups); if (mx) def = { ...def, groups: mx.groups, tip: mx.tip || def.tip, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) };
     for (const g of def.groups) this.spawners.push({ e: g.e, left: Math.round(g.n), gap: g.gap, t: g.delay, mods: g.mods || [], wave: this.wave });
     this.emit({ t: 'wave', wave: this.wave, def });
     if (def.boss) this.emit({ t: 'bossWarn', boss: def.boss });
@@ -358,7 +397,15 @@ export class World {
   }
   // Freies Spiel nach dem Sieg (auch im Koop als Befehl, damit beide Welten gleich bleiben)
   freeplay() { if (!this.over || !this.won) return { ok: false, why: 'Noch nicht gewonnen' }; this.over = false; this.won = false; this.maxWave = Infinity; return { ok: true }; }
-  peekWave() { const n = this.wave + 1; if (n > this.maxWave) return null; let def = waveDef(n); const mx = this.map.mix?.(n, def.groups); if (mx) def = { ...def, groups: mx.groups, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) }; return { n, def }; }
+  waveDef(n) {
+    const def = this.mods.rush ? rushDef(n) : waveDef0(n), M = this.mods;
+    if (!def || !(M.addGroup || M.countMul)) return def;
+    // Event-Regeln (data/events.js): zusätzliche Gruppen je Welle, mehr Gegner
+    const groups = def.groups.map(g => M.countMul ? { ...g, n: Math.max(1, Math.round(g.n * M.countMul)) } : g), A = M.addGroup;
+    if (A && (!A.every || n % A.every === 0)) groups.push({ e: A.e, n: Math.max(1, Math.floor(A.n0 + n * (A.per || 0))), gap: A.gap || 1.2, delay: A.delay ?? 2, mods: [] });
+    return { ...def, groups };
+  }
+  peekWave() { const n = this.wave + 1; if (n > this.maxWave) return null; let def = this.waveDef(n); const mx = !this.mods.rush && this.map.mix?.(n, def.groups); if (mx) def = { ...def, groups: mx.groups, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) }; return { n, def }; }
   waveRunning() { return this.spawners.length > 0 || this.enemies.length > 0; }
 
   spawn(kind, mods = [], d = 0, wave = this.wave, pi = null) {
@@ -366,12 +413,12 @@ export class World {
     const def = ENEMIES[kind] || BOSSES[kind]; if (!def) return null;
     const boss = !!def.boss, elite = mods.includes('elite');
     const scale = BAL.endlessScale(wave);
-    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * scale * (boss ? 1 : def.miniboss ? BAL.miniScale(wave) : BAL.hpScale(wave));
+    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * (this.mods.rush && boss ? BAL.rush.hp : 1) * (this.mods.hpMul || 1) * scale * (boss ? 1 : def.miniboss ? BAL.miniScale(wave) : BAL.hpScale(wave));
     if (elite) hp *= 2.2;
     const res = { ...(def.res || {}) };
     if (mods.includes('armored')) res.phys = Math.max(0.25, (res.phys ?? 1) * 0.6);
     const e = { id: this.nid++, kind, def, hp, maxHp: hp, d, x: 0, y: 0, ang: 0, r: def.r * (elite ? 1.2 : 1), h: def.h,
-      speed: def.speed * this.diff.speed * (mods.includes('fast') ? 1.3 : 1), slowPct: 0, slowT: 0, burnDps: 0, burnT: 0, burnSrc: null,
+      speed: def.speed * this.diff.speed * (mods.includes('fast') ? 1.3 : 1) * (this.mods.speedMul || 1), slowPct: 0, slowT: 0, burnDps: 0, burnT: 0, burnSrc: null,
       stunT: 0, shield: 0, flying: !!def.flying, camo: !!def.camo || mods.includes('camo'), elite, mods, res, dmgBy: {}, vuln: 0, vulnT: 0, revealT: 0, brkT: 0,
       elem: null, elemT: 0, reactT: 0, abT: 1 + this.rng() * 2, regen: mods.includes('regen') ? 0.02 : 0, wave, boss, miniboss: !!def.miniboss,
       guard: def.guard ? hp * def.guard.pct : 0, guardT: 0,
@@ -393,6 +440,7 @@ export class World {
   }
   step(dt) {
     this.t += dt; this.tickN++;   // Schrittzähler für Koop-Lockstep (net.js)
+    if (this.comboT > 0 && (this.comboT -= dt) <= 0) this.comboEnd();
     if (this.powCd > 0) this.powCd -= dt;
     for (const s of this.spawners) {
       s.t -= dt;
@@ -425,6 +473,7 @@ export class World {
     if (e.brkT > 0) e.brkT -= dt;
     if (e.elemT > 0 && (e.elemT -= dt) <= 0) e.elem = null;
     if (e.reactT > 0) e.reactT -= dt;
+    if (e.chainT > 0) e.chainT -= dt;
     if (e.cryT > 0) e.cryT -= dt;
     if (e.guardT > 0) e.guardT -= dt;
     if (e.burnT > 0) { e.burnT -= dt; this.damage(e, e.burnDps * dt, e.burnType || 'fire', e.burnSrc, { dot: true }); if (!e.alive) return; }
@@ -468,12 +517,17 @@ export class World {
     }
     if (e.phase >= 2 && e.flyT <= 0) {
       const b = def.phases[2].breath;
-      if ((e.breathCd -= dt) <= 0) {
+      if (e.teleT > 0) {   // Vorwarnung läuft → danach ausführen (falls nicht unterbrochen)
+        if ((e.teleT -= dt) <= 0) {
+          const ts = (e.teleIds || []).map(id => this.tower(id)).filter(t => t && !t.prot);
+          for (const t of ts) { t.disabledT = b.dur; t.disCol = def.breathColor || 0; }
+          e.teleIds = []; e.roarT = Math.max(e.roarT, 0.9);
+          this.emit({ t: 'breath', e, targets: ts });
+        }
+      } else if ((e.breathCd -= dt) <= 0) {
         e.breathCd = b.every;
         const ts = this.towers.filter(t => !t.prot).map(t => ({ t, d: Math.hypot(t.x - e.x, t.y - e.y) })).filter(o => o.d < 4).sort((a, c) => a.d - c.d).slice(0, b.n);
-        for (const o of ts) { o.t.disabledT = b.dur; o.t.disCol = def.breathColor || 0; }
-        e.roarT = Math.max(e.roarT, 0.9);
-        this.emit({ t: 'breath', e, targets: ts.map(o => o.t) });
+        if (ts.length) { e.teleIds = ts.map(o => o.t.id); e.teleT = BAL.boss.tele; e.weakDmg = 0; e.roarT = Math.max(e.roarT, BAL.boss.tele); this.emit({ t: 'bossTele', e, targets: ts.map(o => o.t), dur: BAL.boss.tele }); }
       }
     }
     if (e.phase >= 3) {
@@ -500,10 +554,12 @@ export class World {
     if (!e.alive || amount <= 0) return 0;
     const s = src?.s;
     let mul = type === 'astral' ? 1 : (e.res[type] ?? 1);
+    if (type === 'phys' && this.mods.physWeak) mul *= 1 - this.mods.physWeak;   // Prüfung der Elemente
     if (type === 'phys' && mul < 1) mul += (1 - mul) * Math.min(1, (s?.pierceArmor || 0) + (e.brkT > 0 ? 1 : 0));
     if (o.ignoreRes) mul = 1;
     let dmg = amount * mul * (o.mul || 1) * (src ? BAL.run.dmgMul : 1);
     if (e.vulnT > 0) dmg *= 1 + e.vuln;
+    if (e.teleT > 0) dmg *= 1 + BAL.boss.weakMul;   // Boss lädt auf: Schwachpunkt offen
     if (s && (e.boss || e.miniboss)) dmg *= s.bossMul;
     let crit = false;
     if (!o.dot && s && s.crit.ch > 0 && this.rng() < s.crit.ch) { dmg *= s.crit.mult; crit = true; this.stats.crits++; }
@@ -517,6 +573,10 @@ export class World {
     if (e.shield > 0) { const a = Math.min(e.shield, dmg); e.shield -= a; dmg -= a; if (dmg <= 0) { e.hitT = 0.08; return 0; } }
     const real = Math.min(e.hp, dmg);
     e.hp -= dmg; e.hitT = o.dot ? e.hitT : 0.09;
+    if (e.teleT > 0 && (e.weakDmg = (e.weakDmg || 0) + real) >= e.maxHp * BAL.boss.breakPct) {   // genug Schaden im Aufladen → Angriff unterbrochen, Boss taumelt
+      e.teleT = 0; e.teleIds = []; e.stunT = Math.max(e.stunT, BAL.boss.stagger); this.stats.staggers = (this.stats.staggers || 0) + 1;
+      this.emit({ t: 'bossStagger', e, x: e.x, y: e.y });
+    }
     if (src) {
       const k = src.cid; e.dmgBy[k] = (e.dmgBy[k] || 0) + real; src.dmg += real;
       this.stats.dmg[k] = (this.stats.dmg[k] || 0) + real;
@@ -536,9 +596,15 @@ export class World {
   }
   react(e, r, dmg, src) {
     e.reactT = BAL.elem.reactCd; this.stats.reactions++; this.hooks.stat?.('reactions', 1);
-    this.emit({ t: 'react', e, x: e.x, y: e.y, name: r.name, color: r.color });
-    const base = Math.max(6, dmg);
-    if (r.bonus) this.damage(e, base * r.bonus * (1 + (this.ac.react || 0)), 'astral', src, { noReact: true });
+    // Kettenreaktion: weitere Reaktion auf demselben Gegner innerhalb des Fensters verstärkt sich
+    e.chainN = e.chainT > 0 ? (e.chainN || 1) + 1 : 1; e.chainT = BAL.elem.chainWin;
+    const cm = 1 + (e.chainN - 1) * (BAL.elem.chainMul + (this.ac.chain || 0));
+    this.emit({ t: 'react', e, x: e.x, y: e.y, name: r.name, color: r.color, icon: r.icon, chain: e.chainN });
+    if (e.chainN >= 2) { this.stats.chains = (this.stats.chains || 0) + 1; this.hooks.stat?.('chains', 1); }
+    const base = Math.max(6, dmg) * cm;
+    if (r.vuln) { e.vuln = Math.max(e.vuln, r.vuln[0]); e.vulnT = Math.max(e.vulnT, r.vuln[1]); }
+    if (r.strip) { e.shield = 0; if (e.guard > 0) { e.guard = 0; this.emit({ t: 'guardBreak', e, x: e.x, y: e.y }); } }
+    if (r.bonus) this.damage(e, base * r.bonus * (1 + (this.ac.react || 0)) * (this.mods.reactMul || 1), 'astral', src, { noReact: true });
     if (r.brk) e.brkT = r.brk;
     if (r.slow) { e.slowPct = Math.max(e.slowPct, r.slow[0]); e.slowT = Math.max(e.slowT, r.slow[1]); }
     if (r.stun && !e.boss) e.stunT = Math.max(e.stunT, r.stun);
@@ -557,7 +623,8 @@ export class World {
   kill(e, src, over = 0, type = 'phys') {
     if (!e.alive) return; e.alive = false;
     const def = e.def;
-    const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul * BAL.lateCoins(e.wave || this.wave));
+    this.comboHit();
+    const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul * BAL.lateCoins(e.wave || this.wave) * (1 + (this.ac.bounty || 0)) * (this.mods.coinMul || 1));
     this.gain(coins, src?.owner);
     this.stats.kills++; this.hooks.stat?.('kills', 1);
     if (src) { src.kills++; if (src.s?.bounty) this.gain(src.s.bounty, src.owner); }
@@ -621,7 +688,7 @@ export class World {
     for (const t of this.towers) {
       const s = t.s = t.hero ? baseStats(t) : baseStats(t, this.levelOf(t.cid), this.branchOf(t.cid));
       s.dmg *= (1 + (A.dmg || 0)) * (s.dmgType && s.dmgType !== 'phys' ? 1 + (A.elem || 0) : 1); s.rate *= 1 + (A.rate || 0); s.range *= 1 + (A.range || 0);
-      if (A.crit) s.crit.ch += A.crit; if (A.boss) s.bossMul *= 1 + A.boss;
+      if (A.crit) s.crit.ch += A.crit; if (A.critMul) s.crit.mult *= 1 + A.critMul; if (A.heroDmg && t.hero) s.dmg *= 1 + A.heroDmg; if (A.boss) s.bossMul *= 1 + A.boss;
       if (A.burn) s.burn.dps *= 1 + A.burn; if (A.slow) s.slow.pct = Math.min(0.85, s.slow.pct * (1 + A.slow));
       if (A.income && s.income) s.income *= 1 + A.income;
       if (this.mods.soulburn) { s.income = 0; s.interest = 0; s.lucky = 0; }
@@ -645,6 +712,14 @@ export class World {
       for (let i = 0; i < grp.length; i++) for (const o of this.towers) if (o !== grp[i] && Math.hypot(o.x - grp[i].x, o.y - grp[i].y) <= PR) { if (!seen.has(o)) { seen.add(o); grp.push(o); } if (grp[i].id < o.id) links.push([grp[i], o]); }
       for (const t of grp) t.pack = grp.length;
       if (grp.length > 1) this.packs.push({ grp, links });
+    }
+    // Koop-Seelenband (Vision P12): Kreaturen verschiedener Spieler in Reichweite stärken sich (nicht stapelnd)
+    this.coopLinks = [];
+    if (this.players > 1) {
+      const C = BAL.coop;
+      for (const a of this.towers) for (const b of this.towers) if (a.id < b.id && (a.owner || 0) !== (b.owner || 0) && Math.hypot(a.x - b.x, a.y - b.y) <= C.linkR) { this.coopLinks.push([a, b]); a.linked = b.linked = true; }
+      for (const t of this.towers) if (t.linked) { t.s.dmg *= 1 + C.linkDmg; t.s.rate *= 1 + C.linkRate; t.s.coopLink = true; t.linked = false; }
+      if (this.coopLinks.length && !this.stats.linkSeen) { this.stats.linkSeen = true; this.emit({ t: 'coopLink' }); }
     }
     for (const t of this.towers) if (t.pack > 1) { const k = t.pack - 1, s = t.s; s.packMul = Math.pow(1 + BAL.run.packDmg, k); s.dmg *= s.packMul; s.rate *= Math.pow(1 + BAL.run.packRate, k); }
     // Auren: pro Wert gilt die stärkste Quelle (kein Stapeln)
@@ -726,6 +801,7 @@ export class World {
         this.emit({ t: 'mortar', tower: t });
       } else t.mcd = 0.2;
     }
+    if (t.mega != null && (t.megaT = (t.megaT ?? 2) - dt) <= 0) this.megaAttack(t);   // eigene Mega-Attacke (auch für Unterstützer)
     if (s.atk === 'none') return;
     t.cd -= dt;
     if (t.cd > 0) return;
@@ -738,6 +814,25 @@ export class World {
     this.attack(t, tgt, 0, 0);
     if (s.multi > 0 && this.rng() < s.multi) this.attack(t, tgt, 0, 0, true);
     if (t.clonesT > 0) for (let i = 0; i < 3; i++) { const a = i * 2.1 + this.t; this.attack(t, tgt, Math.cos(a) * 0.9, Math.sin(a) * 0.9, true); }
+  }
+  // Mega-Spezialattacke je Art (data/megas.js MEGA_KIND.atk): A Zornschlag (Explosion am Stärksten), B Bannkreis (Bann um die Kreatur), C Klingensturm (die Stärksten auf einmal)
+  megaAttack(t) {
+    const s = t.s, M = BAL.run.megaAtk, k = t.mega, base = Math.max(s.dmg, 20), inR = e => e.alive && this.canSee(s, e) && Math.hypot(e.x - t.x, e.y - t.y) <= s.range;
+    const foes = this.enemies.filter(inR); if (!foes.length) { t.megaT = 0.3; return; }
+    t.megaT = M.cd[k];
+    if (k === 0) {
+      const c = this.pick(t, s.range, 'strong') || foes[0], x = c.x, y = c.y;
+      for (const e of this.enemies) if (e.alive && Math.hypot(e.x - x, e.y - y) <= M.zornR) this.damage(e, base * M.zornMul, s.dmgType || 'phys', t, { big: true });
+      this.emit({ t: 'megaAtk', k, tower: t, x, y, r: M.zornR });
+    } else if (k === 1) {
+      for (const e of foes) { this.damage(e, base * M.bannMul, s.dmgType || 'spirit', t); if (e.alive) { e.stunT = Math.max(e.stunT, e.boss ? M.bannBoss : M.bannStun); e.slowPct = Math.max(e.slowPct, 0.5); e.slowT = Math.max(e.slowT, 3); } }
+      this.emit({ t: 'megaAtk', k, tower: t, x: t.x, y: t.y, r: s.range });
+    } else {
+      const hit = foes.sort((a, b) => b.hp - a.hp || a.id - b.id).slice(0, M.klingeN).map(e => ({ x: e.x, y: e.y, e }));
+      for (const h of hit) this.damage(h.e, base * M.klingeMul * Math.max(1, s.crit.mult), s.dmgType || 'phys', t, { big: true });
+      this.emit({ t: 'megaAtk', k, tower: t, x: t.x, y: t.y, pts: hit.map(h => ({ x: h.x, y: h.y })) });
+    }
+    this.stats.megaAtks = (this.stats.megaAtks || 0) + 1;
   }
   attack(t, tgt, ox, oy, extra) {
     const s = t.s, x = t.x + ox, y = t.y + oy;
@@ -1105,6 +1200,7 @@ export class World {
       let income = 0, heal = 0; const inc = Array(this.players).fill(0);   // Einkommen + Zinsen gehören dem Besitzer der Kreatur
       for (const t of this.towers) { const o = t.owner || 0; let v = t.s?.income || 0; heal += t.s?.lifeRegen || 0; if (t.s?.interest) v += Math.min(t.s.icap, Math.floor(this.wallet[o] * t.s.interest)); inc[o] += v; income += v; }
       if (heal && this.lives < this.maxLives) { this.lives = Math.min(this.maxLives, this.lives + heal); this.emit({ t: 'heal2', lives: heal }); }
+      if (this.mods.rush && BAL.rush.gold[w - 1]) { this.gain(BAL.rush.gold[w - 1] * this.players); this.emit({ t: 'rushGold', coins: BAL.rush.gold[w - 1] }); }
       this.gain(bonus * this.players); inc.forEach((v, i) => this.gain(v, i)); this.stats.income += income; if (income) this.hooks.stat?.('income', income);
       const used = new Set(this.towers.filter(t => !t.hero).map(t => t.cid));
       for (const cid of used) this.charXp(cid, BAL.char.survive(w));

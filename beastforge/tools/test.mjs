@@ -611,3 +611,189 @@ test('Koop: jeder Spieler setzt seinen eigenen Helden', () => {
   // Solo: weiterhin nur ein Held
   const s = new World({ map: 'ahnenhain', diff: 'normal', hero: 'kairo', seed: 3 }); s.coins = 9000; assert.ok(s.place('kairo', ...s.suggestSpot('kairo', 3)).ok); assert.equal(s.canPlace('kairo', ...s.suggestSpot('kitsune', 3)).why, 'Nur ein Held pro Run');
 });
+
+test('Combo: Kills in Folge geben Stufen-Bonus und enden nach dem Zeitfenster', () => {
+  const w = new World({ map: 'ahnenhain', diff: 'normal', seed: 5 });
+  const c0 = w.coins, C = BAL.combo;
+  for (let i = 0; i < 10; i++) { const e = w.spawn('slime'); w.kill(e, null); }
+  assert.equal(w.comboN, 10); const ev = w.events.find(x => x.t === 'combo'); assert.ok(ev && ev.n === 10);
+  assert.ok(w.coins >= c0 + C.coins[0], 'Stufen-Bonus gezahlt');
+  for (let i = 0; i < 60 * 2; i++) w.step(BAL.tick);
+  assert.equal(w.comboN, 0); assert.equal(w.bestCombo, 10); assert.ok(w.events.some(x => x.t === 'comboEnd' && x.n === 10));
+  // Koop: Bonus für jeden Spieler voll
+  const k = new World({ map: 'ahnenhain', diff: 'normal', seed: 5, players: 2 }), s0 = [...k.wallet];
+  for (let i = 0; i < 10; i++) k.kill(k.spawn('slime'), null);
+  const bonus = Math.round(C.coins[0] * (1 + k.wave * 0.03));
+  assert.ok(k.wallet[0] - s0[0] >= bonus && k.wallet[1] - s0[1] >= bonus);
+});
+
+test('Codex: Entdecken, Zählen, Truhe je 10 Einträge, alte Spielstände', async () => {
+  const cx = await import('../js/data/codex.js');
+  const P = defaultProfile(); const all = cx.codexEntries();
+  assert.ok(all.length >= 70 && new Set(all.map(x => x.key)).size === all.length, 'eindeutige Schlüssel');
+  assert.equal(cx.discover(P, 'c:kitsune'), true); assert.equal(cx.discover(P, 'c:kitsune'), false);
+  for (const x of all.slice(0, 21)) cx.discover(P, x.key);
+  assert.equal(cx.codexClaimable(P), 2); const ch = P.chests; assert.equal(cx.claimCodex(P), 2); assert.equal(P.chests, ch + 2); assert.equal(cx.codexClaimable(P), 0);
+  assert.equal(cx.reactionKey('Plasma'), 'fire+lightning');
+  const old = defaultProfile(); delete old.codex; assert.deepEqual(migrate(old).codex, { seen: {}, claimed: 0 });
+});
+
+test('Mega-Form: Bedingungen, Kosten, Werte, nur eine je Kreatur', async () => {
+  const { megaDef, ALL_MEGAS } = await import('../js/data/megas.js');
+  assert.equal(ALL_MEGAS().length, 48 + 36); assert.equal(megaDef('kitsune', 0).name, 'Amaterasu-Kitsune');
+  const { w } = mkWorld(defaultProfile(), { hooks: { level: () => 25 } }); w.coins = 1e6;
+  const t = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower;
+  assert.equal(w.megaInfo(t), null, 'ohne Stufe 5 kein Angebot');
+  for (let i = 0; i < 5; i++) w.upgrade(t.id, 0);
+  assert.match(w.megaInfo(t).why, /Gegner besiegen/);
+  t.kills = BAL.run.mega.kills; const d0 = t.s.dmg, c0 = w.coins;
+  const r = w.mega(t.id); assert.ok(r.ok, r.why); assert.equal(t.mega, 0); assert.ok(t.s.dmg > d0 * 2, 'Zorn: viel mehr Schaden');
+  assert.equal(c0 - w.coins, Math.round(CREATURES.kitsune.cost * BAL.run.mega.cost));
+  assert.equal(w.megaInfo(t), null, 'nur einmal'); assert.equal(w.ascendInfo(t), null, 'Mega schließt Ahnenform aus');
+  const low = mkWorld(defaultProfile(), { hooks: { level: () => 5 } }).w; low.coins = 1e6; const u = low.place('kitsune', ...low.suggestSpot('kitsune', 3)).tower; for (let i = 0; i < 5; i++) low.upgrade(u.id, 1); u.kills = 999;
+  assert.match(low.megaInfo(u).why, /Charakter-Lv/);
+});
+
+test('Elemente 2.0: neue Reaktionen, Verwundbarkeit, Schild brechen, Kettenreaktion', async () => {
+  const { REACTIONS } = await import('../js/data/meta.js');
+  assert.ok(Object.keys(REACTIONS).length >= 16 && Object.values(REACTIONS).every(r => r.icon && r.name && r.desc));
+  const w = new World({ map: 'ahnenhain', diff: 'normal', seed: 2 });
+  const e = w.spawn('golem'); e.shield = 50; e.hp = e.maxHp = 1e6;
+  w.react(e, REACTIONS['light+spirit'], 40, null); assert.equal(e.shield, 0, 'Reinigung bricht Schild');
+  w.react(e, REACTIONS['astral+shadow'], 40, null); assert.ok(e.vuln >= 0.35 && e.vulnT > 0); assert.equal(e.chainN, 2, 'zweite Reaktion = Kette');
+  for (let i = 0; i < 60 * 3; i++) w.step(BAL.tick);
+  w.react(e, REACTIONS['fire+ice'], 40, null); assert.equal(e.chainN, 1, 'Fenster abgelaufen → neue Kette');
+});
+
+test('Bosse 2.0: Vorwarnung vor dem Atem, Schwachpunkt, Unterbrechen', () => {
+  const mk = () => { const w = new World({ map: 'ahnenhain', diff: 'normal', loadout: ['kitsune'], seed: 4 }); w.coins = 1e5; return w; };
+  const prep = w => { const e = w.spawn('vharox'); e.hp = e.maxHp * 0.45; w.updBoss(e, 0); e.flyT = 0; e.flyCd = 99; e.breathCd = 0.01; const t = w.place('kitsune', e.x + 1.4, e.y); return { e, t }; };
+  // ohne Eingreifen: erst Vorwarnung, dann lahmgelegt
+  let w = mkp();
+  function mkp() { return mk(); }
+  let { e, t } = prep(w); if (!t.ok) { const p = w.suggestSpot('kitsune', 3); t = w.place('kitsune', ...p); e.x = t.tower.x - 1; e.y = t.tower.y; }
+  w.updBoss(e, 0.02); assert.ok(e.teleT > 0, 'Vorwarnung läuft'); assert.ok(w.events.some(x => x.t === 'bossTele'));
+  assert.ok(!(t.tower.disabledT > 0), 'noch nicht lahmgelegt');
+  w.updBoss(e, BAL.boss.tele + 0.01); assert.ok(t.tower.disabledT > 0, 'nach der Vorwarnung lahmgelegt');
+  // mit genug Schaden im Aufladen: unterbrochen
+  w = mk(); ({ e, t } = prep(w)); if (!t.ok) { const p = w.suggestSpot('kitsune', 3); t = w.place('kitsune', ...p); e.x = t.tower.x - 1; e.y = t.tower.y; }
+  w.updBoss(e, 0.02); assert.ok(e.teleT > 0);
+  const hp0 = e.hp; w.damage(e, e.maxHp * 0.03, 'astral', null); assert.ok(hp0 - e.hp > e.maxHp * 0.03 * 1.5, 'Schwachpunkt +60 %');
+  assert.equal(e.teleT, 0); assert.ok(e.stunT > 0); assert.ok(w.events.some(x => x.t === 'bossStagger'));
+  w.updBoss(e, 2); assert.ok(!(t.tower.disabledT > 0), 'Angriff fand nicht statt');
+});
+
+test('Akademie 2.0: Meisterprüfung, Spezialisierung, geheime Knoten, Prüfungs-Regeln', async () => {
+  const A = await import('../js/data/academy.js');
+  const P = defaultProfile(); P.account.level = 30;
+  const t = A.TRIAL.trial_kampf;
+  assert.equal(A.trialOpen(P, t), false, 'Prüfung braucht Stufe 4');
+  for (const id of ['k1', 'k2', 'k3', 'k4']) assert.ok(A.learn(P, id).ok);
+  assert.ok(A.trialOpen(P, t));
+  assert.equal(A.chooseSpec(P, 'sp_klinge').ok, false, 'ohne Siegel keine Spezialisierung');
+  const e0 = A.shinobiPoints(P).earned;
+  assert.ok(A.passTrial(P, 'trial_kampf')); assert.equal(A.passTrial(P, 'trial_kampf'), false, 'nur einmal');
+  assert.equal(A.shinobiPoints(P).earned, e0 + A.TRIAL_SP);
+  const f0 = A.shinobiPoints(P).free;
+  assert.ok(A.chooseSpec(P, 'sp_klinge').ok); assert.equal(A.shinobiPoints(P).free, f0 - A.SPEC_COST);
+  assert.ok(A.chooseSpec(P, 'sp_falke').ok, 'Wechsel'); assert.equal(A.shinobiPoints(P).free, f0 - A.SPEC_COST, 'Wechsel kostenlos');
+  assert.equal(A.academyFx(P).range, 0.05 + 0.1);
+  assert.equal(A.canLearnSecret(P, 'x_combo').ok, false, 'verborgen');
+  P.stats.bestCombo = 60; assert.ok(A.learnSecret(P, 'x_combo').ok); assert.equal(A.academyFx(P).comboWin, 0.5);
+  A.resetAcademy(P); assert.ok(A.hasSeal(P, 'kampf'), 'Siegel bleibt beim Neuverteilen'); assert.equal(A.shinobiPoints(P).spent, 0);
+  // Prüfungs-Regeln in der Welt
+  const ws = new World({ map: 'dorf', diff: 'normal', loadout: ['kitsune'], hooks: {}, mods: A.TRIAL.trial_schrein.mods });
+  assert.equal(ws.lives, 10); ws.coins = 9999; const tw = ws.place('kitsune', 3, 4.5).tower || ws.place('kitsune', ...Object.values(ws.suggestSpot('kitsune') || {})).tower;
+  if (tw) assert.equal(ws.sell(tw.id).ok, false, 'kein Verkaufen');
+  const we = new World({ map: 'dorf', diff: 'normal', seed: 3, hooks: {}, mods: A.TRIAL.trial_element.mods }), wn = new World({ map: 'dorf', diff: 'normal', seed: 3, hooks: {} });
+  const a = we.spawn('golem', [], 1), b = wn.spawn('golem', [], 1); a.hp = b.hp = a.maxHp = b.maxHp = 1e6;
+  assert.ok(Math.abs(we.damage(a, 10, 'phys', null) / wn.damage(b, 10, 'phys', null) - 0.4) < 1e-6, 'Physisch −60 %');
+});
+
+test('Boss-Rush: 6 Bosse, Start-Kasse, Kriegskasse, keine Karten-Mischung', async () => {
+  const { RUSH } = await import('../js/data/waves.js'); const { CH } = await import('../js/data/challenges.js');
+  const w = new World({ map: 'frost', diff: 'hard', seed: 4, hooks: {}, mods: CH.rush.mods });
+  assert.equal(w.maxWave, RUSH.length); assert.equal(w.coins, BAL.rush.start); assert.equal(w.lives, BAL.rush.lives);
+  assert.equal(w.peekWave().def.boss, 'vharox', 'Frosttempel tauscht den Boss im Rush nicht');
+  w.startWave(); w.god = true;
+  for (let i = 0; i < 60 * 400 && w.doneWave < 1; i++) { for (const e of w.enemies) if (e.alive && !e.boss) w.damage(e, 1e6, 'phys', null); const b = w.enemies.find(e => e.alive && e.boss); if (b) { assert.ok(b.maxHp <= 3000 * BAL.rush.hp * 1.3 * 1.35 + 1, 'Rush-KP'); w.damage(b, 1e7, 'astral', null); } w.step(1 / 60); }
+  assert.equal(w.doneWave, 1); assert.ok(w.coins >= BAL.rush.start + BAL.rush.gold[0], 'Kriegskasse');
+  const { dailyChallenge } = await import('../js/data/daily.js');
+  for (let d = 0; d < 30; d++) { const P = defaultProfile(); P.daily = { day: '2026-01-' + (d + 1) }; try { assert.ok(!dailyChallenge(P, () => true).mods.includes('rush')); } catch (e) { if (e.code === 'ERR_ASSERTION') throw e; } }
+});
+
+test('Koop-Seelenband: Kreaturen verschiedener Spieler nahe beieinander werden stärker', () => {
+  const mk = () => { const w = new World({ map: 'ahnenhain', diff: 'normal', seed: 5, hooks: {}, players: 2 }); w.wallet = [9999, 9999]; return w; };
+  const w = mk(), a = w.place('kitsune', 3, 4.5).tower; w.who = 1; const s = w.suggestSpot('kitsune'); 
+  let b = null; for (const [dx, dy] of [[1.2, 0], [-1.2, 0], [0, 1.2], [0, -1.2], [1, 1], [-1, -1]]) { const r = w.place('kitsune', 3 + dx, 4.5 + dy); if (r.ok) { b = r.tower; break; } }
+  assert.ok(a && b, 'beide gesetzt'); assert.equal(b.owner, 1); w.refresh();
+  assert.equal(w.coopLinks.length, 1); assert.ok(a.s.coopLink && b.s.coopLink);
+  const solo = mk(), a2 = solo.place('kitsune', 3, 4.5).tower; solo.refresh();
+  assert.ok(a.s.dmg > a2.s.dmg * 1.05, 'Seelenband-Bonus');
+});
+
+test('Truhen-Seltenheiten: Würfel, Belohnung skaliert, Shinobi-Punkte ab Legendär', async () => {
+  const ev = await import('../js/data/events.js'); const { shinobiPoints } = await import('../js/data/academy.js');
+  assert.equal(ev.rollRarity(0).id, 'common'); assert.equal(ev.rollRarity(0.999).id, 'myth');
+  const P = defaultProfile(); P.chests = 3; const sp0 = shinobiPoints(P).earned;
+  const r = ev.openChest(P, () => 0.6, () => 0.999); assert.equal(r.rarity.id, 'myth'); assert.equal(r.type, 'powers'); assert.equal(r.got.length, 7 + 3);
+  assert.equal(shinobiPoints(P).earned, sp0 + 2);
+  const c = ev.openChest(P, () => 0.9, () => 0); assert.equal(c.rarity.id, 'common'); assert.equal(c.xp, 300); assert.equal(c.extra.length, 0);
+  const n = 20000; let L = 0; for (let i = 0; i < n; i++) if (['legend', 'myth'].includes(ev.rollRarity(i / n).id)) L++;
+  assert.ok(Math.abs(L / n - 0.04) < 0.002, 'Legendär+ ≈ 4 %');
+});
+
+test('Prüfungsturm: Etagen der Reihe nach, kürzere Runs, Belohnungen', async () => {
+  const T = await import('../js/data/tower.js'); const { shinobiPoints } = await import('../js/data/academy.js');
+  const P = defaultProfile(); P.account.level = T.TOWER_LVL;
+  assert.ok(T.floorOpen(P, T.FLOORS[0])); assert.equal(T.floorOpen(P, T.FLOORS[1]), false);
+  const sp0 = shinobiPoints(P).earned;
+  for (let i = 0; i < 5; i++) assert.ok(T.clearFloor(P, T.FLOORS[i].id));
+  assert.equal(T.clearFloor(P, 'tower_3'), false, 'alte Etage zählt nicht doppelt');
+  assert.equal(shinobiPoints(P).earned, sp0 + 1); assert.ok(T.floorOpen(P, T.FLOORS[5]));
+  for (const f of T.FLOORS) { const w = new World({ map: f.map, diff: f.diff, seed: 1, hooks: {}, mods: f.mods }); assert.equal(w.maxWave, f.waves, f.id); assert.ok(w.peekWave(), f.id); }
+  const low = defaultProfile(); assert.equal(T.floorOpen(low, T.FLOORS[0]), false, 'Konto-Level');
+});
+
+test('Mega-Fusion: Fusion mit Stufe 5 → eigener Name, höhere Hürde, stärker als normale Mega', async () => {
+  const { megaDef } = await import('../js/data/megas.js');
+  assert.equal(megaDef('hydra', 0).name, 'Ur-Hydra · Zorn'); assert.ok(megaDef('hydra', 0).fusion);
+  const { w } = mkWorld(defaultProfile(), { hooks: { level: () => 30 } }); w.coins = 1e7;
+  const t = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower; t.cid = 'solfox'; t.stage = 0; w.dirty = true; w.refresh();
+  for (let i = 0; i < 5; i++) assert.ok(w.upgrade(t.id, 0).ok);
+  t.kills = BAL.run.mega.kills; assert.match(w.megaInfo(t).why, /Gegner besiegen/, 'Fusion braucht mehr Besiegte');
+  t.kills = BAL.run.megaFuse.kills; const d0 = t.s.dmg, c0 = w.coins;
+  assert.ok(w.mega(t.id).ok); assert.equal(c0 - w.coins, Math.round(CREATURES.solfox.cost * BAL.run.megaFuse.cost));
+  assert.ok(t.s.dmg > d0 * 2.4 * 1.2, 'Mega-Fusion-Schub');
+  const low = mkWorld(defaultProfile(), { hooks: { level: () => 22 } }).w; low.coins = 1e7; const u = low.place('kitsune', ...low.suggestSpot('kitsune', 3)).tower; u.cid = 'solfox'; low.refresh();
+  for (let i = 0; i < 5; i++) low.upgrade(u.id, 0); u.kills = 999; assert.match(low.megaInfo(u).why, /Charakter-Lv 25/);
+});
+
+test('Event-Kampf: Regeln je Event wirken in der Welt, Truhen einmal pro Woche', async () => {
+  const ev = await import('../js/data/events.js'); const { QUESTS } = await import('../js/data/daily.js');
+  for (const e of ev.EVENTS) { const w = new World({ map: e.fight.map, diff: e.fight.diff, seed: 2, hooks: {}, mods: JSON.parse(JSON.stringify(e.fight.mods)) }); assert.ok(w.peekWave().def.groups.length, e.id); assert.ok(e.fight.rules.length >= 2); }
+  const base = new World({ map: 'dorf', diff: 'normal', seed: 2, hooks: {} });
+  const hunt = new World({ map: 'dorf', diff: 'normal', seed: 2, hooks: {}, mods: ev.EVENTS.find(e => e.id === 'hunt').fight.mods });
+  const cnt = w => w.waveDef(5).groups.reduce((a, g) => a + g.n, 0); assert.ok(cnt(hunt) > cnt(base) * 1.4, 'Große Jagd: mehr Gegner');
+  const sl = new World({ map: 'ahnenhain', diff: 'normal', seed: 2, hooks: {}, mods: ev.EVENTS[0].fight.mods }); assert.ok(sl.waveDef(3).groups.some(g => g.e === 'kokon' && g.n >= 3));
+  const bo = new World({ map: 'glut', diff: 'normal', seed: 2, hooks: {}, mods: ev.EVENTS[1].fight.mods }); assert.ok(bo.waveDef(4).groups.some(g => g.e === 'oni')); assert.ok(!bo.waveDef(3).groups.some(g => g.e === 'oni' && g.delay === 4));
+  const gw = new World({ map: 'dorf', diff: 'normal', seed: 2, hooks: {}, mods: { coinMul: 2 } }), gb = new World({ map: 'dorf', diff: 'normal', seed: 2, hooks: {} });
+  const c0 = gw.coins, c1 = gb.coins; gw.kill(gw.spawn('boar'), null); gb.kill(gb.spawn('boar'), null); assert.equal(gw.coins - c0, 2 * (gb.coins - c1));
+  const P = defaultProfile(); P.chests = 0; ev.ensureEvent(P); assert.equal(ev.winEventFight(P), ev.EVENT_FIGHT_CHESTS); assert.equal(ev.winEventFight(P), 0); assert.equal(P.chests, ev.EVENT_FIGHT_CHESTS);
+  assert.ok(QUESTS.length >= 19 && new Set(QUESTS.map(q => q.id)).size === QUESTS.length);
+});
+
+test('Mega-Attacken: Zornschlag, Bannkreis, Klingensturm feuern im Takt', async () => {
+  for (const k of [0, 1, 2]) {
+    const { w } = mkWorld(defaultProfile(), { hooks: { level: () => 25 } }); w.coins = 1e7; w.god = true;
+    const t = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower; for (let i = 0; i < 5; i++) w.upgrade(t.id, k); t.kills = 999; assert.ok(w.mega(t.id).ok);
+    const evs = []; const em = w.emit.bind(w); w.emit = e => { if (e.t === 'megaAtk') evs.push(e); em(e); };
+    for (let i = 0; i < 12; i++) { const e = w.spawn('golem', [], 0); e.d = 0; }
+    // Gegner in Reichweite stellen
+    for (const e of w.enemies) { e.d = 3; e.speed = 0; e.hp = e.maxHp = 1e7; } w.step(1 / 60); const e0 = w.enemies[0]; t.x = e0.x + 0.5; t.y = e0.y;
+    for (let i = 0; i < 60 * 3; i++) w.step(1 / 60);
+    assert.ok(evs.length >= 1 && evs[0].k === k, 'Art ' + k + ': ' + evs.length);
+    if (k === 1) assert.ok(w.enemies.some(e => e.alive && e.stunT > 0) || w.enemies.every(e => !e.alive), 'Bann betäubt');
+    if (k === 2) assert.ok(evs[0].pts.length >= 1 && evs[0].pts.length <= BAL.run.megaAtk.klingeN);
+  }
+});

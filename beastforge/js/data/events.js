@@ -25,14 +25,24 @@ export const cosOf = (P, kind) => COSMETICS[kind].find(c => c.id === P.cos?.[kin
 export const hasCos = (P, kind, id) => id === 'default' || !!P.cos.owned[kind + '_' + id];
 
 // Wochen-Events: Fortschritt = Statistik seit Wochenbeginn, 3 Stufen geben Truhen
+// Jedes Event hat einen eigenen Event-Kampf mit Sonderregeln (`fight`: Karte, Schwierigkeit, Welt-Mods, Regeltext)
 export const EVENTS = [
-  { id: 'slime', name: 'Schleimflut', icon: '🫧', desc: 'Lass Seelenschleime platzen!', stat: 'pops', goals: [400, 1500, 4000] },
-  { id: 'boss', name: 'Bossjagd', icon: '👹', desc: 'Besiege Bosse auf beliebigen Karten.', stat: 'bossKills', goals: [2, 5, 10] },
-  { id: 'elem', name: 'Elementfest', icon: '🌈', desc: 'Löse Elementreaktionen aus.', stat: 'reactions', goals: [150, 500, 1200] },
-  { id: 'gold', name: 'Goldrausch', icon: '💰', desc: 'Verdiene Münzen durch Einkommen.', stat: 'income', goals: [5000, 20000, 60000] },
-  { id: 'waves', name: 'Wellenreiter', icon: '🌊', desc: 'Überstehe Wellen.', stat: 'waves', goals: [60, 180, 400] },
-  { id: 'hunt', name: 'Große Jagd', icon: '⚔', desc: 'Besiege Gegner.', stat: 'kills', goals: [2000, 7000, 18000] },
+  { id: 'slime', name: 'Schleimflut', icon: '🫧', desc: 'Lass Seelenschleime platzen!', stat: 'pops', goals: [400, 1500, 4000],
+    fight: { map: 'ahnenhain', diff: 'normal', rules: ['Jede Welle bringt zusätzliche Seelenkokons', 'Besiegte geben +20 % Münzen'], mods: { addGroup: { e: 'kokon', n0: 2, per: 0.35, gap: 0.9, delay: 3 }, coinMul: 1.2 } } },
+  { id: 'boss', name: 'Bossjagd', icon: '👹', desc: 'Besiege Bosse auf beliebigen Karten.', stat: 'bossKills', goals: [2, 5, 10],
+    fight: { map: 'glut', diff: 'normal', rules: ['Alle 4 Wellen marschieren Oni-Hauptmänner mit', 'Gegner +15 % KP'], mods: { addGroup: { e: 'oni', n0: 1, per: 0.08, every: 4, gap: 4, delay: 4 }, hpMul: 1.15 } } },
+  { id: 'elem', name: 'Elementfest', icon: '🌈', desc: 'Löse Elementreaktionen aus.', stat: 'reactions', goals: [150, 500, 1200],
+    fight: { map: 'frost', diff: 'normal', rules: ['Reaktionen machen doppelten Schaden', 'Physischer Schaden −30 %'], mods: { reactMul: 2, physWeak: 0.3 } } },
+  { id: 'gold', name: 'Goldrausch', icon: '💰', desc: 'Verdiene Münzen durch Einkommen.', stat: 'income', goals: [5000, 20000, 60000],
+    fight: { map: 'dorf', diff: 'normal', rules: ['Besiegte geben doppelte Münzen', 'Gegner +35 % KP'], mods: { coinMul: 2, hpMul: 1.35 } } },
+  { id: 'waves', name: 'Wellenreiter', icon: '🌊', desc: 'Überstehe Wellen.', stat: 'waves', goals: [60, 180, 400],
+    fight: { map: 'sky', diff: 'hard', rules: ['Schwer · 30 Wellen', 'Gegner 20 % schneller'], mods: { waves: 30, speedMul: 1.2 } } },
+  { id: 'hunt', name: 'Große Jagd', icon: '⚔', desc: 'Besiege Gegner.', stat: 'kills', goals: [2000, 7000, 18000],
+    fight: { map: 'dorf', diff: 'normal', rules: ['60 % mehr Gegner je Welle', 'Besiegte geben 25 % weniger Münzen'], mods: { countMul: 1.6, coinMul: 0.75 } } },
 ];
+export const EVENT_FIGHT_CHESTS = 2;   // erster Sieg im Event-Kampf der Woche
+// Event-Kampf gewonnen → einmal pro Woche Truhen
+export function winEventFight(P) { const E = ensureEvent(P); if (E.won) return 0; E.won = true; P.chests = (P.chests || 0) + EVENT_FIGHT_CHESTS; return EVENT_FIGHT_CHESTS; }
 export const EVENT_CHESTS = [1, 2, 3];
 
 // Wochenschlüssel: Montag als Wochenbeginn (lokale Zeit)
@@ -59,12 +69,24 @@ export function claimEvent(P, i) {
 export const eventDot = P => { const d = eventDef(P), E = P.event; return P.chests > 0 || d.goals.some((g, i) => !E.claimed.includes(i) && eventProgress(P) >= g); };
 
 // Truhe öffnen: 40 % neue Kosmetik (falls noch eine fehlt), sonst Kräfte oder Konto-XP
-export function openChest(P, r = Math.random) {
+// Truhen-Seltenheiten (Vision P10): beim Öffnen gewürfelt, skalieren Kräfte/XP; ab Episch Bonus-Kraft, ab Legendär Shinobi-Punkte
+export const RARITY = [
+  { id: 'common', name: 'Gewöhnlich', w: 58, col: '#c9b58a', pow: 2, xp: 300 },
+  { id: 'rare', name: 'Selten', w: 27, col: '#4aa8ff', pow: 3, xp: 450 },
+  { id: 'epic', name: 'Episch', w: 11, col: '#b07bff', pow: 4, xp: 700, bonusPow: 1 },
+  { id: 'legend', name: 'Legendär', w: 3.4, col: '#ffb020', pow: 5, xp: 1000, bonusPow: 2, sp: 1 },
+  { id: 'myth', name: 'Mythisch', w: 0.6, col: '#ff4fa0', pow: 7, xp: 1600, bonusPow: 3, sp: 2 },
+];
+export function rollRarity(x) { const T = RARITY.reduce((a, q) => a + q.w, 0); let v = x * T; for (const q of RARITY) { if ((v -= q.w) < 0) return q; } return RARITY[0]; }
+export function openChest(P, r = Math.random, rr = Math.random) {
   if (!(P.chests > 0)) return null;
   P.chests--;
+  const rar = rollRarity(rr()), base = { rarity: rar };
+  if (rar.sp) P.chestSp = (P.chestSp || 0) + rar.sp;   // zählt in shinobiPoints
+  const extra = rar.bonusPow ? givePowers(P, rar.bonusPow, rr).map(id => POWER[id]) : [];
   const missing = Object.entries(COSMETICS).flatMap(([k, L]) => L.filter(c => !hasCos(P, k, c.id)).map(c => [k, c]));
   const x = r();
-  if (missing.length && x < 0.4) { const [kind, c] = missing[Math.floor(r() * missing.length)]; P.cos.owned[kind + '_' + c.id] = 1; return { type: 'cos', kind, item: c }; }
-  if (x < 0.75) { const got = givePowers(P, 2, r); return { type: 'powers', got: got.map(id => POWER[id]) }; }
-  return { type: 'xp', xp: 300 };
+  if (missing.length && x < 0.4) { const [kind, c] = missing[Math.floor(r() * missing.length)]; P.cos.owned[kind + '_' + c.id] = 1; return { ...base, type: 'cos', kind, item: c, extra }; }
+  if (x < 0.75) { const got = givePowers(P, rar.pow, r); return { ...base, type: 'powers', got: [...got.map(id => POWER[id]), ...extra], extra: [] }; }
+  return { ...base, type: 'xp', xp: rar.xp, extra };
 }

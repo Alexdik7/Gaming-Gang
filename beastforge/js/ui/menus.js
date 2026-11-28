@@ -2,10 +2,11 @@
 import { BAL, VERSION, LEVEL_PERKS } from '../config.js';
 import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { POWER, givePowers } from '../data/powers.js';
+import { CODEX_TABS, CODEX_STEP, codexEntries, codexSeen, discover, codexCount, codexClaimable, claimCodex } from '../data/codex.js';
 import { Coop, makeCode, cleanCode, explain, diagnose } from '../net.js';
 import { academyFx } from '../data/academy.js';
 import { heroStartLevel } from '../meta/progression.js';
-import { COSMETICS, COS_KINDS, hasCos, ensureEvent, eventDef, eventProgress, claimEvent, eventDot, openChest, daysLeft, EVENT_CHESTS } from '../data/events.js';
+import { COSMETICS, COS_KINDS, hasCos, ensureEvent, eventDef, eventProgress, claimEvent, eventDot, openChest, daysLeft, EVENT_CHESTS, EVENT_FIGHT_CHESTS } from '../data/events.js';
 import { HEROES } from '../data/heroes.js';
 import { MAPS } from '../data/maps.js';
 import { ELEMENT_NAMES } from '../data/enemies.js';
@@ -19,7 +20,8 @@ import { saveProfile, resetProfile } from '../meta/profile.js';
 import { CHALLENGES, CH, chUnlocked } from '../data/challenges.js';
 import { QUESTS, ensureDaily, dailyChallenge, questProgress, DAILY_XP, dayKey } from '../data/daily.js';
 import { FUSIONS, FUSE } from '../data/fusions.js';
-import { SCHOOLS, ACADEMY, ACADEMY_BY_ID, shinobiPoints, canLearn, learn, resetAcademy } from '../data/academy.js';
+import { FLOORS, FLOOR, TOWER_LVL, towerBest, floorOpen } from '../data/tower.js';
+import { SCHOOLS, ACADEMY, ACADEMY_BY_ID, shinobiPoints, canLearn, learn, resetAcademy, TRIALS, TRIAL, TRIAL_NEED, TRIAL_SP, SPECS, SPEC, SPEC_COST, SECRETS, SECRET, SECRET_COST, trialOpen, hasSeal, secretFound, chooseSpec, canLearnSecret, learnSecret } from '../data/academy.js';
 
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
@@ -84,7 +86,7 @@ export class Menus {
         <div class="bRight"><button class="bCur" data-go="academy" title="Shinobi-Punkte"><span>⛩</span><b>${sp.free}</b></button><button class="bGear" data-go="settings" aria-label="Optionen">⚙</button></div>
       </div>
       <div class="bLeft">${tile('collection', pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch }), 'Kreaturen', 'big')}${tile('hero', pimg(hero, { hlvl: 1 }), 'Helden', 'big')}${tile('evo', pimg('golem', { stage: 2 }), 'Entwicklung', 'big')}</div>
-      <div class="bRightCol">${tile('chests', '🎁', 'Truhen', 'sq gold', eventDot(P))}${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('coop', '🤝', 'Koop', 'sq')}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('stats', '📜', 'Statistik', 'sq')}</div>
+      <div class="bRightCol">${tile('chests', '🎁', 'Truhen', 'sq gold', eventDot(P))}${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('coop', '🤝', 'Koop', 'sq')}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('codex', '📖', 'Codex', 'sq', codexClaimable(P) > 0)}${tile('tower', '🗼', 'Turm', 'sq', P.account.level >= TOWER_LVL && towerBest(P) < FLOORS.length && !P.tower?.seen)}</div>
       <button class="bPlay" data-go="play"><span>SPIELEN</span></button>
     </div>`);
     this.app.audio.playSong('menu');
@@ -161,23 +163,26 @@ export class Menus {
     const ms = d.goals.map((g, i) => { const got = E.claimed.includes(i), ok = v >= g;
       return `<div class="evm ${got ? 'got' : ok ? 'ok' : ''}"><b>${fmt(g)}</b><small>🎁×${EVENT_CHESTS[i]}</small>${got ? '<span class="aok">✓</span>' : `<button class="btn ${ok ? 'pri' : ''}" data-ev="${i}" ${ok ? '' : 'disabled'}>Abholen</button>`}</div>`; }).join('');
     const top = d.goals[2], pct = Math.min(100, v / top * 100);
-    const rv = reveal ? `<div class="crev ${reveal.type}">${reveal.type === 'cos' ? `<span class="cri">${reveal.kind === 'heart' ? '💎' : '✨'}</span><b>Neu: ${esc(reveal.item.name)}</b><small>${COS_KINDS[reveal.kind]} – unten auswählen</small>`
-      : reveal.type === 'powers' ? `<span class="cri">${reveal.got.map(p => p.icon).join('')}</span><b>${reveal.got.map(p => esc(p.name)).join(' + ')}</b><small>Kräfte für deine Runs</small>`
-      : `<span class="cri">✦</span><b>+${reveal.xp} Konto-XP</b><small>Weiter so!</small>`}</div>` : '';
+    const rar = reveal?.rarity, rv = reveal ? `<div class="crev ${reveal.type}" style="--rc:${rar?.col || '#ffd257'}">${rar ? `<em class="rar ${rar.id}">${esc(rar.name.toUpperCase())}${rar.sp ? ` · +${rar.sp} ✦` : ''}</em>` : ''}${reveal.type === 'cos' ? `<span class="cri">${reveal.kind === 'heart' ? '💎' : '✨'}</span><b>Neu: ${esc(reveal.item.name)}</b><small>${COS_KINDS[reveal.kind]} – unten auswählen</small>`
+      : reveal.type === 'powers' ? (() => { const G = new Map(); for (const p of reveal.got) G.set(p, (G.get(p) || 0) + 1); return `<span class="cri">${[...G.keys()].map(p => p.icon).join('')}</span><b>${[...G].map(([p, n]) => esc(p.name) + (n > 1 ? ' ×' + n : '')).join(' · ')}</b><small>Kräfte für deine Runs</small>`; })()
+      : `<span class="cri">✦</span><b>+${reveal.xp} Konto-XP</b><small>Weiter so!</small>`}${reveal.extra?.length ? `<small class="cxtra">Bonus: ${reveal.extra.map(p => p.icon + ' ' + esc(p.name)).join(' · ')}</small>` : ''}</div>` : '';
     const sw = (kind, c) => { const own = hasCos(P, kind, c.id), on = (P.cos[kind] || 'default') === c.id, col = kind === 'heart' ? '#' + c.glow.toString(16).padStart(6, '0') : c.cols ? `conic-gradient(${c.cols.map(x => '#' + x.toString(16).padStart(6, '0')).join(',')})` : 'linear-gradient(#fff,#9ad0ff)';
       return `<button class="cosw ${on ? 'on' : ''} ${own ? '' : 'lock'}" data-cos="${kind}:${c.id}" ${own ? '' : 'disabled'}><i style="background:${col}"></i><small>${own ? esc(c.name) : '???'}</small></button>`; };
     this.render(`<div class="scr chestScr">${this.hdr('Truhen & Event')}
       <div class="cgrid">
         <div class="evc"><div class="evh"><span class="evi">${d.icon}</span><div><small>WOCHEN-EVENT · noch ${daysLeft()} Tag${daysLeft() > 1 ? 'e' : ''}</small><b>${esc(d.name)}</b><p>${esc(d.desc)}</p></div></div>
           <div class="bar evb"><u style="width:${pct}%"></u>${d.goals.slice(0, 2).map(g => `<i style="left:${g / top * 100}%"></i>`).join('')}</div><small class="mut">Fortschritt: <b style="color:#ffd257">${fmt(v)}</b> / ${fmt(top)}</small>
-          <div class="evms">${ms}</div></div>
-        <div class="cbox"><div class="chest ${reveal ? 'opened' : ''}" id="chest"><div class="lid"></div><div class="body"><i></i></div></div>
+          <div class="evms">${ms}</div>
+          <div class="evf ${E.won ? 'won' : ''}"><div><small>⚔ EVENT-KAMPF · ${esc(MAPS[unlocked(P, 'map', d.fight.map) ? d.fight.map : 'ahnenhain'].name)} · ${d.fight.diff === 'hard' ? '🔥 Schwer' : '🌿 Normal'}</small><ul>${d.fight.rules.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>
+            ${E.won ? '<span class="aok">✓ Diese Woche geschafft</span>' : `<button class="btn pri" id="evgo">⚔ Antreten<small>🎁×${EVENT_FIGHT_CHESTS}</small></button>`}</div></div>
+        <div class="cbox"><div class="chest ${reveal ? 'opened r_' + (rar?.id || '') : ''}" id="chest" style="--rc:${rar?.col || '#ffe27a'}"><div class="lid"></div><div class="body"><i></i></div></div>
           <b class="ccount">${P.chests} Truhe${P.chests === 1 ? '' : 'n'}</b>${rv}
           <button class="big" id="copen" ${P.chests > 0 ? '' : 'disabled'}>🎁 Öffnen</button>
           <small class="mut">Truhen gibt es für Siege, den Tageskampf und das Wochen-Event.</small></div>
       </div>
       ${Object.keys(COSMETICS).map(kind => `<div class="wlabel">${COS_KINDS[kind]}</div><div class="cosr">${COSMETICS[kind].map(c => sw(kind, c)).join('')}</div>`).join('')}
     </div>`, m => {
+      $('evgo')?.addEventListener('click', () => { this.app.audio.init(); const mp = unlocked(P, 'map', d.fight.map) ? d.fight.map : 'ahnenhain'; this.app.startRun(mp, d.fight.diff, 'event'); });
       m.querySelectorAll('[data-ev]').forEach(b => b.onclick = () => { const n = claimEvent(P, +b.dataset.ev); if (n) { saveProfile(P); this.app.audio.play('levelup'); this.s_chests(); } });
       m.querySelectorAll('[data-cos]').forEach(b => b.onclick = () => { const [k, id] = b.dataset.cos.split(':'); P.cos[k] = id; saveProfile(P); this.click(); this.s_chests(); });
       const ob = m.querySelector('#copen'); ob.onclick = () => {
@@ -213,25 +218,66 @@ export class Menus {
   // ───────── Shinobi-Akademie: Wissensbaum mit Shinobi-Punkten ─────────
   s_academy(sel) {
     const P = this.P, pts = shinobiPoints(P), own = P.academy.owned, keep = sel ? $('menu').scrollTop : 0;
+    const A = P.academy; A.master ||= {}; A.spec ||= {};
     const rows = SCHOOLS.map(sc => {
       const nodes = ACADEMY.filter(n => n.school === sc.id).map(n => {
         const st = own[n.id] ? 'own' : canLearn(P, n.id).ok ? 'can' : (n.tier === 1 || own[ACADEMY.find(x => x.school === n.school && x.tier === n.tier - 1).id]) ? 'poor' : 'lock';
         return `<button class="anode ${st} ${sel === n.id ? 'sel' : ''}" data-n="${n.id}" style="--sc:${sc.color}"><span>${st === 'lock' ? '🔒' : st === 'own' ? '✓' : n.tier}</span><i>${n.cost}</i></button>`;
       }).join('<b class="alink"></b>');
-      return `<div class="arow"><div class="ahead" style="--sc:${sc.color}"><b>${sc.icon} ${esc(sc.name)}</b><small>${esc(sc.desc)}</small></div><div class="anodes">${nodes}</div></div>`;
+      // Akademie 2.0: Meisterprüfung (Siegel) → zwei Spezialisierungen, nur eine aktiv
+      const t = TRIALS.find(x => x.school === sc.id), seal = hasSeal(P, sc.id), tst = seal ? 'own' : trialOpen(P, t) ? 'can' : 'lock';
+      const trial = `<button class="anode trial ${tst} ${sel === t.id ? 'sel' : ''}" data-n="${t.id}" style="--sc:${sc.color}" title="${esc(t.name)}"><span>${seal ? '🏅' : tst === 'can' ? '⚔' : '🔒'}</span></button>`;
+      const specs = SPECS.filter(x => x.school === sc.id).map(x => `<button class="anode spec ${A.spec[sc.id] === x.id ? 'own' : seal ? 'can' : 'lock'} ${sel === x.id ? 'sel' : ''}" data-n="${x.id}" style="--sc:${sc.color}" title="${esc(x.name)}"><span>${seal ? x.icon : '🔒'}</span>${A.spec[sc.id] ? '' : `<i>${SPEC_COST}</i>`}</button>`).join('<small class="aor">oder</small>');
+      return `<div class="arow"><div class="ahead" style="--sc:${sc.color}"><b>${sc.icon} ${esc(sc.name)}</b><small>${esc(sc.desc)}</small></div><div class="anodes">${nodes}<b class="alink m"></b>${trial}<b class="alink m"></b><span class="aspecs">${specs}</span></div></div>`;
     }).join('');
-    const n = sel && ACADEMY_BY_ID[sel], c = n && canLearn(P, n.id);
-    const info = n ? `<div class="ainfo" style="--sc:${SCHOOLS.find(s => s.id === n.school).color}"><div><b>${esc(n.name)}</b> <small>Stufe ${n.tier} · ${n.cost} Punkt${n.cost > 1 ? 'e' : ''}</small><p>${esc(n.desc)}</p></div>
-      ${own[n.id] ? '<span class="aok">✓ Erlernt</span>' : `<button class="btn pri" id="alearn" ${c.ok ? '' : 'disabled'}>${c.ok ? 'Erlernen' : esc(c.why)}</button>`}</div>`
-      : '<div class="ainfo"><p>Tippe auf einen Knoten. Shinobi-Punkte gibt es für jedes Konto-Level und für jeden ersten Sieg auf einer Karte (Normal und Schwer).</p></div>';
+    const secrets = SECRETS.map(x => { const f = secretFound(P, x.id), o = own[x.id]; return `<button class="anode secret ${o ? 'own' : f ? (canLearnSecret(P, x.id).ok ? 'can' : 'poor') : 'hid'} ${sel === x.id ? 'sel' : ''}" data-n="${x.id}" style="--sc:#9fe8ff"><span>${o ? '✓' : f ? x.icon : '?'}</span>${o ? '' : `<i>${SECRET_COST}</i>`}</button>`; }).join('');
+    const secRow = `<div class="arow sec"><div class="ahead" style="--sc:#9fe8ff"><b>✧ Geheime Knoten</b><small>Durch Taten enthüllt</small></div><div class="anodes">${secrets}</div></div>`;
+    let info = '<div class="ainfo"><p>Tippe auf einen Knoten. Shinobi-Punkte gibt es für jedes Konto-Level, jeden ersten Sieg, Medaillen und Meistersiegel. Ab Stufe ' + TRIAL_NEED + ' einer Schule öffnet sich ihre <b>Meisterprüfung</b> – das Siegel schaltet eine von zwei <b>Spezialisierungen</b> frei.</p></div>';
+    const scOf = id => SCHOOLS.find(s => s.id === id).color;
+    if (ACADEMY_BY_ID[sel]) { const n = ACADEMY_BY_ID[sel], c = canLearn(P, n.id);
+      info = `<div class="ainfo" style="--sc:${scOf(n.school)}"><div><b>${esc(n.name)}</b> <small>Stufe ${n.tier} · ${n.cost} Punkt${n.cost > 1 ? 'e' : ''}</small><p>${esc(n.desc)}</p></div>
+      ${own[n.id] ? '<span class="aok">✓ Erlernt</span>' : `<button class="btn pri" id="alearn" ${c.ok ? '' : 'disabled'}>${c.ok ? 'Erlernen' : esc(c.why)}</button>`}</div>`; }
+    else if (TRIAL[sel]) { const t = TRIAL[sel], seal = hasSeal(P, t.school), open = trialOpen(P, t);
+      info = `<div class="ainfo" style="--sc:${scOf(t.school)}"><div><b>${t.icon} ${esc(t.name)}</b> <small>Meisterprüfung · ${esc(MAPS[t.map].name)} · Welle 20</small><p>${esc(t.desc)} Belohnung: <b style="color:#ffd257">🏅 Siegel, +${TRIAL_SP} Shinobi-Punkte, 🎁 Truhe</b></p></div>
+      ${seal ? '<span class="aok">🏅 Bestanden</span>' : `<button class="btn pri" id="atrial" ${open ? '' : 'disabled'}>${open ? '⚔ Antreten' : 'Erst Stufe ' + TRIAL_NEED + ' erlernen'}</button>`}</div>`; }
+    else if (SPEC[sel]) { const x = SPEC[sel], cur = A.spec[x.school], seal = hasSeal(P, x.school), c = seal && cur !== x.id ? chooseSpec({ ...P, academy: { ...A, spec: { ...A.spec } } }, x.id) : null;
+      info = `<div class="ainfo" style="--sc:${scOf(x.school)}"><div><b>${x.icon} ${esc(x.name)}</b> <small>Spezialisierung · ${cur ? 'Wechsel kostenlos' : SPEC_COST + ' Punkte'}</small><p>${esc(x.desc)}</p></div>
+      ${cur === x.id ? '<span class="aok">✓ Aktiv</span>' : `<button class="btn pri" id="aspec" ${c?.ok ? '' : 'disabled'}>${!seal ? 'Erst die Prüfung bestehen' : c.ok ? (cur ? '⇄ Wechseln' : 'Wählen') : esc(c.why)}</button>`}</div>`; }
+    else if (SECRET[sel]) { const x = SECRET[sel], f = secretFound(P, x.id), c = canLearnSecret(P, x.id);
+      info = f ? `<div class="ainfo" style="--sc:#9fe8ff"><div><b>${x.icon} ${esc(x.name)}</b> <small>Geheimer Knoten · ${SECRET_COST} Punkt</small><p>${esc(x.desc)}</p></div>${own[x.id] ? '<span class="aok">✓ Erlernt</span>' : `<button class="btn pri" id="asecret" ${c.ok ? '' : 'disabled'}>${c.ok ? 'Erlernen' : esc(c.why)}</button>`}</div>`
+        : `<div class="ainfo" style="--sc:#9fe8ff"><div><b>??? Verborgen</b><p>Hinweis: ${esc(x.hint)}</p></div></div>`; }
     this.render(`<div class="scr acadScr">${this.hdr('Shinobi-Akademie')}
-      <div class="apts"><span class="spi">✦</span><b>${pts.free}</b> freie Shinobi-Punkte <small>· ${pts.earned} verdient · ${pts.spent} eingesetzt</small>${pts.spent ? '<button class="aReset" id="areset">↺ Neu verteilen</button>' : ''}</div>
-      <div class="atree">${rows}</div>${info}</div>`, m => {
+      <div class="apts"><span class="spi">✦</span><b>${pts.free}</b> freie Shinobi-Punkte <small>· ${pts.earned} verdient · ${pts.spent} eingesetzt · 🏅 ${Object.keys(A.master).length}/4</small>${pts.spent ? '<button class="aReset" id="areset">↺ Neu verteilen</button>' : ''}</div>
+      <div class="atree">${rows}${secRow}</div>${info}</div>`, m => {
       m.scrollTop = keep;
       m.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { this.click(); this.s_academy(b.dataset.n); });
-      const L = $('alearn'); if (L) L.onclick = () => { if (learn(P, sel).ok) { saveProfile(P); this.app.audio.play('levelup'); this.s_academy(sel); } };
-      const R = $('areset'); if (R) R.onclick = () => { if (confirm('Alle Shinobi-Punkte zurückholen und neu verteilen?')) { resetAcademy(P); saveProfile(P); this.click(); this.s_academy(); } };
+      const ok = () => { saveProfile(P); this.app.audio.play('levelup'); this.s_academy(sel); };
+      const L = $('alearn'); if (L) L.onclick = () => { if (learn(P, sel).ok) ok(); };
+      $('aspec')?.addEventListener('click', () => { if (chooseSpec(P, sel).ok) ok(); });
+      $('asecret')?.addEventListener('click', () => { if (learnSecret(P, sel).ok) ok(); });
+      $('atrial')?.addEventListener('click', () => { const t = TRIAL[sel]; this.app.audio.init(); this.app.startRun(t.map, t.diff, t.id); });
+      const R = $('areset'); if (R) R.onclick = () => { if (confirm('Alle Shinobi-Punkte zurückholen und neu verteilen? Meistersiegel bleiben.')) { resetAcademy(P); saveProfile(P); this.click(); this.s_academy(); } };
     });
+  }
+
+  // ───────── Prüfungsturm (Vision P11): 10 Etagen, jede mit eigenen Regeln ─────────
+  s_tower(sel) {
+    const P = this.P, best = towerBest(P), lock = P.account.level < TOWER_LVL; P.tower ||= { best: 0 }; P.tower.seen = 1;
+    sel = FLOOR[sel] ? sel : FLOORS[Math.min(best, FLOORS.length - 1)].id;
+    const rows = [...FLOORS].reverse().map(f => { const done = f.n <= best, open = floorOpen(P, f);
+      return `<button class="tfl ${done ? 'done' : open ? 'open' : 'lock'} ${sel === f.id ? 'sel' : ''} ${f.n % 5 ? '' : 'big'}" data-f="${f.id}"><span class="tfn">${f.n}</span><b>${esc(f.name)}</b><small>${esc(MAPS[f.map].name)} · ${f.diff === 'hard' ? '🔥' : '🌿'} · ${f.waves} Wellen</small><i>${done ? '✓' : open ? '⚔' : '🔒'}</i>${f.n % 5 ? '' : '<em>+1 ✦</em>'}</button>`; }).join('');
+    const f = FLOOR[sel], done = f.n <= best, open = floorOpen(P, f);
+    this.render(`<div class="scr towerScr">${this.hdr('Prüfungsturm')}
+      <div class="apts"><span class="spi">🗼</span><b>${best}</b>/${FLOORS.length} Etagen <small>· jede neue Etage: 🎁 Truhe · alle 5 Etagen: +1 Shinobi-Punkt</small></div>
+      ${lock ? `<div class="ainfo"><p>🔒 Der Turm öffnet sich ab <b>Konto-Level ${TOWER_LVL}</b>.</p></div>` : ''}
+      <div class="tower">${rows}</div>
+      <div class="ainfo" style="--sc:${f.diff === 'hard' ? '#ff7a3d' : '#5fd6ff'}"><div><b>Etage ${f.n}: ${esc(f.name)}</b> <small>${esc(MAPS[f.map].name)} · ${f.diff === 'hard' ? 'Schwer' : 'Normal'} · ${f.waves} ${f.mods.rush ? 'Bosse' : 'Wellen'}</small><p>${esc(f.desc)}</p></div>
+      ${done ? '<span class="aok">✓ Geschafft</span>' : ''}<button class="btn pri" id="tgo" ${open ? '' : 'disabled'}>${open ? (done ? '↻ Nochmal' : '⚔ Antreten') : lock ? '🔒 Konto-Lv ' + TOWER_LVL : 'Erst Etage ' + (f.n - 1)}</button></div></div>`, m => {
+      const cur = m.querySelector('.tfl.sel'); if (cur) cur.scrollIntoView({ block: 'center' });
+      m.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { this.click(); this.s_tower(b.dataset.f); });
+      $('tgo')?.addEventListener('click', () => { this.app.audio.init(); this.app.startRun(f.map, f.diff, f.id); });
+    });
+    saveProfile(P);
   }
 
   // ───────── Entwicklungszentrum: alle Entwicklungsreihen auf einen Blick ─────────
@@ -422,6 +468,51 @@ export class Menus {
   }
 
   // ───────── Erfolge / Statistik ─────────
+  // „Noch ein Run“: die nächsten Ziele mit Fortschritt (Konto, Kreatur, Codex, Wochen-Event)
+  goals(r) {
+    const P = this.P, out = [], a = P.account, need = accNeed(a.level);
+    out.push({ ic: '✦', t: `Konto-Level ${a.level + 1}`, f: a.xp / need, s: `${Math.round(a.xp / need * 100)} %` });
+    const cand = (r.used || []).map(cid => { const c = P.chars[cid], nf = c && nextFormByLevel(cid, c.level, c.branch); return nf ? { cid, c, nf, gap: nf.lvl - c.level - c.xp / charNeed(c.level) } : null; }).filter(Boolean).sort((x, y) => x.gap - y.gap)[0];
+    if (cand) out.push({ ic: '🦊', t: `${CREATURES[cand.cid].name}: ${cand.nf.name} ab Lv ${cand.nf.lvl}`, f: Math.max(0, 1 - cand.gap / Math.max(1, cand.nf.lvl - 1)), s: `Lv ${cand.c.level}` });
+    const n = codexCount(P), nx = (Math.floor(n / CODEX_STEP) + 1) * CODEX_STEP;
+    out.push({ ic: '📖', t: codexClaimable(P) > 0 ? 'Codex-Truhe bereit!' : `Codex-Truhe bei ${nx} Einträgen`, f: codexClaimable(P) > 0 ? 1 : (n % CODEX_STEP) / CODEX_STEP, s: `${n} entdeckt` });
+    const E = ensureEvent(P), d = eventDef(P), v = eventProgress(P), gi = d.goals.findIndex((g, i) => !E.claimed.includes(i));
+    if (gi >= 0) out.push({ ic: d.icon, t: `${d.name}: Stufe ${gi + 1} (${EVENT_CHESTS[gi]} 🎁)`, f: Math.min(1, v / d.goals[gi]), s: `${fmt(Math.min(v, d.goals[gi]))}/${fmt(d.goals[gi])}` });
+    return `<div class="sect goals"><h3>🎯 NÄCHSTE ZIELE</h3>${out.slice(0, 4).map(g => `<div class="goal"><span>${g.ic}</span><div><b>${esc(g.t)}</b><div class="bar"><u data-w="${Math.round(g.f * 100)}" style="width:0"></u></div></div><small>${g.s}</small></div>`).join('')}</div>`;
+  }
+  // ───────── Beastforge-Codex: alles Entdeckte, Unentdecktes als „???“ ─────────
+  s_codex(tab = this.codexTab || 'c') {
+    const P = this.P; this.codexTab = tab;
+    for (const id of unlockedCreatures(P)) discover(P, 'c:' + id);
+    for (const id in HEROES) if (unlocked(P, 'hero', id)) discover(P, 'h:' + id);
+    const all = codexEntries(), list = all.filter(x => x.tab === tab), n = codexCount(P), N = all.length, cl = codexClaimable(P);
+    const nextAt = (Math.floor(n / CODEX_STEP) + 1) * CODEX_STEP;
+    const pimg = (id, o = {}, dark) => `<img class="${dark ? 'sil' : ''}" src="${portrait(id, o)}" alt="">`;
+    const dots = parts => parts.map(e => `<i style="background:${ELEMENT_COLORS[e]}"></i>`).join('');
+    const card = x => {
+      const seen = codexSeen(P, x.key);
+      let pic = '';
+      if (x.tab === 'c' || x.tab === 'f') pic = pimg(x.id, { stage: x.tab === 'c' ? 0 : undefined }, !seen);
+      else if (x.tab === 'm') pic = `<span class="cxmega" style="--cx:${x.color}">${pimg(x.id, { stage: 2 }, !seen)}</span>`;
+      else if (x.tab === 'h') pic = pimg(x.id, { hlvl: 1 }, !seen);
+      else if (x.tab === 'r') pic = `<span class="cxdots">${dots(x.parts)}</span>`;
+      else if (x.tab === 's') pic = `<span class="cxpair">${x.parents.map(p => pimg(p, CREATURES[p] ? { stage: 0 } : { hlvl: 1 }, !seen)).join('')}</span>`;
+      else pic = `<span class="cxemo">${x.tab === 'b' ? '👑' : '👾'}</span>`;
+      const nm = seen ? esc(x.name) : x.tab === 'f' || x.tab === 'r' || x.tab === 's' ? '??? + ???' : '???';
+      const ds = seen ? esc(x.desc || '') : x.tab === 'f' ? 'Zwei erweckte Kreaturen nebeneinander …' : x.tab === 'r' ? 'Zwei Elemente treffen aufeinander …' : x.tab === 'e' || x.tab === 'b' ? 'Noch nie begegnet.' : 'Noch nicht entdeckt.';
+      return `<div class="cxc ${seen ? 'on' : 'off'}" style="${x.color ? '--cx:' + x.color : ''}">${pic}<b>${nm}</b><small>${ds}</small></div>`;
+    };
+    const tabN = id => { const L = all.filter(x => x.tab === id); return `${L.filter(x => codexSeen(P, x.key)).length}/${L.length}`; };
+    this.render(`<div class="scr codexScr">${this.hdr('📖 Beastforge-Codex <button class="btn" data-go="stats" style="margin-left:8px;font-size:12px">📜 Statistik</button>')}
+      <div class="cxtop"><div class="cxprog"><b>${n} / ${N} entdeckt</b><div class="bar"><u style="width:${n / N * 100}%"></u></div><small>${cl > 0 ? '' : `Nächste Truhe bei ${nextAt} Einträgen`}</small></div>${cl > 0 ? `<button class="big" id="cxClaim">🎁 ${cl} Truhe${cl > 1 ? 'n' : ''} abholen</button>` : ''}</div>
+      <div class="cxtabs">${CODEX_TABS.map(t => `<button class="btn ${t.id === tab ? 'pri' : ''}" data-cx="${t.id}">${t.icon} ${t.name} <small>${tabN(t.id)}</small></button>`).join('')}</div>
+      <div class="cxgrid">${list.map(card).join('')}</div></div>`, m => {
+      m.querySelectorAll('[data-cx]').forEach(b => b.onclick = () => { this.click(); this.s_codex(b.dataset.cx); });
+      m.querySelector('#cxClaim')?.addEventListener('click', () => { const k = claimCodex(P); if (k) { saveProfile(P); this.app.audio.play('levelup'); this.s_codex(tab); } });
+    });
+    saveProfile(P);
+  }
+
   s_ach() {
     const P = this.P, done = ACHIEVEMENTS.filter(a => P.ach[a.id]).length;
     this.render(`<div class="scr">${this.hdr(`Erfolge <small style="color:var(--mut);font-size:14px">${done}/${ACHIEVEMENTS.length}</small>`)}
@@ -485,9 +576,10 @@ export class Menus {
       return `<div class="mrow"><span class="mpl">${['🥇', '🥈', '🥉', '4', '5'][i]}</span><img src="${img}" alt=""><div><b>${esc(nm)}</b><div class="bar"><u data-w="${v / top * 100}" style="width:0"></u></div></div><span class="gain">${fmt(v)}</span></div>`; }).join('')}<small style="color:var(--mut)">nach verursachtem Schaden</small></div>` : '';
     const a = P.account, need = accNeed(a.level);
     this.render(`<div class="scr res">
-      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.daily ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">📅 Tageskampf geschafft! +1 Shinobi-Punkt</p>` : ''}${r.medal ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">🏅 Neue Medaille: ${esc(r.medal.name)} · +1 Shinobi-Punkt</p>` : r.ch && r.ch.id !== 'std' ? `<p style="margin:0;color:var(--mut)">${r.ch.icon} ${esc(r.ch.name)}</p>` : ''}${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
+      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.daily ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">📅 Tageskampf geschafft! +1 Shinobi-Punkt</p>` : ''}${r.medal ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">🏅 Neue Medaille: ${esc(r.medal.name)} · +1 Shinobi-Punkt</p>` : r.ch && r.ch.id !== 'std' ? `<p style="margin:0;color:var(--mut)">${r.ch.icon} ${esc(r.ch.name)}</p>` : ''}${r.evWin ? `<p class="trialWin">${esc(r.evName)}: Event-Kampf gewonnen · 🎁×${r.evWin}</p>` : ''}${r.floor ? `<p class="trialWin">🗼 Turm-Etage ${r.floor.n} geschafft: ${esc(r.floor.name)}${r.floor.n % 5 ? '' : ' · +1 Shinobi-Punkt'}</p>` : ''}${r.trial ? `<p class="trialWin">🏅 Meisterprüfung bestanden: ${esc(r.trial.name)} · +${TRIAL_SP} Shinobi-Punkte · Spezialisierung frei!</p>` : ''}${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
       <p style="text-align:center;margin:0;color:var(--mut)">${esc(r.map)} · ${esc(r.diff)} · Welle ${r.wave}${r.maxWave === Infinity ? '' : '/' + r.maxWave}${r.perfect ? ' · <b style="color:var(--run)">PERFEKT!</b>' : ''}</p>
-      ${mvp}<div class="rgrid"><div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.hero ? `<span>${esc(HEROES[r.hero.id]?.name || 'Held')} erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>
+      ${r.records?.length ? `<div class="sect recs">${r.records.map(x => `<div class="newrec">🏅 NEUER REKORD · ${esc(x)}</div>`).join('')}</div>` : ''}${this.goals(r)}
+      ${mvp}<div class="rgrid"><div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.combo >= 5 ? `<span>Beste Combo</span><b>×${r.combo}</b>` : ''}${r.hero ? `<span>${esc(HEROES[r.hero.id]?.name || 'Held')} erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>
       <div class="sect char"><h3>CHARAKTER-XP</h3>${xpRows}${r.won ? '<small style="color:var(--mut)">inkl. +25 % Siegbonus</small>' : '<small style="color:var(--mut)">Alle verdienten XP bleiben erhalten.</small>'}
         ${r.masteryUps.map(m => `<div class="newform">★ ${esc(CREATURES[m.cid].name)}: Meisterschaft ${m.m}!</div>`).join('')}</div>
       <div class="sect acc"><h3>KONTO</h3><div class="xprow" style="grid-template-columns:1fr auto"><div><b>Level ${a.level}</b>${r.accUps.length ? ` <span class="up2" style="color:var(--acc)">⬆ +${r.accUps.length}</span>` : ''}<div class="bar acc"><u data-w="${a.xp / need * 100}" style="width:0%"></u></div></div><span class="gain" style="color:var(--acc)">+${fmt(r.accGain)}</span></div>
@@ -496,7 +588,7 @@ export class Menus {
         ${r.achs.map(x => `<div class="newform">🏆 ${esc(x.name)} <small>+${x.xp}</small></div>`).join('')}
         ${r.chests ? `<div class="newform" style="color:#ffe9a0">🎁 +${r.chests} Truhe${r.chests > 1 ? 'n' : ''} – im Menü unter „Truhen“ öffnen</div>` : ''}
         ${r.powGot?.length ? `<h3 style="margin-top:8px">⚡ NEUE KRÄFTE</h3><div class="rpow">${r.powGot.map(id => `<span>${POWER[id].icon} ${esc(POWER[id].name)}</span>`).join('')}</div>` : ''}</div>
-      </div><div class="seg" style="grid-template-columns:1fr 1fr;max-width:520px;margin:0 auto;width:100%"><button class="btn" data-go="home">Menü</button><button class="big" id="again" style="font-size:18px;padding:12px">↻ Nochmal</button></div>
+      </div><div class="seg" style="grid-template-columns:1fr 1fr;max-width:520px;margin:0 auto;width:100%"><button class="btn" data-go="home">Menü</button><button class="big again2" id="again" style="font-size:20px;padding:12px">▶ NOCH EIN RUN</button></div>
       ${r.charUps.some(u => u.forms.length) ? '<button class="btn" data-go="collection">🦊 Neue Form in der Sammlung ansehen</button>' : ''}</div>`, m => {
       $('again').onclick = () => { this.app.audio.init(); this.app.startRun(r.mapId || 'ahnenhain', r.diffKey); };
       setTimeout(() => m.querySelectorAll('[data-w]').forEach(u => u.style.width = u.dataset.w + '%'), 250);

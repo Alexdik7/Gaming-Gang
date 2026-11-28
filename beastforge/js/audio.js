@@ -71,11 +71,45 @@ export class Audio {
     while (this.next < c.currentTime + 0.25) { S.play(this, this.step, this.next, spb, this.intensity); this.step++; this.next += spb; }
   }
 
+  // ───────── Prioritäten: bei vielen gleichzeitigen Klängen fallen unwichtige weg (Boss, Ultimate, Entwicklung bleiben hörbar) ─────────
+  admit(prio, now) {
+    this.load = (this.load || 0) * Math.exp(-(now - (this.loadT || now)) / 220); this.loadT = now;
+    if (prio === 0 && this.load > 7) return false;
+    this.load += prio === 0 ? 1 : 0.5; return true;
+  }
+  // ───────── Klangsignatur je Kreatur (leise Schicht über dem Angriffsklang, höher mit Stufe) ─────────
+  voice(cid, tier = 0) {
+    const c = this.ctx; if (!c || this.sfx <= 0) return;
+    const now = performance.now(); if (now - (this.last['v_' + cid] || 0) < 120) return; this.last['v_' + cid] = now;
+    if (!this.admit(0, now)) return;
+    const t = c.currentTime + 0.005, B = this.sBus, k = 1 + tier * 0.04 + (Math.random() - 0.5) * 0.05, v = 0.05 + tier * 0.006;
+    switch (VOICE[cid] || 'chime') {
+      case 'bell': this.osc('sine', 1568 * k, t, 0.35, v, B, { rev: true }); this.osc('sine', 2349 * k, t + 0.02, 0.25, v * 0.5, B, { rev: true }); break;   // Kitsune: Glöckchen
+      case 'thunder': this.osc('sine', 70 * k, t, 0.2, v * 2.2, B, { to: 40 }); this.noiseHit(t, 0.08, v * 1.2, B, { type: 'highpass', f: 3000 }); break;   // Tiger: Wumms + Knistern
+      case 'water': this.osc('sine', 900 * k, t, 0.12, v * 1.2, B, { to: 260, toT: 0.1 }); this.osc('sine', 110, t, 0.18, v, B); break;   // Schildkröte: Blubb + Panzer
+      case 'chimes': for (let i = 0; i < 3; i++) this.osc('sine', [2093, 2637, 3136][i] * k, t + i * 0.04, 0.4, v * 0.6, B, { rev: true }); break;   // Kirin
+      case 'pipe': this.osc('triangle', 1175 * k, t, 0.12, v, B, { lp: 3000 }); break;   // Hirsch
+      case 'caw': this.osc('sawtooth', 700 * k, t, 0.1, v * 0.6, B, { to: 380, lp: 1800 }); break;   // Rabe
+      case 'breath': this.noiseHit(t, 0.25, v * 1.4, B, { type: 'lowpass', f: 900, to: 300 }); break;   // Drachenwolf
+      case 'shing': this.noiseHit(t, 0.08, v * 1.2, B, { type: 'bandpass', f: 6000, q: 6 }); this.osc('sine', 2637 * k, t, 0.15, v * 0.5, B); break;   // Mantis
+      case 'rock': this.osc('sine', 60 * k, t, 0.2, v * 2, B, { to: 35 }); this.noiseHit(t, 0.1, v, B, { type: 'lowpass', f: 400 }); break;   // Golem
+      case 'jingle': this.osc('square', 2637 * k, t, 0.05, v * 0.4, B, { lp: 5000 }); this.osc('square', 3136 * k, t + 0.04, 0.06, v * 0.35, B, { lp: 5000 }); break;   // Glückskatze
+      case 'whoosh': this.noiseHit(t, 0.22, v * 1.3, B, { type: 'bandpass', f: 600, to: 2400, q: 1.2 }); break;   // Phönix
+      case 'hiss': this.noiseHit(t, 0.16, v, B, { type: 'highpass', f: 5000 }); break;   // Schlangenmagierin
+      case 'wind': this.noiseHit(t, 0.2, v * 1.2, B, { type: 'bandpass', f: 1400, to: 700, q: 2 }); break;   // Mönch
+      case 'warp': { const o = this.osc('sine', 520 * k, t, 0.25, v, B, { to: 1040 * k, rev: true }); void o; break; }   // Leerenkatze
+      case 'bubble': this.osc('sine', 600 * k, t, 0.06, v * 1.2, B, { to: 1400 }); break;   // Kappa
+      case 'growl': this.osc('sawtooth', 95 * k, t, 0.18, v * 0.9, B, { lp: 500, to: 70 }); break;   // Komainu
+      default: this.osc('sine', 1760 * k, t, 0.2, v * 0.6, B, { rev: true });
+    }
+  }
+
   // ───────── Effekte ─────────
   play(name, o = {}) {
     const c = this.ctx; if (!c || this.sfx <= 0) return;
     const t = c.currentTime + 0.005, B = this.sBus, now = performance.now();
     const thr = THROTTLE[name]; if (thr) { if (now - (this.last[name] || 0) < thr) return; this.last[name] = now; }
+    if (!this.admit(LOWPRIO.has(name) ? 0 : 1, now)) return;
     const p = 1 + (Math.random() - 0.5) * 0.08;
     switch (name) {
       case 'whoosh': this.noiseHit(t, 0.32, 0.07, B, { f: 500, to: 3800, q: 1.2 }); this.osc('sine', 220 * p, t, 0.2, 0.04, B, { to: 520 }); break;
@@ -128,6 +162,9 @@ export class Audio {
     }
   }
 }
+// Klangsignatur je Kreatur (Fusionen nutzen den Körper)
+const VOICE = { kitsune: 'bell', tiger: 'thunder', turtle: 'water', kirin: 'chimes', deer: 'pipe', raven: 'caw', dragonwolf: 'breath', mantis: 'shing', golem: 'rock', neko: 'jingle', phoenix: 'whoosh', naga: 'hiss', monk: 'wind', voidcat: 'warp', kappa: 'bubble', komainu: 'growl' };
+const LOWPRIO = new Set(['hit', 'pop', 'coin', 'kunai', 'feather', 'leaf', 'shuriken', 'slash', 'frost', 'fire', 'zap', 'pulse', 'mortar', 'crit']);
 const THROTTLE = { frost: 110, slash: 55, kunai: 60, fire: 90, zap: 80, hit: 45, coin: 50, crit: 70, pulse: 120, feather: 60, leaf: 80, shuriken: 70, pop: 40, boom: 90, react: 120, mortar: 120 };
 
 // Tonleitern: In (D Es G A B) = Kampf/Boss, Yo (D E G A H) = Menü

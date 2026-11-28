@@ -1,5 +1,5 @@
 // BEASTFORGE – alle Balance-Regler an EINEM Ort. Keine Zahlen in der Logik verstreuen.
-export const VERSION = '0.37.2';
+export const VERSION = '0.54.0';
 
 export const BAL = {
   tick: 1 / 60,               // fester Simulationsschritt (s)
@@ -15,6 +15,9 @@ export const BAL = {
     maxTowers: 40,
     knockCap: 4,
     ascendCost: 40,           // Ahnenform: Kosten = Kaufpreis × 40
+    mega: { cost: 14, kills: 100, lvl: 20 },
+    megaAtk: { cd: [6, 8, 5], zornMul: 6, zornR: 1.7, bannMul: 2, bannStun: 1.4, bannBoss: 0.4, klingeMul: 4, klingeN: 6 },   // Mega-Spezialattacken: A Zornschlag · B Bannkreis · C Klingensturm
+    megaFuse: { cost: 7, kills: 150, lvl: 25 },   // Mega-Fusion: Kosten = Fusions-Kaufpreis (A+B) × 7   // Mega-Form: Kosten = Kaufpreis × 14, Besiegte im Run, Charakter-Level
               // Rückstoß insgesamt pro Gegner (Felder)
     packR: 1.35,              // Rudel: Kreaturen bis zu diesem Abstand gelten als Nachbarn (zusammenhängende Gruppe)
     packDmg: 0.06, packRate: 0.025, // je weiterer Kreatur im Rudel: ×1,06 Schaden, ×1,025 Tempo – multiplikativ, OHNE Obergrenze
@@ -35,6 +38,10 @@ export const BAL = {
 
   // Kreuzpfade: ein Pfad bis 5, ein zweiter bis 2, der dritte bleibt zu
   cross: { main: 5, second: 2 },
+  boss: { tele: 1.6, weakMul: 0.6, breakPct: 0.035, stagger: 1.5 },   // Bosse 2.0: Vorwarnung (s), Schwachpunkt +60 %, Unterbrechen ab 3,5 % Max-KP Schaden, Taumeln (s)
+  combo: { window: 1.4, steps: [10, 25, 50, 100, 200], coins: [15, 40, 100, 250, 600], cdr: [0, 1, 2, 3, 4], show: 5 },   // Combo: Kills in Folge (Zeitfenster s), Belohnung je Stufe, Fähigkeiten-Abklingzeit −s
+  coop: { linkR: 2.2, linkDmg: 0.1, linkRate: 0.06 },   // Seelenband: Kreaturen verschiedener Spieler nahe beieinander
+  rush: { start: 7500, lives: 100, hp: 0.65, gold: [5000, 7500, 10000, 13000, 15000] },   // Boss-Rush: Start-Kasse, Boss-KP-Faktor, Kriegskasse nach Boss n
   power: { cd: 1.5, bomb: 500, bombWave: 70, bombR: 2.4, gold: 250, goldWave: 25 },   // Kräfte (data/powers.js)
 
   // ---- SYSTEM B: Charakter-XP (pro Kreatur, dauerhaft) ----
@@ -74,7 +81,7 @@ export const BAL = {
   mastery: [0, 1, 4, 10, 22, 45],
 
   // Elemente: Status hält so lange; Reaktion pro Gegner höchstens alle x s
-  elem: { mark: 3.0, reactCd: 1.2 },
+  elem: { mark: 3.0, reactCd: 1.2, chainWin: 2.5, chainMul: 0.25 },   // Kettenreaktion: Fenster (s), +25 % je weitere Reaktion
 
   ability: { slowMo: 0.3, slowMoTime: 0.45 },
 };
