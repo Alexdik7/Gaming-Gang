@@ -820,3 +820,19 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 #abilities .ab { flex: none; position: relative; }
 #abilities.many { gap: 5px; } #abilities.many .ab { transform: scale(.86); transform-origin: bottom center; margin: 0 -4px; }
 .ab .abn { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 20px; padding: 0 4px; border-radius: 10px; background: #ffd257; color: #3a2400; font-size: 11px; font-weight: 900; display: grid; place-items: center; border: 2px solid #1c1638; z-index: 2; }
+/* Fusionsbuch (v0.56) */
+.fsbtn { background: radial-gradient(circle at 35% 30%, #e8c8ff, #8a4aff); color: #fff; font-size: 22px; }
+.fsbtn.ready { animation: nring 1.3s ease-in-out infinite; }
+.fsbtn i.hidden { display: none; }
+#fusebook { position: absolute; top: calc(62px + var(--st)); left: 50%; transform: translateX(-50%); width: min(620px, calc(100vw - var(--shopW, 0px) - 40px)); max-height: calc(100% - 80px - var(--st) - var(--sb)); display: flex; flex-direction: column; border-radius: 18px; background: var(--pnl, rgba(30,20,60,.95)); border: 3px solid #10162a; box-shadow: 0 8px 24px rgba(0,0,0,.55); pointer-events: auto; z-index: 7; animation: pwIn .18s ease-out; overflow: hidden; }
+#fusebook.hidden { display: none; }
+.fbh { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: linear-gradient(90deg, #6a3ad8, #3a2a7a); }
+.fbh b { font: 20px var(--cartoon, inherit); color: #fff; white-space: nowrap; } .fbh small { flex: 1; color: #e0d8ff; font-size: 11px; line-height: 1.25; }
+.fbl { overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; -webkit-overflow-scrolling: touch; }
+.fbr { display: flex; align-items: center; gap: 10px; text-align: left; padding: 6px 10px; border-radius: 14px; background: rgba(16,12,36,.7); border: 2px solid color-mix(in srgb, var(--fc) 35%, transparent); color: #fff; font: inherit; }
+.fbp { display: flex; align-items: center; gap: 2px; flex: none; } .fbp img { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,.08); } .fbp img:last-child { width: 50px; height: 50px; border: 2px solid var(--fc); }
+.fbp i { font-style: normal; font-weight: 900; color: var(--mut); font-size: 14px; }
+.fbt { display: flex; flex-direction: column; min-width: 0; } .fbt b { color: var(--fc); font-size: 15px; } .fbt small { color: var(--mut); font-size: 11px; } .fbt .fbd { color: #d8d0f0; }
+.fbt em { font-style: normal; font-weight: 800; font-size: 12px; margin-top: 2px; color: #ff9a8a; }
+.fbr.k3 { border-color: #5aff8a; background: rgba(40,90,60,.45); } .fbr.k3 em { color: #7aff9a; }
+.fbr.k2 em { color: #ffd257; } .fbr.k0 { opacity: .55; } .fbr.k0 em { color: var(--mut); }

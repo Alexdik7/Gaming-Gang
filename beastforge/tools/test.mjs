@@ -826,3 +826,11 @@ test('v0.55: 6 neue Kreaturen, 4 Helden, 6 Fusionen – setzen, aufwerten, Fähi
   assert.equal(FUSIONS.length, 18);
   for (const f of FUSIONS.slice(12)) assert.ok(CREATURES[f.a] && CREATURES[f.b] && CREATURES[f.id].fusion, f.id);
 });
+
+test('Koop endlos: Wellen ohne Ende, beide Welten bleiben gleich', () => {
+  const mk = () => new World({ map: 'ahnenhain', diff: 'endless', seed: 9, hooks: {}, players: 2 });
+  const a = mk(), b = mk(); assert.equal(a.maxWave, Infinity);
+  for (const w of [a, b]) { w.god = true; w.wave = 99; w.doneWave = 99; assert.ok(w.startWave().ok); for (let i = 0; i < 600; i++) w.step(1 / 60); }
+  assert.ok(a.peekWave() && a.waveDef(250).groups.length > 0, 'auch Welle 250 existiert');
+  assert.equal(a.enemies.length, b.enemies.length); assert.equal(Math.round(a.wallet[0]), Math.round(b.wallet[0]));
+});

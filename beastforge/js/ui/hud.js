@@ -5,6 +5,7 @@ import { CREATURES, PATH_COLORS } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
 import { POWERS } from '../data/powers.js';
 import { megaDef } from '../data/megas.js';
+import { FUSIONS, FUSE } from '../data/fusions.js';
 import { punch, shake, ring, flyTo } from './anim.js';
 import { MOD_NAMES } from '../data/waves.js';
 import { ENEMIES, BOSSES, ELEMENT_NAMES, ELEMENT_COLORS } from '../data/enemies.js';
@@ -24,12 +25,13 @@ export class Hud {
   constructor(game) {
     this.g = game; this.w = game.world; this.P = game.P;
     $('hud').classList.remove('hidden'); $('menu').innerHTML = '';
-    $('panel').classList.add('hidden'); $('bossBar').classList.add('hidden'); $('toasts').innerHTML = ''; $('banner').innerHTML = ''; $('bubbles').innerHTML = '';
+    $('panel').classList.add('hidden'); $('fusebook').classList.add('hidden'); $('bossBar').classList.add('hidden'); $('toasts').innerHTML = ''; $('banner').innerHTML = ''; $('bubbles').innerHTML = '';
     this.last = {}; this.abT = 0;
     $('bPause').onclick = () => this.pause();
     $('bPlay').onclick = () => this.playBtn();
     $('bAuto').onclick = () => { const S = this.g.settings(); S.autoWave = !S.autoWave; saveProfile(this.P); this.g.app.audio.play('click'); this.last.auto = null; if (S.autoWave && !this.w.waveRunning() && !this.w.over) this.playBtn(); };
     $('bCancel').onclick = () => this.g.cancelPlace();
+    $('bFuse').onclick = () => this.fuseBook();
     $('bPow').onclick = () => { $('powbar').classList.toggle('hidden'); this.g.app.audio.play('click'); this.updPowers(); };
     $('powbar').classList.add('hidden'); this.updPowers();
     $('bEarly').onclick = () => this.early();
@@ -89,6 +91,8 @@ export class Hud {
   // ───────── jedes Bild ─────────
   update(dt) {
     const w = this.w;
+    if ((this.fbT = (this.fbT || 0) - dt) <= 0) {   // Fusionsbuch-Zähler: wie viele Fusionen gerade möglich sind
+      this.fbT = 0.5; const n = this.fuseReady(); if (n !== this.last.fuseN) { this.last.fuseN = n; const el = $('hFuseN'); el.textContent = n; el.classList.toggle('hidden', !n); $('bFuse').classList.toggle('ready', n > 0); if (n > (this.last.fuseN0 || 0)) punch($('bFuse'), 1.3, 300); this.last.fuseN0 = n; } }
     const coins = Math.floor(w.coins);
     if (w.players > 1) { const mc = Math.floor(w.wallet[1 - this.g.me] || 0); if (mc !== this.last.mate) { this.last.mate = mc; const el = $('hMate'); if (el) el.textContent = '◈ ' + fmt(mc); }
       const mo = 1 - this.g.me, mn = w.towers.reduce((a, t) => a + ((t.owner || 0) === mo && !t.hero ? 1 : 0), 0), off = !this.g.net;
@@ -139,6 +143,32 @@ export class Hud {
   early() { if (this.w.waveRunning() && this.g.cmd('startWave').ok) this.g.app.audio.play('click'); }
   cycleSpeed() { if (this.g.net && !this.g.net.host) { this.tip('Das Tempo bestimmt der Gastgeber', 1.5); return; } this.g.speed = this.g.speed >= 3 ? 1 : this.g.speed + 1; this.g.app.audio.play('click'); }
   // Kräfte-Leiste: Vorrat aus dem Profil, Tippen = einsetzen (Ziel-Kräfte: danach auf die Karte tippen)
+  // ───────── Fusionsbuch: alle Rezepte, was gerade möglich ist, was fehlt ─────────
+  fuseStatus(f) {
+    const w = this.w, mine = t => w.mine(t) && !t.hero, A = w.towers.filter(t => mine(t) && t.cid === f.a), B = w.towers.filter(t => mine(t) && t.cid === f.b);
+    const inShop = c => w.loadout.includes(c);
+    if (!inShop(f.a) || !inShop(f.b)) return { k: 0, txt: '🔒 ' + [f.a, f.b].filter(c => !inShop(c)).map(c => CREATURES[c].name).join(' + ') + ' noch nicht freigeschaltet' };
+    if (!A.length || !B.length) return { k: 1, txt: 'Fehlt auf dem Feld: ' + [!A.length && f.a, !B.length && f.b].filter(Boolean).map(c => CREATURES[c].name).join(' + ') };
+    let best = null; for (const t of A) { const o = w.fuseOptions(t).find(x => x.f.id === f.id); if (o && (!best || (o.ok && !best.ok))) best = { ...o, t }; }
+    if (best?.ok) return { k: 3, txt: '✓ Jetzt möglich – antippen', t: best.t };
+    return { k: 2, txt: best?.why || 'Fast bereit', t: best?.t };
+  }
+  fuseReady() { return FUSIONS.reduce((n, f) => n + (this.fuseStatus(f).k === 3 ? 1 : 0), 0); }
+  fuseBook(close) {
+    const box = $('fusebook'), open = !box.classList.contains('hidden');
+    if (close || open) { box.classList.add('hidden'); if (this.fbPaused) { this.g.paused = false; this.fbPaused = false; } return; }
+    this.g.app.audio.play('click'); $('powbar').classList.add('hidden');
+    if (!this.g.net && !this.g.paused) { this.g.paused = true; this.fbPaused = true; }   // allein: Spiel ruht, solange das Buch offen ist
+    const rows = FUSIONS.map(f => ({ f, st: this.fuseStatus(f) })).sort((a, b) => b.st.k - a.st.k);
+    const pic = (id, o) => `<img src="${portrait(id, o)}" alt="">`;
+    box.innerHTML = `<div class="fbh"><b>⚭ Fusionsbuch</b><small>Stelle beide Kreaturen nebeneinander (max. ${FUSE.range} Felder), erwecke beide (Form 1) und tippe im Upgrade-Fenster auf Fusion.</small><button class="ibtn" id="fbX">✕</button></div>
+      <div class="fbl">${rows.map(({ f, st }) => `<button class="fbr k${st.k}" data-f="${f.id}" style="--fc:${f.color}">
+        <span class="fbp">${pic(f.a, { stage: 1 })}<i>+</i>${pic(f.b, { stage: 1 })}<i>→</i>${pic(f.id, { stage: 0 })}</span>
+        <span class="fbt"><b>${esc(f.name)}</b> <small>${esc(CREATURES[f.a].name)} + ${esc(CREATURES[f.b].name)} · ◈ ${fmt(f.cost)}</small><small class="fbd">${esc(f.desc)}</small><em>${esc(st.txt)}</em></span></button>`).join('')}</div>`;
+    $('fbX').onclick = () => this.fuseBook(true);
+    box.querySelectorAll('[data-f]').forEach(el => el.onclick = () => { const r = rows.find(x => x.f.id === el.dataset.f); if (r?.st.t) { this.fuseBook(true); this.g.select(r.st.t); setTimeout(() => { const fb = document.querySelector('#panel [data-fuse]'); if (fb) { fb.scrollIntoView({ block: 'center', behavior: 'smooth' }); punch(fb, 1.08, 400); } }, 120); } });
+    box.classList.remove('hidden');
+  }
   updPowers() {
     const P = this.P, tot = POWERS.reduce((a, p) => a + (P.powers[p.id] || 0), 0);
     $('hPowN').textContent = tot; $('bPow').classList.toggle('empty', !tot);

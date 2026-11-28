@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.55.0 – 6 Kreaturen, 4 Helden, 6 Fusionen, Fähigkeiten-Leiste ohne Grenze
+## Stand: v0.56.0 – Fusionsbuch im Spiel, Koop endlos
+**0.56:** **Fusionsbuch** im Run: Knopf `#bFuse` (⚭, Zähler = gerade mögliche Fusionen, pulsiert) öffnet `#fusebook` (`hud.fuseBook`/`fuseStatus`/`fuseReady`): alle 18 Rezepte mit Bildern A + B → Ergebnis, Preis, Beschreibung und Status (✓ jetzt möglich / Grund aus `world.fuseOptions` / fehlt auf dem Feld / noch nicht freigeschaltet), mögliche zuerst; Antippen wählt die Kreatur und scrollt zum Fusions-Knopf. Allein pausiert das Spiel, solange das Buch offen ist (Koop nicht). **Koop endlos:** Schwierigkeit „♾ Endlos“ immer wählbar (`menus.s_coop`), Wellen ohne Ende bis zur Niederlage; e2e `coop` spielt jetzt endlos.
+
+## Stand davor: v0.55.0 – 6 Kreaturen, 4 Helden, 6 Fusionen, Fähigkeiten-Leiste ohne Grenze
 **0.55:** **Fähigkeiten-Leiste** (`hud.updAbilities`): keine Obergrenze mehr (vorher nur 8 Knöpfe → Rest nicht nutzbar). Gleiche Fähigkeit (Fähigkeits-Id + Platz) = ein Knopf mit Zähler `bereit/gesamt`; Tippen löst die Kreatur mit der kürzesten Abklingzeit aus; Leiste scrollt seitlich (`#abilities`, `.abn`).
 **Kreaturen** (Daten in `creatures.js`, Modelle prozedural in `render/beasts.js`, `KIT` in looks.js, `AFX`, `VOICE`, Freischaltung `ACCOUNT_REWARDS`): Hotaru (Lv 3, Glühwürmchen-Schwarm, Licht, `lanternfx`), Tanuki (Lv 5, Blätter/Verwandlung/Gold, `transform`), Kodama (Lv 12, Baumgeist-Unterstützer, `grovefx`), Koi (Lv 15, Wasser-Durchschlag → Koi-Drache, `dragongate`), Jorōgumo `kumo` (Lv 17, Netz/Gift, `webfx`), Schneehase `usagi` (Lv 20, Eis-Scharfschütze, `moonfall`). Neue Geschosse `icicle`/`firefly`/`silk` (fx.js).
 **Helden** (`heroes.js`, Modelle in `HEROES3D`/`SRC`): Nami (Lv 4, `tsunami`/`maelstrom`), Akane (Lv 9, `pyre`/`inferno`), Kuro (Lv 14, `spirits`/`reaper`), Tetsu (Lv 21, `forge`/`iaido`).

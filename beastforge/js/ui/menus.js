@@ -107,7 +107,7 @@ export class Menus {
   s_coop(state) {
     const P = this.P, N = this.coopNet; state = state || (N ? (N.host ? (N.mate ? 'ready' : 'wait') : 'joined') : 'start');
     const maps = Object.keys(MAPS).filter(id => unlocked(P, 'map', id)), sel = this.coopMap && maps.includes(this.coopMap) ? this.coopMap : maps[0];
-    const diffs = ['normal', ...(unlocked(P, 'mode', 'hard') ? ['hard'] : [])], dsel = diffs.includes(this.coopDiff) ? this.coopDiff : 'normal';
+    const diffs = ['normal', ...(unlocked(P, 'mode', 'hard') ? ['hard'] : []), 'endless'], dsel = diffs.includes(this.coopDiff) ? this.coopDiff : 'normal';
     const body = {
       start: `<div class="cpbox"><p>Spielt zu zweit auf derselben Karte: <b>gemeinsame Münzen und Leben</b>, jeder setzt und verbessert Kreaturen. Euer Team besteht aus den Kreaturen von euch beiden.</p>
         <button class="big" id="cpHost">🏠 Raum erstellen</button>
@@ -117,7 +117,7 @@ export class Menus {
       ready: `<div class="cpbox"><div class="cpmate">🤝 <b>${esc(N?.mate?.name || 'Mitspieler')}</b> · Konto-Lv ${+N?.mate?.lvl || 1} ist da!</div>
         <div class="cpheroes">${(() => { const myH = unlocked(P, 'hero', P.hero) ? P.hero : unlocked(P, 'hero', 'kairo') ? 'kairo' : null, mh = HEROES[N?.mate?.hero] ? N.mate.hero : null; const hh = (id, who, c) => `<div class="cph" style="--c:${c}">${id ? `<img src="${portrait(id, { hlvl: 1 })}" alt="">` : '<span>–</span>'}<small>${who}</small><b>${id ? esc(HEROES[id].name) : 'kein Held'}</b></div>`; return hh(myH, 'Dein Held', '#4aa8ff') + hh(mh, 'Held deines Mitspielers', '#ffa03a'); })()}</div>
         <div class="wlabel">Karte</div><div class="cpsel">${maps.map(id => `<button class="btn ${id === sel ? 'pri' : ''}" data-cm="${id}">${esc(MAPS[id].name)}</button>`).join('')}</div>
-        <div class="wlabel">Schwierigkeit</div><div class="cpsel">${diffs.map(d => `<button class="btn ${d === dsel ? 'pri' : ''}" data-cd="${d}">${esc(BAL.diff[d].name)}</button>`).join('')}</div>
+        <div class="wlabel">Schwierigkeit</div><div class="cpsel">${diffs.map(d => `<button class="btn ${d === dsel ? 'pri' : ''}" data-cd="${d}">${d === 'endless' ? '♾ ' : ''}${esc(BAL.diff[d].name)}</button>`).join('')}</div>${dsel === 'endless' ? '<small class="mut">Endlos: Wellen ohne Ende – ihr spielt, bis ihr verliert.</small>' : ''}
         <button class="big" id="cpGo">⚔ Gemeinsam starten</button></div>`,
       joined: `<div class="cpbox"><div class="cpcode">${esc(N?.code || '')}</div><div class="cpwait">✓ Verbunden – der Gastgeber wählt die Karte …</div></div>`,
       busy: `<div class="cpbox"><div class="cpwait">⏳ Verbinde …</div><p id="cpProg">${esc(this.coopProg || '')}</p><small class="mut" id="cpTime"></small><button class="btn" id="cpCancel">Abbrechen</button></div>`,
