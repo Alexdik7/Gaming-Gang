@@ -239,6 +239,11 @@ export class GameView {
       const [ax, az] = this.toW(a.x, a.y), [bx, bz] = this.toW(b.x, b.y), f = Math.random(), c = pk.grp.length >= 6 ? 0xff9bf0 : pk.grp.length >= 4 ? 0xffd257 : 0x9ff6ff;
       this.parts.spawn(ax + (bx - ax) * f, 0.12 + Math.sin(f * PI) * 0.18, az + (bz - az) * f, 0, 0.25, 0, c, 0.09, 0.7, { drag: 1 });
     }
+    // Koop-Seelenband: Funken in beiden Spielerfarben wandern zwischen den Partnern
+    if (Math.random() < dt * 4) for (const [a, b] of this.world.coopLinks || []) {
+      const [ax, az] = this.toW(a.x, a.y), [bx, bz] = this.toW(b.x, b.y), f = Math.random(), c = Math.random() < 0.5 ? 0x4aa8ff : 0xffa03a;
+      this.parts.spawn(ax + (bx - ax) * f, 0.2 + Math.sin(f * PI) * 0.5, az + (bz - az) * f, 0, 0.2, 0, c, 0.11, 0.7, { drag: 1 });
+    }
     // Synergie-Funken
     if (Math.random() < dt * 3) for (const s of this.world.synergies) for (const [a, b] of s.links) {
       const [ax, az] = this.toW(a.x, a.y), [bx, bz] = this.toW(b.x, b.y), f = Math.random();

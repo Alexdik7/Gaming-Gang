@@ -35,7 +35,7 @@ export class Hud {
     $('bEarly').onclick = () => this.early();
     this.buildTray(); this.updAcc();
     document.querySelector('.runbox .coop')?.remove();
-    if (game.net) { const c = document.createElement('div'); c.className = 'pill coop'; c.title = 'Geld deines Mitspielers'; c.innerHTML = `<span class="ic">🤝</span><b id="hMate">◈ 0</b>`; document.querySelector('.runbox').appendChild(c); document.querySelector('.runbox .coins')?.classList.add('p' + game.me); c.classList.add('p' + (1 - game.me)); }
+    if (game.net) { const c = document.createElement('div'), mh = game.coop?.heroes?.[1 - game.me]; c.className = 'pill coop mate'; c.id = 'hMateBox'; c.title = 'Dein Mitspieler: Held, Geld, Kreaturen'; c.innerHTML = `<span class="mport">${mh ? `<img src="${portrait(mh, { hlvl: 1 })}" alt="">` : '🤝'}<i class="mdot"></i></span><span class="mtx"><small>${game.me ? 'GASTGEBER' : 'MITSPIELER'}</small><b id="hMate">◈ 0</b></span><span class="mcnt" id="hMateN">0🐾</span>`; document.querySelector('.runbox').appendChild(c); document.querySelector('.runbox .coins')?.classList.add('p' + game.me); c.classList.add('p' + (1 - game.me)); }
     this.coachStep = this.P.seen.intro ? -1 : 0; this.coach();
     this.resizeObs = () => { this.insets(); this.coach(); }; addEventListener('resize', this.resizeObs); setTimeout(() => this.insets(), 0);
   }
@@ -90,7 +90,9 @@ export class Hud {
   update(dt) {
     const w = this.w;
     const coins = Math.floor(w.coins);
-    if (w.players > 1) { const mc = Math.floor(w.wallet[1 - this.g.me] || 0); if (mc !== this.last.mate) { this.last.mate = mc; const el = $('hMate'); if (el) el.textContent = '◈ ' + fmt(mc); } }
+    if (w.players > 1) { const mc = Math.floor(w.wallet[1 - this.g.me] || 0); if (mc !== this.last.mate) { this.last.mate = mc; const el = $('hMate'); if (el) el.textContent = '◈ ' + fmt(mc); }
+      const mo = 1 - this.g.me, mn = w.towers.reduce((a, t) => a + ((t.owner || 0) === mo && !t.hero ? 1 : 0), 0), off = !this.g.net;
+      if (mn !== this.last.mateN || off !== this.last.mateOff) { this.last.mateN = mn; this.last.mateOff = off; const e2 = $('hMateN'); if (e2) e2.textContent = mn + '🐾'; $('hMateBox')?.classList.toggle('off', off); } }
     if (coins !== this.last.coins) { $('hCoins').textContent = fmt(coins); if (coins > (this.last.coins ?? 0) && performance.now() - (this.punchT || 0) > 120) { this.punchT = performance.now(); punch($('hCoins').parentElement, 1.14, 220); } this.last.coins = coins; }
     this.updCombo();
     if (w.lives !== this.last.lives) { $('hLives').textContent = w.lives; if (w.lives < (this.last.lives ?? 1e9)) { const p = $('hLives').parentElement; p.classList.remove('hurt'); void p.offsetWidth; p.classList.add('hurt'); } this.last.lives = w.lives; }
@@ -349,6 +351,7 @@ export class Hud {
       case 'ascend': this.ascendSplash(e); break;
       case 'storm': if (e.on) this.banner('❄ SCHNEESTURM ❄', 'Gegner langsamer · Eiskreaturen schneller · andere frieren', 'boss'); else this.toast('syn', 'Der Sturm legt sich', ''); break;
       case 'power': { const pw = POWERS.find(x => x.id === e.id); this.flash(e.id === 'bomb' ? 0.45 : 0.3, pw?.color || '#fff'); if (pw) this.banner(pw.icon + ' ' + pw.name.toUpperCase(), e.id === 'gold' ? '+◈' + e.coins : e.id === 'heal' ? '+' + e.lives + ' Leben' : '', 'evo'); this.updPowers(); break; }
+      case 'coopLink': this.toast('syn', '🔗 SEELENBAND!', `Eure Kreaturen nebeneinander: +${Math.round(BAL.coop.linkDmg * 100)} % Schaden, +${Math.round(BAL.coop.linkRate * 100)} % Tempo`); break;
       case 'rushGold': setTimeout(() => { this.banner('💰 KRIEGSKASSE', '+◈' + fmt(e.coins) + ' – der nächste Boss naht', 'evo'); for (let i = 0; i < 8; i++) setTimeout(() => flyTo(innerWidth * (0.4 + Math.random() * 0.2), innerHeight * 0.4, $('hCoins').parentElement, '◈'), i * 60); }, 1400); break;
       case 'rebirth': this.flash(0.5, '#ffb43a'); this.banner('WIEDERGEBURT', 'Der Phönix schenkt dir ' + e.lives + ' Leben', 'evo'); break;
       case 'early': this.toast('syn', `+◈${e.coins} früh gerufen`, ''); break;

@@ -775,3 +775,13 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .anode.hid { border-style: dashed; color: #9fe8ff; opacity: .7; }
 .arow.sec { background: linear-gradient(90deg, rgba(60,140,190,.25), rgba(20,15,42,.7)); }
 .trialWin { margin: 0; color: #ffd257; font-weight: 900; text-align: center; text-shadow: 0 0 12px rgba(255,180,40,.6); }
+/* Koop-Spieler-Leiste (v0.49) */
+.pill.coop.mate { display: flex; align-items: center; gap: 6px; padding: 2px 10px 2px 3px; }
+.mport { position: relative; width: 34px; height: 34px; border-radius: 50%; background: #ffa03a33; display: grid; place-items: center; font-size: 18px; flex: none; }
+.p0 .mport { background: #4aa8ff33; }
+.mport img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.mdot { position: absolute; right: -2px; bottom: -2px; width: 11px; height: 11px; border-radius: 50%; background: #4dff7a; border: 2px solid #1c1638; box-shadow: 0 0 6px #4dff7a; }
+.mate.off .mdot { background: #888; box-shadow: none; } .mate.off { opacity: .6; }
+.mtx { display: flex; flex-direction: column; line-height: 1; } .mtx small { font-size: 9px; font-weight: 900; color: var(--mut); letter-spacing: .5px; }
+.mcnt { font-size: 13px; font-weight: 900; color: #fff; }
+.pill.coop.mate { max-width: none; overflow: visible; } .mcnt { flex: none; white-space: nowrap; }

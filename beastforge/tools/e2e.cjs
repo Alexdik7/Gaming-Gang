@@ -82,14 +82,17 @@ const S = {
     await h.waitForFunction(() => BF.game && BF.game.world, null, { timeout: 30000 }); await g.waitForFunction(() => BF.game && BF.game.world, null, { timeout: 30000 });
     await h.evaluate(() => { document.querySelector('.coach')?.remove(); const w = BF.world, p = w.suggestSpot('raven', 3); BF.game.cmd('place', 'raven', ...p); BF.game.cmd('startWave'); });
     await h.waitForTimeout(600);
-    await g.evaluate(() => { document.querySelector('.coach')?.remove(); const w = BF.world, p = w.suggestSpot('turtle', 3); BF.game.cmd('place', 'turtle', ...p); });
+    await g.evaluate(() => { document.querySelector('.coach')?.remove(); const w = BF.world, r = w.towers.find(t => t.cid === 'raven');   // nahe am Raben → Seelenband
+      let p = null; for (let k = 0; k < 24 && !p; k++) { const a = k * 0.8, d = 1 + (k % 3) * 0.4, x = r.x + Math.cos(a) * d, y = r.y + Math.sin(a) * d; if (w.canPlace('turtle', x, y).ok) p = [x, y]; }
+      BF.game.cmd('place', 'turtle', ...(p || w.suggestSpot('turtle', 3))); });
     await h.waitForTimeout(6000);
-    const T = p => p.evaluate(() => ({ n: BF.world.tickN, towers: BF.world.towers.map(t => t.cid + t.owner).join(), wallet: BF.world.wallet.map(Math.round).join(), wave: BF.world.wave, desync: !!BF.game.desync, net: !!BF.game.net, me: BF.game.me, heroes: BF.world.heroIds.join(), myHero: BF.game.heroId }));
+    const T = p => p.evaluate(() => ({ n: BF.world.tickN, towers: BF.world.towers.map(t => t.cid + t.owner).join(), wallet: BF.world.wallet.map(Math.round).join(), wave: BF.world.wave, desync: !!BF.game.desync, net: !!BF.game.net, me: BF.game.me, heroes: BF.world.heroIds.join(), myHero: BF.game.heroId, links: (BF.world.coopLinks || []).length, bar: !!document.getElementById('hMateBox') }));
     const a = await T(h), c = await T(g); await shot(g, 'co2_guest');
     assert(a.towers.split(',').length === 2 && a.towers === c.towers, 'beide Kreaturen auf beiden Seiten: ' + JSON.stringify([a, c]));
     assert(a.heroes === c.heroes && a.heroes.split(',')[1] === 'raizen' && c.myHero === 'raizen', 'jeder hat seinen Helden: ' + JSON.stringify([a, c]));
     assert(a.towers === 'raven0,turtle1' && a.me === 0 && c.me === 1, 'Besitzer: Gastgeber = 0, Mitspieler = 1: ' + JSON.stringify([a, c]));
     assert(a.net && c.net && !c.desync && c.wave === 1 && Math.abs(a.n - c.n) < 120, 'Lockstep synchron: ' + JSON.stringify([a, c]));
+    assert(a.links === 1 && c.links === 1 && a.bar && c.bar, 'Seelenband + Spieler-Leiste: ' + JSON.stringify([a, c]));
     assert(!h.errs.length && !g.errs.length, [...h.errs, ...g.errs].join(' | '));
     await ctx.close();
   },

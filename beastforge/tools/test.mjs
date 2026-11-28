@@ -721,3 +721,13 @@ test('Boss-Rush: 6 Bosse, Start-Kasse, Kriegskasse, keine Karten-Mischung', asyn
   const { dailyChallenge } = await import('../js/data/daily.js');
   for (let d = 0; d < 30; d++) { const P = defaultProfile(); P.daily = { day: '2026-01-' + (d + 1) }; try { assert.ok(!dailyChallenge(P, () => true).mods.includes('rush')); } catch (e) { if (e.code === 'ERR_ASSERTION') throw e; } }
 });
+
+test('Koop-Seelenband: Kreaturen verschiedener Spieler nahe beieinander werden stärker', () => {
+  const mk = () => { const w = new World({ map: 'ahnenhain', diff: 'normal', seed: 5, hooks: {}, players: 2 }); w.wallet = [9999, 9999]; return w; };
+  const w = mk(), a = w.place('kitsune', 3, 4.5).tower; w.who = 1; const s = w.suggestSpot('kitsune'); 
+  let b = null; for (const [dx, dy] of [[1.2, 0], [-1.2, 0], [0, 1.2], [0, -1.2], [1, 1], [-1, -1]]) { const r = w.place('kitsune', 3 + dx, 4.5 + dy); if (r.ok) { b = r.tower; break; } }
+  assert.ok(a && b, 'beide gesetzt'); assert.equal(b.owner, 1); w.refresh();
+  assert.equal(w.coopLinks.length, 1); assert.ok(a.s.coopLink && b.s.coopLink);
+  const solo = mk(), a2 = solo.place('kitsune', 3, 4.5).tower; solo.refresh();
+  assert.ok(a.s.dmg > a2.s.dmg * 1.05, 'Seelenband-Bonus');
+});

@@ -705,6 +705,14 @@ export class World {
       for (const t of grp) t.pack = grp.length;
       if (grp.length > 1) this.packs.push({ grp, links });
     }
+    // Koop-Seelenband (Vision P12): Kreaturen verschiedener Spieler in Reichweite stärken sich (nicht stapelnd)
+    this.coopLinks = [];
+    if (this.players > 1) {
+      const C = BAL.coop;
+      for (const a of this.towers) for (const b of this.towers) if (a.id < b.id && (a.owner || 0) !== (b.owner || 0) && Math.hypot(a.x - b.x, a.y - b.y) <= C.linkR) { this.coopLinks.push([a, b]); a.linked = b.linked = true; }
+      for (const t of this.towers) if (t.linked) { t.s.dmg *= 1 + C.linkDmg; t.s.rate *= 1 + C.linkRate; t.s.coopLink = true; t.linked = false; }
+      if (this.coopLinks.length && !this.stats.linkSeen) { this.stats.linkSeen = true; this.emit({ t: 'coopLink' }); }
+    }
     for (const t of this.towers) if (t.pack > 1) { const k = t.pack - 1, s = t.s; s.packMul = Math.pow(1 + BAL.run.packDmg, k); s.dmg *= s.packMul; s.rate *= Math.pow(1 + BAL.run.packRate, k); }
     // Auren: pro Wert gilt die stärkste Quelle (kein Stapeln)
     const aura = new Map();

@@ -93,7 +93,7 @@ Das Spiel soll ein kleines, überraschend hochwertiges Anime-Strategiespiel sein
     - Truhen-Seltenheiten (Selten, Episch, Legendär, Mythisch).
     - Abwechslungsreichere Tagesaufgaben und Events mit eigenen Regeln.
 11. **P11 Endgame** – ✅ Teil 1 v0.48: Boss-Rush (6 Bosse, Kriegskasse, Rekord). Offen: Boss Rush, Prüfungsturm, Fusions- und Mega-Prüfungen, Mega-Fusionen.
-12. **P12 Koop-Extras:** Koop-Synergien (z. B. Spirit-Link), Spieler-Leiste mit Held, Geld, Anzahl und Status.
+12. **P12 Koop-Extras** – ✅ v0.49: Seelenband (Kreaturen beider Spieler nebeneinander +10 % Schaden/+6 % Tempo), Spieler-Leiste mit Held, Geld, Anzahl, Status. Ursprünglich: Koop-Synergien (z. B. Spirit-Link), Spieler-Leiste mit Held, Geld, Anzahl und Status.
 
 ## Ehrliche Grenzen
 - **3D-Modelle:** Neue Gestalten entstehen prozedural im Code oder aus CC0-Modellen, die per Knochen umgebaut werden. Handmodellierte Premium-Modelle kann ich nicht erzeugen.

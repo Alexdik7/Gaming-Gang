@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.48.0 – Boss-Rush (Vision P11 Teil 1)
+## Stand: v0.49.0 – Koop-Extras (Vision P12)
+**0.49:** **Seelenband** in `world.refresh`: Kreaturen verschiedener Spieler im Abstand `BAL.coop.linkR` (2,2) → je +10 % Schaden, +6 % Tempo (nicht stapelnd), `world.coopLinks`, Ereignis `coopLink` (Hinweis beim ersten Mal), Funken in beiden Spielerfarben (view). **Spieler-Leiste** `#hMateBox`: Porträt des Mitspieler-Helden, Rolle, Geld `#hMate`, Kreaturen-Anzahl `#hMateN`, Status-Punkt (grau = getrennt). e2e `coop` prüft Seelenband + Leiste.
+
+## Stand davor: v0.48.0 – Boss-Rush (Vision P11 Teil 1)
 **0.48:** Herausforderung `rush` in `data/challenges.js` (frei nach Sieg auf Schwer, `endgame: true` → nicht im Tageskampf): `RUSH` in `data/waves.js` = 6 Bosswellen (Vharox, Hyōga, Fūjin, dann die Erwacht-Stufen) mit Gefolge; `world.waveDef(n)` nimmt im Rush `rushDef`, Karten-`mix` ist aus. `BAL.rush`: Start-Kasse 7500, 100 Leben, Boss-KP ×0,65, Kriegskasse nach jedem Boss (Ereignis `rushGold` → Banner + Münzflug). Rekord `P.stats.bestRush`. Balance-Bot: `RUSH=1 node tools/balance.mjs hard 30 4` (Lv 30 gewinnt, Lv 15 nicht).
 
 ## Stand davor: v0.47.0 – Akademie 2.0 (Vision P9)
