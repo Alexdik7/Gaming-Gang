@@ -742,3 +742,15 @@ test('Truhen-Seltenheiten: Würfel, Belohnung skaliert, Shinobi-Punkte ab Legend
   const n = 20000; let L = 0; for (let i = 0; i < n; i++) if (['legend', 'myth'].includes(ev.rollRarity(i / n).id)) L++;
   assert.ok(Math.abs(L / n - 0.04) < 0.002, 'Legendär+ ≈ 4 %');
 });
+
+test('Prüfungsturm: Etagen der Reihe nach, kürzere Runs, Belohnungen', async () => {
+  const T = await import('../js/data/tower.js'); const { shinobiPoints } = await import('../js/data/academy.js');
+  const P = defaultProfile(); P.account.level = T.TOWER_LVL;
+  assert.ok(T.floorOpen(P, T.FLOORS[0])); assert.equal(T.floorOpen(P, T.FLOORS[1]), false);
+  const sp0 = shinobiPoints(P).earned;
+  for (let i = 0; i < 5; i++) assert.ok(T.clearFloor(P, T.FLOORS[i].id));
+  assert.equal(T.clearFloor(P, 'tower_3'), false, 'alte Etage zählt nicht doppelt');
+  assert.equal(shinobiPoints(P).earned, sp0 + 1); assert.ok(T.floorOpen(P, T.FLOORS[5]));
+  for (const f of T.FLOORS) { const w = new World({ map: f.map, diff: f.diff, seed: 1, hooks: {}, mods: f.mods }); assert.equal(w.maxWave, f.waves, f.id); assert.ok(w.peekWave(), f.id); }
+  const low = defaultProfile(); assert.equal(T.floorOpen(low, T.FLOORS[0]), false, 'Konto-Level');
+});

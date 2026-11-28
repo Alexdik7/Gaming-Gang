@@ -73,7 +73,7 @@ export function openChest(P, r = Math.random, rr = Math.random) {
   P.chests--;
   const rar = rollRarity(rr()), base = { rarity: rar };
   if (rar.sp) P.chestSp = (P.chestSp || 0) + rar.sp;   // zählt in shinobiPoints
-  const extra = rar.bonusPow ? givePowers(P, rar.bonusPow, r).map(id => POWER[id]) : [];
+  const extra = rar.bonusPow ? givePowers(P, rar.bonusPow, rr).map(id => POWER[id]) : [];
   const missing = Object.entries(COSMETICS).flatMap(([k, L]) => L.filter(c => !hasCos(P, k, c.id)).map(c => [k, c]));
   const x = r();
   if (missing.length && x < 0.4) { const [kind, c] = missing[Math.floor(r() * missing.length)]; P.cos.owned[kind + '_' + c.id] = 1; return { ...base, type: 'cos', kind, item: c, extra }; }

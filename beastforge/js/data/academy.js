@@ -42,6 +42,7 @@ export function shinobiPoints(P) {
   for (const m of Object.values(P.maps || {})) { if ((m.normal || 0) >= 20) earned++; if ((m.hard || 0) >= 20) earned++; earned += Object.keys(m.medals || {}).length; }
   earned += P.daily?.sp || 0;   // Tageskämpfe
   earned += P.chestSp || 0;   // legendäre/mythische Truhen
+  earned += Math.floor((P.tower?.best || 0) / 5);   // Prüfungsturm (data/tower.js → towerSp)
   const ac = P.academy || {};
   earned += Object.keys(ac.master || {}).length * TRIAL_SP;   // Meistersiegel
   const spent = Object.keys(owned(P)).reduce((a, id) => a + (ACADEMY_BY_ID[id]?.cost || (SECRET[id] ? SECRET_COST : 0)), 0) + Object.keys(ac.spec || {}).length * SPEC_COST;

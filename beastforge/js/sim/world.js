@@ -40,6 +40,7 @@ export class World {
     if (this.mods.soulburn) this.lives = this.maxLives = 1;
     if (this.mods.lifeCap) this.lives = this.maxLives = this.mods.lifeCap;   // Meisterprüfung des Schreins
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
+    if (this.mods.waves) this.maxWave = Math.min(this.maxWave, this.mods.waves);   // Prüfungsturm: kürzere Etagen
     if (this.mods.rush) { this.maxWave = RUSH.length; this.wallet.fill(BAL.rush.start + (this.ac.startCoins || 0)); this.lives = this.maxLives = BAL.rush.lives + (this.ac.lives || 0); }   // Boss-Rush
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
     this.t = 0; this.tickN = 0; this.acc = 0; this.nid = 1; this.comboN = 0; this.comboT = 0; this.bestCombo = 0; this.over = false; this.won = false; this.god = false;

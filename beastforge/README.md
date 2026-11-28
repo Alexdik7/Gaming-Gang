@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.50.0 – Truhen-Seltenheiten (Vision P10 Teil 2)
+## Stand: v0.51.0 – Prüfungsturm (Vision P11 Teil 2)
+**0.51:** `data/tower.js`: `FLOORS` (10 Etagen mit Karte, Schwierigkeit, Wellenzahl `mods.waves` und Regeln aus vorhandenen Mods, Etage 10 = Boss-Rush), offen ab Konto-Lv `TOWER_LVL` 15 und nur der Reihe nach (`floorOpen`), Sieg → `clearFloor` (`P.tower.best`), Truhe je neuer Etage, alle 5 Etagen +1 Shinobi-Punkt (in `shinobiPoints`). Welt: `mods.waves` kürzt `maxWave`. Run-Kennung `ch = 'tower_<n>'`. Bildschirm `s_tower` (Hub-Kachel 🗼 Turm), Ergebnis-Zeile. Fix: Bonus-Kräfte aus Truhen nutzen den eigenen Zufall `rr` (Test war wackelig).
+
+## Stand davor: v0.50.0 – Truhen-Seltenheiten (Vision P10 Teil 2)
 **0.50:** `data/events.js`: `RARITY` (Gewöhnlich 58 %, Selten 27 %, Episch 11 %, Legendär 3,4 %, Mythisch 0,6 %), `rollRarity(x)`, `openChest(P, r, rr)` würfelt die Seltenheit getrennt (Typ-Wahl unverändert): mehr Kräfte/XP, ab Episch Bonus-Kräfte (`extra`), ab Legendär Shinobi-Punkte `P.chestSp` (zählt in `shinobiPoints`). Anzeige: Seltenheits-Schriftzug, Truhe/Leuchten in Seltenheitsfarbe, gleiche Kräfte als „×N“.
 
 ## Stand davor: v0.49.0 – Koop-Extras (Vision P12)

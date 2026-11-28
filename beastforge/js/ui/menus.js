@@ -20,6 +20,7 @@ import { saveProfile, resetProfile } from '../meta/profile.js';
 import { CHALLENGES, CH, chUnlocked } from '../data/challenges.js';
 import { QUESTS, ensureDaily, dailyChallenge, questProgress, DAILY_XP, dayKey } from '../data/daily.js';
 import { FUSIONS, FUSE } from '../data/fusions.js';
+import { FLOORS, FLOOR, TOWER_LVL, towerBest, floorOpen } from '../data/tower.js';
 import { SCHOOLS, ACADEMY, ACADEMY_BY_ID, shinobiPoints, canLearn, learn, resetAcademy, TRIALS, TRIAL, TRIAL_NEED, TRIAL_SP, SPECS, SPEC, SPEC_COST, SECRETS, SECRET, SECRET_COST, trialOpen, hasSeal, secretFound, chooseSpec, canLearnSecret, learnSecret } from '../data/academy.js';
 
 const $ = id => document.getElementById(id);
@@ -85,7 +86,7 @@ export class Menus {
         <div class="bRight"><button class="bCur" data-go="academy" title="Shinobi-Punkte"><span>⛩</span><b>${sp.free}</b></button><button class="bGear" data-go="settings" aria-label="Optionen">⚙</button></div>
       </div>
       <div class="bLeft">${tile('collection', pimg('kitsune', { stage: maxStage('kitsune', k.level, k.branch), branch: k.branch }), 'Kreaturen', 'big')}${tile('hero', pimg(hero, { hlvl: 1 }), 'Helden', 'big')}${tile('evo', pimg('golem', { stage: 2 }), 'Entwicklung', 'big')}</div>
-      <div class="bRightCol">${tile('chests', '🎁', 'Truhen', 'sq gold', eventDot(P))}${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('coop', '🤝', 'Koop', 'sq')}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('codex', '📖', 'Codex', 'sq', codexClaimable(P) > 0)}</div>
+      <div class="bRightCol">${tile('chests', '🎁', 'Truhen', 'sq gold', eventDot(P))}${tile('daily', '📅', 'Täglich', 'sq', this.dailyDot())}${tile('coop', '🤝', 'Koop', 'sq')}${tile('ach', '🏆', 'Erfolge', 'sq', newAch)}${tile('academy', '⛩', 'Akademie', 'sq', sp.free > 0)}${tile('codex', '📖', 'Codex', 'sq', codexClaimable(P) > 0)}${tile('tower', '🗼', 'Turm', 'sq', P.account.level >= TOWER_LVL && towerBest(P) < FLOORS.length && !P.tower?.seen)}</div>
       <button class="bPlay" data-go="play"><span>SPIELEN</span></button>
     </div>`);
     this.app.audio.playSong('menu');
@@ -254,6 +255,26 @@ export class Menus {
       $('atrial')?.addEventListener('click', () => { const t = TRIAL[sel]; this.app.audio.init(); this.app.startRun(t.map, t.diff, t.id); });
       const R = $('areset'); if (R) R.onclick = () => { if (confirm('Alle Shinobi-Punkte zurückholen und neu verteilen? Meistersiegel bleiben.')) { resetAcademy(P); saveProfile(P); this.click(); this.s_academy(); } };
     });
+  }
+
+  // ───────── Prüfungsturm (Vision P11): 10 Etagen, jede mit eigenen Regeln ─────────
+  s_tower(sel) {
+    const P = this.P, best = towerBest(P), lock = P.account.level < TOWER_LVL; P.tower ||= { best: 0 }; P.tower.seen = 1;
+    sel = FLOOR[sel] ? sel : FLOORS[Math.min(best, FLOORS.length - 1)].id;
+    const rows = [...FLOORS].reverse().map(f => { const done = f.n <= best, open = floorOpen(P, f);
+      return `<button class="tfl ${done ? 'done' : open ? 'open' : 'lock'} ${sel === f.id ? 'sel' : ''} ${f.n % 5 ? '' : 'big'}" data-f="${f.id}"><span class="tfn">${f.n}</span><b>${esc(f.name)}</b><small>${esc(MAPS[f.map].name)} · ${f.diff === 'hard' ? '🔥' : '🌿'} · ${f.waves} Wellen</small><i>${done ? '✓' : open ? '⚔' : '🔒'}</i>${f.n % 5 ? '' : '<em>+1 ✦</em>'}</button>`; }).join('');
+    const f = FLOOR[sel], done = f.n <= best, open = floorOpen(P, f);
+    this.render(`<div class="scr towerScr">${this.hdr('Prüfungsturm')}
+      <div class="apts"><span class="spi">🗼</span><b>${best}</b>/${FLOORS.length} Etagen <small>· jede neue Etage: 🎁 Truhe · alle 5 Etagen: +1 Shinobi-Punkt</small></div>
+      ${lock ? `<div class="ainfo"><p>🔒 Der Turm öffnet sich ab <b>Konto-Level ${TOWER_LVL}</b>.</p></div>` : ''}
+      <div class="tower">${rows}</div>
+      <div class="ainfo" style="--sc:${f.diff === 'hard' ? '#ff7a3d' : '#5fd6ff'}"><div><b>Etage ${f.n}: ${esc(f.name)}</b> <small>${esc(MAPS[f.map].name)} · ${f.diff === 'hard' ? 'Schwer' : 'Normal'} · ${f.waves} ${f.mods.rush ? 'Bosse' : 'Wellen'}</small><p>${esc(f.desc)}</p></div>
+      ${done ? '<span class="aok">✓ Geschafft</span>' : ''}<button class="btn pri" id="tgo" ${open ? '' : 'disabled'}>${open ? (done ? '↻ Nochmal' : '⚔ Antreten') : lock ? '🔒 Konto-Lv ' + TOWER_LVL : 'Erst Etage ' + (f.n - 1)}</button></div></div>`, m => {
+      const cur = m.querySelector('.tfl.sel'); if (cur) cur.scrollIntoView({ block: 'center' });
+      m.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { this.click(); this.s_tower(b.dataset.f); });
+      $('tgo')?.addEventListener('click', () => { this.app.audio.init(); this.app.startRun(f.map, f.diff, f.id); });
+    });
+    saveProfile(P);
   }
 
   // ───────── Entwicklungszentrum: alle Entwicklungsreihen auf einen Blick ─────────
@@ -552,7 +573,7 @@ export class Menus {
       return `<div class="mrow"><span class="mpl">${['🥇', '🥈', '🥉', '4', '5'][i]}</span><img src="${img}" alt=""><div><b>${esc(nm)}</b><div class="bar"><u data-w="${v / top * 100}" style="width:0"></u></div></div><span class="gain">${fmt(v)}</span></div>`; }).join('')}<small style="color:var(--mut)">nach verursachtem Schaden</small></div>` : '';
     const a = P.account, need = accNeed(a.level);
     this.render(`<div class="scr res">
-      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.daily ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">📅 Tageskampf geschafft! +1 Shinobi-Punkt</p>` : ''}${r.medal ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">🏅 Neue Medaille: ${esc(r.medal.name)} · +1 Shinobi-Punkt</p>` : r.ch && r.ch.id !== 'std' ? `<p style="margin:0;color:var(--mut)">${r.ch.icon} ${esc(r.ch.name)}</p>` : ''}${r.trial ? `<p class="trialWin">🏅 Meisterprüfung bestanden: ${esc(r.trial.name)} · +${TRIAL_SP} Shinobi-Punkte · Spezialisierung frei!</p>` : ''}${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
+      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.daily ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">📅 Tageskampf geschafft! +1 Shinobi-Punkt</p>` : ''}${r.medal ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">🏅 Neue Medaille: ${esc(r.medal.name)} · +1 Shinobi-Punkt</p>` : r.ch && r.ch.id !== 'std' ? `<p style="margin:0;color:var(--mut)">${r.ch.icon} ${esc(r.ch.name)}</p>` : ''}${r.floor ? `<p class="trialWin">🗼 Turm-Etage ${r.floor.n} geschafft: ${esc(r.floor.name)}${r.floor.n % 5 ? '' : ' · +1 Shinobi-Punkt'}</p>` : ''}${r.trial ? `<p class="trialWin">🏅 Meisterprüfung bestanden: ${esc(r.trial.name)} · +${TRIAL_SP} Shinobi-Punkte · Spezialisierung frei!</p>` : ''}${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
       <p style="text-align:center;margin:0;color:var(--mut)">${esc(r.map)} · ${esc(r.diff)} · Welle ${r.wave}${r.maxWave === Infinity ? '' : '/' + r.maxWave}${r.perfect ? ' · <b style="color:var(--run)">PERFEKT!</b>' : ''}</p>
       ${r.records?.length ? `<div class="sect recs">${r.records.map(x => `<div class="newrec">🏅 NEUER REKORD · ${esc(x)}</div>`).join('')}</div>` : ''}${this.goals(r)}
       ${mvp}<div class="rgrid"><div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.combo >= 5 ? `<span>Beste Combo</span><b>×${r.combo}</b>` : ''}${r.hero ? `<span>${esc(HEROES[r.hero.id]?.name || 'Held')} erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>
