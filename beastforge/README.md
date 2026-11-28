@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.49.0 – Koop-Extras (Vision P12)
+## Stand: v0.50.0 – Truhen-Seltenheiten (Vision P10 Teil 2)
+**0.50:** `data/events.js`: `RARITY` (Gewöhnlich 58 %, Selten 27 %, Episch 11 %, Legendär 3,4 %, Mythisch 0,6 %), `rollRarity(x)`, `openChest(P, r, rr)` würfelt die Seltenheit getrennt (Typ-Wahl unverändert): mehr Kräfte/XP, ab Episch Bonus-Kräfte (`extra`), ab Legendär Shinobi-Punkte `P.chestSp` (zählt in `shinobiPoints`). Anzeige: Seltenheits-Schriftzug, Truhe/Leuchten in Seltenheitsfarbe, gleiche Kräfte als „×N“.
+
+## Stand davor: v0.49.0 – Koop-Extras (Vision P12)
 **0.49:** **Seelenband** in `world.refresh`: Kreaturen verschiedener Spieler im Abstand `BAL.coop.linkR` (2,2) → je +10 % Schaden, +6 % Tempo (nicht stapelnd), `world.coopLinks`, Ereignis `coopLink` (Hinweis beim ersten Mal), Funken in beiden Spielerfarben (view). **Spieler-Leiste** `#hMateBox`: Porträt des Mitspieler-Helden, Rolle, Geld `#hMate`, Kreaturen-Anzahl `#hMateN`, Status-Punkt (grau = getrennt). e2e `coop` prüft Seelenband + Leiste.
 
 ## Stand davor: v0.48.0 – Boss-Rush (Vision P11 Teil 1)

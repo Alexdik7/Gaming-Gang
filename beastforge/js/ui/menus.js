@@ -162,9 +162,9 @@ export class Menus {
     const ms = d.goals.map((g, i) => { const got = E.claimed.includes(i), ok = v >= g;
       return `<div class="evm ${got ? 'got' : ok ? 'ok' : ''}"><b>${fmt(g)}</b><small>🎁×${EVENT_CHESTS[i]}</small>${got ? '<span class="aok">✓</span>' : `<button class="btn ${ok ? 'pri' : ''}" data-ev="${i}" ${ok ? '' : 'disabled'}>Abholen</button>`}</div>`; }).join('');
     const top = d.goals[2], pct = Math.min(100, v / top * 100);
-    const rv = reveal ? `<div class="crev ${reveal.type}">${reveal.type === 'cos' ? `<span class="cri">${reveal.kind === 'heart' ? '💎' : '✨'}</span><b>Neu: ${esc(reveal.item.name)}</b><small>${COS_KINDS[reveal.kind]} – unten auswählen</small>`
-      : reveal.type === 'powers' ? `<span class="cri">${reveal.got.map(p => p.icon).join('')}</span><b>${reveal.got.map(p => esc(p.name)).join(' + ')}</b><small>Kräfte für deine Runs</small>`
-      : `<span class="cri">✦</span><b>+${reveal.xp} Konto-XP</b><small>Weiter so!</small>`}</div>` : '';
+    const rar = reveal?.rarity, rv = reveal ? `<div class="crev ${reveal.type}" style="--rc:${rar?.col || '#ffd257'}">${rar ? `<em class="rar ${rar.id}">${esc(rar.name.toUpperCase())}${rar.sp ? ` · +${rar.sp} ✦` : ''}</em>` : ''}${reveal.type === 'cos' ? `<span class="cri">${reveal.kind === 'heart' ? '💎' : '✨'}</span><b>Neu: ${esc(reveal.item.name)}</b><small>${COS_KINDS[reveal.kind]} – unten auswählen</small>`
+      : reveal.type === 'powers' ? (() => { const G = new Map(); for (const p of reveal.got) G.set(p, (G.get(p) || 0) + 1); return `<span class="cri">${[...G.keys()].map(p => p.icon).join('')}</span><b>${[...G].map(([p, n]) => esc(p.name) + (n > 1 ? ' ×' + n : '')).join(' · ')}</b><small>Kräfte für deine Runs</small>`; })()
+      : `<span class="cri">✦</span><b>+${reveal.xp} Konto-XP</b><small>Weiter so!</small>`}${reveal.extra?.length ? `<small class="cxtra">Bonus: ${reveal.extra.map(p => p.icon + ' ' + esc(p.name)).join(' · ')}</small>` : ''}</div>` : '';
     const sw = (kind, c) => { const own = hasCos(P, kind, c.id), on = (P.cos[kind] || 'default') === c.id, col = kind === 'heart' ? '#' + c.glow.toString(16).padStart(6, '0') : c.cols ? `conic-gradient(${c.cols.map(x => '#' + x.toString(16).padStart(6, '0')).join(',')})` : 'linear-gradient(#fff,#9ad0ff)';
       return `<button class="cosw ${on ? 'on' : ''} ${own ? '' : 'lock'}" data-cos="${kind}:${c.id}" ${own ? '' : 'disabled'}><i style="background:${col}"></i><small>${own ? esc(c.name) : '???'}</small></button>`; };
     this.render(`<div class="scr chestScr">${this.hdr('Truhen & Event')}
@@ -172,7 +172,7 @@ export class Menus {
         <div class="evc"><div class="evh"><span class="evi">${d.icon}</span><div><small>WOCHEN-EVENT · noch ${daysLeft()} Tag${daysLeft() > 1 ? 'e' : ''}</small><b>${esc(d.name)}</b><p>${esc(d.desc)}</p></div></div>
           <div class="bar evb"><u style="width:${pct}%"></u>${d.goals.slice(0, 2).map(g => `<i style="left:${g / top * 100}%"></i>`).join('')}</div><small class="mut">Fortschritt: <b style="color:#ffd257">${fmt(v)}</b> / ${fmt(top)}</small>
           <div class="evms">${ms}</div></div>
-        <div class="cbox"><div class="chest ${reveal ? 'opened' : ''}" id="chest"><div class="lid"></div><div class="body"><i></i></div></div>
+        <div class="cbox"><div class="chest ${reveal ? 'opened r_' + (rar?.id || '') : ''}" id="chest" style="--rc:${rar?.col || '#ffe27a'}"><div class="lid"></div><div class="body"><i></i></div></div>
           <b class="ccount">${P.chests} Truhe${P.chests === 1 ? '' : 'n'}</b>${rv}
           <button class="big" id="copen" ${P.chests > 0 ? '' : 'disabled'}>🎁 Öffnen</button>
           <small class="mut">Truhen gibt es für Siege, den Tageskampf und das Wochen-Event.</small></div>

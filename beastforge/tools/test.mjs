@@ -731,3 +731,14 @@ test('Koop-Seelenband: Kreaturen verschiedener Spieler nahe beieinander werden s
   const solo = mk(), a2 = solo.place('kitsune', 3, 4.5).tower; solo.refresh();
   assert.ok(a.s.dmg > a2.s.dmg * 1.05, 'Seelenband-Bonus');
 });
+
+test('Truhen-Seltenheiten: Würfel, Belohnung skaliert, Shinobi-Punkte ab Legendär', async () => {
+  const ev = await import('../js/data/events.js'); const { shinobiPoints } = await import('../js/data/academy.js');
+  assert.equal(ev.rollRarity(0).id, 'common'); assert.equal(ev.rollRarity(0.999).id, 'myth');
+  const P = defaultProfile(); P.chests = 3; const sp0 = shinobiPoints(P).earned;
+  const r = ev.openChest(P, () => 0.6, () => 0.999); assert.equal(r.rarity.id, 'myth'); assert.equal(r.type, 'powers'); assert.equal(r.got.length, 7 + 3);
+  assert.equal(shinobiPoints(P).earned, sp0 + 2);
+  const c = ev.openChest(P, () => 0.9, () => 0); assert.equal(c.rarity.id, 'common'); assert.equal(c.xp, 300); assert.equal(c.extra.length, 0);
+  const n = 20000; let L = 0; for (let i = 0; i < n; i++) if (['legend', 'myth'].includes(ev.rollRarity(i / n).id)) L++;
+  assert.ok(Math.abs(L / n - 0.04) < 0.002, 'Legendär+ ≈ 4 %');
+});

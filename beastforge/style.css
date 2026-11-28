@@ -785,3 +785,12 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .mtx { display: flex; flex-direction: column; line-height: 1; } .mtx small { font-size: 9px; font-weight: 900; color: var(--mut); letter-spacing: .5px; }
 .mcnt { font-size: 13px; font-weight: 900; color: #fff; }
 .pill.coop.mate { max-width: none; overflow: visible; } .mcnt { flex: none; white-space: nowrap; }
+/* Truhen-Seltenheiten (v0.50) */
+.crev .rar { display: block; font-style: normal; font-weight: 900; font-size: 13px; letter-spacing: 1.5px; color: var(--rc); text-shadow: 0 0 10px var(--rc); margin-bottom: 2px; }
+.crev .rar.legend, .crev .rar.myth { font-size: 17px; animation: rarPulse 1s ease-in-out infinite alternate; }
+@keyframes rarPulse { from { filter: brightness(1); } to { filter: brightness(1.5); transform: scale(1.06); } }
+.crev { border-color: var(--rc) !important; box-shadow: 0 0 18px color-mix(in srgb, var(--rc) 45%, transparent); }
+.cxtra { display: block; color: #ffd257; font-weight: 800; margin-top: 2px; }
+.chest.opened::after { background: radial-gradient(ellipse at 50% 100%, var(--rc), transparent 70%) !important; }
+.chest.r_epic .body, .chest.r_legend .body, .chest.r_myth .body { box-shadow: inset 0 -8px 0 rgba(0,0,0,.25), 0 0 22px var(--rc); }
+.chest.r_rare .lid, .chest.r_epic .lid, .chest.r_legend .lid, .chest.r_myth .lid { background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 70%, #fff), var(--rc)); }

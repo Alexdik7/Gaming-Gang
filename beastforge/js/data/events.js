@@ -59,12 +59,24 @@ export function claimEvent(P, i) {
 export const eventDot = P => { const d = eventDef(P), E = P.event; return P.chests > 0 || d.goals.some((g, i) => !E.claimed.includes(i) && eventProgress(P) >= g); };
 
 // Truhe öffnen: 40 % neue Kosmetik (falls noch eine fehlt), sonst Kräfte oder Konto-XP
-export function openChest(P, r = Math.random) {
+// Truhen-Seltenheiten (Vision P10): beim Öffnen gewürfelt, skalieren Kräfte/XP; ab Episch Bonus-Kraft, ab Legendär Shinobi-Punkte
+export const RARITY = [
+  { id: 'common', name: 'Gewöhnlich', w: 58, col: '#c9b58a', pow: 2, xp: 300 },
+  { id: 'rare', name: 'Selten', w: 27, col: '#4aa8ff', pow: 3, xp: 450 },
+  { id: 'epic', name: 'Episch', w: 11, col: '#b07bff', pow: 4, xp: 700, bonusPow: 1 },
+  { id: 'legend', name: 'Legendär', w: 3.4, col: '#ffb020', pow: 5, xp: 1000, bonusPow: 2, sp: 1 },
+  { id: 'myth', name: 'Mythisch', w: 0.6, col: '#ff4fa0', pow: 7, xp: 1600, bonusPow: 3, sp: 2 },
+];
+export function rollRarity(x) { const T = RARITY.reduce((a, q) => a + q.w, 0); let v = x * T; for (const q of RARITY) { if ((v -= q.w) < 0) return q; } return RARITY[0]; }
+export function openChest(P, r = Math.random, rr = Math.random) {
   if (!(P.chests > 0)) return null;
   P.chests--;
+  const rar = rollRarity(rr()), base = { rarity: rar };
+  if (rar.sp) P.chestSp = (P.chestSp || 0) + rar.sp;   // zählt in shinobiPoints
+  const extra = rar.bonusPow ? givePowers(P, rar.bonusPow, r).map(id => POWER[id]) : [];
   const missing = Object.entries(COSMETICS).flatMap(([k, L]) => L.filter(c => !hasCos(P, k, c.id)).map(c => [k, c]));
   const x = r();
-  if (missing.length && x < 0.4) { const [kind, c] = missing[Math.floor(r() * missing.length)]; P.cos.owned[kind + '_' + c.id] = 1; return { type: 'cos', kind, item: c }; }
-  if (x < 0.75) { const got = givePowers(P, 2, r); return { type: 'powers', got: got.map(id => POWER[id]) }; }
-  return { type: 'xp', xp: 300 };
+  if (missing.length && x < 0.4) { const [kind, c] = missing[Math.floor(r() * missing.length)]; P.cos.owned[kind + '_' + c.id] = 1; return { ...base, type: 'cos', kind, item: c, extra }; }
+  if (x < 0.75) { const got = givePowers(P, rar.pow, r); return { ...base, type: 'powers', got: [...got.map(id => POWER[id]), ...extra], extra: [] }; }
+  return { ...base, type: 'xp', xp: rar.xp, extra };
 }
