@@ -782,3 +782,18 @@ test('Event-Kampf: Regeln je Event wirken in der Welt, Truhen einmal pro Woche',
   const P = defaultProfile(); P.chests = 0; ev.ensureEvent(P); assert.equal(ev.winEventFight(P), ev.EVENT_FIGHT_CHESTS); assert.equal(ev.winEventFight(P), 0); assert.equal(P.chests, ev.EVENT_FIGHT_CHESTS);
   assert.ok(QUESTS.length >= 19 && new Set(QUESTS.map(q => q.id)).size === QUESTS.length);
 });
+
+test('Mega-Attacken: Zornschlag, Bannkreis, Klingensturm feuern im Takt', async () => {
+  for (const k of [0, 1, 2]) {
+    const { w } = mkWorld(defaultProfile(), { hooks: { level: () => 25 } }); w.coins = 1e7; w.god = true;
+    const t = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower; for (let i = 0; i < 5; i++) w.upgrade(t.id, k); t.kills = 999; assert.ok(w.mega(t.id).ok);
+    const evs = []; const em = w.emit.bind(w); w.emit = e => { if (e.t === 'megaAtk') evs.push(e); em(e); };
+    for (let i = 0; i < 12; i++) { const e = w.spawn('golem', [], 0); e.d = 0; }
+    // Gegner in Reichweite stellen
+    for (const e of w.enemies) { e.d = 3; e.speed = 0; e.hp = e.maxHp = 1e7; } w.step(1 / 60); const e0 = w.enemies[0]; t.x = e0.x + 0.5; t.y = e0.y;
+    for (let i = 0; i < 60 * 3; i++) w.step(1 / 60);
+    assert.ok(evs.length >= 1 && evs[0].k === k, 'Art ' + k + ': ' + evs.length);
+    if (k === 1) assert.ok(w.enemies.some(e => e.alive && e.stunT > 0) || w.enemies.every(e => !e.alive), 'Bann betäubt');
+    if (k === 2) assert.ok(evs[0].pts.length >= 1 && evs[0].pts.length <= BAL.run.megaAtk.klingeN);
+  }
+});

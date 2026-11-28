@@ -1,5 +1,5 @@
 // BEASTFORGE – alle Balance-Regler an EINEM Ort. Keine Zahlen in der Logik verstreuen.
-export const VERSION = '0.53.0';
+export const VERSION = '0.54.0';
 
 export const BAL = {
   tick: 1 / 60,               // fester Simulationsschritt (s)
@@ -16,6 +16,7 @@ export const BAL = {
     knockCap: 4,
     ascendCost: 40,           // Ahnenform: Kosten = Kaufpreis × 40
     mega: { cost: 14, kills: 100, lvl: 20 },
+    megaAtk: { cd: [6, 8, 5], zornMul: 6, zornR: 1.7, bannMul: 2, bannStun: 1.4, bannBoss: 0.4, klingeMul: 4, klingeN: 6 },   // Mega-Spezialattacken: A Zornschlag · B Bannkreis · C Klingensturm
     megaFuse: { cost: 7, kills: 150, lvl: 25 },   // Mega-Fusion: Kosten = Fusions-Kaufpreis (A+B) × 7   // Mega-Form: Kosten = Kaufpreis × 14, Besiegte im Run, Charakter-Level
               // Rückstoß insgesamt pro Gegner (Felder)
     packR: 1.35,              // Rudel: Kreaturen bis zu diesem Abstand gelten als Nachbarn (zusammenhängende Gruppe)

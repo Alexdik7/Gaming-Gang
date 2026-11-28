@@ -545,6 +545,24 @@ export class GameView {
         this.stage.focus = new THREE.Vector3(x, h, z); this.stage.zoomPunch = 1;
         break;
       }
+      case 'megaAtk': {   // Mega-Spezialattacke: Zornschlag · Bannkreis · Klingensturm
+        const t = ev.tower, col = MEGA_COL[ev.k], [tx, tz] = at(t.x, t.y), h = this.ty(t), v = this.towers.get(t.id); if (v) v.flash = 0.4;
+        if (ev.k === 0) {
+          const [x, z] = at(ev.x, ev.y);
+          this.bolts.add([{ x: tx, y: h + 1.2, z: tz }, { x: (tx + x) / 2, y: h + 2.4, z: (tz + z) / 2 }, { x, y: 0.4, z }], col, 0.08, 0.3);
+          this.after(0.12, () => { this.flashes.add(x, 0.8, z, 0xffffff, 3.2, 0.3); this.flashes.add(x, 0.6, z, col, 2.4, 0.5); this.rings.add(x, 0.08, z, 0.2, ev.r * 1.3, col, 0.55); this.rings.add(x, 0.06, z, 0.2, ev.r, 0xffffff, 0.4, { disc: true, alpha: 0.5 }); P.burst(x, 0.5, z, [col, 0xffd257, 0xffffff], 60, 5, 0.25, 0.9, { up: 1.3 }); this.pillars.add(x, z, 0.5, 4, col, 0.5); this.stage.addShake(0.35); });
+          this.floaters.add(tx, 2.2, tz, '💥 ZORNSCHLAG', 'crit', 1.0);
+        } else if (ev.k === 1) {
+          const R = ev.r; for (let i = 0; i < 3; i++) this.after(i * 0.1, () => this.rings.add(tx, 0.08 + i * 0.05, tz, 0.3, R, i ? 0xffffff : col, 0.7 + i * 0.15, { alpha: 0.8 - i * 0.2 }));
+          this.rings.add(tx, 0.05, tz, 0.3, R, col, 0.9, { disc: true, alpha: 0.35 });
+          for (let i = 0; i < 24; i++) { const a = i / 24 * PI * 2; P.spawn(tx + Math.cos(a) * R * 0.95, 0.2, tz + Math.sin(a) * R * 0.95, 0, 1.6, 0, i % 2 ? col : 0xffffff, 0.12, 0.9); }
+          this.floaters.add(tx, 2.2, tz, '❄ BANNKREIS', 'crit', 1.0); this.stage.addShake(0.15);
+        } else {
+          (ev.pts || []).forEach((p, i) => this.after(i * 0.05, () => { const [x, z] = at(p.x, p.y); this.bolts.add([{ x: tx, y: h + 0.9, z: tz }, { x, y: 0.6, z }], i % 2 ? 0xffffff : col, 0.04, 0.16); this.flashes.add(x, 0.6, z, col, 1.2, 0.2); P.burst(x, 0.5, z, [col, 0xffffff], 12, 3, 0.12, 0.4); }));
+          this.floaters.add(tx, 2.2, tz, '⚔ KLINGENSTURM', 'crit', 1.0);
+        }
+        break;
+      }
       case 'mega': {   // Mega-Moment (~1,5 s): Dunkel → Energie strömt ein → Lichtsäule + Aura-Explosion → Name
         const t = ev.tower, [x, z] = at(t.x, t.y), h = this.ty(t), col = MEGA_COL[ev.p], md = megaDef(t.cid, ev.p);
         this.darken = 1.9; this.stage.focus = new THREE.Vector3(x, h, z); this.stage.zoomPunch = 1.2;

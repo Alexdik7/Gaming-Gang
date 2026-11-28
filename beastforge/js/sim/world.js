@@ -293,7 +293,7 @@ export class World {
   }
   mega(id) {
     const t = this.tower(id), info = this.megaInfo(t); if (!info) return { ok: false, why: 'Nicht möglich' }; if (!info.ok) return { ok: false, why: info.why };
-    this.coins -= info.cost; t.spent += info.cost; t.mega = info.p; t.abCd = 0; t.ultCd = 0;
+    this.coins -= info.cost; t.spent += info.cost; t.mega = info.p; t.megaT = 2.5; t.abCd = 0; t.ultCd = 0;
     this.stats.megas = (this.stats.megas || 0) + 1; this.hooks.stat?.('megas', 1);
     this.dirty = true; this.refresh();
     this.emit({ t: 'mega', tower: t, p: info.p });
@@ -801,6 +801,7 @@ export class World {
         this.emit({ t: 'mortar', tower: t });
       } else t.mcd = 0.2;
     }
+    if (t.mega != null && (t.megaT = (t.megaT ?? 2) - dt) <= 0) this.megaAttack(t);   // eigene Mega-Attacke (auch für Unterstützer)
     if (s.atk === 'none') return;
     t.cd -= dt;
     if (t.cd > 0) return;
@@ -813,6 +814,25 @@ export class World {
     this.attack(t, tgt, 0, 0);
     if (s.multi > 0 && this.rng() < s.multi) this.attack(t, tgt, 0, 0, true);
     if (t.clonesT > 0) for (let i = 0; i < 3; i++) { const a = i * 2.1 + this.t; this.attack(t, tgt, Math.cos(a) * 0.9, Math.sin(a) * 0.9, true); }
+  }
+  // Mega-Spezialattacke je Art (data/megas.js MEGA_KIND.atk): A Zornschlag (Explosion am Stärksten), B Bannkreis (Bann um die Kreatur), C Klingensturm (die Stärksten auf einmal)
+  megaAttack(t) {
+    const s = t.s, M = BAL.run.megaAtk, k = t.mega, base = Math.max(s.dmg, 20), inR = e => e.alive && this.canSee(s, e) && Math.hypot(e.x - t.x, e.y - t.y) <= s.range;
+    const foes = this.enemies.filter(inR); if (!foes.length) { t.megaT = 0.3; return; }
+    t.megaT = M.cd[k];
+    if (k === 0) {
+      const c = this.pick(t, s.range, 'strong') || foes[0], x = c.x, y = c.y;
+      for (const e of this.enemies) if (e.alive && Math.hypot(e.x - x, e.y - y) <= M.zornR) this.damage(e, base * M.zornMul, s.dmgType || 'phys', t, { big: true });
+      this.emit({ t: 'megaAtk', k, tower: t, x, y, r: M.zornR });
+    } else if (k === 1) {
+      for (const e of foes) { this.damage(e, base * M.bannMul, s.dmgType || 'spirit', t); if (e.alive) { e.stunT = Math.max(e.stunT, e.boss ? M.bannBoss : M.bannStun); e.slowPct = Math.max(e.slowPct, 0.5); e.slowT = Math.max(e.slowT, 3); } }
+      this.emit({ t: 'megaAtk', k, tower: t, x: t.x, y: t.y, r: s.range });
+    } else {
+      const hit = foes.sort((a, b) => b.hp - a.hp || a.id - b.id).slice(0, M.klingeN).map(e => ({ x: e.x, y: e.y, e }));
+      for (const h of hit) this.damage(h.e, base * M.klingeMul * Math.max(1, s.crit.mult), s.dmgType || 'phys', t, { big: true });
+      this.emit({ t: 'megaAtk', k, tower: t, x: t.x, y: t.y, pts: hit.map(h => ({ x: h.x, y: h.y })) });
+    }
+    this.stats.megaAtks = (this.stats.megaAtks || 0) + 1;
   }
   attack(t, tgt, ox, oy, extra) {
     const s = t.s, x = t.x + ox, y = t.y + oy;

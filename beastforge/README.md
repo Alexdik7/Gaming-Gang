@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.53.0 – Events mit eigenen Regeln (Vision P10 Teil 3)
+## Stand: v0.54.0 – eigene Mega-Attacken (Vision P6 Teil 2)
+**0.54:** Jede Mega-Form (auch Mega-Fusionen) hat eine Spezialattacke im Takt (`world.megaAttack`, Zeitgeber `t.megaT`, läuft auch bei Unterstützern ohne Angriff): **A Zornschlag** (Explosion am stärksten Gegner, `zornMul` × Schaden, Radius `zornR`), **B Bannkreis** (alle Gegner in Reichweite betäubt/verlangsamt, Bosse kürzer), **C Klingensturm** (kritische Klingen auf die `klingeN` stärksten Gegner). Regler `BAL.run.megaAtk`, Ereignis `megaAtk` (view: Blitz + Explosion / Ringe + Funkenkreis / Klingenblitze, Schriftzug, Ton), Statistik `megaAtks`. `MEGA_KIND[].atk/atkDesc` erscheinen in der Mega-Beschreibung.
+
+## Stand davor: v0.53.0 – Events mit eigenen Regeln (Vision P10 Teil 3)
 **0.53:** Jedes Wochen-Event in `data/events.js` hat einen **Event-Kampf** (`fight`: Karte, Schwierigkeit, Regeltexte `rules`, Welt-Mods). Neue generische Mods in `world.js`: `addGroup` (Zusatzgruppe je Welle, optional `every`), `countMul` (mehr Gegner), `hpMul`, `speedMul`, `coinMul` (Münzen je Besiegtem), `reactMul` (Reaktionsschaden) – alles in `world.waveDef`/`spawn`/`kill`/`react`, deterministisch. Run-Kennung `ch = 'event'`, erster Sieg pro Woche → `winEventFight` (🎁×2, `P.event.won`). Karte im Truhen-Bildschirm (`.evf`); gesperrte Event-Karte → Ahnenhain. Tagesaufgaben: 7 neue (Fusion, Mega, Kettenreaktionen, Ultimates, Mini-Bosse, Boss unterbrechen, Synergien) → 19.
 
 ## Stand davor: v0.52.0 – Mega-Fusionen (Vision P11 Teil 3)
