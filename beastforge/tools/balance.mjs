@@ -12,14 +12,14 @@ const LVL = +lvlArg, RUNS = +runsArg;
 export const autoSpot = (w, cid, range = 3, prefer = null) => w.suggestSpot(cid, range, prefer === 'end');
 const RANGE = { kitsune: 3.1, raven: 3.4, turtle: 1.7, tiger: 2.7, deer: 2.4, kairo: 2.8 };
 
-export function playRun({ map = 'ahnenhain', diff = 'normal', level = 1, seed = 1, strat = 'smart', team = ['kitsune', 'raven', 'turtle', 'tiger', 'deer'], hero = 'kairo', log = false } = {}) {
+export function playRun({ map = 'ahnenhain', diff = 'normal', level = 1, seed = 1, strat = 'smart', team = ['kitsune', 'raven', 'turtle', 'tiger', 'deer'], hero = 'kairo', log = false, mods = process.env.RUSH ? { rush: true } : {} } = {}) {
   const xp = {}, lv = {};
   const hooks = {
     level: cid => lv[cid] ?? level, branch: () => 'spirit',
     charXp: (cid, raw, wave) => { const v = raw * BAL.diff[diff].xp * xpGainMul(level) * dimFactor(level, wave, diff); xp[cid] = (xp[cid] || 0) + v; return v; },
     heroStart: () => 1,
   };
-  const w = new World({ map, diff, loadout: team, hero, hooks, seed });
+  const w = new World({ map, diff, loadout: team, hero, hooks, seed, mods });   // RUSH=1 → Boss-Rush
   const placedCount = c => w.towers.filter(t => t.cid === c).length;
   const coinLog = [];
   const act = () => {

@@ -6,6 +6,7 @@ export const CHALLENGES = [
   { id: 'rev', name: 'Umgekehrt', icon: '↩', desc: 'Die Gegner laufen den Weg rückwärts.', need: 'normal', mods: { reverse: true } },
   { id: 'dbl', name: 'Doppelte KP', icon: '💪', desc: 'Alle Gegner haben doppelt so viele KP.', need: 'normal', mods: { dblHp: true } },
   { id: 'apoc', name: 'Apokalypse', icon: '🌋', desc: 'Die Wellen kommen ohne Pause hintereinander.', need: 'normal', mods: { apoc: true } },
+  { id: 'rush', name: 'Boss-Rush', icon: '👹', desc: '6 Bosse nacheinander mit Gefolge · große Start-Kasse und Kriegskasse nach jedem Boss.', need: 'hard', mods: { rush: true }, endgame: true },
   { id: 'soul', name: 'Seelenbrand', icon: '💀', desc: 'Schwer · nur 1 Leben · kein Verkaufen · kein Einkommen.', need: 'hard', mods: { soulburn: true }, diff: 'hard' },
 ];
 export const CH = Object.fromEntries(CHALLENGES.map(c => [c.id, c]));

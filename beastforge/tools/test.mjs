@@ -709,3 +709,15 @@ test('Akademie 2.0: Meisterprüfung, Spezialisierung, geheime Knoten, Prüfungs-
   const a = we.spawn('golem', [], 1), b = wn.spawn('golem', [], 1); a.hp = b.hp = a.maxHp = b.maxHp = 1e6;
   assert.ok(Math.abs(we.damage(a, 10, 'phys', null) / wn.damage(b, 10, 'phys', null) - 0.4) < 1e-6, 'Physisch −60 %');
 });
+
+test('Boss-Rush: 6 Bosse, Start-Kasse, Kriegskasse, keine Karten-Mischung', async () => {
+  const { RUSH } = await import('../js/data/waves.js'); const { CH } = await import('../js/data/challenges.js');
+  const w = new World({ map: 'frost', diff: 'hard', seed: 4, hooks: {}, mods: CH.rush.mods });
+  assert.equal(w.maxWave, RUSH.length); assert.equal(w.coins, BAL.rush.start); assert.equal(w.lives, BAL.rush.lives);
+  assert.equal(w.peekWave().def.boss, 'vharox', 'Frosttempel tauscht den Boss im Rush nicht');
+  w.startWave(); w.god = true;
+  for (let i = 0; i < 60 * 400 && w.doneWave < 1; i++) { for (const e of w.enemies) if (e.alive && !e.boss) w.damage(e, 1e6, 'phys', null); const b = w.enemies.find(e => e.alive && e.boss); if (b) { assert.ok(b.maxHp <= 3000 * BAL.rush.hp * 1.3 * 1.35 + 1, 'Rush-KP'); w.damage(b, 1e7, 'astral', null); } w.step(1 / 60); }
+  assert.equal(w.doneWave, 1); assert.ok(w.coins >= BAL.rush.start + BAL.rush.gold[0], 'Kriegskasse');
+  const { dailyChallenge } = await import('../js/data/daily.js');
+  for (let d = 0; d < 30; d++) { const P = defaultProfile(); P.daily = { day: '2026-01-' + (d + 1) }; try { assert.ok(!dailyChallenge(P, () => true).mods.includes('rush')); } catch (e) { if (e.code === 'ERR_ASSERTION') throw e; } }
+});

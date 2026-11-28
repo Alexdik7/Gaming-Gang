@@ -349,6 +349,7 @@ export class Hud {
       case 'ascend': this.ascendSplash(e); break;
       case 'storm': if (e.on) this.banner('❄ SCHNEESTURM ❄', 'Gegner langsamer · Eiskreaturen schneller · andere frieren', 'boss'); else this.toast('syn', 'Der Sturm legt sich', ''); break;
       case 'power': { const pw = POWERS.find(x => x.id === e.id); this.flash(e.id === 'bomb' ? 0.45 : 0.3, pw?.color || '#fff'); if (pw) this.banner(pw.icon + ' ' + pw.name.toUpperCase(), e.id === 'gold' ? '+◈' + e.coins : e.id === 'heal' ? '+' + e.lives + ' Leben' : '', 'evo'); this.updPowers(); break; }
+      case 'rushGold': setTimeout(() => { this.banner('💰 KRIEGSKASSE', '+◈' + fmt(e.coins) + ' – der nächste Boss naht', 'evo'); for (let i = 0; i < 8; i++) setTimeout(() => flyTo(innerWidth * (0.4 + Math.random() * 0.2), innerHeight * 0.4, $('hCoins').parentElement, '◈'), i * 60); }, 1400); break;
       case 'rebirth': this.flash(0.5, '#ffb43a'); this.banner('WIEDERGEBURT', 'Der Phönix schenkt dir ' + e.lives + ' Leben', 'evo'); break;
       case 'early': this.toast('syn', `+◈${e.coins} früh gerufen`, ''); break;
     }

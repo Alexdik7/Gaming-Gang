@@ -36,7 +36,7 @@ export const questProgress = (P, q) => Math.max(0, (P.stats[q.stat] || 0) - (P.d
 export function dailyChallenge(P, okMap = () => true, day = dayKey()) {
   const r = rng(day + 'c'), maps = Object.keys(MAPS).filter(okMap);
   const map = maps[Math.floor(r() * maps.length)] || 'ahnenhain';
-  const pool = CHALLENGES.filter(c => c.mods && !c.mods.soulburn), mods = [];
+  const pool = CHALLENGES.filter(c => c.mods && !c.mods.soulburn && !c.endgame), mods = [];
   while (mods.length < 2) { const c = pool.splice(Math.floor(r() * pool.length), 1)[0]; mods.push(c.id); }
   return { map, diff: r() < 0.3 ? 'hard' : 'normal', mods };
 }

@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.47.0 – Akademie 2.0 (Vision P9)
+## Stand: v0.48.0 – Boss-Rush (Vision P11 Teil 1)
+**0.48:** Herausforderung `rush` in `data/challenges.js` (frei nach Sieg auf Schwer, `endgame: true` → nicht im Tageskampf): `RUSH` in `data/waves.js` = 6 Bosswellen (Vharox, Hyōga, Fūjin, dann die Erwacht-Stufen) mit Gefolge; `world.waveDef(n)` nimmt im Rush `rushDef`, Karten-`mix` ist aus. `BAL.rush`: Start-Kasse 7500, 100 Leben, Boss-KP ×0,65, Kriegskasse nach jedem Boss (Ereignis `rushGold` → Banner + Münzflug). Rekord `P.stats.bestRush`. Balance-Bot: `RUSH=1 node tools/balance.mjs hard 30 4` (Lv 30 gewinnt, Lv 15 nicht).
+
+## Stand davor: v0.47.0 – Akademie 2.0 (Vision P9)
 **0.47:** `data/academy.js` erweitert: **Meisterprüfung** je Schule (`TRIALS`, offen ab Stufe `TRIAL_NEED` = 4; Start über `startRun(map, diff, 'trial_<schule>')`, `game.ch` → `TRIAL[ch].mods`), neue Regeln in der Welt `mods.physWeak` (Physisch −60 %), `lifeCap` (feste Leben), `noSell`. Sieg → `passTrial` = Siegel `P.academy.master[schule]` (+`TRIAL_SP` 2 Shinobi-Punkte, Truhe, bleibt beim Neuverteilen). **Spezialisierungen** `SPECS` (2 je Schule, eine aktiv `P.academy.spec[schule]`, `SPEC_COST` 2, Wechsel kostenlos) mit neuen Welt-Boni `critMul`, `chain`, `bounty`, `heroDmg`. **Geheime Knoten** `SECRETS` (als „?“ mit Hinweis, enthüllt durch Combo ×50, 40 Codex-Einträge, Mega-Form, 5 Boss-Unterbrechungen `P.stats.staggers`), Bonus `comboWin`. Bildschirm `s_academy`: Raute = Prüfung, Quadrate = Spezialisierungen, Reihe „✧ Geheime Knoten“.
 
 ## Stand davor: v0.46.0 – Bosse 2.0 (Vision P8)

@@ -92,7 +92,7 @@ Das Spiel soll ein kleines, überraschend hochwertiges Anime-Strategiespiel sein
     - Ergebnis-Bildschirm mit Zielbalken und persönlichen Rekorden.
     - Truhen-Seltenheiten (Selten, Episch, Legendär, Mythisch).
     - Abwechslungsreichere Tagesaufgaben und Events mit eigenen Regeln.
-11. **P11 Endgame:** Boss Rush, Prüfungsturm, Fusions- und Mega-Prüfungen, Mega-Fusionen.
+11. **P11 Endgame** – ✅ Teil 1 v0.48: Boss-Rush (6 Bosse, Kriegskasse, Rekord). Offen: Boss Rush, Prüfungsturm, Fusions- und Mega-Prüfungen, Mega-Fusionen.
 12. **P12 Koop-Extras:** Koop-Synergien (z. B. Spirit-Link), Spieler-Leiste mit Held, Geld, Anzahl und Status.
 
 ## Ehrliche Grenzen

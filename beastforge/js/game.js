@@ -398,6 +398,7 @@ export class Game {
     if (bc > R0.combo && bc >= BAL.combo.show) records.push(`Beste Combo: ×${bc}`);
     if (w.stats.kills > R0.kills && R0.kills > 0) records.push(`Meiste Kills in einem Run: ${w.stats.kills}`);
     if (w.stats.coins > R0.coins && R0.coins > 0) records.push(`Meiste Münzen in einem Run: ◈${Math.round(w.stats.coins)}`);
+    if (w.mods.rush) { const nb = w.stats.bossKills || 0; if (nb > (P.stats.bestRush || 0)) { if (nb) records.push(`Boss-Rush: ${nb} Bosse besiegt`); P.stats.bestRush = nb; } }
     P.stats.bestKills = Math.max(R0.kills, w.stats.kills); P.stats.bestCoins = Math.max(R0.coins, Math.round(w.stats.coins));
     let medal = null;
     let daily = false;

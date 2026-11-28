@@ -6,7 +6,7 @@ import { CREATURES } from '../data/creatures.js';
 import { HEROES } from '../data/heroes.js';
 import { ENEMIES, BOSSES } from '../data/enemies.js';
 import { MAPS, PATH_HALF, raftPos } from '../data/maps.js';
-import { waveDef } from '../data/waves.js';
+import { waveDef as waveDef0, rushDef, RUSH } from '../data/waves.js';
 import { REACTIONS, SYNERGIES } from '../data/meta.js';
 import { baseStats, applyFx, canTier } from './stats.js';
 import { FUSE, fusionFor, fusionsWith } from '../data/fusions.js';
@@ -40,6 +40,7 @@ export class World {
     if (this.mods.soulburn) this.lives = this.maxLives = 1;
     if (this.mods.lifeCap) this.lives = this.maxLives = this.mods.lifeCap;   // Meisterprüfung des Schreins
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
+    if (this.mods.rush) { this.maxWave = RUSH.length; this.wallet.fill(BAL.rush.start + (this.ac.startCoins || 0)); this.lives = this.maxLives = BAL.rush.lives + (this.ac.lives || 0); }   // Boss-Rush
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
     this.t = 0; this.tickN = 0; this.acc = 0; this.nid = 1; this.comboN = 0; this.comboT = 0; this.bestCombo = 0; this.over = false; this.won = false; this.god = false;
     this.dirty = true; this.synergies = []; this.packs = []; this.boss = null; this.timeScale = 1;
@@ -363,8 +364,8 @@ export class World {
     if (!this.canStartWave()) return { ok: false };
     if (this.enemies.length > 0 && this.wave > 0) { const b = BAL.run.earlyCall(this.wave); this.gain(b, this.who); this.emit({ t: 'early', coins: b }); }
     this.wave++;
-    let def = waveDef(this.wave);
-    const mx = this.map.mix?.(this.wave, def.groups); if (mx) def = { ...def, groups: mx.groups, tip: mx.tip || def.tip, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) };
+    let def = this.waveDef(this.wave);
+    const mx = !this.mods.rush && this.map.mix?.(this.wave, def.groups); if (mx) def = { ...def, groups: mx.groups, tip: mx.tip || def.tip, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) };
     for (const g of def.groups) this.spawners.push({ e: g.e, left: Math.round(g.n), gap: g.gap, t: g.delay, mods: g.mods || [], wave: this.wave });
     this.emit({ t: 'wave', wave: this.wave, def });
     if (def.boss) this.emit({ t: 'bossWarn', boss: def.boss });
@@ -395,7 +396,8 @@ export class World {
   }
   // Freies Spiel nach dem Sieg (auch im Koop als Befehl, damit beide Welten gleich bleiben)
   freeplay() { if (!this.over || !this.won) return { ok: false, why: 'Noch nicht gewonnen' }; this.over = false; this.won = false; this.maxWave = Infinity; return { ok: true }; }
-  peekWave() { const n = this.wave + 1; if (n > this.maxWave) return null; let def = waveDef(n); const mx = this.map.mix?.(n, def.groups); if (mx) def = { ...def, groups: mx.groups, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) }; return { n, def }; }
+  waveDef(n) { return this.mods.rush ? rushDef(n) : waveDef0(n); }
+  peekWave() { const n = this.wave + 1; if (n > this.maxWave) return null; let def = this.waveDef(n); const mx = !this.mods.rush && this.map.mix?.(n, def.groups); if (mx) def = { ...def, groups: mx.groups, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) }; return { n, def }; }
   waveRunning() { return this.spawners.length > 0 || this.enemies.length > 0; }
 
   spawn(kind, mods = [], d = 0, wave = this.wave, pi = null) {
@@ -403,7 +405,7 @@ export class World {
     const def = ENEMIES[kind] || BOSSES[kind]; if (!def) return null;
     const boss = !!def.boss, elite = mods.includes('elite');
     const scale = BAL.endlessScale(wave);
-    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * scale * (boss ? 1 : def.miniboss ? BAL.miniScale(wave) : BAL.hpScale(wave));
+    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * (this.mods.rush && boss ? BAL.rush.hp : 1) * scale * (boss ? 1 : def.miniboss ? BAL.miniScale(wave) : BAL.hpScale(wave));
     if (elite) hp *= 2.2;
     const res = { ...(def.res || {}) };
     if (mods.includes('armored')) res.phys = Math.max(0.25, (res.phys ?? 1) * 0.6);
@@ -1162,6 +1164,7 @@ export class World {
       let income = 0, heal = 0; const inc = Array(this.players).fill(0);   // Einkommen + Zinsen gehören dem Besitzer der Kreatur
       for (const t of this.towers) { const o = t.owner || 0; let v = t.s?.income || 0; heal += t.s?.lifeRegen || 0; if (t.s?.interest) v += Math.min(t.s.icap, Math.floor(this.wallet[o] * t.s.interest)); inc[o] += v; income += v; }
       if (heal && this.lives < this.maxLives) { this.lives = Math.min(this.maxLives, this.lives + heal); this.emit({ t: 'heal2', lives: heal }); }
+      if (this.mods.rush && BAL.rush.gold[w - 1]) { this.gain(BAL.rush.gold[w - 1] * this.players); this.emit({ t: 'rushGold', coins: BAL.rush.gold[w - 1] }); }
       this.gain(bonus * this.players); inc.forEach((v, i) => this.gain(v, i)); this.stats.income += income; if (income) this.hooks.stat?.('income', income);
       const used = new Set(this.towers.filter(t => !t.hero).map(t => t.cid));
       for (const cid of used) this.charXp(cid, BAL.char.survive(w));
