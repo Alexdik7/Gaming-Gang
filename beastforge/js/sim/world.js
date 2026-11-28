@@ -281,9 +281,9 @@ export class World {
   }
   // ───────── Mega-Form: Stufe 5 auf einem Pfad + Besiegte + Charakter-Level → einzigartige Endform ─────────
   megaInfo(t) {
-    if (!t || t.hero || t.ascended || t.mega != null || CREATURES[t.cid]?.fusion || !this.mine(t)) return null;
+    if (!t || t.hero || t.ascended || t.mega != null || !this.mine(t)) return null;
     const p = t.tiers.indexOf(5); if (p < 0) return null;
-    const M = BAL.run.mega, cost = Math.round(CREATURES[t.cid].cost * M.cost), lvl = this.levelOf(t.cid);
+    const M = CREATURES[t.cid]?.fusion ? BAL.run.megaFuse : BAL.run.mega, cost = Math.round(CREATURES[t.cid].cost * M.cost), lvl = this.levelOf(t.cid);
     let why = '';
     if (lvl < M.lvl) why = `Ab Charakter-Lv ${M.lvl}`;
     else if (t.kills < M.kills) why = `Noch ${M.kills - t.kills} Gegner besiegen`;

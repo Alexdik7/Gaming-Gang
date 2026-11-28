@@ -302,7 +302,7 @@ export class Game {
   react(e) {
     switch (e.t) {
       case 'ascend': this.slow(0.2, 1.8); setTimeout(() => this.hud.flash(0.8, '#ffd257'), 1100); break;
-      case 'mega': { const md = megaDef(e.tower.cid, e.p); this.found('m:' + md.id); this.slow(0.2, 1.5); setTimeout(() => { this.hud.banner(md.name.toUpperCase(), '✦ MEGA-ENTWICKLUNG · ' + md.kind.name, 'evo'); this.hud.flash(0.7, ['#ff6a2a', '#5fe6ff', '#b07bff'][e.p]); }, 950); break; }
+      case 'mega': { const md = megaDef(e.tower.cid, e.p); this.found('m:' + md.id); this.slow(0.2, 1.5); setTimeout(() => { this.hud.banner(md.name.toUpperCase(), (md.fusion ? '✦ MEGA-FUSION · ' : '✦ MEGA-ENTWICKLUNG · ') + md.kind.name, 'evo'); this.hud.flash(0.7, ['#ff6a2a', '#5fe6ff', '#b07bff'][e.p]); }, 950); break; }
       case 'fuse': this.found('f:' + e.def.id); this.slow(0.25, 1.2); this.hud.banner(e.def.name.toUpperCase(), '⚭ Fusion!', 'evo'); setTimeout(() => this.hud.flash(0.6, e.def.color), 1000); break;
       case 'place': this.found((e.tower.hero ? 'h:' : 'c:') + e.tower.cid); break;
       case 'kill': if (e.e.boss) this.found('b:' + e.e.kind); else this.found('e:' + e.e.kind); break;

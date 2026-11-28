@@ -640,7 +640,7 @@ test('Codex: Entdecken, Zählen, Truhe je 10 Einträge, alte Spielstände', asyn
 
 test('Mega-Form: Bedingungen, Kosten, Werte, nur eine je Kreatur', async () => {
   const { megaDef, ALL_MEGAS } = await import('../js/data/megas.js');
-  assert.equal(ALL_MEGAS().length, 48); assert.equal(megaDef('kitsune', 0).name, 'Amaterasu-Kitsune');
+  assert.equal(ALL_MEGAS().length, 48 + 36); assert.equal(megaDef('kitsune', 0).name, 'Amaterasu-Kitsune');
   const { w } = mkWorld(defaultProfile(), { hooks: { level: () => 25 } }); w.coins = 1e6;
   const t = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower;
   assert.equal(w.megaInfo(t), null, 'ohne Stufe 5 kein Angebot');
@@ -753,4 +753,18 @@ test('Prüfungsturm: Etagen der Reihe nach, kürzere Runs, Belohnungen', async (
   assert.equal(shinobiPoints(P).earned, sp0 + 1); assert.ok(T.floorOpen(P, T.FLOORS[5]));
   for (const f of T.FLOORS) { const w = new World({ map: f.map, diff: f.diff, seed: 1, hooks: {}, mods: f.mods }); assert.equal(w.maxWave, f.waves, f.id); assert.ok(w.peekWave(), f.id); }
   const low = defaultProfile(); assert.equal(T.floorOpen(low, T.FLOORS[0]), false, 'Konto-Level');
+});
+
+test('Mega-Fusion: Fusion mit Stufe 5 → eigener Name, höhere Hürde, stärker als normale Mega', async () => {
+  const { megaDef } = await import('../js/data/megas.js');
+  assert.equal(megaDef('hydra', 0).name, 'Ur-Hydra · Zorn'); assert.ok(megaDef('hydra', 0).fusion);
+  const { w } = mkWorld(defaultProfile(), { hooks: { level: () => 30 } }); w.coins = 1e7;
+  const t = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower; t.cid = 'solfox'; t.stage = 0; w.dirty = true; w.refresh();
+  for (let i = 0; i < 5; i++) assert.ok(w.upgrade(t.id, 0).ok);
+  t.kills = BAL.run.mega.kills; assert.match(w.megaInfo(t).why, /Gegner besiegen/, 'Fusion braucht mehr Besiegte');
+  t.kills = BAL.run.megaFuse.kills; const d0 = t.s.dmg, c0 = w.coins;
+  assert.ok(w.mega(t.id).ok); assert.equal(c0 - w.coins, Math.round(CREATURES.solfox.cost * BAL.run.megaFuse.cost));
+  assert.ok(t.s.dmg > d0 * 2.4 * 1.2, 'Mega-Fusion-Schub');
+  const low = mkWorld(defaultProfile(), { hooks: { level: () => 22 } }).w; low.coins = 1e7; const u = low.place('kitsune', ...low.suggestSpot('kitsune', 3)).tower; u.cid = 'solfox'; low.refresh();
+  for (let i = 0; i < 5; i++) low.upgrade(u.id, 0); u.kills = 999; assert.match(low.megaInfo(u).why, /Charakter-Lv 25/);
 });

@@ -37,6 +37,7 @@ export function baseStats(t, level = 1, branch = 'spirit') {
     if (t.mega === 0) { s.dmg *= 1.5; s.pierce += 3; s.aoe = (s.aoe || 0) + 0.4; }
     else if (t.mega === 1) { s.slow.pct = Math.max(s.slow.pct, 0.4); s.slow.dur = Math.max(s.slow.dur, 1.5); s.stun.ch += 0.1; s.stun.dur = Math.max(s.stun.dur, 0.6); s.support.range = Math.max(s.support.range, 1.6); s.support.dmg += 0.12; s.support.rate += 0.08; }
     else { s.crit.ch += 0.3; s.crit.mult += 1; s.rate *= 1.25; s.bossMul *= 1.6; }
+    if (def.fusion) { s.dmg *= 1.3; s.range += 0.25; s.pierce += 1; s.bossMul *= 1.15; }   // Mega-Fusion: zusätzlicher Schub
   }
   if (t.ascended) { const g = t.ascended; s.dmg *= 2 * (1 + g * 0.02); s.rate *= 1 + g * 0.005; s.range += 0.5; s.camo = true; s.bossMul *= 1.5; s.pierce += 2; }   // Ahnenform
   return s;

@@ -293,7 +293,7 @@ export class Hud {
       const mi = w.megaInfo(t), md = mi && megaDef(t.cid, mi.p);
       const mega = mi ? (mi.ok ? `<button class="megab" data-mega style="--mc:${['#ff6a2a', '#5fe6ff', '#b07bff'][mi.p]}"><span class="aseal">✦</span><div><b>MEGA: ${esc(md.name)}</b><small>${esc(md.desc)}</small></div><span class="price">◈ ${fmt(mi.cost)}</span></button>`
         : `<div class="megab off" style="--mc:${['#ff6a2a', '#5fe6ff', '#b07bff'][mi.p]}"><span class="aseal">✦</span><div><b>MEGA: ${esc(md.name)}</b><small>${esc(mi.why)} · ☠ ${Math.min(mi.kills, mi.need)}/${mi.need}</small></div></div>`) : '';
-      if (t.mega != null) { const m2 = megaDef(t.cid, t.mega); title = m2.name; sub = '✦ Mega-Form · ' + m2.kind.name; }
+      if (t.mega != null) { const m2 = megaDef(t.cid, t.mega); title = m2.name.split(' · ')[0]; sub = (m2.fusion ? '✦ Mega-Fusion · ' : '✦ Mega-Form · ') + m2.kind.name; }
       if (t.ascended) { title = 'Ahnen-' + def.name; sub = '⛩ Ahnenform · Grad ' + t.ascended; }
       const fus = w.fuseOptions(t).map(o => o.ok
         ? `<button class="fuse" data-fuse="${o.f.id}" style="--fa:${o.def.color}"><img src="${portrait(o.f.id)}" alt=""><div><b>⚭ Fusion: ${esc(o.def.name)}</b><small>mit ${esc(CREATURES[o.other].name)} · ${esc(o.def.role)}</small></div><span class="price">◈ ${fmt(o.cost)}</span></button>`

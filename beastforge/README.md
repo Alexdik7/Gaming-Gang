@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.51.0 – Prüfungsturm (Vision P11 Teil 2)
+## Stand: v0.52.0 – Mega-Fusionen (Vision P11 Teil 3)
+**0.52:** Fusionen können jetzt Mega werden: `megaDef` kennt Fusionen (`fusion: true`, eigene Namen `FUSE_NAMES` + Art, z. B. „Ur-Hydra · Zorn“), `ALL_MEGAS` = 48 + 36 (Codex-Reiter Mega zählt mit), `world.megaInfo` nimmt für Fusionen `BAL.run.megaFuse` (Kosten Fusionspreis × 7, 150 Besiegte, Charakter-Lv 25), `stats.js` gibt Mega-Fusionen zusätzlich ×1,3 Schaden, +0,25 Reichweite, +1 Durchschlag, ×1,15 Boss. Banner „✦ MEGA-FUSION“, Fenster-Unterzeile „Mega-Fusion · Art“.
+
+## Stand davor: v0.51.0 – Prüfungsturm (Vision P11 Teil 2)
 **0.51:** `data/tower.js`: `FLOORS` (10 Etagen mit Karte, Schwierigkeit, Wellenzahl `mods.waves` und Regeln aus vorhandenen Mods, Etage 10 = Boss-Rush), offen ab Konto-Lv `TOWER_LVL` 15 und nur der Reihe nach (`floorOpen`), Sieg → `clearFloor` (`P.tower.best`), Truhe je neuer Etage, alle 5 Etagen +1 Shinobi-Punkt (in `shinobiPoints`). Welt: `mods.waves` kürzt `maxWave`. Run-Kennung `ch = 'tower_<n>'`. Bildschirm `s_tower` (Hub-Kachel 🗼 Turm), Ergebnis-Zeile. Fix: Bonus-Kräfte aus Truhen nutzen den eigenen Zufall `rr` (Test war wackelig).
 
 ## Stand davor: v0.50.0 – Truhen-Seltenheiten (Vision P10 Teil 2)
