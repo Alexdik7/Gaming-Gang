@@ -140,6 +140,7 @@ const PROJ_STYLE = {
   bubble: { c: 0xbff4ff, trail: 0x5ab8ff, s: 1.7, glow: true, orb: true }, arrow: { c: 0xf0e0c0, trail: 0xdff8ff, s: 1.4 },
   venom: { c: 0x8aff6a, trail: 0x3fd06a, s: 1.5, glow: true, orb: true }, windblade: { c: 0xdff8ff, trail: 0x8fe0ff, s: 1.5, star: true, glow: true },
   coin: { c: 0xffd257, trail: 0xffe9a0, s: 1.3, glow: true, orb: true },
+  icicle: { c: 0xeffaff, trail: 0x9fe8ff, s: 1.5, glow: true }, firefly: { c: 0xf4ff8a, trail: 0xd8ff5a, s: 0.85, glow: true, orb: true }, silk: { c: 0xf0e8ff, trail: 0xb07bff, s: 1.3, glow: true, star: true },
   leaf: { c: 0x9af070, trail: 0x7be0a8, s: 1.1, leaf: true }, light: { c: 0xfff6c8, trail: 0xfff0a0, s: 1.2, glow: true, orb: true }, nova: { c: 0xfffbe0, trail: 0xfff2a8, s: 2.2, glow: true, orb: true },
   feather: { c: 0x3a2a5a, trail: 0xb07bff, s: 1.1, leaf: true }, voidorb: { c: 0xb070ff, trail: 0x6a20ff, s: 2.4, glow: true, orb: true },
   shuriken: { c: 0xd8dde8, trail: 0xffffff, s: 1.2, star: true }, fireshuriken: { c: 0xffb050, trail: 0xff7a2a, s: 1.3, star: true, glow: true }, shell: { c: 0x4a4a54, trail: 0xc8a060, s: 1.7, orb: true },

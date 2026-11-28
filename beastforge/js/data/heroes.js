@@ -216,3 +216,110 @@ HEROES.ren = {
   },
 };
 export const HERO_IDS = Object.keys(HEROES);
+
+// ═══════════════════════ v0.55: vier neue Helden ═══════════════════════
+const LV = (a) => a;   // Lesbarkeit
+HEROES.akane = {
+  id: 'akane', name: 'Akane', title: 'Feuerpriesterin', model: 'akane', color: '#ff6a3a',
+  personality: 'Feurig, ungeduldig, herzlich – und sehr laut beim Beten.',
+  lore: 'Akane hütet das ewige Feuer im Glutkrater-Schrein. Sie sagt, das Feuer spreche zu ihr. Meistens sagt es: „Mehr!“',
+  place: ['ground', 'high'],
+  base: { proj: 'fireshuriken', dmg: 5, rate: 1.3, range: 2.9, speed: 14, dmgType: 'fire', 'burn.dps': 3, 'burn.dur': 2.5 },
+  milestones: LV([
+    { lvl: 1,  name: 'Opferflamme', desc: 'Feuerzauber setzen Gegner in Brand.' },
+    { lvl: 3,  name: 'Heiße Glut', desc: 'Brand +50 %.', fx: { mul: { 'burn.dps': 1.5 } } },
+    { lvl: 5,  name: 'Flammenkreis', desc: 'Fähigkeit: Ein Feuerring verbrennt alle Gegner in der Nähe schwer.', ability: 'pyre' },
+    { lvl: 7,  name: 'Zwillingsflamme', desc: '+1 Feuerzauber, Fläche.', fx: { add: { shots: 1, spread: 0.2, aoe: 0.5 } } },
+    { lvl: 10, name: 'Inferno', desc: 'Ultimate: Die ganze Karte brennt – jeder Gegner nimmt schweren Schaden und brennt lange.', ultimate: 'inferno' },
+    { lvl: 12, name: 'Schreinfeuer', desc: 'Kreaturen in der Nähe +8 % Schaden.', fx: { add: { 'support.range': 2.4, 'support.dmg': 0.08 } } },
+    { lvl: 15, name: 'Aufstieg', desc: 'Feuerschwingen: Schaden ×1,3, Brand ×1,5.', fx: { mul: { dmg: 1.3, 'burn.dps': 1.5 } }, form: 1 },
+    { lvl: 20, name: 'Meisterform', desc: 'Hohepriesterin der Flamme: Schaden ×1,6, Abklingzeiten −30 %.', fx: { mul: { dmg: 1.6 } }, form: 2, cdr: 0.3 },
+  ]),
+  abilities: {
+    pyre: { name: 'Flammenkreis', cd: 35, mul: 9, desc: 'Feuerring im Umkreis 3: Schaden ×9 und starker Brand.' },
+    inferno: { name: 'Inferno', cd: 85, mul: 10, desc: 'Jeder Gegner der Karte: Schaden ×10 und 6 s Brand.' },
+  },
+  lines: {
+    place: ['Das Feuer ist bereit!', 'Wärmt euch an mir!', 'Brennt hell!'], level: ['Heißer!', 'Mehr Glut!'], boss: ['Ein großes Feuer für einen großen Feind!'],
+    ability: ['Flammenkreis!', 'Brenn!'], ult: ['INFERNO!'], leak: ['Ich war zu langsam – verzeih, Feuer!'],
+    win: ['Das Feuer ist zufrieden.'], ascend: ['Ich bin die Flamme!'], master: ['Das ewige Feuer wohnt in mir.'],
+  },
+};
+HEROES.tetsu = {
+  id: 'tetsu', name: 'Tetsu', title: 'Schmied-Samurai', model: 'tetsu', color: '#c8d0e0',
+  personality: 'Wortkarg, gründlich, stolz auf jede Klinge, die er geschmiedet hat.',
+  lore: 'Tetsu schmiedete die Klingen der halben Shinobi-Akademie. Eines Tages legte er den Hammer weg und nahm eine davon selbst in die Hand.',
+  place: ['ground'],
+  base: { atk: 'slash', dmg: 14, rate: 1.0, range: 1.6, dmgType: 'phys', cleave: 1, pierceArmor: 0.3, bossMul: 1.3 },
+  milestones: LV([
+    { lvl: 1,  name: 'Schwertstreich', desc: 'Starke Hiebe, die Panzer teilweise durchdringen.' },
+    { lvl: 3,  name: 'Gehärteter Stahl', desc: 'Panzerbrechen +30 %, +10 % Krit.', fx: { add: { pierceArmor: 0.3, 'crit.ch': 0.1 } } },
+    { lvl: 5,  name: 'Schmiedefeuer', desc: 'Fähigkeit: Kreaturen in der Nähe 10 s +40 % Schaden und durchdringen Panzer.', ability: 'forge' },
+    { lvl: 7,  name: 'Weiter Hieb', desc: '+0,3 Reichweite, Hiebe treffen mehr Gegner.', fx: { add: { range: 0.3, cleave: 1 } } },
+    { lvl: 10, name: 'Iaidō', desc: 'Ultimate: Ein einziger Schnitt in den stärksten Gegner der Karte – mit Druckwelle.', ultimate: 'iaido' },
+    { lvl: 12, name: 'Meisterklinge', desc: 'Bosse ×1,3, Krit ×2,5.', fx: { mul: { bossMul: 1.3 }, set: { 'crit.mult': 2.5 } } },
+    { lvl: 15, name: 'Aufstieg', desc: 'Drachenrüstung: Schaden ×1,3, Tempo ×1,2.', fx: { mul: { dmg: 1.3, rate: 1.2 } }, form: 1 },
+    { lvl: 20, name: 'Meisterform', desc: 'Klingenheiliger: Schaden ×1,7, Abklingzeiten −30 %.', fx: { mul: { dmg: 1.7 } }, form: 2, cdr: 0.3 },
+  ]),
+  abilities: {
+    forge: { name: 'Schmiedefeuer', cd: 40, dur: 10, desc: 'Kreaturen im Umkreis 3,5: +40 % Schaden, Panzerbrechen (10 s).' },
+    iaido: { name: 'Iaidō', cd: 80, mul: 60, desc: 'Stärkster Gegner der Karte: Schaden ×60; Druckwelle ×15 ringsum.' },
+  },
+  lines: {
+    place: ['Stahl ist bereit.', 'Hm.', 'Diese Klinge wartet.'], level: ['Schärfer.', 'Gut geschmiedet.'], boss: ['Großes Ziel. Gute Klinge.'],
+    ability: ['Feuer der Esse!', 'Härtet euch!'], ult: ['…Iaidō.'], leak: ['Ein schlechter Schnitt.'],
+    win: ['Saubere Arbeit.'], ascend: ['Der Stahl singt.'], master: ['Ich bin die Klinge.'],
+  },
+};
+HEROES.nami = {
+  id: 'nami', name: 'Nami', title: 'Wellen-Kunoichi', model: 'nami', color: '#5fd6ff',
+  personality: 'Verspielt, frech, taucht immer dort auf, wo man sie nicht erwartet.',
+  lore: 'Nami wuchs bei den Kappa im Fluss auf und lernte dort, dass Wasser alles bezwingt – geduldig oder auf einen Schlag.',
+  place: ['ground', 'high', 'water'],
+  base: { proj: 'bubble', dmg: 5, rate: 1.4, range: 3.0, speed: 14, dmgType: 'ice', knock: 0.15, 'slow.pct': 0.25, 'slow.dur': 1.2, aoe: 0.5, water: 0.3 },
+  milestones: LV([
+    { lvl: 1,  name: 'Wasserkunai', desc: 'Wasserkugeln verlangsamen und stoßen zurück.' },
+    { lvl: 3,  name: 'Strömung', desc: '+15 % Verlangsamung, stärkerer Rückstoß.', fx: { add: { 'slow.pct': 0.15, knock: 0.1 } } },
+    { lvl: 5,  name: 'Tsunami', desc: 'Fähigkeit: Eine Welle spült alle Gegner in der Nähe weit zurück.', ability: 'tsunami' },
+    { lvl: 7,  name: 'Gischt', desc: '+1 Kugel, größere Fläche.', fx: { add: { shots: 1, spread: 0.25, aoe: 0.3 } } },
+    { lvl: 10, name: 'Mahlstrom', desc: 'Ultimate: Ein Strudel packt jeden Gegner der Karte, zieht ihn zurück und bremst ihn stark.', ultimate: 'maelstrom' },
+    { lvl: 12, name: 'Tiefsee', desc: 'Erkennt Getarnte, +0,4 Reichweite.', fx: { set: { camo: true }, add: { range: 0.4 } } },
+    { lvl: 15, name: 'Aufstieg', desc: 'Wellenmantel: Schaden ×1,3, Tempo ×1,2.', fx: { mul: { dmg: 1.3, rate: 1.2 } }, form: 1 },
+    { lvl: 20, name: 'Meisterform', desc: 'Herrin der Gezeiten: Schaden ×1,6, Abklingzeiten −30 %.', fx: { mul: { dmg: 1.6 } }, form: 2, cdr: 0.3 },
+  ]),
+  abilities: {
+    tsunami: { name: 'Tsunami', cd: 35, mul: 6, desc: 'Gegner im Umkreis 3,5: Schaden ×6, weit zurückgespült, stark verlangsamt.' },
+    maelstrom: { name: 'Mahlstrom', cd: 85, mul: 8, desc: 'Jeder Gegner: Schaden ×8, zurückgezogen, 5 s stark verlangsamt.' },
+  },
+  lines: {
+    place: ['Platsch! Da bin ich!', 'Wasser marsch!', 'Hihi, Wellen!'], level: ['Mehr Welle!', 'Juhu!'], boss: ['Na, wie groß bist du denn?'],
+    ability: ['Tsunami!', 'Weggespült!'], ult: ['Mahlstrom – rein mit euch!'], leak: ['Ups, durchgerutscht!'],
+    win: ['Alles sauber gewaschen!'], ascend: ['Ich bin die Flut!'], master: ['Das Meer hört auf mich.'],
+  },
+};
+HEROES.kuro = {
+  id: 'kuro', name: 'Kuro', title: 'Geisterrufer', model: 'kuro', color: '#7df3ff',
+  personality: 'Leise, freundlich, redet mehr mit Geistern als mit Lebenden.',
+  lore: 'Kuro hört die Seelen des Ahnenhains flüstern. Sie folgen ihm – als Licht, als Nebel und manchmal als Klinge.',
+  place: ['ground', 'high'],
+  base: { atk: 'chain', dmg: 8, rate: 1.0, range: 2.9, dmgType: 'spirit', 'chain.n': 2, 'chain.range': 2 },
+  milestones: LV([
+    { lvl: 1,  name: 'Seelenfaden', desc: 'Geisterblitze springen auf 2 weitere Gegner.' },
+    { lvl: 3,  name: 'Geistersicht', desc: 'Erkennt Getarnte, Kette +1.', fx: { set: { camo: true }, add: { 'chain.n': 1 } } },
+    { lvl: 5,  name: 'Seelenruf', desc: 'Fähigkeit: Vier Geisterlichter umkreisen Kuro 12 s und treffen alles in der Nähe.', ability: 'spirits' },
+    { lvl: 7,  name: 'Lange Kette', desc: 'Kette +2, Tempo ×1,2.', fx: { add: { 'chain.n': 2 }, mul: { rate: 1.2 } } },
+    { lvl: 10, name: 'Seelenernte', desc: 'Ultimate: Gegner unter 25 % Leben werden geerntet; alle anderen nehmen schweren Geistschaden.', ultimate: 'reaper' },
+    { lvl: 12, name: 'Ahnenruf', desc: 'Kreaturen in der Nähe +6 % Tempo.', fx: { add: { 'support.range': 2.4, 'support.rate': 0.06 } } },
+    { lvl: 15, name: 'Aufstieg', desc: 'Geistermantel: Schaden ×1,3, Kette +1.', fx: { mul: { dmg: 1.3 }, add: { 'chain.n': 1 } }, form: 1 },
+    { lvl: 20, name: 'Meisterform', desc: 'Hüter der Seelen: Schaden ×1,6, Abklingzeiten −30 %.', fx: { mul: { dmg: 1.6 } }, form: 2, cdr: 0.3 },
+  ]),
+  abilities: {
+    spirits: { name: 'Seelenruf', cd: 40, dur: 12, desc: '4 Geisterlichter umkreisen Kuro (12 s).' },
+    reaper: { name: 'Seelenernte', cd: 90, mul: 12, desc: 'Gegner unter 25 % KP (keine Bosse) vergehen; alle anderen: Schaden ×12.' },
+  },
+  lines: {
+    place: ['Die Geister sind mit uns.', 'Psst… sie flüstern.', 'Ich bin hier.'], level: ['Die Seelen danken.', 'Heller.'], boss: ['Eine große, zornige Seele…'],
+    ability: ['Kommt, ihr Lichter.', 'Seelenruf.'], ult: ['Die Ernte beginnt.'], leak: ['Eine Seele ist entwischt…'],
+    win: ['Ruht in Frieden.'], ascend: ['Die Ahnen tragen mich.'], master: ['Alle Seelen kennen meinen Namen.'],
+  },
+};

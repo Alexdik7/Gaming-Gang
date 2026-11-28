@@ -514,6 +514,41 @@ const HEROES3D = {
       const thread = mk(geo.cyl(3), glow(0xd8c8ff, 0.45), { p: [0, 0.4, 0], s: [0.003, 0.5, 0.003], ol: false }); p.add(thread); R.root.add(p); pups.push(p); }
     anim.push(t => pups.forEach((p, i) => { const q = t * 0.8 + i * PI * 2 / pups.length; p.position.set(Math.cos(q) * 0.3, 0.25 + Math.abs(Math.sin(t * 3 + i)) * 0.08, Math.sin(q) * 0.3); p.rotation.y = -q; }));
   } }),
+  // Akane: Feuerpriesterin in Rot-Weiß, Gohei-Stab mit Papierstreifen, schwebende Flammen
+  akane: o => hero('kk_mage', o, { tint: [0xe8402a, 0.55], em: 0x2a0800, col: 0xff6a3a, atk: 'cast', build(R, head, hb, form, anim) {
+    R.attach(hb, mk(geo.torus(0.2), toon(0xd8342c), { r: [PI / 2, 0, 0], s: 0.12, ol: 0.004 }), head.clone().add(new THREE.Vector3(0, 0.2, 0)));
+    const staff = new THREE.Group(); staff.add(mk(geo.cyl(6), toon(0x8a5a32), { s: [0.015, 0.6, 0.015], ol: 0.004 })); for (let i = 0; i < 4; i++) staff.add(mk(geo.box(), toon(0xffffff), { p: [(i % 2 ? 0.03 : -0.03), 0.28 - i * 0.03, 0], r: [0, 0, (i % 2 ? -0.4 : 0.4)], s: [0.03, 0.08, 0.004], ol: 0.003 }));
+    staff.position.set(0.24, 0.45, 0.06); staff.rotation.z = -0.2; R.root.add(staff);
+    const fl = []; for (let i = 0; i < (form ? 5 : 3); i++) { const f = mk(geo.cone(6), glow(i % 2 ? 0xffd257 : 0xff6a3a, 0.9), { s: [0.04, 0.09, 0.04], ol: false }); R.root.add(f); fl.push(f); }
+    anim.push(t => fl.forEach((f, i) => { const q = t * 1.1 + i * PI * 2 / fl.length; f.position.set(Math.cos(q) * 0.3, 0.55 + Math.sin(t * 3 + i) * 0.06, Math.sin(q) * 0.3); f.scale.y = 0.09 * (1 + Math.sin(t * 9 + i) * 0.2); }));
+  } }),
+  // Tetsu: Samurai in Stahlgrau, Helm mit Hörnern, Katana an der Hüfte, Schmiedehammer auf dem Rücken
+  tetsu: o => hero('kk_raizen', o, { tint: [0x4a5468, 0.9], em: 0x101418, col: 0xc8d0e0, atk: 'slash', build(R, head, hb, form, anim) {
+    R.attach(hb, mk(geo.sphere(10), toon(0x3a4250), { s: [0.17, 0.09, 0.17], ol: 0.005 }), head.clone().add(new THREE.Vector3(0, 0.2, 0)));
+    for (const sd of [-1, 1]) R.attach(hb, mk(C(6), toon(0xffd257, { emissive: 0x6a4a00, emissiveIntensity: 0.3 }), { r: [0, 0, -sd * 0.6], s: [0.02, 0.14, 0.02], ol: 0.004 }), head.clone().add(new THREE.Vector3(sd * 0.1, 0.3, 0.06)));
+    const kat = new THREE.Group(); kat.add(mk(geo.box(), toon(0xe8eef8, { emissive: 0x6a7a9a, emissiveIntensity: 0.3 }), { p: [0, 0.24, 0], s: [0.02, 0.44, 0.01], ol: 0.004 })); kat.add(mk(geo.box(), toon(0x2a2a36), { s: [0.026, 0.12, 0.026], ol: 0.004 })); kat.add(mk(geo.cyl(10), toon(0xffd257), { p: [0, 0.07, 0], s: [0.05, 0.008, 0.05], ol: 0.003 }));
+    kat.position.set(0.2, 0.34, 0.06); kat.rotation.set(0.3, 0, -0.5); R.root.add(kat);
+    const ham = new THREE.Group(); ham.add(mk(geo.cyl(6), toon(0x6a4a2a), { s: [0.014, 0.32, 0.014], ol: 0.004 })); ham.add(mk(geo.box(), toon(0x4a4a54), { p: [0, 0.17, 0], s: [0.1, 0.06, 0.06], ol: 0.004 }));
+    ham.position.set(-0.08, 0.5, -0.15); ham.rotation.z = 0.7; R.root.add(ham);
+    const sp = []; if (form) for (let i = 0; i < 4; i++) { const s = mk(geo.sphere(6), glow(0xffa040, 0.9), { s: 0.015, ol: false }); R.root.add(s); sp.push(s); }
+    anim.push(t => sp.forEach((s, i) => { const f = (t * 0.8 + i * 0.25) % 1; s.position.set(-0.08 + Math.sin(i * 2) * 0.1, 0.6 + f * 0.4, -0.15 + Math.cos(i) * 0.05); s.scale.setScalar(0.015 * (1 - f)); }));
+  } }),
+  // Nami: Kunoichi in Meerblau, Muschel im Haar, Wasserbänder um die Hüften
+  nami: o => hero('kk_ninja', o, { tint: [0x3a9ad8, 0.5], em: 0x041420, col: 0x5fd6ff, atk: 'throw', build(R, head, hb, form, anim) {
+    R.attach(hb, mk(geo.sphere(10), toon(0xffc8dc, { emissive: 0xff8ab8, emissiveIntensity: 0.2 }), { s: [0.06, 0.03, 0.06], ol: 0.004 }), head.clone().add(new THREE.Vector3(0.1, 0.28, 0)));
+    R.attach(hb, mk(geo.sphere(10), toon(0x1a3a5a), { s: [0.07, 0.12, 0.07], ol: 0.004 }), head.clone().add(new THREE.Vector3(0, 0.18, -0.12)));
+    const rings = []; for (let i = 0; i < (form ? 3 : 2); i++) { const w = mk(geo.torus(0.03), glow(0x9fe8ff, 0.55), { r: [PI / 2, 0, 0], s: 0.28 + i * 0.07, ol: false }); w.position.y = 0.3 + i * 0.15; R.root.add(w); rings.push(w); }
+    const dr = []; for (let i = 0; i < 4; i++) { const d = mk(geo.sphere(6), glow(0x5fd6ff, 0.85), { s: 0.025, ol: false }); R.root.add(d); dr.push(d); }
+    anim.push(t => { rings.forEach((w, i) => { w.rotation.z = t * (i % 2 ? -2 : 2.2); w.position.y = 0.3 + i * 0.15 + Math.sin(t * 2 + i) * 0.03; }); dr.forEach((d, i) => { const q = t * 2 + i * PI / 2; d.position.set(Math.cos(q) * 0.32, 0.4 + Math.sin(q * 2) * 0.12, Math.sin(q) * 0.32); }); });
+  } }),
+  // Kuro: Geisterrufer in Schwarz-Türkis, Kapuze, Laterne aus Geisterlicht, Seelenflammen
+  kuro: o => hero('kk_mage', o, { tint: [0x1a6a6a, 0.85], em: 0x02141a, col: 0x7df3ff, atk: 'cast', build(R, head, hb, form, anim) {
+    R.attach(hb, mk(geo.cone(10), toon(0x14202a), { s: [0.2, 0.2, 0.2], ol: 0.005 }), head.clone().add(new THREE.Vector3(0, 0.27, -0.03)));
+    const lan = new THREE.Group(); lan.add(mk(geo.sphere(10), glow(0x7df3ff, 0.85), { s: [0.05, 0.065, 0.05], ol: false })); lan.add(mk(geo.cyl(6), toon(0x2a2a36), { p: [0, 0.07, 0], s: [0.03, 0.015, 0.03], ol: 0.003 }));
+    R.root.add(lan);
+    const souls = []; for (let i = 0; i < (form ? 5 : 3); i++) { const s = mk(geo.sphere(8), glow(i % 2 ? 0x7df3ff : 0xdff8ff, 0.8), { s: [0.04, 0.06, 0.04], ol: false }); R.root.add(s); souls.push(s); }
+    anim.push(t => { lan.position.set(0.26, 0.42 + Math.sin(t * 2) * 0.03, 0.12); souls.forEach((s, i) => { const q = -t * 0.8 + i * PI * 2 / souls.length; s.position.set(Math.cos(q) * 0.34, 0.5 + Math.sin(t * 1.8 + i) * 0.12, Math.sin(q) * 0.34); }); });
+  } }),
   // Yoru: Magierin in Nachtblau mit Mondsichel über dem Kopf und kreisenden Sternen
   yoru: o => hero('kk_mage', o, { tint: [0x3a4a9a, 0.55], em: 0x0a0a20, col: 0x9fb4ff, atk: 'cast', build(R, head, hb, form, anim) {
     const moon = mk(new THREE.TorusGeometry(1, 0.16, 8, 24, PI * 1.3), glow(0xe8ecff, 0.9), { r: [0, 0, PI * 0.35], s: 0.09, ol: false });
@@ -548,7 +583,7 @@ function neko(o) {
 }
 
 export const GLB_CREATURES = { kitsune, deer, raven, dragonwolf, golem, tiger, neko, ...HEROES3D };
-const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', neko: 'cat', kairo: 'kk_ninja', raizen: 'kk_raizen', mika: 'kk_mage', hana: 'kk_ninja', goro: 'kk_raizen', yoru: 'kk_mage', sora: 'kk_ninja', ren: 'kk_raizen' };
+const SRC = { kitsune: 'fox', deer: 'stag', raven: 'owl', dragonwolf: 'husky', golem: 'rockling', tiger: 'cat', neko: 'cat', kairo: 'kk_ninja', raizen: 'kk_raizen', mika: 'kk_mage', hana: 'kk_ninja', goro: 'kk_raizen', yoru: 'kk_mage', sora: 'kk_ninja', ren: 'kk_raizen', akane: 'kk_mage', tetsu: 'kk_raizen', nami: 'kk_ninja', kuro: 'kk_mage' };
 export function buildGlb(id, o) { if (!(ready && GLB_CREATURES[id] && ASSETS[SRC[id]])) return null; try { return GLB_CREATURES[id](o); } catch (e) { console.warn(e.message); return null; } }
 
 // ───────── Bosse / Mini-Bosse ─────────

@@ -705,6 +705,45 @@ export class GameView {
       case 'ancestral': { this.darken = 1.8; this.pillars.add(tx, tz, 0.8, 9, 0xffd257, 1.2); ev.targets.forEach((p, i) => this.after(i * 0.02, () => { const [x, z] = this.toW(p.x, p.y); this.pillars.add(x, z, 0.3, 5, i % 2 ? 0xffd257 : 0xff9af0, 0.7); this.flashes.add(x, 0.6, z, 0xffffff, 1, 0.3); })); this.flashSky = 0.8; this.stage.addShake(1.2); break; }
       case 'flood': { for (let i = 0; i < 3; i++) this.after(i * 0.1, () => this.rings.add(tx, 0.1, tz, 0.3, ev.r * (0.6 + i * 0.2), i ? 0x7ad8ff : 0xdff8ff, 0.6)); this.rings.add(tx, 0.05, tz, 0.3, ev.r, 0x3a9ad8, 0.9, { disc: true, alpha: 0.4 }); for (let i = 0; i < 100; i++) { const a = Math.random() * PI * 2, r = Math.random() * ev.r; P.spawn(tx + Math.cos(a) * r, 0.15, tz + Math.sin(a) * r, Math.cos(a) * 2.5, 1.5 + Math.random() * 1.5, Math.sin(a) * 2.5, i % 2 ? 0x9fe8ff : 0xffffff, 0.14, 0.8, { grav: 6 }); } this.stage.addShake(0.5); break; }
       case 'radiance': { this.pillars.add(tx, tz, 0.5, 6, 0xffe27a, 1.0); this.flashes.add(tx, 1, tz, 0xfff2a8, 2.6, 0.35); this.rings.add(tx, 0.06, tz, 0.3, ev.r, 0xffd257, 0.9); for (let i = 0; i < 24; i++) { const a = i / 24 * PI * 2; this.sparks.add(tx, 0.6, tz, Math.cos(a) * 9, 2, Math.sin(a) * 9, 0xfff2a8, 0.35, 0.05); } for (const o of this.world.towers) if (Math.hypot(o.x - ev.tower.x, o.y - ev.tower.y) <= ev.r) { const [x, z] = this.toW(o.x, o.y); this.pillars.add(x, z, 0.25, 1.6, 0xffd257, 0.8); } this.flashSky = 0.3; break; }
+      case 'pyre': { for (let i = 0; i < 3; i++) this.after(i * 0.08, () => this.rings.add(tx, 0.08, tz, 0.3, ev.r * (0.6 + i * 0.2), i ? 0xff6a3a : 0xffd257, 0.6)); this.rings.add(tx, 0.05, tz, 0.3, ev.r, 0xff4a10, 0.8, { disc: true, alpha: 0.4 }); for (let i = 0; i < 36; i++) { const a = i / 36 * PI * 2; P.spawn(tx + Math.cos(a) * ev.r * 0.9, 0.2, tz + Math.sin(a) * ev.r * 0.9, 0, 2.5, 0, i % 2 ? 0xff6a3a : 0xffd257, 0.14, 0.8); } this.stage.addShake(0.35); break; }
+      case 'inferno': { this.flashSky = 0.5; this.darken = 0.6; (ev.targets || []).forEach((p, i) => this.after(i * 0.02, () => { const [x, z] = this.toW(p.x, p.y); this.pillars.add(x, z, 0.25, 2.5, 0xff6a3a, 0.6); P.burst(x, 0.4, z, [0xff6a3a, 0xffd257, 0xff3a10], 16, 3, 0.18, 0.7, { up: 1.5 }); })); this.stage.addShake(0.9); break; }
+      case 'forge': { this.pillars.add(tx, tz, 0.4, 3, 0xffa040, 0.7); P.burst(tx, 0.8, tz, [0xffa040, 0xffd257, 0xffffff], 50, 4, 0.12, 0.8, { up: 1.4 }); for (const o of this.world.towers) if (Math.hypot(o.x - ev.tower.x, o.y - ev.tower.y) <= ev.r) { const [x, z] = this.toW(o.x, o.y); this.rings.add(x, 0.06, z, 0.1, 0.55, 0xffa040, 0.7); this.sparks.add(x, 0.6, z, 0, 3, 0, 0xffd257, 0.4, 0.05); } this.stage.addShake(0.3); break; }
+      case 'iaido': { const [x, z] = this.toW(ev.x, ev.y); this.darken = 1.2; this.after(0.25, () => { for (let k = 0; k < 2; k++) this.arcs.add(x, 0.7, z, Math.atan2(z - tz, x - tx) + k * 0.6, 0xffffff, 1.4, 0.35, 0.3, k ? -1 : 1); this.flashes.add(x, 0.8, z, 0xffffff, 5, 0.35); this.rings.add(x, 0.07, z, 0.2, 2.6, 0xdfe6f0, 0.6); P.burst(x, 0.6, z, [0xffffff, 0xc8d0e0, 0xff3a4a], 60, 6, 0.2, 0.8); this.stage.addShake(1.0); }); break; }
+      case 'tsunami': { for (let i = 0; i < 3; i++) this.after(i * 0.1, () => this.rings.add(tx, 0.1, tz, 0.3, ev.r * (0.6 + i * 0.2), i ? 0x5fd6ff : 0xdff8ff, 0.6)); for (let i = 0; i < 90; i++) { const a = Math.random() * PI * 2, r = Math.random() * ev.r; P.spawn(tx + Math.cos(a) * r, 0.15, tz + Math.sin(a) * r, Math.cos(a) * 3, 1.5 + Math.random() * 2, Math.sin(a) * 3, i % 2 ? 0x9fe8ff : 0xffffff, 0.14, 0.8, { grav: 6 }); } this.stage.addShake(0.5); break; }
+      case 'maelstrom': { this.flashSky = 0.3; (ev.targets || []).forEach((p, i) => this.after(i * 0.015, () => { const [x, z] = this.toW(p.x, p.y); this.rings.add(x, 0.08, z, 0.6, 0.1, 0x5fd6ff, 0.6); P.burst(x, 0.3, z, [0x5fd6ff, 0xffffff], 10, 2, 0.12, 0.6); })); this.stage.addShake(0.6); break; }
+      case 'spirits': { this.rings.add(tx, 0.06, tz, 0.1, 1, 0x7df3ff, 0.7); P.burst(tx, 0.8, tz, [0x7df3ff, 0xdff8ff], 40, 3, 0.14, 0.9, { up: 1.2 }); break; }
+      case 'reaper': { this.darken = 1.0; (ev.targets || []).forEach((p, i) => this.after(i * 0.02, () => { const [x, z] = this.toW(p.x, p.y); this.arcs.add(x, 0.8, z, i * 0.7, 0x7df3ff, 0.7, 0.25, 0.25, 1); P.spawn(x, 0.6, z, 0, 2.5, 0, 0xdff8ff, 0.18, 0.9); })); this.stage.addShake(0.5); break; }
+      case 'transform': {   // Tanuki: Blätterwirbel, Rauchwolken an jedem Ziel
+        this.rings.add(tx, 0.06, tz, 0.3, ev.r, 0x9af070, 0.7); for (let i = 0; i < 40; i++) { const a = i / 40 * PI * 2; P.spawn(tx, 0.5, tz, Math.cos(a) * 3, 1.5, Math.sin(a) * 3, i % 2 ? 0x9af070 : 0xffb43a, 0.1, 0.8, { grav: 2 }); }
+        (ev.targets || []).forEach((p, i) => this.after(0.05 + i * 0.02, () => { const [x, z] = this.toW(p.x, p.y); P.burst(x, 0.5, z, [0xf0e8d8, 0xd8d0c0, 0x9af070], 14, 2.2, 0.2, 0.7, { up: 1 }); this.floaters.add(x, 1.1, z, '🫖', '', 0.8); }));
+        this.stage.addShake(0.3); break;
+      }
+      case 'moonfall': {   // Schneehase: Eismond stürzt herab
+        const [x, z] = this.toW(ev.x, ev.y);
+        this.bolts.add([{ x, y: 6, z }, { x, y: 3, z }, { x, y: 0.4, z }], 0xdff8ff, 0.12, 0.35);
+        this.after(0.18, () => { this.flashes.add(x, 0.8, z, 0xffffff, 4, 0.4); this.flashes.add(x, 0.6, z, 0x9fe8ff, 3, 0.6); this.rings.add(x, 0.07, z, 0.2, ev.r * 1.4, 0x9fe8ff, 0.7); this.rings.add(x, 0.05, z, 0.2, ev.r, 0xffffff, 0.6, { disc: true, alpha: 0.45 }); P.burst(x, 0.5, z, [0xdff8ff, 0x9fe8ff, 0xffffff], 70, 5, 0.25, 1.0, { up: 1.2 }); this.stage.addShake(0.6); });
+        break;
+      }
+      case 'grovefx': {   // Kodama: Wurzeln brechen aus dem Boden
+        this.rings.add(tx, 0.05, tz, 0.3, ev.r, 0x6a8a3a, 0.9, { disc: true, alpha: 0.35 }); this.rings.add(tx, 0.07, tz, 0.3, ev.r, 0x9af070, 0.7);
+        for (let i = 0; i < 18; i++) this.after(i * 0.03, () => { const a = Math.random() * PI * 2, r = 0.5 + Math.random() * (ev.r - 0.5), x = tx + Math.cos(a) * r, z = tz + Math.sin(a) * r; this.pillars.add(x, z, 0.08, 0.7, 0x7a5a3a, 0.6); P.burst(x, 0.2, z, [0x7a5a3a, 0x9af070], 6, 1.5, 0.1, 0.5); });
+        for (const o of this.world.towers) if (Math.hypot(o.x - ev.tower.x, o.y - ev.tower.y) <= ev.r) { const [x, z] = this.toW(o.x, o.y); this.rings.add(x, 0.06, z, 0.1, 0.5, 0x9af070, 0.6); }
+        this.stage.addShake(0.35); break;
+      }
+      case 'dragongate': {   // Koi: Wasserdrache entlang des Pfads
+        const W = this.world, pts = []; for (let pi = 0; pi < W.paths.length; pi++) for (let d = 0; d < W.paths[pi].len; d += 1.2) pts.push(W.posAt(d, {}, pi)); pts.forEach((p, i) => this.after(i * 0.025, () => { const [x, z] = this.toW(p.x, p.y); P.burst(x, 0.4, z, [0x5fd6ff, 0xffffff, 0xffd257], 18, 3, 0.2, 0.7, { up: 1.5 }); this.rings.add(x, 0.07, z, 0.2, 1.1, 0x5fd6ff, 0.5); }));
+        this.pillars.add(tx, tz, 0.5, 5, 0x5fd6ff, 0.8); this.flashSky = 0.25; this.stage.addShake(0.5); break;
+      }
+      case 'lanternfx': {   // Hotaru: Glühwürmchen schwärmen über die ganze Karte
+        this.flashes.add(tx, 1, tz, 0xfff27a, 3, 0.5); this.flashSky = 0.3;
+        (ev.targets || []).forEach((p, i) => this.after(i * 0.015, () => { const [x, z] = this.toW(p.x, p.y); for (let j = 0; j < 4; j++) P.spawn(tx, 0.8, tz, (x - tx) * 1.6 + (Math.random() - 0.5), 1 + Math.random(), (z - tz) * 1.6 + (Math.random() - 0.5), j % 2 ? 0xfff27a : 0xd8ff5a, 0.1, 0.7, { drag: 0.5 }); this.after(0.5, () => this.rings.add(x, 0.6, z, 0.05, 0.5, 0xfff27a, 0.5)); }));
+        break;
+      }
+      case 'webfx': {   // Jorōgumo: riesiges Netz breitet sich aus
+        const R = ev.r; for (let i = 0; i < 4; i++) this.after(i * 0.08, () => this.rings.add(tx, 0.08, tz, 0.2, R * (0.35 + i * 0.22), 0xf0e8ff, 0.9, { alpha: 0.75 }));
+        for (let i = 0; i < 8; i++) { const a = i / 8 * PI * 2; this.bolts.add([{ x: tx, y: 0.1, z: tz }, { x: tx + Math.cos(a) * R, y: 0.1, z: tz + Math.sin(a) * R }], 0xf0e8ff, 0.015, 0.9); }
+        P.burst(tx, 0.5, tz, [0x8aff6a, 0xb07bff], 30, 3, 0.15, 0.8); this.stage.addShake(0.25); break;
+      }
       case 'guardbite': { const [x, z] = this.toW(ev.x, ev.y); for (let k = 0; k < 2; k++) this.arcs.add(x, 0.6 - k * 0.2, z, Math.atan2(z - tz, x - tx) + (k ? PI : 0), 0xffd257, 0.6, 0.25, 0.2, k ? -1 : 1); this.flashes.add(x, 0.6, z, 0xffffff, 1.8, 0.25); P.burst(x, 0.5, z, [0xd8c8a8, 0xffd257, 0xffffff], 30, 3, 0.18, 0.6); this.stage.addShake(0.6); break; }
       case 'volley': { const [x, z] = this.toW(ev.x, ev.y); for (let i = 0; i < 24; i++) this.after(i * 0.025, () => { const ox = (Math.random() - 0.5) * 3.4, oz = (Math.random() - 0.5) * 3.4; this.sparks.add(x + ox - 1, 4, z + oz - 0.5, 5, -20, 2.5, 0xf0e0c0, 0.2, 0.06); this.after(0.18, () => P.burst(x + ox, 0.1, z + oz, [0xd8c8a0, 0xffffff], 5, 1.5, 0.1, 0.3, { flat: true })); }); break; }
       case 'skyshot': { this.runGhost(this.ghostFox, 'path', 1.0, 0x8fe0a0); this.flashSky = 0.4; this.stage.addShake(0.8); break; }

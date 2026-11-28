@@ -42,6 +42,25 @@ export const FUSIONS = [
   { id: 'templeguard', a: 'komainu', b: 'golem', name: 'Tempelkoloss', role: 'Bossbrecher', elements: ['earth', 'phys'], color: '#d8a060', cost: 1500,
     desc: 'Ein Löwenhund aus ganzem Tempelstein: zermalmt Bosse und betäubt alles um sich.',
     fx: { mul: { dmg: 1.5, bossMul: 1.4 }, add: { cleave: 2, 'stun.ch': 0.12, 'stun.dur': 0.6, range: 0.2 } }, paths: [['a', 0], ['b', 0], ['a', 1]] },
+  // v0.55: Fusionen mit den neuen Kreaturen
+  { id: 'goldkettle', a: 'tanuki', b: 'neko', name: 'Goldkessel-Tanuki', role: 'Glück / Gold', elements: ['earth', 'light'], color: '#ffc84a', cost: 1300,
+    desc: 'Ein Tanuki im goldenen Teekessel: Münzblätter verwirren, jeder Besiegte bringt Gold, dazu Zinsen am Wellenende.',
+    fx: { mul: { dmg: 1.35 }, add: { lucky: 6, income: 60, shots: 1, spread: 0.25, 'stun.ch': 0.06, range: 0.2 } }, paths: [['a', 0], ['a', 1], ['b', 2]] },
+  { id: 'nightfrost', a: 'usagi', b: 'raven', name: 'Nachtfrost-Hase', role: 'Kritischer Scharfschütze', elements: ['ice', 'shadow'], color: '#8ab0ff', cost: 1700,
+    desc: 'Ein Schattenhase mit Rabenfedern: Eiszapfen aus Nachtfrost treffen kritisch und durchbohren alles.',
+    fx: { mul: { dmg: 1.5 }, add: { 'crit.ch': 0.2, 'crit.mult': 1.5, pierce: 3, range: 0.5 } }, paths: [['a', 0], ['b', 0], ['a', 1]] },
+  { id: 'forestgod', a: 'kodama', b: 'deer', name: 'Waldgott', role: 'Große Unterstützung', elements: ['earth', 'spirit'], color: '#9af0a0', cost: 1400,
+    desc: 'Ein Hirschgeist mit Kodama-Krone: riesige Aura (+Schaden, +Tempo), heilt Leben und hält Gegner mit Wurzeln fest.',
+    fx: { mul: { dmg: 1.6 }, add: { 'support.range': 1, 'support.dmg': 0.08, 'support.rate': 0.06, lifeRegen: 2, 'stun.ch': 0.1, 'stun.dur': 0.8 } }, paths: [['a', 1], ['b', 1], ['a', 2]] },
+  { id: 'ryugu', a: 'koi', b: 'kappa', name: 'Drachenpalast-Koi', role: 'Flutstrahl', elements: ['ice', 'earth'], color: '#5fd6ff', cost: 1500,
+    desc: 'Der Koi aus dem Unterwasserpalast: Strahlen durchbohren ganze Reihen, Blasen spülen zurück.',
+    fx: { mul: { dmg: 1.45 }, add: { pierce: 4, aoe: 0.5, knock: 0.15, 'slow.pct': 0.2, 'slow.dur': 1, shots: 1, spread: 0.2 } }, paths: [['a', 0], ['b', 1], ['a', 2]] },
+  { id: 'wispfox', a: 'hotaru', b: 'kitsune', name: 'Irrlichtfuchs', role: 'Lichtschwarm', elements: ['light', 'fire'], color: '#fff27a', cost: 1400,
+    desc: 'Ein Fuchs aus tausend Glühwürmchen: blendende Funken, Fuchsfeuer-Orbs und Getroffene nehmen mehr Schaden.',
+    fx: { mul: { dmg: 1.5 }, add: { 'orbs.n': 3, 'orbs.dmg': 6, 'orbs.r': 0.9, mark: 0.1, 'burn.dps': 4, 'burn.dur': 2 } }, paths: [['a', 0], ['b', 0], ['a', 2]] },
+  { id: 'venomqueen', a: 'kumo', b: 'naga', name: 'Giftweberin', role: 'Gift-Netz', elements: ['shadow', 'earth'], color: '#9aff6a', cost: 1600,
+    desc: 'Spinne und Schlange in einem: Netze aus Gift fesseln ganze Gruppen und vergiften sie tödlich.',
+    fx: { mul: { dmg: 1.45, 'burn.dps': 2 }, add: { aoe: 0.5, 'stun.ch': 0.1, 'stun.dur': 0.8, 'slow.pct': 0.1 } }, paths: [['a', 0], ['a', 1], ['b', 2]] },
 ];
 export const FUSION_IDS = FUSIONS.map(f => f.id);
 export const fusionFor = (a, b) => FUSIONS.find(f => (f.a === a && f.b === b) || (f.a === b && f.b === a)) || null;

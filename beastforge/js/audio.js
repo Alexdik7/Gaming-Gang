@@ -163,7 +163,7 @@ export class Audio {
   }
 }
 // Klangsignatur je Kreatur (Fusionen nutzen den Körper)
-const VOICE = { kitsune: 'bell', tiger: 'thunder', turtle: 'water', kirin: 'chimes', deer: 'pipe', raven: 'caw', dragonwolf: 'breath', mantis: 'shing', golem: 'rock', neko: 'jingle', phoenix: 'whoosh', naga: 'hiss', monk: 'wind', voidcat: 'warp', kappa: 'bubble', komainu: 'growl' };
+const VOICE = { kitsune: 'bell', tiger: 'thunder', turtle: 'water', kirin: 'chimes', deer: 'pipe', raven: 'caw', dragonwolf: 'breath', mantis: 'shing', golem: 'rock', neko: 'jingle', phoenix: 'whoosh', naga: 'hiss', monk: 'wind', voidcat: 'warp', kappa: 'bubble', komainu: 'growl', tanuki: 'jingle', usagi: 'chimes', kodama: 'pipe', koi: 'bubble', hotaru: 'chimes', kumo: 'hiss' };
 const LOWPRIO = new Set(['hit', 'pop', 'coin', 'kunai', 'feather', 'leaf', 'shuriken', 'slash', 'frost', 'fire', 'zap', 'pulse', 'mortar', 'crit']);
 const THROTTLE = { frost: 110, slash: 55, kunai: 60, fire: 90, zap: 80, hit: 45, coin: 50, crit: 70, pulse: 120, feather: 60, leaf: 80, shuriken: 70, pop: 40, boom: 90, react: 120, mortar: 120 };
 

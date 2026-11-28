@@ -18,7 +18,8 @@ const NAMES = {
 };
 // Mega-Fusionen (Vision P11): Fusion mit Stufe 5 → gleiche drei Arten, eigener Name, stärkerer Bonus (stats.js)
 const FUSE_NAMES = { solfox: 'Sonnenkaiser-Fuchs', thunderwolf: 'Sturmgott-Drachenwolf', bastion: 'Weltenberg', luckdeer: 'Goldener Glückshirsch', nightblade: 'Mondsichel-Klinge',
-  aurora: 'Nordlicht-Phönix', hydra: 'Ur-Hydra', tengu: 'Tengu-König', cosmofox: 'Sternenmeer-Fuchs', riverdragon: 'Ryūjin, Flussgott', sunkirin: 'Morgenröte-Kirin', templeguard: 'Tempelgott' };
+  aurora: 'Nordlicht-Phönix', hydra: 'Ur-Hydra', tengu: 'Tengu-König', cosmofox: 'Sternenmeer-Fuchs', riverdragon: 'Ryūjin, Flussgott', sunkirin: 'Morgenröte-Kirin', templeguard: 'Tempelgott',
+  goldkettle: 'Bunbuku-Gottkessel', nightfrost: 'Polarnacht-Hase', forestgod: 'Uralter Waldgott', ryugu: 'Ryūgū-Drachenkönig', wispfox: 'Sternenschwarm-Fuchs', venomqueen: 'Kaiserin der Fäden' };
 export const megaId = (cid, p) => cid + ':' + p;
 export function megaDef(cid, p) {
   const d = CREATURES[cid]; if (!d) return null;

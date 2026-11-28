@@ -814,3 +814,9 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .evf ul { margin: 3px 0 0; padding-left: 16px; font-size: 12px; } .evf li { margin: 1px 0; }
 .evf .btn small { display: block; color: inherit; font-size: 11px; }
 .evf.won { border-style: solid; border-color: rgba(120,255,140,.5); background: rgba(120,255,140,.08); }
+/* Fähigkeiten-Leiste ohne Obergrenze (v0.55) */
+#abilities { max-width: calc(100vw - 330px - var(--sl) - var(--sr)); overflow-x: auto; overflow-y: visible; padding: 10px 4px 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+#abilities::-webkit-scrollbar { display: none; }
+#abilities .ab { flex: none; position: relative; }
+#abilities.many { gap: 5px; } #abilities.many .ab { transform: scale(.86); transform-origin: bottom center; margin: 0 -4px; }
+.ab .abn { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 20px; padding: 0 4px; border-radius: 10px; background: #ffd257; color: #3a2400; font-size: 11px; font-weight: 900; display: grid; place-items: center; border: 2px solid #1c1638; z-index: 2; }

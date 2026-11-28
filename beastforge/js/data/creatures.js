@@ -720,3 +720,181 @@ CREATURES.komainu = {
 
 export const CREATURE_IDS = Object.keys(CREATURES);
 export const PATH_COLORS = ['#ff7a3d', '#5fd6ff', '#c39bff'];
+
+// ═══════════════════════ v0.55: sechs neue Kreaturen ═══════════════════════
+const T5 = (a) => a.map(([name, cost, desc, fx]) => ({ name, cost, desc, fx }));
+// ───────── TANUKI (Verwandlung, Blätter, Glück) ─────────
+CREATURES.tanuki = {
+  id: 'tanuki', name: 'Tanuki', role: 'Täuschung / Gold', elements: ['earth', 'spirit'],
+  color: '#c8904a', cost: 450, place: ['ground', 'high'], model: 'tanuki',
+  lore: 'Ein runder Marderhund mit einem Blatt auf dem Kopf. Er verwandelt sich in Teekessel, Statuen – und manchmal in Ärger für alle Gegner.',
+  base: { proj: 'leaf', dmg: 5, rate: 1.2, range: 2.9, speed: 12, dmgType: 'earth', 'stun.ch': 0.04, 'stun.dur': 0.5 },
+  forms: [
+    { id: 'pup', stage: 0, lvl: 1, cost: 0, name: 'Tanuki-Welpe', desc: 'Wirft Zauberblätter, die manchmal kurz verwirren.' },
+    { id: 'trick', stage: 1, lvl: 10, cost: 550, name: 'Gaukler-Tanuki', desc: 'Strohhut und Sake-Flasche. Mehr Blätter.', fx: { mul: { dmg: 1.3 }, add: { shots: 1, spread: 0.25 } } },
+    { id: 'kettle', stage: 2, lvl: 25, cost: 2300, name: 'Bunbuku-Meister', desc: 'Halb Teekessel, halb Tanuki. Verwirrt öfter, sieht Getarnte.', fx: { mul: { dmg: 1.5 }, add: { 'stun.ch': 0.06 }, set: { camo: true } } },
+  ],
+  paths: [
+    { id: 'leafstorm', name: 'Blattsturm', icon: '🍃', tiers: T5([
+      ['Scharfe Blätter', 200, '+2 Schaden', { add: { dmg: 2 } }], ['Doppelblatt', 450, '+1 Blatt', { add: { shots: 1, spread: 0.2 } }],
+      ['Wirbelblätter', 1100, 'Tempo ×1,35', { mul: { rate: 1.35 } }], ['Herbststurm', 2600, 'Schaden ×2,2, +2 Durchschlag', { mul: { dmg: 2.2 }, add: { pierce: 2 } }],
+      ['Blätterorkan', 6800, 'Schaden ×2,5, +2 Blätter', { mul: { dmg: 2.5 }, add: { shots: 2 } }]]) },
+    { id: 'shift', name: 'Verwandlung', icon: '🎭', tiers: T5([
+      ['Trugbild', 220, '+5 % Verwirrung', { add: { 'stun.ch': 0.05 } }], ['Steinstatue', 500, 'Verwirrung länger', { add: { 'stun.dur': 0.4 } }],
+      ['Teekessel-Trick', 1200, 'Jedes 5. Blatt: großer Kessel (×4, Fläche)', { set: { 'every.n': 5, 'every.mul': 4, 'every.aoe': 1.4, 'every.proj': 'leaf', 'every.dmgType': 'earth' } }],
+      ['Hundert Gesichter', 2700, '+10 % Verwirrung, Getroffene +15 % Schaden', { add: { 'stun.ch': 0.1, mark: 0.15 } }],
+      ['Großer Gestaltwandler', 7000, 'Kessel jedes 2. Blatt, ×3', { set: { 'every.n': 2 }, mul: { 'every.mul': 3 } }]]) },
+    { id: 'belly', name: 'Glücksbauch', icon: '🍶', tiers: T5([
+      ['Glücksblatt', 300, 'Besiegte in Reichweite: +3 Münzen', { add: { lucky: 3 } }], ['Sake-Stand', 700, '+50 Münzen je Welle', { add: { income: 50 } }],
+      ['Goldener Bauch', 1600, 'Besiegte +6 Münzen', { add: { lucky: 6 } }], ['Teehaus', 3500, '+200 Münzen je Welle', { add: { income: 200 } }],
+      ['Tanuki-Fürst', 8000, '+400 je Welle, Besiegte +10', { add: { income: 400, lucky: 10 } }]]) },
+  ],
+  ability: { id: 'transform', name: 'Große Verwandlung', lvl: 8, stage: 1, cd: 45, desc: 'Gegner in der Nähe werden zu Teekesseln: schwerer Schaden, 2,5 s erstarrt, je +8 Münzen.' },
+  passives: { 20: { name: 'Glückspilz', desc: '+10 % Schaden', fx: { mul: { dmg: 1.1 } } }, 40: { name: 'Weiter Wurf', desc: '+0,2 Reichweite', fx: { add: { range: 0.2 } } }, 50: { name: 'Meister der Masken', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } } },
+  mastery: { title: 'Teekessel', skins: [{ name: 'Mondtanuki', pal: 'moon' }, { name: 'Sternentanuki', pal: 'star' }] },
+};
+// ───────── SCHNEEHASE (Eis-Scharfschütze) ─────────
+CREATURES.usagi = {
+  id: 'usagi', name: 'Schneehase', role: 'Eis / Scharfschütze', elements: ['ice', 'light'],
+  color: '#bfe8ff', cost: 600, place: ['ground', 'high'], model: 'usagi',
+  lore: 'Der Mondhase stieg herab, um Eiszapfen zu stampfen. Er zielt mit langen Ohren – und trifft auf eine halbe Karte.',
+  base: { proj: 'icicle', dmg: 22, rate: 0.5, range: 5.0, speed: 26, dmgType: 'ice', camo: true, 'slow.pct': 0.25, 'slow.dur': 1.5, 'crit.ch': 0.1, 'crit.mult': 2 },
+  forms: [
+    { id: 'kit', stage: 0, lvl: 1, cost: 0, name: 'Schneehäschen', desc: 'Sehr weite Reichweite, starke Eiszapfen, verlangsamt.' },
+    { id: 'frost', stage: 1, lvl: 10, cost: 700, name: 'Frosthase', desc: 'Eisrüstung und Mondschärpe. Schneller.', fx: { mul: { dmg: 1.3, rate: 1.15 } } },
+    { id: 'moon', stage: 2, lvl: 25, cost: 2800, name: 'Mondhase', desc: 'Leuchtender Mondhase mit Mörserkeule. Eiszapfen durchbohren.', fx: { mul: { dmg: 1.6 }, add: { pierce: 2, range: 0.4 } } },
+  ],
+  paths: [
+    { id: 'snipe', name: 'Eiszapfen', icon: '🧊', tiers: T5([
+      ['Spitze Zapfen', 220, '+8 Schaden', { add: { dmg: 8 } }], ['Kristallkern', 520, '+10 % Krit', { add: { 'crit.ch': 0.1 } }],
+      ['Gletscherlanze', 1300, 'Schaden ×1,8, bricht Panzer', { mul: { dmg: 1.8 }, add: { pierceArmor: 0.5 } }], ['Kältetod', 3000, 'Krit ×2', { add: { 'crit.mult': 2 } }],
+      ['Mondspeer', 7500, 'Schaden ×3, Bosse ×1,5', { mul: { dmg: 3, bossMul: 1.5 } }]]) },
+    { id: 'blizzard', name: 'Schneesturm', icon: '❄', tiers: T5([
+      ['Frostbiss', 200, '+15 % Verlangsamung', { add: { 'slow.pct': 0.15 } }], ['Schneegestöber', 480, 'Zapfen zersplittern (Fläche)', { add: { aoe: 0.6 } }],
+      ['Frostnova', 1150, 'Jeder 3. Zapfen friert ein', { add: { 'stun.ch': 0.33, 'stun.dur': 0.8 } }], ['Ewiges Eis', 2700, 'Fläche +0,5, Verlangsamung länger', { add: { aoe: 0.5, 'slow.dur': 1.5 } }],
+      ['Mondwinter', 7000, 'Schaden ×2,2, Einfrieren länger', { mul: { dmg: 2.2 }, add: { 'stun.dur': 0.6 } }]]) },
+    { id: 'hop', name: 'Mondsprung', icon: '🌙', tiers: T5([
+      ['Leichte Pfoten', 250, 'Tempo ×1,2', { mul: { rate: 1.2 } }], ['Doppelsprung', 600, '+1 Zapfen', { add: { shots: 1, spread: 0.1 } }],
+      ['Mondlicht', 1400, 'Kreaturen in der Nähe +10 % Reichweite', { add: { 'support.range': 2.2, 'support.rng': 0.1 } }], ['Hasenrudel', 3200, 'Tempo ×1,5', { mul: { rate: 1.5 } }],
+      ['Mondgott', 7600, '+2 Zapfen, Schaden ×1,8', { add: { shots: 2 }, mul: { dmg: 1.8 } }]]) },
+  ],
+  ability: { id: 'moonfall', name: 'Mondsturz', lvl: 8, stage: 1, cd: 50, desc: 'Ein Eismond stürzt auf den stärksten Gegner: riesiger Schaden und alle Gegner ringsum frieren 3 s ein.' },
+  passives: { 20: { name: 'Kalte Ruhe', desc: '+10 % Schaden', fx: { mul: { dmg: 1.1 } } }, 40: { name: 'Lange Ohren', desc: '+0,3 Reichweite', fx: { add: { range: 0.3 } } }, 50: { name: 'Mondmeister', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } } },
+  mastery: { title: 'Mondläufer', skins: [{ name: 'Nachthase', pal: 'moon' }, { name: 'Sternenhase', pal: 'star' }] },
+};
+// ───────── KODAMA (Baumgeist, Unterstützung, Wurzeln) ─────────
+CREATURES.kodama = {
+  id: 'kodama', name: 'Kodama', role: 'Natur / Unterstützung', elements: ['earth', 'light'],
+  color: '#b8f0a0', cost: 500, place: ['ground'], model: 'kodama',
+  lore: 'Ein kleiner Baumgeist mit klapperndem Kopf. Wo er steht, wächst Moos auf den Steinen – und die Kreaturen ringsum werden stärker.',
+  base: { atk: 'pulse', dmg: 5, rate: 0.6, range: 1.9, dmgType: 'earth', flying: false, camo: true, 'slow.pct': 0.3, 'slow.dur': 1.2, 'support.range': 2.4, 'support.dmg': 0.06, 'support.rate': 0.04 },
+  forms: [
+    { id: 'sprout', stage: 0, lvl: 1, cost: 0, name: 'Kodama-Sprössling', desc: 'Wurzelstöße verlangsamen; Kreaturen in der Nähe +6 % Schaden.' },
+    { id: 'tree', stage: 1, lvl: 10, cost: 550, name: 'Waldkodama', desc: 'Moosmantel und Blätterkrone. Stärkere Aura.', fx: { add: { 'support.dmg': 0.04, 'support.rate': 0.03, range: 0.2 } } },
+    { id: 'elder', stage: 2, lvl: 25, cost: 2400, name: 'Uralter Hüter', desc: 'Ein wandelnder Baum. Heilt am Wellenende Leben.', fx: { mul: { dmg: 1.8 }, add: { lifeRegen: 2, 'support.range': 0.4 } } },
+  ],
+  paths: [
+    { id: 'roots', name: 'Wurzelgriff', icon: '🌿', tiers: T5([
+      ['Dornwurzeln', 200, '+3 Schaden', { add: { dmg: 3 } }], ['Würgranken', 480, '+15 % Verlangsamung', { add: { 'slow.pct': 0.15 } }],
+      ['Festwurzeln', 1150, '15 % Chance auf Festhalten', { add: { 'stun.ch': 0.15, 'stun.dur': 1 } }], ['Erdbeben', 2700, 'Schaden ×2,5, Reichweite +0,4', { mul: { dmg: 2.5 }, add: { range: 0.4 } }],
+      ['Weltenwurzel', 7000, 'Schaden ×3, Festhalten länger', { mul: { dmg: 3 }, add: { 'stun.dur': 0.8 } }]]) },
+    { id: 'grove', name: 'Hain', icon: '🌳', tiers: T5([
+      ['Schattenspender', 250, 'Aura +4 % Schaden', { add: { 'support.dmg': 0.04 } }], ['Lichtung', 550, 'Aura größer', { add: { 'support.range': 0.5 } }],
+      ['Waldlied', 1300, 'Aura +6 % Tempo', { add: { 'support.rate': 0.06 } }], ['Heiliger Hain', 3000, 'Aura +8 % Schaden, schützt vor Störung', { add: { 'support.dmg': 0.08 }, set: { 'support.protect': true } } ],
+      ['Weltenbaum', 7200, 'Aura +12 % Schaden, +8 % Tempo', { add: { 'support.dmg': 0.12, 'support.rate': 0.08 } }]]) },
+    { id: 'bloom', name: 'Blüte', icon: '🌸', tiers: T5([
+      ['Heilmoos', 300, '+1 Leben je Welle', { add: { lifeRegen: 1 } }], ['Blütenregen', 700, '+40 Münzen je Welle', { add: { income: 40 } }],
+      ['Lebensquelle', 1600, '+2 Leben je Welle', { add: { lifeRegen: 2 } }], ['Obstgarten', 3500, '+180 Münzen je Welle', { add: { income: 180 } }],
+      ['Ewiger Frühling', 7800, '+4 Leben, +350 Münzen je Welle', { add: { lifeRegen: 4, income: 350 } }]]) },
+  ],
+  ability: { id: 'grovefx', name: 'Wurzelfalle', lvl: 8, stage: 1, cd: 45, desc: 'Wurzeln packen alle Gegner in der Nähe (3 s, Bosse kürzer); Kreaturen ringsum 10 s +30 % Tempo.' },
+  passives: { 20: { name: 'Tiefe Wurzeln', desc: '+10 % Schaden', fx: { mul: { dmg: 1.1 } } }, 40: { name: 'Breite Krone', desc: '+0,3 Aura-Reichweite', fx: { add: { 'support.range': 0.3 } } }, 50: { name: 'Hainhüter', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } } },
+  mastery: { title: 'Waldgeist', skins: [{ name: 'Mondkodama', pal: 'moon' }, { name: 'Sternenkodama', pal: 'star' }] },
+};
+// ───────── KOI (Wasser, Durchschlag, wird zum Drachen) ─────────
+CREATURES.koi = {
+  id: 'koi', name: 'Koi', role: 'Wasser / Durchschlag', elements: ['ice', 'light'],
+  color: '#ff8a4a', cost: 550, place: ['ground', 'water'], model: 'koi',
+  lore: 'Ein goldroter Karpfen, der den Wasserfall hinaufschwimmen will. Wer es schafft, wird zum Drachen – sagt man.',
+  base: { proj: 'bubble', dmg: 7, rate: 1.0, range: 3.0, speed: 16, pierce: 3, dmgType: 'ice', water: 0.4, knock: 0.08 },
+  forms: [
+    { id: 'fry', stage: 0, lvl: 1, cost: 0, name: 'Koi', desc: 'Schießt Wasserstrahlen, die 3 Gegner durchbohren. Im Wasser +40 % Tempo.' },
+    { id: 'gold', stage: 1, lvl: 10, cost: 600, name: 'Goldkoi', desc: 'Goldene Schuppen, längere Flossen.', fx: { mul: { dmg: 1.35 }, add: { pierce: 2 } } },
+    { id: 'dragon', stage: 2, lvl: 25, cost: 2700, name: 'Koi-Drache', desc: 'Hat den Wasserfall bezwungen: Drachenkopf, Schnurrhaare, schwebt.', fx: { mul: { dmg: 1.7 }, add: { pierce: 3, range: 0.3 }, set: { camo: true } } },
+  ],
+  paths: [
+    { id: 'jet', name: 'Wasserstrahl', icon: '💧', tiers: T5([
+      ['Starker Strahl', 200, '+3 Schaden', { add: { dmg: 3 } }], ['Druckstrahl', 480, '+3 Durchschlag', { add: { pierce: 3 } }],
+      ['Doppelstrahl', 1150, '+1 Strahl', { add: { shots: 1, spread: 0.15 } }], ['Hochdruck', 2700, 'Schaden ×2,3', { mul: { dmg: 2.3 } }],
+      ['Drachenstrahl', 7000, 'Schaden ×2,6, Durchschlag +6', { mul: { dmg: 2.6 }, add: { pierce: 6 } }]]) },
+    { id: 'falls', name: 'Wasserfall', icon: '🌊', tiers: T5([
+      ['Strömung', 220, 'Stärkerer Rückstoß', { add: { knock: 0.12 } }], ['Wirbel', 500, '+20 % Verlangsamung', { add: { 'slow.pct': 0.2, 'slow.dur': 1 } }],
+      ['Kaskade', 1200, 'Jeder 4. Strahl: Welle (×3, Fläche)', { set: { 'every.n': 4, 'every.mul': 3, 'every.aoe': 1.5, 'every.proj': 'bubble', 'every.dmgType': 'ice' } }],
+      ['Sturzflut', 2700, 'Stärkerer Rückstoß, Verlangsamung länger', { add: { knock: 0.15, 'slow.dur': 1 } }], ['Drachentor', 6900, 'Welle jeder 2. Strahl, ×3', { set: { 'every.n': 2 }, mul: { 'every.mul': 3 } }]]) },
+    { id: 'scale', name: 'Goldschuppe', icon: '✨', tiers: T5([
+      ['Glanz', 260, '+10 % Krit', { add: { 'crit.ch': 0.1 } }], ['Spiegelschuppe', 600, 'Tempo ×1,25', { mul: { rate: 1.25 } }],
+      ['Sonnenglanz', 1400, 'Krit ×2,5', { set: { 'crit.mult': 2.5 }, add: { 'crit.ch': 0.05 } }], ['Glückskoi', 3200, 'Besiegte in Reichweite +5 Münzen', { add: { lucky: 5 } }],
+      ['Himmelskoi', 7400, 'Schaden ×2, Tempo ×1,3', { mul: { dmg: 2, rate: 1.3 } }]]) },
+  ],
+  ability: { id: 'dragongate', name: 'Drachentor', lvl: 8, stage: 1, cd: 55, desc: 'Ein Wasserdrache schießt den ganzen Pfad entlang: trifft jeden Gegner und spült ihn zurück.' },
+  passives: { 20: { name: 'Strömungsgefühl', desc: '+10 % Schaden', fx: { mul: { dmg: 1.1 } } }, 40: { name: 'Weite Wellen', desc: '+0,2 Reichweite', fx: { add: { range: 0.2 } } }, 50: { name: 'Teichmeister', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } } },
+  mastery: { title: 'Wasserfallbezwinger', skins: [{ name: 'Mondkoi', pal: 'moon' }, { name: 'Sternenkoi', pal: 'star' }] },
+};
+// ───────── HOTARU (Glühwürmchen-Schwarm, Licht, Enttarnen) ─────────
+CREATURES.hotaru = {
+  id: 'hotaru', name: 'Hotaru', role: 'Licht / Schwarm', elements: ['light', 'spirit'],
+  color: '#e8ff6a', cost: 400, place: ['ground', 'high', 'water'], model: 'hotaru',
+  lore: 'Ein Schwarm Glühwürmchen um eine Papierlaterne. Allein ist jedes winzig – zusammen erleuchten sie die Nacht und jedes Versteck.',
+  base: { proj: 'firefly', dmg: 1.6, rate: 4.0, range: 2.7, speed: 12, dmgType: 'light', camo: true, homing: true, mark: 0.05 },
+  forms: [
+    { id: 'swarm', stage: 0, lvl: 1, cost: 0, name: 'Glühschwarm', desc: 'Sehr schnelle Lichtfunken, sieht Getarnte, Getroffene nehmen +5 % Schaden.' },
+    { id: 'lantern', stage: 1, lvl: 10, cost: 500, name: 'Laternenschwarm', desc: 'Größere Laterne, mehr Glühwürmchen.', fx: { mul: { dmg: 1.3 }, add: { shots: 1, spread: 0.3 } } },
+    { id: 'aurora', stage: 2, lvl: 25, cost: 2200, name: 'Nordlichtschwarm', desc: 'Ein leuchtender Wirbel in allen Farben.', fx: { mul: { dmg: 1.6, rate: 1.2 }, add: { mark: 0.05 } } },
+  ],
+  paths: [
+    { id: 'spark', name: 'Funkenflug', icon: '✨', tiers: T5([
+      ['Heller Funke', 180, '+1 Schaden', { add: { dmg: 1 } }], ['Schwarmflug', 420, 'Tempo ×1,3', { mul: { rate: 1.3 } }],
+      ['Doppelschwarm', 1000, '+1 Funke', { add: { shots: 1 } }], ['Glutfunken', 2400, 'Schaden ×2,4, Brand', { mul: { dmg: 2.4 }, add: { 'burn.dps': 3, 'burn.dur': 2 } }],
+      ['Sternenschwarm', 6500, 'Schaden ×2,5, +2 Funken', { mul: { dmg: 2.5 }, add: { shots: 2 } }]]) },
+    { id: 'reveal', name: 'Laterne', icon: '🏮', tiers: T5([
+      ['Leuchten', 220, 'Getroffene +5 % Schaden', { add: { mark: 0.05 } }], ['Weites Licht', 480, '+0,4 Reichweite', { add: { range: 0.4 } }],
+      ['Blendlicht', 1100, '15 % Blendung (kurz betäubt)', { add: { 'stun.ch': 0.15, 'stun.dur': 0.4 } }], ['Wahrlicht', 2600, 'Getroffene +10 % Schaden, Kreaturen in der Nähe sehen Getarnte', { add: { mark: 0.1, 'support.range': 2.2 }, set: { 'support.camo': true } }],
+      ['Sonnenlaterne', 6800, 'Getroffene +15 % Schaden, Blendung länger', { add: { mark: 0.15, 'stun.dur': 0.4 } }]]) },
+    { id: 'dance', name: 'Lichttanz', icon: '💫', tiers: T5([
+      ['Kreiseltanz', 250, '+1 Lichtkugel umkreist den Schwarm', { add: { 'orbs.n': 1, 'orbs.dmg': 3, 'orbs.r': 0.8 } }], ['Lichterkette', 600, '+1 Lichtkugel', { add: { 'orbs.n': 1, 'orbs.dmg': 2 } }],
+      ['Leuchtfeuer', 1350, 'Kugeln ×2 Schaden', { mul: { 'orbs.dmg': 2 } }], ['Sternenreigen', 3100, '+2 Lichtkugeln', { add: { 'orbs.n': 2 } }],
+      ['Galaxie', 7200, 'Kugeln ×3 Schaden, Schaden ×1,5', { mul: { 'orbs.dmg': 3, dmg: 1.5 } }]]) },
+  ],
+  ability: { id: 'lanternfx', name: 'Laternenflut', lvl: 8, stage: 1, cd: 40, desc: 'Tausend Glühwürmchen: alle Gegner der Karte werden enttarnt, geblendet (verlangsamt) und nehmen 8 s +25 % Schaden.' },
+  passives: { 20: { name: 'Helle Nacht', desc: '+10 % Schaden', fx: { mul: { dmg: 1.1 } } }, 40: { name: 'Weiter Schein', desc: '+0,2 Reichweite', fx: { add: { range: 0.2 } } }, 50: { name: 'Lichtmeister', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } } },
+  mastery: { title: 'Laternenträger', skins: [{ name: 'Mondschwarm', pal: 'moon' }, { name: 'Sternenschwarm', pal: 'star' }] },
+};
+// ───────── JORŌGUMO (Spinne, Netze, Gift) ─────────
+CREATURES.kumo = {
+  id: 'kumo', name: 'Jorōgumo', role: 'Schatten / Netz / Gift', elements: ['shadow', 'earth'],
+  color: '#8a4aff', cost: 550, place: ['ground', 'high'], model: 'kumo',
+  lore: 'Eine Spinnenfrau aus alten Geschichten, die ihre Fäden über ganze Täler spannt. Wer sich verfängt, wird langsam – sehr langsam.',
+  base: { proj: 'silk', dmg: 4, rate: 1.2, range: 3.0, speed: 13, dmgType: 'shadow', poison: true, 'burn.dps': 2.5, 'burn.dur': 3, 'slow.pct': 0.3, 'slow.dur': 1.5 },
+  forms: [
+    { id: 'spiderling', stage: 0, lvl: 1, cost: 0, name: 'Spinnling', desc: 'Klebrige Giftfäden: stark verlangsamen und vergiften.' },
+    { id: 'weaver', stage: 1, lvl: 10, cost: 600, name: 'Netzweberin', desc: 'Goldgestreifte Beine, ein Netz im Rücken.', fx: { mul: { dmg: 1.3 }, add: { 'burn.dps': 2, aoe: 0.4 } } },
+    { id: 'queen', stage: 2, lvl: 25, cost: 2600, name: 'Jorōgumo-Königin', desc: 'Königin der Fäden. Netze fangen ganze Gruppen, sieht Getarnte.', fx: { mul: { dmg: 1.6 }, add: { aoe: 0.3, 'slow.pct': 0.1 }, set: { camo: true } } },
+  ],
+  paths: [
+    { id: 'web', name: 'Netz', icon: '🕸', tiers: T5([
+      ['Klebfaden', 200, '+10 % Verlangsamung', { add: { 'slow.pct': 0.1 } }], ['Weites Netz', 480, 'Fläche +0,5', { add: { aoe: 0.5 } }],
+      ['Fangnetz', 1150, '12 % Chance zu fesseln', { add: { 'stun.ch': 0.12, 'stun.dur': 1 } }], ['Stahlseide', 2700, 'Verlangsamung länger, Fesseln länger', { add: { 'slow.dur': 1.5, 'stun.dur': 0.6 } }],
+      ['Weltennetz', 7000, 'Fläche +0,8, Schaden ×2', { add: { aoe: 0.8 }, mul: { dmg: 2 } }]]) },
+    { id: 'venom', name: 'Gift', icon: '☠', tiers: T5([
+      ['Giftzahn', 220, '+3 Gift/s', { add: { 'burn.dps': 3 } }], ['Lähmgift', 500, 'Gift länger', { add: { 'burn.dur': 2 } }],
+      ['Nervengift', 1200, 'Gift ×2', { mul: { 'burn.dps': 2 } }], ['Schwarzer Biss', 2800, 'Gift ×2,2, Schaden ×1,8', { mul: { 'burn.dps': 2.2, dmg: 1.8 } }],
+      ['Todesfaden', 7200, 'Gift ×3', { mul: { 'burn.dps': 3 } }]]) },
+    { id: 'brood', name: 'Brut', icon: '🥚', tiers: T5([
+      ['Spinnlinge', 260, 'Tempo ×1,2', { mul: { rate: 1.2 } }], ['Eiersack', 600, '+1 Faden', { add: { shots: 1, spread: 0.25 } }],
+      ['Krabbelflut', 1400, 'Tempo ×1,4', { mul: { rate: 1.4 } }], ['Brutmutter', 3200, '+2 Fäden', { add: { shots: 2 } }],
+      ['Spinnenkönigin', 7500, 'Schaden ×2,5, Tempo ×1,3', { mul: { dmg: 2.5, rate: 1.3 } }]]) },
+  ],
+  ability: { id: 'webfx', name: 'Netzfalle', lvl: 8, stage: 1, cd: 45, desc: 'Ein riesiges Netz fesselt alle Gegner in der Nähe 3 s (Bosse 1 s) und vergiftet sie stark.' },
+  passives: { 20: { name: 'Feine Fäden', desc: '+10 % Schaden', fx: { mul: { dmg: 1.1 } } }, 40: { name: 'Lange Beine', desc: '+0,2 Reichweite', fx: { add: { range: 0.2 } } }, 50: { name: 'Fadenmeisterin', desc: 'Meister: +10 % Schaden', fx: { mul: { dmg: 1.1 } } } },
+  mastery: { title: 'Netzweberin', skins: [{ name: 'Mondspinne', pal: 'moon' }, { name: 'Sternenspinne', pal: 'star' }] },
+};

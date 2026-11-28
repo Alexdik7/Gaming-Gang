@@ -202,25 +202,33 @@ export class Hud {
     this.g.app.audio.play(e.step >= 2 ? 'tier5' : 'upgrade');
     if (e.step >= 1) this.toast('syn', `🔥 COMBO ×${e.n}!`, `+◈${fmt(e.coins)}${BAL.combo.cdr[e.step] ? ` · Fähigkeiten −${BAL.combo.cdr[e.step]} s` : ''}`);
   }
+  // Fähigkeiten-Leiste: gleiche Fähigkeit (Kreatur/Held + Platz) = ein Knopf mit Zähler; Tippen löst die nächste bereite aus.
+  // Keine Obergrenze – die Leiste scrollt seitlich, wenn sie voll ist.
   updAbilities() {
-    const list = [];
-    for (const t of this.w.towers) if (this.w.mine(t)) for (const a of this.w.abilityInfo(t)) if (a.ready) list.push({ t, a });
-    const key = list.map(x => x.t.id + x.a.slot).join(',');
-    const box = $('abilities');
+    const groups = new Map();
+    for (const t of this.w.towers) if (this.w.mine(t)) for (const a of this.w.abilityInfo(t)) if (a.ready) {
+      const k = (a.id || t.cid) + ':' + a.slot; if (!groups.has(k)) groups.set(k, { k, a, ts: [] }); groups.get(k).ts.push(t);
+    }
+    const list = [...groups.values()], key = list.map(g => g.k + g.ts.map(t => t.id).join('.')).join(',');
+    const box = $('abilities'), cdOf = (t, slot) => slot === 'ab' ? t.abCd : t.ultCd;
     if (key !== this.last.abKey) {
-      this.last.abKey = key;
-      box.innerHTML = list.slice(0, 8).map(({ t, a }) => `<button class="ab ${a.slot === 'ult' ? 'ult' : ''}" data-id="${t.id}" data-slot="${a.slot}" title="${esc(a.name)}"><img src="${this.icon(t)}" alt=""><span class="cd"></span><small>${esc(a.name.split(' ')[0])}</small></button>`).join('');
+      this.last.abKey = key; this.abGroups = groups;
+      box.innerHTML = list.map(({ k, a, ts }) => `<button class="ab ${a.slot === 'ult' ? 'ult' : ''}" data-k="${k}" data-slot="${a.slot}" title="${esc(a.name)}"><img src="${this.icon(ts[0])}" alt=""><span class="cd"></span>${ts.length > 1 ? `<b class="abn">×${ts.length}</b>` : ''}<small>${esc(a.name.split(' ')[0])}</small></button>`).join('');
+      box.classList.toggle('many', list.length > 6);
       box.querySelectorAll('.ab').forEach(el => el.onclick = () => {
-        const r = this.g.cmd('useAbility', +el.dataset.id, el.dataset.slot);
+        const g = this.abGroups.get(el.dataset.k); if (!g) return;
+        const t = g.ts.filter(t => this.w.tower(t.id)).sort((p, q) => cdOf(p, g.a.slot) - cdOf(q, g.a.slot))[0]; if (!t) return;
+        const r = this.g.cmd('useAbility', t.id, g.a.slot);
         if (!r.ok) this.err(r.why); else this.coachEvent('ability');
       });
     }
     box.querySelectorAll('.ab').forEach(el => {
-      const t = this.w.tower(+el.dataset.id); if (!t) return;
-      const info = this.w.abilityInfo(t).find(a => a.slot === el.dataset.slot); if (!info) return;
-      const cd = el.dataset.slot === 'ab' ? t.abCd : t.ultCd, cdr = t.hero ? this.w.heroCdr(t) : 0;
-      const p = cd > 0 ? cd / (info.cd * (1 - cdr)) * 100 : 0;
+      const g = this.abGroups?.get(el.dataset.k); if (!g) return;
+      const slot = g.a.slot, ts = g.ts.filter(t => this.w.tower(t.id)); if (!ts.length) return;
+      const t = ts.reduce((p, q) => cdOf(q, slot) < cdOf(p, slot) ? q : p), cd = cdOf(t, slot), cdr = t.hero ? this.w.heroCdr(t) : 0;
+      const p = cd > 0 ? cd / (g.a.cd * (1 - cdr)) * 100 : 0, nRdy = ts.filter(o => cdOf(o, slot) <= 0).length;
       el.querySelector('.cd').style.setProperty('--p', p + '%'); el.querySelector('.cd').textContent = cd > 0 ? Math.ceil(cd) : '';
+      const n = el.querySelector('.abn'); if (n) n.textContent = (ts.length > 1 && nRdy ? nRdy + '/' : '×') + ts.length;
       const rdy = cd <= 0; if (rdy && el.dataset.r === '0') ring(el, el.classList.contains('ult') ? '#ffd257' : '#5fe6ff'); el.dataset.r = rdy ? '1' : '0';   // Bereit-Moment: Ring
       el.classList.toggle('ready', rdy);
     });

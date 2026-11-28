@@ -640,7 +640,7 @@ test('Codex: Entdecken, Zählen, Truhe je 10 Einträge, alte Spielstände', asyn
 
 test('Mega-Form: Bedingungen, Kosten, Werte, nur eine je Kreatur', async () => {
   const { megaDef, ALL_MEGAS } = await import('../js/data/megas.js');
-  assert.equal(ALL_MEGAS().length, 48 + 36); assert.equal(megaDef('kitsune', 0).name, 'Amaterasu-Kitsune');
+  assert.equal(ALL_MEGAS().length, (Object.keys(CREATURES).length + (await import('../js/data/fusions.js')).FUSIONS.length) * 3); assert.equal(megaDef('kitsune', 0).name, 'Amaterasu-Kitsune');
   const { w } = mkWorld(defaultProfile(), { hooks: { level: () => 25 } }); w.coins = 1e6;
   const t = w.place('kitsune', ...w.suggestSpot('kitsune', 3)).tower;
   assert.equal(w.megaInfo(t), null, 'ohne Stufe 5 kein Angebot');
@@ -796,4 +796,33 @@ test('Mega-Attacken: Zornschlag, Bannkreis, Klingensturm feuern im Takt', async 
     if (k === 1) assert.ok(w.enemies.some(e => e.alive && e.stunT > 0) || w.enemies.every(e => !e.alive), 'Bann betäubt');
     if (k === 2) assert.ok(evs[0].pts.length >= 1 && evs[0].pts.length <= BAL.run.megaAtk.klingeN);
   }
+});
+
+test('v0.55: 6 neue Kreaturen, 4 Helden, 6 Fusionen – setzen, aufwerten, Fähigkeiten', async () => {
+  const { HEROES } = await import('../js/data/heroes.js'); const { FUSIONS } = await import('../js/data/fusions.js'); const { ACCOUNT_REWARDS } = await import('../js/data/meta.js');
+  const NEW = ['tanuki', 'usagi', 'kodama', 'koi', 'hotaru', 'kumo'];
+  for (const cid of NEW) {
+    assert.ok(ACCOUNT_REWARDS.some(r => r.id === cid), cid + ' wird freigeschaltet');
+    const { w } = mkWorld(defaultProfile(), { hooks: { level: () => 30 } }); w.coins = 1e7; w.god = true;
+    const r = w.place(cid, ...w.suggestSpot(cid, 3)); assert.ok(r.ok, cid + ': ' + r.why); const t = r.tower;
+    for (let i = 0; i < 5; i++) assert.ok(w.upgrade(t.id, 0).ok, cid + ' Pfad 1');
+    for (let i = 0; i < 2; i++) assert.ok(w.upgrade(t.id, 1).ok, cid + ' Pfad 2');
+    t.stage = 2; w.dirty = true; w.refresh(); assert.ok(t.s.dmg > 0);
+    for (let i = 0; i < 6; i++) { const e = w.spawn('golem', [], 0); e.hp = e.maxHp = 1e6; e.d = 4 + i * 0.3; e.speed = 0; }
+    w.step(1 / 60); const e0 = w.enemies[0]; t.x = e0.x + 0.6; t.y = e0.y;
+    const ab = w.abilityInfo(t).find(a => a.slot === 'ab'); assert.ok(ab?.ready, cid + ' Fähigkeit bereit');
+    const u = w.useAbility(t.id, 'ab'); assert.ok(u.ok, cid + ' Fähigkeit: ' + u.why);
+    for (let i = 0; i < 60; i++) w.step(1 / 60);
+  }
+  for (const hid of ['akane', 'tetsu', 'nami', 'kuro']) {
+    assert.ok(HEROES[hid] && ACCOUNT_REWARDS.some(r => r.id === hid), hid);
+    const { w } = mkWorld(defaultProfile(), { hero: hid }); w.coins = 1e7; w.god = true;
+    const r = w.place(hid, ...w.suggestSpot(hid, 3)); assert.ok(r.ok, hid + ': ' + r.why); const h = r.tower; h.hlvl = 20; w.dirty = true; w.refresh();
+    for (let i = 0; i < 6; i++) { const e = w.spawn('golem', [], 0); e.hp = e.maxHp = 1e6; e.d = 4 + i * 0.3; e.speed = 0; }
+    w.step(1 / 60); const e0 = w.enemies[0]; h.x = e0.x + 0.6; h.y = e0.y;
+    for (const slot of ['ab', 'ult']) { const u = w.useAbility(h.id, slot); assert.ok(u.ok, hid + ' ' + slot + ': ' + u.why); }
+    for (let i = 0; i < 60; i++) w.step(1 / 60);
+  }
+  assert.equal(FUSIONS.length, 18);
+  for (const f of FUSIONS.slice(12)) assert.ok(CREATURES[f.a] && CREATURES[f.b] && CREATURES[f.id].fusion, f.id);
 });

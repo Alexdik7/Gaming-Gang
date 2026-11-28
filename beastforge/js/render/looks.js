@@ -135,6 +135,36 @@ export const KIT = {
     [[['collar', 0x3a9ad8]], [['ring', 0x9fe8ff]], [['ring', 0x9fe8ff, 2], ['shards', 0x9fe8ff, 3]], [['wings', 0x9fe8ff, 1.2]], [['shield', 0xdff8ff, 1.3], ['wings', 0xffffff, 1.6], ['pillar', 0x9fe8ff]]],
     [[['leaves', 0x6ad04a, 2]], [['crates', 0x6ad04a]], [['lanterns', 0xff5a3a, 2]], [['coins', 0xffd257, 6], ['chest', 0xffd257]], [['torii', 0x6ad04a, 1.5], ['coins', 0xffd257, 10], ['crown', 0x9aff8a, 9]]],
   ] },
+  tanuki: { cols: [0x9af070, 0xff9a4a, 0xffd257], head: [0, 0.62, 0.06], paths: [
+    [[['leaves', 0x9af070, 3]], [['leaves', 0x9af070, 6]], [['ring', 0x7be07a]], [['leaves', 0xffb43a, 10], ['wings', 0x9af070, 1.1]], [['cloud', 0x9af070, 1.5], ['crown', 0x9af070, 9], ['pillar', 0x7be07a]]],
+    [[['eyes', 0xff9a4a]], [['shards', 0xff9a4a, 3]], [['lanterns', 0xff5a3a, 2]], [['halo', 0xff9a4a], ['shards', 0xff9a4a, 6]], [['halo', 0xffd257, 2], ['crown', 0xff9a4a, 9], ['pillar', 0xff9a4a]]],
+    [[['coins', 0xffd257, 2]], [['crates', 0xc8904a]], [['coins', 0xffd257, 6]], [['chest', 0xffd257], ['lanterns', 0xd8342c, 2]], [['torii', 0xd8342c, 1.5], ['coins', 0xffd257, 10], ['crown', 0xffd257, 9]]],
+  ] },
+  usagi: { cols: [0x9fe8ff, 0xbfe4ff, 0xfff2a8], head: [0, 0.7, 0.05], paths: [
+    [[['shards', 0x9fe8ff, 2]], [['gem', 0x9fe8ff]], [['shards', 0xdff8ff, 5]], [['wings', 0x9fe8ff, 1.2]], [['crown', 0xdff8ff, 9], ['shards', 0xffffff, 10], ['pillar', 0x9fe8ff]]],
+    [[['collar', 0xbfe4ff]], [['cloud', 0xffffff]], [['ring', 0xbfe4ff]], [['ring', 0xdff8ff, 2], ['cloud', 0xffffff, 1.3]], [['shield', 0xdff8ff, 1.3], ['wings', 0xffffff, 1.6], ['pillar', 0xbfe4ff]]],
+    [[['halo', 0xfff2a8]], [['orbs', 0xfff2a8, 2]], [['halo', 0xfff2a8, 1.4]], [['orbs', 0xfff2a8, 4], ['halo', 0xfff2a8, 1.6]], [['halo', 0xffffff, 2], ['crown', 0xfff2a8, 9], ['pillar', 0xfff2a8]]],
+  ] },
+  kodama: { cols: [0x8ad070, 0x9af0c8, 0xffb8d4], head: [0, 0.66, 0.04], paths: [
+    [[['spikes', 0x6a8a3a, 3]], [['leaves', 0x8ad070, 4]], [['spikes', 0x6a8a3a, 6]], [['shield', 0x8ad070]], [['cloud', 0x8ad070, 1.5], ['crown', 0x8ad070, 9], ['pillar', 0x6a8a3a]]],
+    [[['leaves', 0x9af0c8, 3]], [['ring', 0x9af0c8]], [['halo', 0x9af0c8]], [['torii', 0x9af0c8]], [['halo', 0xdff8ff, 2], ['wings', 0x9af0c8, 1.6], ['pillar', 0x9af0c8]]],
+    [[['leaves', 0xffb8d4, 2]], [['leaves', 0xffb8d4, 5]], [['orbs', 0xffb8d4, 3]], [['leaves', 0xffb8d4, 10], ['halo', 0xffb8d4]], [['crown', 0xffb8d4, 9], ['leaves', 0xffffff, 12], ['pillar', 0xffb8d4]]],
+  ] },
+  koi: { cols: [0x5fd6ff, 0x3fb4d8, 0xffd257], head: [0, 0.6, 0.12], paths: [
+    [[['orbs', 0x7ad8ff, 2]], [['ring', 0x5fd6ff]], [['orbs', 0x7ad8ff, 4]], [['wings', 0x5fd6ff, 1.1]], [['cloud', 0x5fd6ff, 1.5], ['crown', 0x9fe8ff, 9], ['pillar', 0x5fd6ff]]],
+    [[['collar', 0x3fb4d8]], [['ring', 0x3fb4d8]], [['ring', 0x9fe8ff, 2], ['shards', 0x9fe8ff, 3]], [['cloud', 0x3fb4d8, 1.2]], [['shield', 0xdff8ff, 1.3], ['wings', 0xffffff, 1.6], ['pillar', 0x3fb4d8]]],
+    [[['gem', 0xffd257]], [['coins', 0xffd257, 3]], [['halo', 0xffd257]], [['coins', 0xffd257, 6], ['halo', 0xffd257, 1.4]], [['crown', 0xffd257, 9], ['wings', 0xffd257, 1.5], ['pillar', 0xffd257]]],
+  ] },
+  hotaru: { cols: [0xfff27a, 0xffd257, 0x9ff6ff], head: [0, 0.7, 0.02], paths: [
+    [[['orbs', 0xfff27a, 2]], [['orbs', 0xfff27a, 4]], [['shards', 0xffd257, 4]], [['flames', 0xff9a4a, 8]], [['crown', 0xfff27a, 9], ['orbs', 0xffffff, 8], ['pillar', 0xfff27a]]],
+    [[['lanterns', 0xff9a4a, 1]], [['lanterns', 0xff9a4a, 2]], [['eyes', 0xffd257]], [['halo', 0xffd257], ['lanterns', 0xff5a3a, 3]], [['torii', 0xd8342c, 1.4], ['halo', 0xffd257, 1.6], ['pillar', 0xffd257]]],
+    [[['ring', 0x9ff6ff]], [['orbs', 0x9ff6ff, 3]], [['ring', 0x9ff6ff, 2]], [['orbs', 0x9ff6ff, 6], ['halo', 0x9ff6ff]], [['wings', 0x9ff6ff, 1.6], ['crown', 0x9ff6ff, 9], ['pillar', 0x9ff6ff]]],
+  ] },
+  kumo: { cols: [0xe8e0f0, 0x8aff6a, 0x9a6aff], head: [0, 0.62, 0.08], paths: [
+    [[['ring', 0xe8e0f0]], [['ring', 0xe8e0f0, 1.4]], [['shards', 0xe8e0f0, 4]], [['ring', 0xffffff, 2], ['shards', 0xe8e0f0, 6]], [['crown', 0xe8e0f0, 9], ['wings', 0xe8e0f0, 1.5], ['pillar', 0xe8e0f0]]],
+    [[['eyes', 0x8aff6a]], [['orbs', 0x8aff6a, 2]], [['flames', 0x8aff6a, 6]], [['orbs', 0x8aff6a, 4], ['flames', 0x3fd06a, 10]], [['halo', 0x8aff6a, 2], ['crown', 0x8aff6a, 9], ['pillar', 0x3fd06a]]],
+    [[['orbs', 0x9a6aff, 2]], [['spikes', 0x6a2aa8, 4]], [['orbs', 0x9a6aff, 4]], [['horns', 0x9a6aff, 1.3]], [['crown', 0x9a6aff, 9], ['hole', 0x9a6aff], ['pillar', 0x6a2aa8]]],
+  ] },
   komainu: { cols: [0xffd257, 0xff7a3d, 0xd8342c], head: [0, 0.72, 0.06], paths: [
     [[['claws', 0xf4f0ea]], [['collar', 0xd8342c]], [['spikes', 0x8a7a68, 4]], [['horns', 0xffd257, 1.4]], [['crown', 0xffd257, 9], ['eyes', 0xff5a2a], ['pillar', 0xffd257]]],
     [[['eyes', 0xff7a3d]], [['ring', 0xff7a3d]], [['flames', 0xff7a3d, 8]], [['ring', 0xff7a3d, 2], ['flames', 0xff3a10, 14]], [['wings', 0xff7a3d, 1.5], ['crown', 0xff5a2a, 9], ['pillar', 0xff7a3d]]],

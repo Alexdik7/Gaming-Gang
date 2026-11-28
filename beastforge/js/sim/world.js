@@ -1106,6 +1106,93 @@ export class World {
         best.vuln = Math.max(best.vuln, 0.35); best.vulnT = Math.max(best.vulnT, 10);
         this.damage(best, s.dmg * 30, 'phys', t, { big: true }); break;
       }
+      // ───── v0.55: neue Helden ─────
+      case 'pyre': {   // Akane: Flammenkreis
+        const A = HEROES[t.cid].abilities.pyre, ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 3); if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'pyre', tower: t, r: 3 }); this.say(t, 'ability');
+        for (const e of ts) { this.damage(e, s.dmg * A.mul, 'fire', t, { big: true }); if (e.alive) { e.burnDps = Math.max(e.burnDps, s.dmg * 2 + s.burn.dps * 2); e.burnT = Math.max(e.burnT, 5); e.burnSrc = t; e.burnType = 'fire'; } }
+        break;
+      }
+      case 'inferno': {   // Akane: ganze Karte brennt
+        const A = HEROES[t.cid].abilities.inferno, al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'inferno', tower: t, targets: al.slice(0, 60).map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ult');
+        for (const e of al) { this.damage(e, s.dmg * A.mul, 'fire', t, { big: true }); if (e.alive) { e.burnDps = Math.max(e.burnDps, s.dmg * 2.5); e.burnT = Math.max(e.burnT, 6); e.burnSrc = t; e.burnType = 'fire'; } }
+        break;
+      }
+      case 'forge': {   // Tetsu: Schmiedefeuer – Kreaturen stärken
+        const A = HEROES[t.cid].abilities.forge, R = 3.5; this.emit({ t: 'ability', id: 'forge', tower: t, r: R }); this.say(t, 'ability');
+        for (const o of this.towers) if (Math.hypot(o.x - t.x, o.y - t.y) <= R) o.buffs.push({ id: 'forge', t: A.dur, fx: { mul: { dmg: 1.4 }, add: { pierceArmor: 1 } } });
+        this.dirty = true; break;
+      }
+      case 'iaido': {   // Tetsu: ein Schnitt in den Stärksten der Karte
+        const A = HEROES[t.cid].abilities.iaido; let best = null; for (const e of this.enemies) if (e.alive && (!best || e.hp > best.hp)) best = e;
+        if (!best) { ok = false; break; }
+        const x = best.x, y = best.y; this.emit({ t: 'ability', id: 'iaido', tower: t, x, y }); this.say(t, 'ult');
+        this.damage(best, s.dmg * A.mul, 'phys', t, { big: true, ignoreRes: true });
+        for (const e of this.enemies) if (e.alive && e !== best && Math.hypot(e.x - x, e.y - y) < 2) this.damage(e, s.dmg * 15, 'phys', t, { big: true });
+        break;
+      }
+      case 'tsunami': {   // Nami: Welle spült zurück
+        const A = HEROES[t.cid].abilities.tsunami, ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < 3.5); if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'tsunami', tower: t, r: 3.5 }); this.say(t, 'ability');
+        for (const e of ts) { this.damage(e, s.dmg * A.mul, 'ice', t, { big: true }); if (!e.alive) continue; if (!e.heavy && !e.boss) this.knock(e, 2.5); e.slowPct = Math.max(e.slowPct, 0.55); e.slowT = Math.max(e.slowT, 3); }
+        break;
+      }
+      case 'maelstrom': {   // Nami: Strudel über die ganze Karte
+        const A = HEROES[t.cid].abilities.maelstrom, al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'maelstrom', tower: t, targets: al.slice(0, 60).map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ult');
+        for (const e of al) { this.damage(e, s.dmg * A.mul, 'ice', t, { big: true }); if (!e.alive) continue; if (!e.heavy && !e.boss) this.knock(e, 1.5); e.slowPct = Math.max(e.slowPct, e.boss ? 0.35 : 0.6); e.slowT = Math.max(e.slowT, 5); }
+        break;
+      }
+      case 'spirits': {   // Kuro: Geisterlichter (Orbs) für eine Weile
+        const A = HEROES[t.cid].abilities.spirits; t.buffs.push({ id: 'spirits', t: A.dur, fx: { add: { 'orbs.n': 4, 'orbs.dmg': s.dmg * 0.8, 'orbs.r': 0.9 } } });
+        this.emit({ t: 'ability', id: 'spirits', tower: t }); this.say(t, 'ability'); this.dirty = true; break;
+      }
+      case 'reaper': {   // Kuro: Seelenernte
+        const A = HEROES[t.cid].abilities.reaper, al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'reaper', tower: t, targets: al.slice(0, 60).map(e => ({ x: e.x, y: e.y })) }); this.say(t, 'ult');
+        for (const e of al) { if (!e.boss && !e.miniboss && e.hp < e.maxHp * 0.25) this.damage(e, e.hp + 1, 'astral', t, { ignoreRes: true }); else this.damage(e, s.dmg * A.mul, 'spirit', t, { big: true }); }
+        break;
+      }
+      // ───── v0.55: neue Kreaturen ─────
+      case 'transform': {   // Tanuki: Große Verwandlung
+        const R = 3.5, ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < R); if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'transform', tower: t, r: R, targets: ts.slice(0, 30).map(e => ({ x: e.x, y: e.y })) });
+        for (const e of ts) { this.damage(e, s.dmg * 10, 'earth', t, { big: true }); if (e.alive) { e.stunT = Math.max(e.stunT, e.boss ? 0.5 : 2.5); } this.gain(8, t.owner); }
+        break;
+      }
+      case 'moonfall': {   // Schneehase: Mondsturz auf den Stärksten
+        let best = null; for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) <= s.range + 1 && (!best || e.hp > best.hp)) best = e;
+        if (!best) { ok = false; break; }
+        const x = best.x, y = best.y; this.emit({ t: 'ability', id: 'moonfall', tower: t, x, y, r: 2 });
+        this.damage(best, s.dmg * 25, 'ice', t, { big: true });
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - x, e.y - y) < 2) { this.damage(e, s.dmg * 4, 'ice', t); if (e.alive) e.stunT = Math.max(e.stunT, e.boss ? 0.8 : 3); }
+        break;
+      }
+      case 'grovefx': {   // Kodama: Wurzelfalle + Tempo für Kreaturen
+        const R = 4; this.emit({ t: 'ability', id: 'grovefx', tower: t, r: R });
+        for (const e of this.enemies) if (e.alive && Math.hypot(e.x - t.x, e.y - t.y) < R) { this.damage(e, s.dmg * 6, 'earth', t); if (e.alive) e.stunT = Math.max(e.stunT, e.boss ? 0.8 : 3); }
+        for (const o of this.towers) if (Math.hypot(o.x - t.x, o.y - t.y) <= R) o.buffs.push({ id: 'grove', t: 10, fx: { mul: { rate: 1.3 } } });
+        this.dirty = true; break;
+      }
+      case 'dragongate': {   // Koi: Wasserdrache entlang des ganzen Pfads
+        const al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'dragongate', tower: t });
+        for (const e of al) { this.damage(e, s.dmg * 12, 'ice', t, { big: true }); if (e.alive && !e.heavy && !e.boss) this.knock(e, 1.5); }
+        break;
+      }
+      case 'lanternfx': {   // Hotaru: Laternenflut – ganze Karte
+        const al = this.enemies.filter(e => e.alive); if (!al.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'lanternfx', tower: t, targets: al.slice(0, 50).map(e => ({ x: e.x, y: e.y })) });
+        for (const e of al) { e.revealT = Math.max(e.revealT || 0, 8); e.vuln = Math.max(e.vuln, 0.25); e.vulnT = Math.max(e.vulnT, 8); e.slowPct = Math.max(e.slowPct, 0.35); e.slowT = Math.max(e.slowT, 3); this.damage(e, s.dmg * 6, 'light', t); }
+        break;
+      }
+      case 'webfx': {   // Jorōgumo: Netzfalle
+        const R = 3.5, ts = this.enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < R); if (!ts.length) { ok = false; break; }
+        this.emit({ t: 'ability', id: 'webfx', tower: t, r: R });
+        for (const e of ts) { this.damage(e, s.dmg * 5, 'shadow', t); if (!e.alive) continue; e.stunT = Math.max(e.stunT, e.boss ? 1 : 3); e.burnDps = Math.max(e.burnDps, s.dmg * 3 + s.burn.dps * 3); e.burnT = Math.max(e.burnT, 5); e.burnSrc = t; e.burnType = 'shadow'; }
+        break;
+      }
       case 'volley': {   // Sora: Pfeilregen auf die dichteste Gruppe
         let best = null, bn = 0;
         for (const e of this.enemies) { if (!e.alive) continue; let n = 0; for (const o of this.enemies) if (o.alive && Math.hypot(o.x - e.x, o.y - e.y) < 2.2) n++; if (n > bn) { bn = n; best = e; } }

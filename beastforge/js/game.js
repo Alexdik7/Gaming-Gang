@@ -349,7 +349,7 @@ export class Game {
       case 'wave': A.play('wave'); break; case 'waveEnd': A.play('waveEnd'); break;
       case 'bossTele': A.play('bossWarn'); break; case 'megaAtk': A.play(['crit', 'freeze', 'tier5'][e.k] || 'crit'); break; case 'bossStagger': A.play('tier5'); A.play('crit'); break;
       case 'bossWarn': A.play('bossWarn'); break; case 'bossPhase': A.play('roar'); break; case 'breath': A.play('breath'); break; case 'bossDie': A.play('roar'); break;
-      case 'ability': A.play(['judgement', 'whirl', 'thunderfall', 'sanctuary'].includes(e.id) ? 'ult' : 'ability'); if (e.id === 'roar' || e.id === 'storm' || e.id === 'thunderfall') A.play('thunder'); break;
+      case 'ability': A.play(['judgement', 'whirl', 'thunderfall', 'sanctuary', 'inferno', 'iaido', 'maelstrom', 'reaper', 'dragongate', 'lanternfx'].includes(e.id) ? 'ult' : 'ability'); if (e.id === 'roar' || e.id === 'storm' || e.id === 'thunderfall') A.play('thunder'); break;
       case 'cone': A.play(e.type === 'fire' ? 'fire' : 'frost'); break; case 'slash': A.play('slash'); break; case 'heal2': A.play('levelup'); break;
       case 'dash': A.play('ability'); break; case 'say': A.play('say'); break; case 'heroLevel': A.play('levelup'); break;
     }

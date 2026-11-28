@@ -635,3 +635,231 @@ export function komainu(o = {}) {
   };
   return { root, tick, height: [0.55, 0.65, 0.8][st] };
 }
+
+// ═══════════════════════ v0.55: neue Kreaturen ═══════════════════════
+// ───── TANUKI: runder Marderhund, Blatt auf dem Kopf · 1 Strohhut + Sake · 2 Teekessel-Bauch ─────
+const TNPAL = [
+  { fur: 0xb8844a, fur2: 0x6a4a2a, belly: 0xf0dcb8, mask: 0x3a2a1a, leaf: 0x7be07a },
+  { fur: 0xd8e0f0, fur2: 0x8a96b0, belly: 0xffffff, mask: 0x5a6480, leaf: 0x9fe8ff },
+  { fur: 0x3a2a5a, fur2: 0x1e1638, belly: 0x9fb4ff, mask: 0x120c22, leaf: 0xffd257 },
+];
+export function tanuki(o = {}) {
+  const st = o.stage || 0, pal = TNPAL[skinOf(o.skin)], k = [0.9, 1, 1.1][st];
+  const root = new THREE.Group(), mF = toon(pal.fur), mF2 = toon(pal.fur2), mB = toon(pal.belly), mM = toon(pal.mask);
+  add(root, Y(10), toon(0x8a7a60), { p: [0, 0.03, 0], s: [0.21, 0.06, 0.21], ol: 0.01 });
+  const body = grp(root, [0, 0.06, 0]);
+  add(body, S(16), mF, { p: [0, 0.17 * k, 0], s: [0.15 * k, 0.15 * k, 0.13 * k], ol: 0.01 });
+  if (st === 2) { add(body, S(16), toon(0x5a6a7a, { emissive: 0x1a2028, emissiveIntensity: 0.3 }), { p: [0, 0.15 * k, 0.03], s: [0.14 * k, 0.12 * k, 0.12 * k], ol: 0.008 }); add(body, Y(10), toon(0x3a4450), { p: [0.12 * k, 0.2 * k, 0.05], r: [0, 0, -1.1], s: [0.025, 0.1, 0.025], ol: 0.005 }); }
+  else add(body, S(14), mB, { p: [0, 0.15 * k, 0.07 * k], s: [0.1 * k, 0.11 * k, 0.07 * k], ol: false });
+  for (const sd of [-1, 1]) add(body, S(8), mF2, { p: [sd * 0.08 * k, 0.03, 0.04], s: [0.05, 0.04, 0.06], ol: 0.006 });
+  const arms = []; for (const sd of [-1, 1]) { const A = grp(body, [sd * 0.13 * k, 0.2 * k, 0.03], [0, 0, sd * 0.6]); add(A, S(8), mF2, { p: [0, -0.05, 0], s: [0.035, 0.07, 0.035], ol: 0.006 }); A.userData.sd = sd; arms.push(A); }
+  // dicker gestreifter Schwanz
+  const tail = grp(body, [0, 0.1 * k, -0.12 * k], [-0.9, 0, 0]);
+  for (let i = 0; i < 4; i++) add(tail, S(10), i % 2 ? mF2 : mF, { p: [0, i * 0.05 * k, 0], s: [0.06 * k, 0.04 * k, 0.06 * k], ol: 0.006 });
+  // Kopf mit Augenmaske und Blatt
+  const head = grp(body, [0, 0.38 * k, 0.02]), hs = 0.11 * k;
+  add(head, S(14), mF, { s: [hs * 1.1, hs, hs], ol: 0.01 });
+  for (const sd of [-1, 1]) { add(head, S(10), mM, { p: [sd * hs * 0.45, hs * 0.05, hs * 0.68], s: [hs * 0.42, hs * 0.32, hs * 0.2], ol: false }); add(head, S(8), mF2, { p: [sd * hs * 0.7, hs * 0.8, -hs * 0.1], s: [hs * 0.28, hs * 0.3, hs * 0.14], ol: 0.004 }); }
+  add(head, S(10), mB, { p: [0, -hs * 0.3, hs * 0.75], s: [hs * 0.45, hs * 0.32, hs * 0.35], ol: 0.004 });
+  add(head, S(6), toon(0x1a1410), { p: [0, -hs * 0.15, hs * 1.05], s: [hs * 0.14, hs * 0.1, hs * 0.1], ol: false });
+  for (const sd of [-1, 1]) eye(head, [sd * hs * 0.45, hs * 0.08, hs * 0.85], hs * 0.24, 0x3a2a10, sd);
+  const leaf = grp(head, [0, hs * 1.0, 0], [0.3, 0, 0.3]); add(leaf, S(8), glow(pal.leaf, 0.6), { s: [hs * 0.3, hs * 0.04, hs * 0.55], ol: 0.003 });
+  if (st >= 1) { add(head, Y(12), toon(0xe8c870), { p: [0, hs * 0.85, 0], s: [hs * 1.6, hs * 0.08, hs * 1.6], ol: 0.004 }); add(head, C(10), toon(0xe8c870), { p: [0, hs * 1.05, 0], s: [hs * 0.8, hs * 0.4, hs * 0.8], ol: 0.004 }); }
+  if (st >= 1) { const sake = grp(body, [-0.13 * k, 0.08 * k, 0.07], [0, 0, 0.3]); add(sake, S(10), toon(0xf0e8d8), { s: [0.04, 0.05, 0.04], ol: 0.004 }); add(sake, Y(8), toon(0xf0e8d8), { p: [0, 0.06, 0], s: [0.015, 0.04, 0.015], ol: 0.003 }); add(sake, Y(8), toon(0xd8342c), { p: [0, 0.01, 0.035], s: [0.025, 0.02, 0.005], ol: false }); }
+  anim(body, head, tail, leaf, ...arms);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.position.y = 0.06 + Math.abs(Math.sin(t * 2.6)) * 0.015; body.scale.y = 1 - a * 0.06;
+    head.rotation.z = Math.sin(t * 1.3) * 0.1; head.rotation.x = -a * 0.2; tail.rotation.z = Math.sin(t * 2.2) * 0.35;
+    leaf.rotation.y = Math.sin(t * 3) * 0.4;
+    arms.forEach(A => { const sd = A.userData.sd; A.rotation.x = sd > 0 ? -a * 2.4 : Math.sin(t * 2) * 0.1; });
+  };
+  return { root, tick, height: [0.62, 0.72, 0.82][st] };
+}
+
+// ───── SCHNEEHASE: lange Ohren · 1 Eisrüstung + Schärpe · 2 Mondhase mit Mörserkeule und Mondscheibe ─────
+const USPAL = [
+  { fur: 0xf8fbff, fur2: 0xc8dcf0, inner: 0xffb8d0, eye: 0xd8342c, ice: 0x9fe8ff },
+  { fur: 0xe0e8ff, fur2: 0xa8b8e0, inner: 0xc8b8ff, eye: 0x3a4a8a, ice: 0xdff4ff },
+  { fur: 0x2a3060, fur2: 0x1a1e40, inner: 0x9fb4ff, eye: 0xffd257, ice: 0xffd8ff },
+];
+export function usagi(o = {}) {
+  const st = o.stage || 0, pal = USPAL[skinOf(o.skin)], k = [0.88, 1, 1.1][st];
+  const root = new THREE.Group(), mF = toon(pal.fur), mF2 = toon(pal.fur2), mI = toon(pal.inner);
+  add(root, Y(10), toon(0xdff4ff, { emissive: 0x9fe8ff, emissiveIntensity: 0.2 }), { p: [0, 0.03, 0], s: [0.2, 0.06, 0.2], ol: 0.01 });
+  const body = grp(root, [0, 0.06, 0]);
+  add(body, S(14), mF, { p: [0, 0.15 * k, -0.02], s: [0.11 * k, 0.13 * k, 0.12 * k], ol: 0.01 });
+  for (const sd of [-1, 1]) add(body, S(10), mF2, { p: [sd * 0.07 * k, 0.05, -0.03], s: [0.05, 0.05, 0.09], ol: 0.006 });
+  add(body, S(8), mF, { p: [0, 0.12 * k, -0.14 * k], s: 0.045 * k, ol: 0.005 });
+  if (st >= 1) { add(body, S(12), glow(pal.ice, 0.45), { p: [0, 0.2 * k, 0.04], s: [0.1 * k, 0.07 * k, 0.07 * k], ol: 0.005 }); add(body, geo.torus(0.2), toon(0x5a7ad8), { p: [0, 0.15 * k, 0], r: [PI / 2, 0.6, 0], s: [0.11 * k, 0.11 * k, 0.3], ol: 0.003 }); }
+  const arm = grp(body, [0.09 * k, 0.2 * k, 0.05]); add(arm, S(8), mF, { p: [0, -0.04, 0], s: [0.03, 0.06, 0.03], ol: 0.005 });
+  // Eiszapfen bzw. Mörserkeule in der Pfote
+  if (st === 2) { add(arm, Y(8), toon(0xc8a070), { p: [0, 0.04, 0.03], s: [0.018, 0.22, 0.018], ol: 0.004 }); add(arm, Y(10), toon(0xe8d8b0), { p: [0, 0.16, 0.03], s: [0.035, 0.06, 0.035], ol: 0.004 }); }
+  else add(arm, C(6), glow(pal.ice, 0.8), { p: [0, 0.05, 0.03], s: [0.02, 0.1, 0.02], ol: false });
+  const head = grp(body, [0, 0.33 * k, 0.03]), hs = 0.09 * k;
+  add(head, S(14), mF, { s: [hs, hs * 0.95, hs * 1.05], ol: 0.01 });
+  add(head, S(8), mI, { p: [0, -hs * 0.2, hs * 0.95], s: [hs * 0.15, hs * 0.1, hs * 0.1], ol: false });
+  for (const sd of [-1, 1]) { eye(head, [sd * hs * 0.45, hs * 0.1, hs * 0.75], hs * 0.26, pal.eye, sd, st === 2); add(head, S(8), mI, { p: [sd * hs * 0.6, -hs * 0.25, hs * 0.65], s: [hs * 0.16, hs * 0.1, hs * 0.05], ol: false }); }
+  const ears = []; for (const sd of [-1, 1]) { const E = grp(head, [sd * hs * 0.35, hs * 0.7, -hs * 0.1], [0, 0, -sd * 0.15]); add(E, S(10), mF, { p: [0, hs * 1.1, 0], s: [hs * 0.25, hs * 1.2, hs * 0.14], ol: 0.006 }); add(E, S(10), mI, { p: [0, hs * 1.1, hs * 0.07], s: [hs * 0.14, hs * 0.95, hs * 0.05], ol: false }); E.userData.sd = sd; ears.push(E); }
+  const moon = st === 2 ? add(root, new THREE.TorusGeometry(1, 0.2, 8, 24, PI * 1.25), glow(0xfff2c8, 0.85), { p: [0, 0.55, -0.22], r: [0, 0, PI * 0.4], s: 0.16, ol: false }) : null;
+  const flakes = []; if (st >= 1) for (let i = 0; i < 5; i++) flakes.push(add(root, D(), glow(pal.ice, 0.85), { s: 0.014, ol: false }));
+  anim(body, head, arm, ...ears, ...flakes, ...(moon ? [moon] : []));
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.position.y = 0.06 + Math.max(0, Math.sin(t * 2.2)) * 0.02 + a * 0.03;
+    head.rotation.x = -a * 0.25; head.rotation.y = Math.sin(t * 0.8) * 0.2 * (1 - a);
+    arm.rotation.x = -a * 2.6;
+    ears.forEach(E => { E.rotation.z = -E.userData.sd * (0.15 + Math.sin(t * 2.5 + E.userData.sd) * 0.08); E.rotation.x = -a * 0.4; });
+    flakes.forEach((f, i) => { const q = t * 0.9 + i * 1.26; f.position.set(Math.cos(q) * 0.28, 0.3 + Math.sin(t * 1.5 + i) * 0.12, Math.sin(q) * 0.28); f.rotation.set(t, t * 1.3, 0); });
+    if (moon) moon.position.y = 0.55 + Math.sin(t * 1.4) * 0.03;
+  };
+  return { root, tick, height: [0.7, 0.8, 0.92][st] };
+}
+
+// ───── KODAMA: weißer Baumgeist mit Klapperkopf · 1 Moosmantel + Blätterkrone · 2 wandelnder Baum ─────
+const KDPAL = [
+  { body: 0xf4f6ea, dark: 0x2a2a22, moss: 0x7ad04a, bark: 0x7a5a3a, leaf: 0x8ad070, bloom: 0xffb8d4 },
+  { body: 0xe8f0ff, dark: 0x2a3050, moss: 0x9fd8ff, bark: 0x6a7a9a, leaf: 0xbfe8ff, bloom: 0xffffff },
+  { body: 0x2a2a48, dark: 0xffd257, moss: 0xb07bff, bark: 0x1a1a30, leaf: 0x9fb4ff, bloom: 0xff9af0 },
+];
+export function kodama(o = {}) {
+  const st = o.stage || 0, pal = KDPAL[skinOf(o.skin)], k = [0.85, 1, 1.15][st];
+  const root = new THREE.Group(), mB = toon(pal.body, { emissive: pal.body, emissiveIntensity: 0.08 }), mD = toon(pal.dark), mMoss = toon(pal.moss), mBark = toon(pal.bark), mL = toon(pal.leaf);
+  add(root, Y(10), mBark, { p: [0, 0.04, 0], s: [0.22, 0.08, 0.22], ol: 0.01 });   // Baumstumpf
+  add(root, Y(10), mMoss, { p: [0, 0.085, 0], s: [0.2, 0.02, 0.2], ol: false });
+  const body = grp(root, [0, 0.09, 0]);
+  if (st === 2) { add(body, Y(10), mBark, { p: [0, 0.18 * k, 0], s: [0.07 * k, 0.36 * k, 0.07 * k], ol: 0.008 }); for (let i = 0; i < 3; i++) { const a = i / 3 * PI * 2; add(body, C(6), mBark, { p: [Math.cos(a) * 0.08, 0.04, Math.sin(a) * 0.08], r: [Math.sin(a) * 0.9, 0, -Math.cos(a) * 0.9], s: [0.03, 0.12, 0.03], ol: 0.004 }); } }
+  add(body, Y(12), mB, { p: [0, 0.11 * k, 0], s: [0.07 * k, 0.16 * k, 0.07 * k], ol: 0.008 });
+  if (st >= 1) add(body, Y(12), mMoss, { p: [0, 0.16 * k, 0], s: [0.085 * k, 0.07 * k, 0.085 * k], ol: 0.005 });
+  const arms = []; for (const sd of [-1, 1]) { const A = grp(body, [sd * 0.07 * k, 0.14 * k, 0], [0, 0, sd * 0.7]); add(A, Y(6), mB, { p: [0, -0.04, 0], s: [0.016, 0.08, 0.016], ol: 0.004 }); A.userData.sd = sd; arms.push(A); }
+  const head = grp(body, [0, (st === 2 ? 0.42 : 0.28) * k, 0]), hs = 0.1 * k;
+  add(head, S(14), mB, { s: [hs, hs * 1.05, hs * 0.95], ol: 0.01 });
+  for (const sd of [-1, 1]) add(head, S(8), mD, { p: [sd * hs * 0.35, hs * 0.1, hs * 0.85], s: [hs * 0.16, hs * 0.2, hs * 0.08], ol: false });
+  add(head, S(8), mD, { p: [0, -hs * 0.35, hs * 0.85], s: [hs * 0.18, hs * 0.12, hs * 0.08], ol: false });
+  const leaves = [];
+  const nL = [0, 6, 10][st]; for (let i = 0; i < nL; i++) { const a = i / nL * PI * 2; leaves.push(add(head, S(8), i % 3 === 0 ? toon(pal.bloom) : mL, { p: [Math.cos(a) * hs * 0.7, hs * 0.9, Math.sin(a) * hs * 0.7], r: [Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5], s: [hs * 0.35, hs * 0.08, hs * 0.22], ol: 0.003 })); }
+  if (st === 0) leaves.push(add(head, S(8), mL, { p: [0, hs * 1.05, 0], r: [0, 0, 0.4], s: [hs * 0.3, hs * 0.06, hs * 0.18], ol: 0.003 }));
+  const motes = []; for (let i = 0; i < 3 + st * 2; i++) motes.push(add(root, S(6), glow(0xdfffc8, 0.8), { s: 0.015, ol: false }));
+  anim(body, head, ...arms, ...leaves, ...motes);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    head.rotation.z = Math.sin(t * 6) * 0.04 * (1 + a * 3) + Math.sin(t * 0.9) * 0.15;   // Klapperkopf
+    head.position.y = (st === 2 ? 0.42 : 0.28) * k + a * 0.02;
+    arms.forEach(A => { A.rotation.z = A.userData.sd * (0.7 + Math.sin(t * 2) * 0.1 + a * 0.8); });
+    motes.forEach((m, i) => { const q = t * 0.6 + i * 2.1; m.position.set(Math.cos(q) * 0.25, 0.15 + ((t * 0.15 + i * 0.3) % 1) * 0.5, Math.sin(q) * 0.25); });
+  };
+  return { root, tick, height: [0.5, 0.6, 0.8][st] };
+}
+
+// ───── KOI: Karpfen springt aus einem Teich · 1 Goldkoi mit langen Flossen · 2 Koi-Drache (schwebt, Hörner, Barteln) ─────
+const KOPAL = [
+  { body: 0xfff4ec, spot: 0xff6a2a, fin: 0xffb08a, eye: 0x1a1a2a, water: 0x5ab8ff },
+  { body: 0xf0f4ff, spot: 0x5a7ad8, fin: 0xbfd0ff, eye: 0x1a1a3a, water: 0x9fd8ff },
+  { body: 0x2a2a5a, spot: 0xffd257, fin: 0xff9af0, eye: 0xffd257, water: 0x9f7bff },
+];
+export function koi(o = {}) {
+  const st = o.stage || 0, pal = KOPAL[skinOf(o.skin)], k = [0.9, 1, 1.1][st];
+  const gold = st >= 1 && !skinOf(o.skin);
+  const root = new THREE.Group(), mB = toon(gold ? 0xffe8a8 : pal.body, { emissive: gold ? 0x6a4000 : 0, emissiveIntensity: 0.25 }), mS = toon(gold ? 0xff9a2a : pal.spot), mFin = toon(pal.fin, { emissive: pal.fin, emissiveIntensity: 0.15, transparent: true, opacity: 0.85 });
+  // Teich mit Seerose
+  add(root, Y(16), toon(0x8a9aa0), { p: [0, 0.03, 0], s: [0.24, 0.06, 0.24], ol: 0.01 });
+  const pond = add(root, Y(16), glow(pal.water, 0.6), { p: [0, 0.062, 0], s: [0.2, 0.01, 0.2], ol: false });
+  add(root, Y(10), toon(0x6ad04a), { p: [0.12, 0.07, 0.08], s: [0.06, 0.008, 0.06], ol: 0.003 });
+  const fish = grp(root, [0, 0.25, 0]);
+  const body = grp(fish, [0, 0, 0], [0.5, 0, 0]);
+  add(body, S(16), mB, { s: [0.08 * k, 0.09 * k, 0.17 * k], ol: 0.01 });
+  for (let i = 0; i < 4; i++) add(body, S(8), mS, { p: [(i % 2 ? 0.05 : -0.04) * k, 0.05 * k, (0.08 - i * 0.05) * k], s: [0.04 * k, 0.03 * k, 0.05 * k], ol: false });
+  const tail = grp(body, [0, 0, -0.17 * k]); for (const sd of [-1, 1]) add(tail, S(8), mFin, { p: [0, sd * 0.05 * k, -0.06 * k], r: [sd * 0.6, 0, 0], s: [0.01, 0.07 * k * (st ? 1.5 : 1), 0.09 * k * (st ? 1.4 : 1)], ol: 0.003 });
+  for (const sd of [-1, 1]) add(body, S(8), mFin, { p: [sd * 0.08 * k, -0.03, 0.04], r: [0, sd * 0.6, sd * 0.5], s: [0.01, 0.04 * k * (st ? 1.6 : 1), 0.06 * k], ol: 0.003 });
+  add(body, S(8), mFin, { p: [0, 0.09 * k, 0], s: [0.01, 0.05 * k, 0.09 * k], ol: 0.003 });
+  const head = grp(body, [0, 0.01, 0.15 * k]), hs = 0.07 * k;
+  add(head, S(12), mB, { s: [hs, hs * 0.95, hs * 0.9], ol: 0.008 });
+  for (const sd of [-1, 1]) eye(head, [sd * hs * 0.6, hs * 0.2, hs * 0.5], hs * 0.25, pal.eye, sd, st === 2);
+  add(head, geo.torus(0.3), toon(0xff8a8a), { p: [0, -hs * 0.2, hs * 0.9], s: hs * 0.25, ol: false });
+  const whisk = []; if (st >= 1) for (const sd of [-1, 1]) { const w = add(head, Y(4), mS, { p: [sd * hs * 0.4, -hs * 0.4, hs * 0.8], r: [0.9, 0, sd * 0.8], s: [0.006, 0.12 * k * (st === 2 ? 1.8 : 1), 0.006], ol: false }); whisk.push(w); }
+  if (st === 2) for (const sd of [-1, 1]) add(head, C(6), toon(0xffd257, { emissive: 0xa07010, emissiveIntensity: 0.4 }), { p: [sd * hs * 0.4, hs * 0.85, -hs * 0.1], r: [-0.5, 0, -sd * 0.3], s: [hs * 0.12, hs * 0.6, hs * 0.12], ol: 0.004 });
+  const drops = []; for (let i = 0; i < 6; i++) drops.push(add(root, S(6), glow(pal.water, 0.8), { s: 0.018, ol: false }));
+  anim(fish, body, tail, head, pond, ...whisk, ...drops);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0, hover = st === 2 ? 0.1 : 0;
+    fish.position.y = 0.22 + hover + Math.sin(t * 2) * 0.03 + a * 0.05; body.rotation.x = 0.5 - a * 0.4 + Math.sin(t * 2) * 0.1;
+    tail.rotation.y = Math.sin(t * 7) * 0.4; fish.rotation.y = Math.sin(t * 0.7) * 0.2;
+    whisk.forEach((w, i) => { w.rotation.z = (i ? 1 : -1) * (0.8 + Math.sin(t * 3 + i) * 0.2); });
+    drops.forEach((d, i) => { const f = (t * 0.7 + i / drops.length) % 1, q = i * 1.05; d.position.set(Math.cos(q) * 0.12, 0.08 + Math.sin(f * PI) * 0.25, Math.sin(q) * 0.12 + f * 0.05); });
+  };
+  return { root, tick, height: [0.5, 0.58, 0.7][st] };
+}
+
+// ───── HOTARU: Glühwürmchen-Schwarm um eine Papierlaterne · 1 größere Laterne · 2 Nordlicht-Wirbel ─────
+const HTPAL = [
+  { paper: 0xfff0d0, frame: 0x8a3a2a, light: 0xffd257, fly: 0xe8ff6a },
+  { paper: 0xe8f0ff, frame: 0x3a4a8a, light: 0x9fe8ff, fly: 0xbfe8ff },
+  { paper: 0x3a2a5a, frame: 0xffd257, light: 0xff9af0, fly: 0xff9af0 },
+];
+export function hotaru(o = {}) {
+  const st = o.stage || 0, pal = HTPAL[skinOf(o.skin)], k = [0.85, 1, 1.1][st];
+  const root = new THREE.Group();
+  add(root, Y(10), toon(0x6a5a48), { p: [0, 0.03, 0], s: [0.18, 0.06, 0.18], ol: 0.01 });
+  // Laterne auf einem Bambusstab
+  add(root, Y(6), toon(0x9ab060), { p: [0, 0.2, 0], s: [0.015, 0.34, 0.015], ol: 0.004 });
+  const lan = grp(root, [0, 0.4 * k, 0]);
+  add(lan, S(14), toon(pal.paper, { emissive: pal.light, emissiveIntensity: 0.7 }), { s: [0.08 * k, 0.1 * k, 0.08 * k], ol: 0.006 });
+  for (const y of [-1, 1]) add(lan, Y(10), toon(pal.frame), { p: [0, y * 0.095 * k, 0], s: [0.05 * k, 0.015, 0.05 * k], ol: 0.003 });
+  for (let i = 0; i < 4; i++) add(lan, geo.torus(0.2), toon(pal.frame), { p: [0, (i - 1.5) * 0.04 * k, 0], r: [PI / 2, 0, 0], s: [0.085 * k * Math.cos((i - 1.5) * 0.4), 0.085 * k * Math.cos((i - 1.5) * 0.4), 0.2], ol: false });
+  if (st >= 1) add(lan, B(), toon(0xd8342c), { p: [0, -0.15 * k, 0], s: [0.02, 0.06, 0.005], ol: false });
+  // Schwarm
+  const n = [8, 14, 22][st], flies = [];
+  for (let i = 0; i < n; i++) { const f = grp(root); add(f, S(6), glow(st === 2 ? [0x9fffcf, 0xff9af0, 0x9fb4ff, 0xfff27a][i % 4] : pal.fly, 0.95), { s: 0.022, ol: false }); add(f, S(6), toon(0x2a2a1a), { p: [0, 0.006, 0.012], s: [0.012, 0.01, 0.014], ol: false }); flies.push(f); }
+  // Gesicht auf der Laterne (Lampion-Geist)
+  for (const sd of [-1, 1]) add(lan, S(6), toon(0x2a1a10), { p: [sd * 0.025 * k, 0.01, 0.077 * k], s: [0.01, 0.016, 0.005], ol: false });
+  add(lan, geo.torus(0.3), toon(0x2a1a10), { p: [0, -0.025, 0.077 * k], r: [0, 0, PI], s: 0.025, ol: false });
+  anim(lan, ...flies);
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    lan.position.y = 0.4 * k + Math.sin(t * 1.5) * 0.015; lan.rotation.z = Math.sin(t * 1.2) * 0.08;
+    flies.forEach((f, i) => { const q = t * (1 + (i % 3) * 0.35) + i * 2.399, r = 0.14 + (i % 4) * 0.05 + a * 0.08; f.position.set(Math.cos(q) * r, 0.3 * k + Math.sin(t * 2.3 + i) * 0.15 + (i % 5) * 0.04, Math.sin(q) * r); f.scale.setScalar(0.8 + 0.4 * Math.max(0, Math.sin(t * 6 + i))); });
+  };
+  return { root, tick, height: [0.62, 0.7, 0.78][st] };
+}
+
+// ───── JORŌGUMO: Spinne mit Kimono-Torso · 1 goldgestreifte Beine + Netz im Rücken · 2 Königin mit Krone ─────
+const SPPAL = [
+  { body: 0x2a1a3a, stripe: 0xffd257, kimono: 0x8a2a5a, skin: 0xf0d8e0, eye: 0xff3a6a, silk: 0xf0e8ff },
+  { body: 0x3a4460, stripe: 0xdff4ff, kimono: 0x5a7ad8, skin: 0xe8f0ff, eye: 0x9fe8ff, silk: 0xffffff },
+  { body: 0x120c22, stripe: 0xff9af0, kimono: 0x3a1a6a, skin: 0x9fb4ff, eye: 0xffd257, silk: 0xffd8ff },
+];
+export function kumo(o = {}) {
+  const st = o.stage || 0, pal = SPPAL[skinOf(o.skin)], k = [0.85, 1, 1.12][st];
+  const root = new THREE.Group(), mB = toon(pal.body), mSt = toon(pal.stripe, { emissive: pal.stripe, emissiveIntensity: 0.2 }), mK = toon(pal.kimono), mSk = toon(pal.skin);
+  add(root, Y(10), toon(0x5a4a5a), { p: [0, 0.03, 0], s: [0.22, 0.06, 0.22], ol: 0.01 });
+  const body = grp(root, [0, 0.08, 0]);
+  // Spinnenleib hinten + acht Beine
+  add(body, S(14), mB, { p: [0, 0.1 * k, -0.1 * k], s: [0.12 * k, 0.1 * k, 0.14 * k], ol: 0.01 });
+  if (st >= 1) for (let i = 0; i < 3; i++) add(body, S(10), mSt, { p: [0, 0.18 * k, (-0.04 - i * 0.06) * k], s: [0.05 * k, 0.02, 0.025], ol: false });
+  const legs = [];
+  for (let i = 0; i < 8; i++) { const sd = i < 4 ? -1 : 1, j = i % 4, L = grp(body, [sd * 0.08 * k, 0.1 * k, (0.04 - j * 0.06) * k], [0, sd * (0.5 - j * 0.35), 0]);
+    const up = grp(L, [0, 0, 0], [0, 0, -sd * 0.9]); add(up, Y(6), mB, { p: [0, 0.09 * k, 0], s: [0.016, 0.18 * k, 0.016], ol: 0.004 });
+    const lo = grp(up, [0, 0.18 * k, 0], [0, 0, -sd * 1.7]); add(lo, Y(6), st >= 1 && j % 2 ? mSt : mB, { p: [0, 0.11 * k, 0], s: [0.012, 0.22 * k, 0.012], ol: 0.004 });
+    L.userData = { sd, j }; legs.push(L); }
+  // Oberkörper im Kimono
+  const torso = grp(body, [0, 0.16 * k, 0.05 * k]);
+  add(torso, C(10), mK, { p: [0, 0.08 * k, 0], s: [0.075 * k, 0.16 * k, 0.07 * k], ol: 0.008 });
+  add(torso, geo.torus(0.2), toon(0xffd257), { p: [0, 0.06 * k, 0], r: [PI / 2, 0, 0], s: [0.06 * k, 0.06 * k, 0.2], ol: false });
+  const head = grp(torso, [0, 0.2 * k, 0]), hs = 0.06 * k;
+  add(head, S(12), mSk, { s: [hs, hs * 1.05, hs], ol: 0.008 });
+  add(head, S(12), toon(0x1a1020), { p: [0, hs * 0.25, -hs * 0.2], s: [hs * 1.1, hs * 0.9, hs * 1.05], ol: 0.006 });
+  add(head, S(10), toon(0x1a1020), { p: [0, hs * 0.9, -hs * 0.4], s: [hs * 0.5, hs * 0.45, hs * 0.5], ol: 0.004 });
+  for (const sd of [-1, 1]) eye(head, [sd * hs * 0.4, hs * 0.05, hs * 0.8], hs * 0.26, pal.eye, sd, st === 2);
+  if (st === 2) for (let i = 0; i < 5; i++) { const a = (i - 2) * 0.35; add(head, C(4), glow(pal.stripe, 0.85), { p: [Math.sin(a) * hs * 0.7, hs * 1.2, Math.cos(a) * hs * 0.2], s: [hs * 0.1, hs * (i === 2 ? 0.6 : 0.4), hs * 0.1], ol: false }); }
+  // Netz im Rücken (Form 1+)
+  let web = null;
+  if (st >= 1) { web = grp(root, [0, 0.42 * k, -0.24 * k]); const R = 0.2 * k; for (let i = 0; i < 6; i++) add(web, Y(3), glow(pal.silk, 0.5), { p: [Math.cos(i / 6 * PI * 2) * R / 2, Math.sin(i / 6 * PI * 2) * R / 2, 0], r: [0, 0, i / 6 * PI * 2 + PI / 2], s: [0.004, R, 0.004], ol: false }); for (let j = 1; j <= 3; j++) add(web, geo.torus(0.02), glow(pal.silk, 0.45), { s: R * j / 3, ol: false }); }
+  anim(body, torso, head, ...legs, ...(web ? [web] : []));
+  const tick = (t, dt, s) => {
+    const a = s.atk || 0;
+    body.position.y = 0.08 + Math.sin(t * 2.2) * 0.008; torso.rotation.x = -a * 0.3; head.rotation.y = Math.sin(t * 0.8) * 0.25 * (1 - a);
+    legs.forEach(L => { const { sd, j } = L.userData; L.rotation.x = Math.sin(t * 4 + j * 1.6 + (sd > 0 ? PI : 0)) * 0.12 + (j === 0 ? -a * 0.5 : 0); });
+    if (web) web.rotation.z = Math.sin(t * 0.8) * 0.1;
+  };
+  return { root, tick, height: [0.55, 0.65, 0.75][st] };
+}

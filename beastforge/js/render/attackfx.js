@@ -20,6 +20,12 @@ export const AFX = {
   kappa:      { base: 0x5ae8d8, p: [0x3fb4d8, 0x5fd6ff, 0x9af07a], gather: 'swirl', sig: 'splash' },
   kirin:      { base: 0xfff2a8, p: [0xfff2a8, 0xffffff, 0xffd257], gather: 'spark', sig: 'thunder' },
   komainu:    { base: 0xffb43a, p: [0xff7a3d, 0xffd257, 0xc8a060], gather: 'glint' },
+  tanuki:     { base: 0x9af070, p: [0x7be07a, 0xff9a4a, 0xffd257], gather: 'swirl' },
+  usagi:      { base: 0xdff8ff, p: [0x9fe8ff, 0xbfe4ff, 0xfff2a8], gather: 'spark', sig: 'splash' },
+  kodama:     { base: 0xb8f0a0, p: [0x8ad070, 0x9af0c8, 0xffb8d4], gather: 'glint' },
+  koi:        { base: 0xff9a5a, p: [0x5fd6ff, 0x3fb4d8, 0xffd257], gather: 'swirl', sig: 'splash' },
+  hotaru:     { base: 0xe8ff6a, p: [0xfff27a, 0xffd257, 0x9ff6ff], gather: 'spark' },
+  kumo:       { base: 0xb07bff, p: [0xe8e0f0, 0x8aff6a, 0x9a6aff], gather: 'smoke' },
 };
 const ELEM = { fire: 0xff7a2f, ice: 0x9fe8ff, lightning: 0xffe14d, earth: 0xc8a060, spirit: 0x7df3ff, shadow: 0xb07bff, light: 0xfff2a8, astral: 0x9fb4ff, phys: 0xe8eef8 };
 

@@ -5,7 +5,13 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.54.0 – eigene Mega-Attacken (Vision P6 Teil 2)
+## Stand: v0.55.0 – 6 Kreaturen, 4 Helden, 6 Fusionen, Fähigkeiten-Leiste ohne Grenze
+**0.55:** **Fähigkeiten-Leiste** (`hud.updAbilities`): keine Obergrenze mehr (vorher nur 8 Knöpfe → Rest nicht nutzbar). Gleiche Fähigkeit (Fähigkeits-Id + Platz) = ein Knopf mit Zähler `bereit/gesamt`; Tippen löst die Kreatur mit der kürzesten Abklingzeit aus; Leiste scrollt seitlich (`#abilities`, `.abn`).
+**Kreaturen** (Daten in `creatures.js`, Modelle prozedural in `render/beasts.js`, `KIT` in looks.js, `AFX`, `VOICE`, Freischaltung `ACCOUNT_REWARDS`): Hotaru (Lv 3, Glühwürmchen-Schwarm, Licht, `lanternfx`), Tanuki (Lv 5, Blätter/Verwandlung/Gold, `transform`), Kodama (Lv 12, Baumgeist-Unterstützer, `grovefx`), Koi (Lv 15, Wasser-Durchschlag → Koi-Drache, `dragongate`), Jorōgumo `kumo` (Lv 17, Netz/Gift, `webfx`), Schneehase `usagi` (Lv 20, Eis-Scharfschütze, `moonfall`). Neue Geschosse `icicle`/`firefly`/`silk` (fx.js).
+**Helden** (`heroes.js`, Modelle in `HEROES3D`/`SRC`): Nami (Lv 4, `tsunami`/`maelstrom`), Akane (Lv 9, `pyre`/`inferno`), Kuro (Lv 14, `spirits`/`reaper`), Tetsu (Lv 21, `forge`/`iaido`).
+**Fusionen** (`fusions.js`, Mega-Namen in `FUSE_NAMES`): Goldkessel-Tanuki (Tanuki+Neko), Nachtfrost-Hase (Hase+Rabe), Waldgott (Kodama+Hirsch), Drachenpalast-Koi (Koi+Kappa), Irrlichtfuchs (Hotaru+Kitsune), Giftweberin (Jorōgumo+Naga) → 18. **Synergien** +6 (Teehaus, Mondlicht, Teichgeist, Nachtnetz, Feuerschrein, Gezeiten).
+
+## Stand davor: v0.54.0 – eigene Mega-Attacken (Vision P6 Teil 2)
 **0.54:** Jede Mega-Form (auch Mega-Fusionen) hat eine Spezialattacke im Takt (`world.megaAttack`, Zeitgeber `t.megaT`, läuft auch bei Unterstützern ohne Angriff): **A Zornschlag** (Explosion am stärksten Gegner, `zornMul` × Schaden, Radius `zornR`), **B Bannkreis** (alle Gegner in Reichweite betäubt/verlangsamt, Bosse kürzer), **C Klingensturm** (kritische Klingen auf die `klingeN` stärksten Gegner). Regler `BAL.run.megaAtk`, Ereignis `megaAtk` (view: Blitz + Explosion / Ringe + Funkenkreis / Klingenblitze, Schriftzug, Ton), Statistik `megaAtks`. `MEGA_KIND[].atk/atkDesc` erscheinen in der Mega-Beschreibung.
 
 ## Stand davor: v0.53.0 – Events mit eigenen Regeln (Vision P10 Teil 3)
