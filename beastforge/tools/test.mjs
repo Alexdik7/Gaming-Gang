@@ -682,3 +682,30 @@ test('Bosse 2.0: Vorwarnung vor dem Atem, Schwachpunkt, Unterbrechen', () => {
   assert.equal(e.teleT, 0); assert.ok(e.stunT > 0); assert.ok(w.events.some(x => x.t === 'bossStagger'));
   w.updBoss(e, 2); assert.ok(!(t.tower.disabledT > 0), 'Angriff fand nicht statt');
 });
+
+test('Akademie 2.0: Meisterprüfung, Spezialisierung, geheime Knoten, Prüfungs-Regeln', async () => {
+  const A = await import('../js/data/academy.js');
+  const P = defaultProfile(); P.account.level = 30;
+  const t = A.TRIAL.trial_kampf;
+  assert.equal(A.trialOpen(P, t), false, 'Prüfung braucht Stufe 4');
+  for (const id of ['k1', 'k2', 'k3', 'k4']) assert.ok(A.learn(P, id).ok);
+  assert.ok(A.trialOpen(P, t));
+  assert.equal(A.chooseSpec(P, 'sp_klinge').ok, false, 'ohne Siegel keine Spezialisierung');
+  const e0 = A.shinobiPoints(P).earned;
+  assert.ok(A.passTrial(P, 'trial_kampf')); assert.equal(A.passTrial(P, 'trial_kampf'), false, 'nur einmal');
+  assert.equal(A.shinobiPoints(P).earned, e0 + A.TRIAL_SP);
+  const f0 = A.shinobiPoints(P).free;
+  assert.ok(A.chooseSpec(P, 'sp_klinge').ok); assert.equal(A.shinobiPoints(P).free, f0 - A.SPEC_COST);
+  assert.ok(A.chooseSpec(P, 'sp_falke').ok, 'Wechsel'); assert.equal(A.shinobiPoints(P).free, f0 - A.SPEC_COST, 'Wechsel kostenlos');
+  assert.equal(A.academyFx(P).range, 0.05 + 0.1);
+  assert.equal(A.canLearnSecret(P, 'x_combo').ok, false, 'verborgen');
+  P.stats.bestCombo = 60; assert.ok(A.learnSecret(P, 'x_combo').ok); assert.equal(A.academyFx(P).comboWin, 0.5);
+  A.resetAcademy(P); assert.ok(A.hasSeal(P, 'kampf'), 'Siegel bleibt beim Neuverteilen'); assert.equal(A.shinobiPoints(P).spent, 0);
+  // Prüfungs-Regeln in der Welt
+  const ws = new World({ map: 'dorf', diff: 'normal', loadout: ['kitsune'], hooks: {}, mods: A.TRIAL.trial_schrein.mods });
+  assert.equal(ws.lives, 10); ws.coins = 9999; const tw = ws.place('kitsune', 3, 4.5).tower || ws.place('kitsune', ...Object.values(ws.suggestSpot('kitsune') || {})).tower;
+  if (tw) assert.equal(ws.sell(tw.id).ok, false, 'kein Verkaufen');
+  const we = new World({ map: 'dorf', diff: 'normal', seed: 3, hooks: {}, mods: A.TRIAL.trial_element.mods }), wn = new World({ map: 'dorf', diff: 'normal', seed: 3, hooks: {} });
+  const a = we.spawn('golem', [], 1), b = wn.spawn('golem', [], 1); a.hp = b.hp = a.maxHp = b.maxHp = 1e6;
+  assert.ok(Math.abs(we.damage(a, 10, 'phys', null) / wn.damage(b, 10, 'phys', null) - 0.4) < 1e-6, 'Physisch −60 %');
+});

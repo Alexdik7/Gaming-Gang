@@ -20,7 +20,7 @@ import { saveProfile, resetProfile } from '../meta/profile.js';
 import { CHALLENGES, CH, chUnlocked } from '../data/challenges.js';
 import { QUESTS, ensureDaily, dailyChallenge, questProgress, DAILY_XP, dayKey } from '../data/daily.js';
 import { FUSIONS, FUSE } from '../data/fusions.js';
-import { SCHOOLS, ACADEMY, ACADEMY_BY_ID, shinobiPoints, canLearn, learn, resetAcademy } from '../data/academy.js';
+import { SCHOOLS, ACADEMY, ACADEMY_BY_ID, shinobiPoints, canLearn, learn, resetAcademy, TRIALS, TRIAL, TRIAL_NEED, TRIAL_SP, SPECS, SPEC, SPEC_COST, SECRETS, SECRET, SECRET_COST, trialOpen, hasSeal, secretFound, chooseSpec, canLearnSecret, learnSecret } from '../data/academy.js';
 
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
@@ -214,24 +214,45 @@ export class Menus {
   // ───────── Shinobi-Akademie: Wissensbaum mit Shinobi-Punkten ─────────
   s_academy(sel) {
     const P = this.P, pts = shinobiPoints(P), own = P.academy.owned, keep = sel ? $('menu').scrollTop : 0;
+    const A = P.academy; A.master ||= {}; A.spec ||= {};
     const rows = SCHOOLS.map(sc => {
       const nodes = ACADEMY.filter(n => n.school === sc.id).map(n => {
         const st = own[n.id] ? 'own' : canLearn(P, n.id).ok ? 'can' : (n.tier === 1 || own[ACADEMY.find(x => x.school === n.school && x.tier === n.tier - 1).id]) ? 'poor' : 'lock';
         return `<button class="anode ${st} ${sel === n.id ? 'sel' : ''}" data-n="${n.id}" style="--sc:${sc.color}"><span>${st === 'lock' ? '🔒' : st === 'own' ? '✓' : n.tier}</span><i>${n.cost}</i></button>`;
       }).join('<b class="alink"></b>');
-      return `<div class="arow"><div class="ahead" style="--sc:${sc.color}"><b>${sc.icon} ${esc(sc.name)}</b><small>${esc(sc.desc)}</small></div><div class="anodes">${nodes}</div></div>`;
+      // Akademie 2.0: Meisterprüfung (Siegel) → zwei Spezialisierungen, nur eine aktiv
+      const t = TRIALS.find(x => x.school === sc.id), seal = hasSeal(P, sc.id), tst = seal ? 'own' : trialOpen(P, t) ? 'can' : 'lock';
+      const trial = `<button class="anode trial ${tst} ${sel === t.id ? 'sel' : ''}" data-n="${t.id}" style="--sc:${sc.color}" title="${esc(t.name)}"><span>${seal ? '🏅' : tst === 'can' ? '⚔' : '🔒'}</span></button>`;
+      const specs = SPECS.filter(x => x.school === sc.id).map(x => `<button class="anode spec ${A.spec[sc.id] === x.id ? 'own' : seal ? 'can' : 'lock'} ${sel === x.id ? 'sel' : ''}" data-n="${x.id}" style="--sc:${sc.color}" title="${esc(x.name)}"><span>${seal ? x.icon : '🔒'}</span>${A.spec[sc.id] ? '' : `<i>${SPEC_COST}</i>`}</button>`).join('<small class="aor">oder</small>');
+      return `<div class="arow"><div class="ahead" style="--sc:${sc.color}"><b>${sc.icon} ${esc(sc.name)}</b><small>${esc(sc.desc)}</small></div><div class="anodes">${nodes}<b class="alink m"></b>${trial}<b class="alink m"></b><span class="aspecs">${specs}</span></div></div>`;
     }).join('');
-    const n = sel && ACADEMY_BY_ID[sel], c = n && canLearn(P, n.id);
-    const info = n ? `<div class="ainfo" style="--sc:${SCHOOLS.find(s => s.id === n.school).color}"><div><b>${esc(n.name)}</b> <small>Stufe ${n.tier} · ${n.cost} Punkt${n.cost > 1 ? 'e' : ''}</small><p>${esc(n.desc)}</p></div>
-      ${own[n.id] ? '<span class="aok">✓ Erlernt</span>' : `<button class="btn pri" id="alearn" ${c.ok ? '' : 'disabled'}>${c.ok ? 'Erlernen' : esc(c.why)}</button>`}</div>`
-      : '<div class="ainfo"><p>Tippe auf einen Knoten. Shinobi-Punkte gibt es für jedes Konto-Level und für jeden ersten Sieg auf einer Karte (Normal und Schwer).</p></div>';
+    const secrets = SECRETS.map(x => { const f = secretFound(P, x.id), o = own[x.id]; return `<button class="anode secret ${o ? 'own' : f ? (canLearnSecret(P, x.id).ok ? 'can' : 'poor') : 'hid'} ${sel === x.id ? 'sel' : ''}" data-n="${x.id}" style="--sc:#9fe8ff"><span>${o ? '✓' : f ? x.icon : '?'}</span>${o ? '' : `<i>${SECRET_COST}</i>`}</button>`; }).join('');
+    const secRow = `<div class="arow sec"><div class="ahead" style="--sc:#9fe8ff"><b>✧ Geheime Knoten</b><small>Durch Taten enthüllt</small></div><div class="anodes">${secrets}</div></div>`;
+    let info = '<div class="ainfo"><p>Tippe auf einen Knoten. Shinobi-Punkte gibt es für jedes Konto-Level, jeden ersten Sieg, Medaillen und Meistersiegel. Ab Stufe ' + TRIAL_NEED + ' einer Schule öffnet sich ihre <b>Meisterprüfung</b> – das Siegel schaltet eine von zwei <b>Spezialisierungen</b> frei.</p></div>';
+    const scOf = id => SCHOOLS.find(s => s.id === id).color;
+    if (ACADEMY_BY_ID[sel]) { const n = ACADEMY_BY_ID[sel], c = canLearn(P, n.id);
+      info = `<div class="ainfo" style="--sc:${scOf(n.school)}"><div><b>${esc(n.name)}</b> <small>Stufe ${n.tier} · ${n.cost} Punkt${n.cost > 1 ? 'e' : ''}</small><p>${esc(n.desc)}</p></div>
+      ${own[n.id] ? '<span class="aok">✓ Erlernt</span>' : `<button class="btn pri" id="alearn" ${c.ok ? '' : 'disabled'}>${c.ok ? 'Erlernen' : esc(c.why)}</button>`}</div>`; }
+    else if (TRIAL[sel]) { const t = TRIAL[sel], seal = hasSeal(P, t.school), open = trialOpen(P, t);
+      info = `<div class="ainfo" style="--sc:${scOf(t.school)}"><div><b>${t.icon} ${esc(t.name)}</b> <small>Meisterprüfung · ${esc(MAPS[t.map].name)} · Welle 20</small><p>${esc(t.desc)} Belohnung: <b style="color:#ffd257">🏅 Siegel, +${TRIAL_SP} Shinobi-Punkte, 🎁 Truhe</b></p></div>
+      ${seal ? '<span class="aok">🏅 Bestanden</span>' : `<button class="btn pri" id="atrial" ${open ? '' : 'disabled'}>${open ? '⚔ Antreten' : 'Erst Stufe ' + TRIAL_NEED + ' erlernen'}</button>`}</div>`; }
+    else if (SPEC[sel]) { const x = SPEC[sel], cur = A.spec[x.school], seal = hasSeal(P, x.school), c = seal && cur !== x.id ? chooseSpec({ ...P, academy: { ...A, spec: { ...A.spec } } }, x.id) : null;
+      info = `<div class="ainfo" style="--sc:${scOf(x.school)}"><div><b>${x.icon} ${esc(x.name)}</b> <small>Spezialisierung · ${cur ? 'Wechsel kostenlos' : SPEC_COST + ' Punkte'}</small><p>${esc(x.desc)}</p></div>
+      ${cur === x.id ? '<span class="aok">✓ Aktiv</span>' : `<button class="btn pri" id="aspec" ${c?.ok ? '' : 'disabled'}>${!seal ? 'Erst die Prüfung bestehen' : c.ok ? (cur ? '⇄ Wechseln' : 'Wählen') : esc(c.why)}</button>`}</div>`; }
+    else if (SECRET[sel]) { const x = SECRET[sel], f = secretFound(P, x.id), c = canLearnSecret(P, x.id);
+      info = f ? `<div class="ainfo" style="--sc:#9fe8ff"><div><b>${x.icon} ${esc(x.name)}</b> <small>Geheimer Knoten · ${SECRET_COST} Punkt</small><p>${esc(x.desc)}</p></div>${own[x.id] ? '<span class="aok">✓ Erlernt</span>' : `<button class="btn pri" id="asecret" ${c.ok ? '' : 'disabled'}>${c.ok ? 'Erlernen' : esc(c.why)}</button>`}</div>`
+        : `<div class="ainfo" style="--sc:#9fe8ff"><div><b>??? Verborgen</b><p>Hinweis: ${esc(x.hint)}</p></div></div>`; }
     this.render(`<div class="scr acadScr">${this.hdr('Shinobi-Akademie')}
-      <div class="apts"><span class="spi">✦</span><b>${pts.free}</b> freie Shinobi-Punkte <small>· ${pts.earned} verdient · ${pts.spent} eingesetzt</small>${pts.spent ? '<button class="aReset" id="areset">↺ Neu verteilen</button>' : ''}</div>
-      <div class="atree">${rows}</div>${info}</div>`, m => {
+      <div class="apts"><span class="spi">✦</span><b>${pts.free}</b> freie Shinobi-Punkte <small>· ${pts.earned} verdient · ${pts.spent} eingesetzt · 🏅 ${Object.keys(A.master).length}/4</small>${pts.spent ? '<button class="aReset" id="areset">↺ Neu verteilen</button>' : ''}</div>
+      <div class="atree">${rows}${secRow}</div>${info}</div>`, m => {
       m.scrollTop = keep;
       m.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { this.click(); this.s_academy(b.dataset.n); });
-      const L = $('alearn'); if (L) L.onclick = () => { if (learn(P, sel).ok) { saveProfile(P); this.app.audio.play('levelup'); this.s_academy(sel); } };
-      const R = $('areset'); if (R) R.onclick = () => { if (confirm('Alle Shinobi-Punkte zurückholen und neu verteilen?')) { resetAcademy(P); saveProfile(P); this.click(); this.s_academy(); } };
+      const ok = () => { saveProfile(P); this.app.audio.play('levelup'); this.s_academy(sel); };
+      const L = $('alearn'); if (L) L.onclick = () => { if (learn(P, sel).ok) ok(); };
+      $('aspec')?.addEventListener('click', () => { if (chooseSpec(P, sel).ok) ok(); });
+      $('asecret')?.addEventListener('click', () => { if (learnSecret(P, sel).ok) ok(); });
+      $('atrial')?.addEventListener('click', () => { const t = TRIAL[sel]; this.app.audio.init(); this.app.startRun(t.map, t.diff, t.id); });
+      const R = $('areset'); if (R) R.onclick = () => { if (confirm('Alle Shinobi-Punkte zurückholen und neu verteilen? Meistersiegel bleiben.')) { resetAcademy(P); saveProfile(P); this.click(); this.s_academy(); } };
     });
   }
 
@@ -531,7 +552,7 @@ export class Menus {
       return `<div class="mrow"><span class="mpl">${['🥇', '🥈', '🥉', '4', '5'][i]}</span><img src="${img}" alt=""><div><b>${esc(nm)}</b><div class="bar"><u data-w="${v / top * 100}" style="width:0"></u></div></div><span class="gain">${fmt(v)}</span></div>`; }).join('')}<small style="color:var(--mut)">nach verursachtem Schaden</small></div>` : '';
     const a = P.account, need = accNeed(a.level);
     this.render(`<div class="scr res">
-      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.daily ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">📅 Tageskampf geschafft! +1 Shinobi-Punkt</p>` : ''}${r.medal ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">🏅 Neue Medaille: ${esc(r.medal.name)} · +1 Shinobi-Punkt</p>` : r.ch && r.ch.id !== 'std' ? `<p style="margin:0;color:var(--mut)">${r.ch.icon} ${esc(r.ch.name)}</p>` : ''}${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
+      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.daily ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">📅 Tageskampf geschafft! +1 Shinobi-Punkt</p>` : ''}${r.medal ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">🏅 Neue Medaille: ${esc(r.medal.name)} · +1 Shinobi-Punkt</p>` : r.ch && r.ch.id !== 'std' ? `<p style="margin:0;color:var(--mut)">${r.ch.icon} ${esc(r.ch.name)}</p>` : ''}${r.trial ? `<p class="trialWin">🏅 Meisterprüfung bestanden: ${esc(r.trial.name)} · +${TRIAL_SP} Shinobi-Punkte · Spezialisierung frei!</p>` : ''}${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
       <p style="text-align:center;margin:0;color:var(--mut)">${esc(r.map)} · ${esc(r.diff)} · Welle ${r.wave}${r.maxWave === Infinity ? '' : '/' + r.maxWave}${r.perfect ? ' · <b style="color:var(--run)">PERFEKT!</b>' : ''}</p>
       ${r.records?.length ? `<div class="sect recs">${r.records.map(x => `<div class="newrec">🏅 NEUER REKORD · ${esc(x)}</div>`).join('')}</div>` : ''}${this.goals(r)}
       ${mvp}<div class="rgrid"><div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.combo >= 5 ? `<span>Beste Combo</span><b>×${r.combo}</b>` : ''}${r.hero ? `<span>${esc(HEROES[r.hero.id]?.name || 'Held')} erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>

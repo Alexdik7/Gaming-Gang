@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.46.0 – Bosse 2.0 (Vision P8)
+## Stand: v0.47.0 – Akademie 2.0 (Vision P9)
+**0.47:** `data/academy.js` erweitert: **Meisterprüfung** je Schule (`TRIALS`, offen ab Stufe `TRIAL_NEED` = 4; Start über `startRun(map, diff, 'trial_<schule>')`, `game.ch` → `TRIAL[ch].mods`), neue Regeln in der Welt `mods.physWeak` (Physisch −60 %), `lifeCap` (feste Leben), `noSell`. Sieg → `passTrial` = Siegel `P.academy.master[schule]` (+`TRIAL_SP` 2 Shinobi-Punkte, Truhe, bleibt beim Neuverteilen). **Spezialisierungen** `SPECS` (2 je Schule, eine aktiv `P.academy.spec[schule]`, `SPEC_COST` 2, Wechsel kostenlos) mit neuen Welt-Boni `critMul`, `chain`, `bounty`, `heroDmg`. **Geheime Knoten** `SECRETS` (als „?“ mit Hinweis, enthüllt durch Combo ×50, 40 Codex-Einträge, Mega-Form, 5 Boss-Unterbrechungen `P.stats.staggers`), Bonus `comboWin`. Bildschirm `s_academy`: Raute = Prüfung, Quadrate = Spezialisierungen, Reihe „✧ Geheime Knoten“.
+
+## Stand davor: v0.46.0 – Bosse 2.0 (Vision P8)
 **0.46:** Boss-Atem mit Vorwarnung: `updBoss` wählt Ziele, setzt `e.teleT = BAL.boss.tele` (1,6 s) und `e.teleIds`, Ereignis `bossTele` (rote, sich zusammenziehende Zielkreise unter den Kreaturen, Warnlinien, „◎ SCHWACHPUNKT!“, Hinweis beim ersten Mal); erst danach `breath`. Schwachpunkt: während `teleT` +60 % Schaden (`weakMul`); erreicht der Schaden `breakPct` (3,5 %) der Max-KP → Angriff abgebrochen, Boss taumelt `stagger` s (`bossStagger`: „💥 UNTERBROCHEN!“, Zeitlupe, Klang). Phasenwechsel: Verdunkelung, rote Säule, Bodenriss-Funken, „PHASE N“. Gilt für alle 9 Boss-Varianten.
 
 ## Stand davor: v0.45.0 – Elemente 2.0 (Vision P7)

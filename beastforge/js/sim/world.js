@@ -38,6 +38,7 @@ export class World {
     // Geldbörsen: Solo 1, Koop 2 (jeder verdient und zahlt selbst). `who` = wer gerade einen Befehl ausführt; die Simulation selbst liest `who` nie.
     this.players = o.players || 1; this.who = 0; this.wallet = Array(this.players).fill(this.diff.start + (this.ac.startCoins || 0)); this.lives = this.diff.lives + (this.ac.lives || 0); this.maxLives = this.lives;
     if (this.mods.soulburn) this.lives = this.maxLives = 1;
+    if (this.mods.lifeCap) this.lives = this.maxLives = this.mods.lifeCap;   // Meisterprüfung des Schreins
     this.wave = 0; this.maxWave = this.diff.waves; this.doneWave = 0;
     this.spawners = []; this.towers = []; this.enemies = []; this.projs = []; this.events = [];
     this.t = 0; this.tickN = 0; this.acc = 0; this.nid = 1; this.comboN = 0; this.comboT = 0; this.bestCombo = 0; this.over = false; this.won = false; this.god = false;
@@ -72,7 +73,7 @@ export class World {
   }
   // Combo: Kills in Folge innerhalb von BAL.combo.window; Stufen geben Münzen (jeder Spieler voll) und kürzere Abklingzeiten
   comboHit() {
-    const C = BAL.combo; this.comboN++; this.comboT = C.window;
+    const C = BAL.combo; this.comboN++; this.comboT = C.window + (this.ac.comboWin || 0);
     const i = C.steps.indexOf(this.comboN);
     if (i >= 0) {
       const c = Math.round(C.coins[i] * (1 + this.wave * 0.03)); this.gain(c * this.players);
@@ -249,6 +250,7 @@ export class World {
   }
   sell(id) {
     if (this.mods.soulburn) return { ok: false, why: 'Seelenbrand: kein Verkaufen' };
+    if (this.mods.noSell) return { ok: false, why: 'Prüfung: kein Verkaufen' };
     const i = this.towers.findIndex(t => t.id === id); if (i < 0) return { ok: false };
     const t = this.towers[i]; if (!this.mine(t)) return { ok: false, why: 'Gehört deinem Mitspieler' };
     const v = Math.floor(t.spent * (BAL.run.sellRefund + (this.ac.sell || 0)));
@@ -542,6 +544,7 @@ export class World {
     if (!e.alive || amount <= 0) return 0;
     const s = src?.s;
     let mul = type === 'astral' ? 1 : (e.res[type] ?? 1);
+    if (type === 'phys' && this.mods.physWeak) mul *= 1 - this.mods.physWeak;   // Prüfung der Elemente
     if (type === 'phys' && mul < 1) mul += (1 - mul) * Math.min(1, (s?.pierceArmor || 0) + (e.brkT > 0 ? 1 : 0));
     if (o.ignoreRes) mul = 1;
     let dmg = amount * mul * (o.mul || 1) * (src ? BAL.run.dmgMul : 1);
@@ -585,7 +588,7 @@ export class World {
     e.reactT = BAL.elem.reactCd; this.stats.reactions++; this.hooks.stat?.('reactions', 1);
     // Kettenreaktion: weitere Reaktion auf demselben Gegner innerhalb des Fensters verstärkt sich
     e.chainN = e.chainT > 0 ? (e.chainN || 1) + 1 : 1; e.chainT = BAL.elem.chainWin;
-    const cm = 1 + (e.chainN - 1) * BAL.elem.chainMul;
+    const cm = 1 + (e.chainN - 1) * (BAL.elem.chainMul + (this.ac.chain || 0));
     this.emit({ t: 'react', e, x: e.x, y: e.y, name: r.name, color: r.color, icon: r.icon, chain: e.chainN });
     if (e.chainN >= 2) { this.stats.chains = (this.stats.chains || 0) + 1; this.hooks.stat?.('chains', 1); }
     const base = Math.max(6, dmg) * cm;
@@ -611,7 +614,7 @@ export class World {
     if (!e.alive) return; e.alive = false;
     const def = e.def;
     this.comboHit();
-    const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul * BAL.lateCoins(e.wave || this.wave));
+    const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul * BAL.lateCoins(e.wave || this.wave) * (1 + (this.ac.bounty || 0)));
     this.gain(coins, src?.owner);
     this.stats.kills++; this.hooks.stat?.('kills', 1);
     if (src) { src.kills++; if (src.s?.bounty) this.gain(src.s.bounty, src.owner); }
@@ -675,7 +678,7 @@ export class World {
     for (const t of this.towers) {
       const s = t.s = t.hero ? baseStats(t) : baseStats(t, this.levelOf(t.cid), this.branchOf(t.cid));
       s.dmg *= (1 + (A.dmg || 0)) * (s.dmgType && s.dmgType !== 'phys' ? 1 + (A.elem || 0) : 1); s.rate *= 1 + (A.rate || 0); s.range *= 1 + (A.range || 0);
-      if (A.crit) s.crit.ch += A.crit; if (A.boss) s.bossMul *= 1 + A.boss;
+      if (A.crit) s.crit.ch += A.crit; if (A.critMul) s.crit.mult *= 1 + A.critMul; if (A.heroDmg && t.hero) s.dmg *= 1 + A.heroDmg; if (A.boss) s.bossMul *= 1 + A.boss;
       if (A.burn) s.burn.dps *= 1 + A.burn; if (A.slow) s.slow.pct = Math.min(0.85, s.slow.pct * (1 + A.slow));
       if (A.income && s.income) s.income *= 1 + A.income;
       if (this.mods.soulburn) { s.income = 0; s.interest = 0; s.lucky = 0; }

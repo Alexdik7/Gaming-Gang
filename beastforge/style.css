@@ -762,3 +762,16 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .sect.goals .goal { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; margin: 4px 0; } .goal > span { font-size: 20px; text-align: center; } .goal b { font-size: 12px; color: #fff; } .goal small { color: #ffd257; font-weight: 800; font-size: 11px; }
 .goal .bar u { background: linear-gradient(90deg, #5fe6ff, #b98cff); }
 .big.again2 { animation: pwPulse 1s infinite alternate; }
+/* Akademie 2.0 (v0.47): Prüfung, Spezialisierungen, geheime Knoten */
+.alink.m { flex: 0 0 14px; background: repeating-linear-gradient(90deg, rgba(255,210,87,.5) 0 4px, transparent 4px 8px); }
+.anode.trial { border-radius: 14px; transform: rotate(45deg); width: 46px; height: 46px; }
+.anode.trial > span { transform: rotate(-45deg); }
+.anode.trial.sel { transform: rotate(45deg) scale(1.14); }
+.anode.trial.own { background: radial-gradient(circle at 35% 30%, #fff4c0, #ffb020); }
+.aspecs { display: flex; align-items: center; gap: 4px; flex: none; }
+.aor { color: var(--mut); font-size: 10px; font-weight: 800; }
+.anode.spec { width: 46px; height: 46px; border-radius: 12px; font-size: 20px; }
+.anode.secret { margin-right: 12px; font-size: 20px; }
+.anode.hid { border-style: dashed; color: #9fe8ff; opacity: .7; }
+.arow.sec { background: linear-gradient(90deg, rgba(60,140,190,.25), rgba(20,15,42,.7)); }
+.trialWin { margin: 0; color: #ffd257; font-weight: 900; text-align: center; text-shadow: 0 0 12px rgba(255,180,40,.6); }
