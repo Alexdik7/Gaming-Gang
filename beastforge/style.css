@@ -808,3 +808,9 @@ canvas#gl, #boot, #hud, #floaters, #bubbles, #flash, #menu, #modal, .world, #wip
 .tfl.lock { opacity: .5; }
 .tfl.sel { outline: 3px solid #fff; outline-offset: 2px; }
 .tfl:active { transform: scale(.98); }
+/* Event-Kampf (v0.53) */
+.evf { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 8px 10px; border-radius: 12px; background: rgba(255,210,87,.12); border: 2px dashed rgba(255,210,87,.5); }
+.evf > div { flex: 1; } .evf small { color: #ffd257; font-weight: 900; font-size: 11px; letter-spacing: .5px; }
+.evf ul { margin: 3px 0 0; padding-left: 16px; font-size: 12px; } .evf li { margin: 1px 0; }
+.evf .btn small { display: block; color: inherit; font-size: 11px; }
+.evf.won { border-style: solid; border-color: rgba(120,255,140,.5); background: rgba(120,255,140,.08); }

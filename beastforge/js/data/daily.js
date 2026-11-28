@@ -15,6 +15,14 @@ export const QUESTS = [
   { id: 'boss', text: 'Besiege einen Boss', stat: 'bossKills', goal: 1, xp: 300 },
   { id: 'gold', text: 'Verdiene 4.000 Münzen durch Einkommen', stat: 'income', goal: 4000, xp: 200 },
   { id: 'perfect', text: 'Gewinne ohne ein Leben zu verlieren', stat: 'perfect', goal: 1, xp: 350 },
+  // v0.53: mehr Abwechslung
+  { id: 'fuse', text: 'Verschmelze 1 Fusion', stat: 'fusions', goal: 1, xp: 300 },
+  { id: 'mega', text: 'Erwecke eine Mega-Form', stat: 'megas', goal: 1, xp: 400 },
+  { id: 'chain', text: 'Löse 5 Kettenreaktionen aus', stat: 'chains', goal: 5, xp: 250 },
+  { id: 'ult', text: 'Setze 3 Ultimates ein', stat: 'ults', goal: 3, xp: 200 },
+  { id: 'mini', text: 'Besiege 3 Mini-Bosse', stat: 'minibossKills', goal: 3, xp: 250 },
+  { id: 'stag', text: 'Unterbrich einen Boss-Angriff', stat: 'staggers', goal: 1, xp: 300 },
+  { id: 'syn', text: 'Aktiviere 4 Synergien', stat: 'synergies', goal: 4, xp: 200 },
 ];
 export const DAILY_XP = 500;
 

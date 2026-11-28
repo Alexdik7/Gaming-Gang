@@ -6,7 +6,7 @@ import { CODEX_TABS, CODEX_STEP, codexEntries, codexSeen, discover, codexCount, 
 import { Coop, makeCode, cleanCode, explain, diagnose } from '../net.js';
 import { academyFx } from '../data/academy.js';
 import { heroStartLevel } from '../meta/progression.js';
-import { COSMETICS, COS_KINDS, hasCos, ensureEvent, eventDef, eventProgress, claimEvent, eventDot, openChest, daysLeft, EVENT_CHESTS } from '../data/events.js';
+import { COSMETICS, COS_KINDS, hasCos, ensureEvent, eventDef, eventProgress, claimEvent, eventDot, openChest, daysLeft, EVENT_CHESTS, EVENT_FIGHT_CHESTS } from '../data/events.js';
 import { HEROES } from '../data/heroes.js';
 import { MAPS } from '../data/maps.js';
 import { ELEMENT_NAMES } from '../data/enemies.js';
@@ -172,7 +172,9 @@ export class Menus {
       <div class="cgrid">
         <div class="evc"><div class="evh"><span class="evi">${d.icon}</span><div><small>WOCHEN-EVENT · noch ${daysLeft()} Tag${daysLeft() > 1 ? 'e' : ''}</small><b>${esc(d.name)}</b><p>${esc(d.desc)}</p></div></div>
           <div class="bar evb"><u style="width:${pct}%"></u>${d.goals.slice(0, 2).map(g => `<i style="left:${g / top * 100}%"></i>`).join('')}</div><small class="mut">Fortschritt: <b style="color:#ffd257">${fmt(v)}</b> / ${fmt(top)}</small>
-          <div class="evms">${ms}</div></div>
+          <div class="evms">${ms}</div>
+          <div class="evf ${E.won ? 'won' : ''}"><div><small>⚔ EVENT-KAMPF · ${esc(MAPS[unlocked(P, 'map', d.fight.map) ? d.fight.map : 'ahnenhain'].name)} · ${d.fight.diff === 'hard' ? '🔥 Schwer' : '🌿 Normal'}</small><ul>${d.fight.rules.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>
+            ${E.won ? '<span class="aok">✓ Diese Woche geschafft</span>' : `<button class="btn pri" id="evgo">⚔ Antreten<small>🎁×${EVENT_FIGHT_CHESTS}</small></button>`}</div></div>
         <div class="cbox"><div class="chest ${reveal ? 'opened r_' + (rar?.id || '') : ''}" id="chest" style="--rc:${rar?.col || '#ffe27a'}"><div class="lid"></div><div class="body"><i></i></div></div>
           <b class="ccount">${P.chests} Truhe${P.chests === 1 ? '' : 'n'}</b>${rv}
           <button class="big" id="copen" ${P.chests > 0 ? '' : 'disabled'}>🎁 Öffnen</button>
@@ -180,6 +182,7 @@ export class Menus {
       </div>
       ${Object.keys(COSMETICS).map(kind => `<div class="wlabel">${COS_KINDS[kind]}</div><div class="cosr">${COSMETICS[kind].map(c => sw(kind, c)).join('')}</div>`).join('')}
     </div>`, m => {
+      $('evgo')?.addEventListener('click', () => { this.app.audio.init(); const mp = unlocked(P, 'map', d.fight.map) ? d.fight.map : 'ahnenhain'; this.app.startRun(mp, d.fight.diff, 'event'); });
       m.querySelectorAll('[data-ev]').forEach(b => b.onclick = () => { const n = claimEvent(P, +b.dataset.ev); if (n) { saveProfile(P); this.app.audio.play('levelup'); this.s_chests(); } });
       m.querySelectorAll('[data-cos]').forEach(b => b.onclick = () => { const [k, id] = b.dataset.cos.split(':'); P.cos[k] = id; saveProfile(P); this.click(); this.s_chests(); });
       const ob = m.querySelector('#copen'); ob.onclick = () => {
@@ -573,7 +576,7 @@ export class Menus {
       return `<div class="mrow"><span class="mpl">${['🥇', '🥈', '🥉', '4', '5'][i]}</span><img src="${img}" alt=""><div><b>${esc(nm)}</b><div class="bar"><u data-w="${v / top * 100}" style="width:0"></u></div></div><span class="gain">${fmt(v)}</span></div>`; }).join('')}<small style="color:var(--mut)">nach verursachtem Schaden</small></div>` : '';
     const a = P.account, need = accNeed(a.level);
     this.render(`<div class="scr res">
-      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.daily ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">📅 Tageskampf geschafft! +1 Shinobi-Punkt</p>` : ''}${r.medal ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">🏅 Neue Medaille: ${esc(r.medal.name)} · +1 Shinobi-Punkt</p>` : r.ch && r.ch.id !== 'std' ? `<p style="margin:0;color:var(--mut)">${r.ch.icon} ${esc(r.ch.name)}</p>` : ''}${r.floor ? `<p class="trialWin">🗼 Turm-Etage ${r.floor.n} geschafft: ${esc(r.floor.name)}${r.floor.n % 5 ? '' : ' · +1 Shinobi-Punkt'}</p>` : ''}${r.trial ? `<p class="trialWin">🏅 Meisterprüfung bestanden: ${esc(r.trial.name)} · +${TRIAL_SP} Shinobi-Punkte · Spezialisierung frei!</p>` : ''}${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
+      <h1 class="${r.won ? 'win' : 'lose'}">${r.won ? 'SIEG' : 'NIEDERLAGE'}</h1>${r.daily ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">📅 Tageskampf geschafft! +1 Shinobi-Punkt</p>` : ''}${r.medal ? `<p style="margin:0;color:#ffd257;font-weight:900;text-align:center">🏅 Neue Medaille: ${esc(r.medal.name)} · +1 Shinobi-Punkt</p>` : r.ch && r.ch.id !== 'std' ? `<p style="margin:0;color:var(--mut)">${r.ch.icon} ${esc(r.ch.name)}</p>` : ''}${r.evWin ? `<p class="trialWin">${esc(r.evName)}: Event-Kampf gewonnen · 🎁×${r.evWin}</p>` : ''}${r.floor ? `<p class="trialWin">🗼 Turm-Etage ${r.floor.n} geschafft: ${esc(r.floor.name)}${r.floor.n % 5 ? '' : ' · +1 Shinobi-Punkt'}</p>` : ''}${r.trial ? `<p class="trialWin">🏅 Meisterprüfung bestanden: ${esc(r.trial.name)} · +${TRIAL_SP} Shinobi-Punkte · Spezialisierung frei!</p>` : ''}${r.freeplay ? `<p style="margin:0;color:#ffd257;font-weight:800">⚔ Freies Spiel bis Welle ${r.wave}</p>` : ''}
       <p style="text-align:center;margin:0;color:var(--mut)">${esc(r.map)} · ${esc(r.diff)} · Welle ${r.wave}${r.maxWave === Infinity ? '' : '/' + r.maxWave}${r.perfect ? ' · <b style="color:var(--run)">PERFEKT!</b>' : ''}</p>
       ${r.records?.length ? `<div class="sect recs">${r.records.map(x => `<div class="newrec">🏅 NEUER REKORD · ${esc(x)}</div>`).join('')}</div>` : ''}${this.goals(r)}
       ${mvp}<div class="rgrid"><div class="sect run"><h3>RUN</h3><div class="kv"><span>Leben</span><b>${r.lives}/${r.maxLives}</b><span>Gegner besiegt</span><b>${fmt(r.kills)}</b><span>Münzen verdient</span><b>◈${fmt(r.coins)}</b><span>Evolutionen</span><b>${r.evolves}</b><span>Elementreaktionen</span><b>${r.reactions}</b>${r.combo >= 5 ? `<span>Beste Combo</span><b>×${r.combo}</b>` : ''}${r.hero ? `<span>${esc(HEROES[r.hero.id]?.name || 'Held')} erreichte</span><b>Lv ${r.hero.lvl}</b>` : ''}</div><small style="color:var(--mut)">Run-Münzen verfallen – dein Fortschritt bleibt.</small></div>

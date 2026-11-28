@@ -397,7 +397,14 @@ export class World {
   }
   // Freies Spiel nach dem Sieg (auch im Koop als Befehl, damit beide Welten gleich bleiben)
   freeplay() { if (!this.over || !this.won) return { ok: false, why: 'Noch nicht gewonnen' }; this.over = false; this.won = false; this.maxWave = Infinity; return { ok: true }; }
-  waveDef(n) { return this.mods.rush ? rushDef(n) : waveDef0(n); }
+  waveDef(n) {
+    const def = this.mods.rush ? rushDef(n) : waveDef0(n), M = this.mods;
+    if (!def || !(M.addGroup || M.countMul)) return def;
+    // Event-Regeln (data/events.js): zusätzliche Gruppen je Welle, mehr Gegner
+    const groups = def.groups.map(g => M.countMul ? { ...g, n: Math.max(1, Math.round(g.n * M.countMul)) } : g), A = M.addGroup;
+    if (A && (!A.every || n % A.every === 0)) groups.push({ e: A.e, n: Math.max(1, Math.floor(A.n0 + n * (A.per || 0))), gap: A.gap || 1.2, delay: A.delay ?? 2, mods: [] });
+    return { ...def, groups };
+  }
   peekWave() { const n = this.wave + 1; if (n > this.maxWave) return null; let def = this.waveDef(n); const mx = !this.mods.rush && this.map.mix?.(n, def.groups); if (mx) def = { ...def, groups: mx.groups, ...(def.boss && mx.boss ? { boss: mx.boss } : {}) }; return { n, def }; }
   waveRunning() { return this.spawners.length > 0 || this.enemies.length > 0; }
 
@@ -406,12 +413,12 @@ export class World {
     const def = ENEMIES[kind] || BOSSES[kind]; if (!def) return null;
     const boss = !!def.boss, elite = mods.includes('elite');
     const scale = BAL.endlessScale(wave);
-    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * (this.mods.rush && boss ? BAL.rush.hp : 1) * scale * (boss ? 1 : def.miniboss ? BAL.miniScale(wave) : BAL.hpScale(wave));
+    let hp = def.hp * this.diff.hp * (this.map.hpMul || 1) * (this.mods.dblHp ? 2 : 1) * (this.mods.rush && boss ? BAL.rush.hp : 1) * (this.mods.hpMul || 1) * scale * (boss ? 1 : def.miniboss ? BAL.miniScale(wave) : BAL.hpScale(wave));
     if (elite) hp *= 2.2;
     const res = { ...(def.res || {}) };
     if (mods.includes('armored')) res.phys = Math.max(0.25, (res.phys ?? 1) * 0.6);
     const e = { id: this.nid++, kind, def, hp, maxHp: hp, d, x: 0, y: 0, ang: 0, r: def.r * (elite ? 1.2 : 1), h: def.h,
-      speed: def.speed * this.diff.speed * (mods.includes('fast') ? 1.3 : 1), slowPct: 0, slowT: 0, burnDps: 0, burnT: 0, burnSrc: null,
+      speed: def.speed * this.diff.speed * (mods.includes('fast') ? 1.3 : 1) * (this.mods.speedMul || 1), slowPct: 0, slowT: 0, burnDps: 0, burnT: 0, burnSrc: null,
       stunT: 0, shield: 0, flying: !!def.flying, camo: !!def.camo || mods.includes('camo'), elite, mods, res, dmgBy: {}, vuln: 0, vulnT: 0, revealT: 0, brkT: 0,
       elem: null, elemT: 0, reactT: 0, abT: 1 + this.rng() * 2, regen: mods.includes('regen') ? 0.02 : 0, wave, boss, miniboss: !!def.miniboss,
       guard: def.guard ? hp * def.guard.pct : 0, guardT: 0,
@@ -597,7 +604,7 @@ export class World {
     const base = Math.max(6, dmg) * cm;
     if (r.vuln) { e.vuln = Math.max(e.vuln, r.vuln[0]); e.vulnT = Math.max(e.vulnT, r.vuln[1]); }
     if (r.strip) { e.shield = 0; if (e.guard > 0) { e.guard = 0; this.emit({ t: 'guardBreak', e, x: e.x, y: e.y }); } }
-    if (r.bonus) this.damage(e, base * r.bonus * (1 + (this.ac.react || 0)), 'astral', src, { noReact: true });
+    if (r.bonus) this.damage(e, base * r.bonus * (1 + (this.ac.react || 0)) * (this.mods.reactMul || 1), 'astral', src, { noReact: true });
     if (r.brk) e.brkT = r.brk;
     if (r.slow) { e.slowPct = Math.max(e.slowPct, r.slow[0]); e.slowT = Math.max(e.slowT, r.slow[1]); }
     if (r.stun && !e.boss) e.stunT = Math.max(e.stunT, r.stun);
@@ -617,7 +624,7 @@ export class World {
     if (!e.alive) return; e.alive = false;
     const def = e.def;
     this.comboHit();
-    const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul * BAL.lateCoins(e.wave || this.wave) * (1 + (this.ac.bounty || 0)));
+    const coins = Math.round((def.coins || 0) * this.diff.coins * (e.elite ? 2 : 1) * e.coinMul * BAL.lateCoins(e.wave || this.wave) * (1 + (this.ac.bounty || 0)) * (this.mods.coinMul || 1));
     this.gain(coins, src?.owner);
     this.stats.kills++; this.hooks.stat?.('kills', 1);
     if (src) { src.kills++; if (src.s?.bounty) this.gain(src.s.bounty, src.owner); }

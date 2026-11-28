@@ -5,7 +5,10 @@ Läuft im Browser und als iPhone-Web-App („Zum Home-Bildschirm“). Alles (Mod
 
 **Spielen:** https://alexdik7.github.io/Gaming-Gang/beastforge/ · Dev-Menü: `…/beastforge/?dev`
 
-## Stand: v0.52.0 – Mega-Fusionen (Vision P11 Teil 3)
+## Stand: v0.53.0 – Events mit eigenen Regeln (Vision P10 Teil 3)
+**0.53:** Jedes Wochen-Event in `data/events.js` hat einen **Event-Kampf** (`fight`: Karte, Schwierigkeit, Regeltexte `rules`, Welt-Mods). Neue generische Mods in `world.js`: `addGroup` (Zusatzgruppe je Welle, optional `every`), `countMul` (mehr Gegner), `hpMul`, `speedMul`, `coinMul` (Münzen je Besiegtem), `reactMul` (Reaktionsschaden) – alles in `world.waveDef`/`spawn`/`kill`/`react`, deterministisch. Run-Kennung `ch = 'event'`, erster Sieg pro Woche → `winEventFight` (🎁×2, `P.event.won`). Karte im Truhen-Bildschirm (`.evf`); gesperrte Event-Karte → Ahnenhain. Tagesaufgaben: 7 neue (Fusion, Mega, Kettenreaktionen, Ultimates, Mini-Bosse, Boss unterbrechen, Synergien) → 19.
+
+## Stand davor: v0.52.0 – Mega-Fusionen (Vision P11 Teil 3)
 **0.52:** Fusionen können jetzt Mega werden: `megaDef` kennt Fusionen (`fusion: true`, eigene Namen `FUSE_NAMES` + Art, z. B. „Ur-Hydra · Zorn“), `ALL_MEGAS` = 48 + 36 (Codex-Reiter Mega zählt mit), `world.megaInfo` nimmt für Fusionen `BAL.run.megaFuse` (Kosten Fusionspreis × 7, 150 Besiegte, Charakter-Lv 25), `stats.js` gibt Mega-Fusionen zusätzlich ×1,3 Schaden, +0,25 Reichweite, +1 Durchschlag, ×1,15 Boss. Banner „✦ MEGA-FUSION“, Fenster-Unterzeile „Mega-Fusion · Art“.
 
 ## Stand davor: v0.51.0 – Prüfungsturm (Vision P11 Teil 2)

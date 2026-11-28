@@ -768,3 +768,17 @@ test('Mega-Fusion: Fusion mit Stufe 5 → eigener Name, höhere Hürde, stärker
   const low = mkWorld(defaultProfile(), { hooks: { level: () => 22 } }).w; low.coins = 1e7; const u = low.place('kitsune', ...low.suggestSpot('kitsune', 3)).tower; u.cid = 'solfox'; low.refresh();
   for (let i = 0; i < 5; i++) low.upgrade(u.id, 0); u.kills = 999; assert.match(low.megaInfo(u).why, /Charakter-Lv 25/);
 });
+
+test('Event-Kampf: Regeln je Event wirken in der Welt, Truhen einmal pro Woche', async () => {
+  const ev = await import('../js/data/events.js'); const { QUESTS } = await import('../js/data/daily.js');
+  for (const e of ev.EVENTS) { const w = new World({ map: e.fight.map, diff: e.fight.diff, seed: 2, hooks: {}, mods: JSON.parse(JSON.stringify(e.fight.mods)) }); assert.ok(w.peekWave().def.groups.length, e.id); assert.ok(e.fight.rules.length >= 2); }
+  const base = new World({ map: 'dorf', diff: 'normal', seed: 2, hooks: {} });
+  const hunt = new World({ map: 'dorf', diff: 'normal', seed: 2, hooks: {}, mods: ev.EVENTS.find(e => e.id === 'hunt').fight.mods });
+  const cnt = w => w.waveDef(5).groups.reduce((a, g) => a + g.n, 0); assert.ok(cnt(hunt) > cnt(base) * 1.4, 'Große Jagd: mehr Gegner');
+  const sl = new World({ map: 'ahnenhain', diff: 'normal', seed: 2, hooks: {}, mods: ev.EVENTS[0].fight.mods }); assert.ok(sl.waveDef(3).groups.some(g => g.e === 'kokon' && g.n >= 3));
+  const bo = new World({ map: 'glut', diff: 'normal', seed: 2, hooks: {}, mods: ev.EVENTS[1].fight.mods }); assert.ok(bo.waveDef(4).groups.some(g => g.e === 'oni')); assert.ok(!bo.waveDef(3).groups.some(g => g.e === 'oni' && g.delay === 4));
+  const gw = new World({ map: 'dorf', diff: 'normal', seed: 2, hooks: {}, mods: { coinMul: 2 } }), gb = new World({ map: 'dorf', diff: 'normal', seed: 2, hooks: {} });
+  const c0 = gw.coins, c1 = gb.coins; gw.kill(gw.spawn('boar'), null); gb.kill(gb.spawn('boar'), null); assert.equal(gw.coins - c0, 2 * (gb.coins - c1));
+  const P = defaultProfile(); P.chests = 0; ev.ensureEvent(P); assert.equal(ev.winEventFight(P), ev.EVENT_FIGHT_CHESTS); assert.equal(ev.winEventFight(P), 0); assert.equal(P.chests, ev.EVENT_FIGHT_CHESTS);
+  assert.ok(QUESTS.length >= 19 && new Set(QUESTS.map(q => q.id)).size === QUESTS.length);
+});

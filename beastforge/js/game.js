@@ -14,7 +14,7 @@ import { CH, reversedMap } from './data/challenges.js';
 import { ensureDaily, dailyChallenge, DAILY_XP } from './data/daily.js';
 import { HEROES } from './data/heroes.js';
 import { POWER, givePowers, runPowerReward } from './data/powers.js';
-import { cosOf, ensureEvent } from './data/events.js';
+import { cosOf, ensureEvent, eventDef, winEventFight } from './data/events.js';
 import { discover, reactionKey, codexEntries } from './data/codex.js';
 import { megaDef } from './data/megas.js';
 import { addCharXp, addAccXp, addHeroRankXp, heroStartLevel, unlocked, unlockedCreatures, addMastery, checkAchievements, formsFor } from './meta/progression.js';
@@ -26,7 +26,7 @@ export class Game {
     this.app = app; const P = this.P = app.profile;
     const S = coop?.setup || null; this.net = coop?.net || null; this.coop = S; const me = this.net && !this.net.host ? 1 : 0;   // Koop: gemeinsame Startwerte vom Gastgeber
     if (S) { map = S.map; diff = S.diff; ch = 'std'; }
-    this.mapId = map; this.diffKey = diff; this.ch = CH[ch] || TRIAL[ch] || FLOOR[ch] || ch === 'daily' ? ch : 'std'; this.music = MAPS[map]?.music || 'forest';
+    this.mapId = map; this.diffKey = diff; this.ch = CH[ch] || TRIAL[ch] || FLOOR[ch] || ch === 'daily' || ch === 'event' ? ch : 'std'; this.music = MAPS[map]?.music || 'forest';
     this.loadout = S ? S.loadout.slice() : unlockedCreatures(P);
     if (!this.loadout.length) this.loadout = ['kitsune'];
     this.heroId = S ? (S.heroes?.[me] ?? null) : unlocked(P, 'hero', P.hero) ? P.hero : (unlocked(P, 'hero', 'kairo') ? 'kairo' : null);
@@ -47,7 +47,7 @@ export class Game {
       heroXp: (amt, t) => { if (this.heroId && t?.cid === this.heroId && (t.owner || 0) === me) addHeroRankXp(P, this.heroId, amt * 0.5); },   // nur der eigene Held bringt Rang-XP
       heroStart: (cid, who) => S ? (S.heroStarts?.[who] ?? 1) : Math.min(20, heroStartLevel(P.heroes[this.heroId]?.rank || 1) + (this.ac.heroLvl || 0)),
     };
-    const mods = S ? {} : this.ch === 'daily' ? Object.assign({}, ...dailyChallenge(P, id => unlocked(P, 'map', id)).mods.map(id => CH[id].mods)) : TRIAL[this.ch] ? { ...TRIAL[this.ch].mods } : FLOOR[this.ch] ? { ...FLOOR[this.ch].mods } : CH[this.ch].mods || {};
+    const mods = S ? {} : this.ch === 'daily' ? Object.assign({}, ...dailyChallenge(P, id => unlocked(P, 'map', id)).mods.map(id => CH[id].mods)) : TRIAL[this.ch] ? { ...TRIAL[this.ch].mods } : FLOOR[this.ch] ? { ...FLOOR[this.ch].mods } : this.ch === 'event' ? JSON.parse(JSON.stringify(eventDef(P).fight.mods)) : CH[this.ch].mods || {};
     this.world = new World({ map, diff, loadout: this.loadout, hero: this.heroId, heroes: S ? S.heroes : undefined, hooks, academy: S ? S.ac : this.ac, mods, mapObj: mods.reverse ? reversedMap(MAPS[map]) : null, seed: S ? S.seed : (Date.now() % 1e6) | 0, players: S ? 2 : 1 });
     this.me = this.net && !this.net.host ? 1 : 0; this.world.who = this.me;   // Koop: Gastgeber = Spieler 0, Mitspieler = Spieler 1
     if (app.devGod && !S) this.world.god = true;
@@ -407,6 +407,7 @@ export class Game {
     if (won && this.ch === 'daily') { const D0 = ensureDaily(P); if (!D0.won) { D0.won = true; D0.sp = (D0.sp || 0) + 1; daily = true; chests++; this.giveAcc(DAILY_XP); } }
     let trial = null;   // Meisterprüfung bestanden → Siegel + Truhe (Vision P9)
     if (won && TRIAL[this.ch] && passTrial(P, this.ch)) { trial = TRIAL[this.ch]; chests++; this.giveAcc(BAL.acc.firstMapClear); }
+    let evWin = 0; if (won && this.ch === 'event') evWin = winEventFight(P);   // Event-Kampf: Truhen einmal pro Woche
     let floor = null;   // Prüfungsturm: neue Etage → Truhe (+1 Shinobi-Punkt je 5 Etagen)
     if (won && FLOOR[this.ch] && clearFloor(P, this.ch)) { floor = FLOOR[this.ch]; chests++; this.giveAcc(BAL.acc.firstMapClear); }
     P.stats.staggers = (P.stats.staggers || 0) + (w.stats.staggers || 0);
@@ -439,7 +440,7 @@ export class Game {
       won, perfect, firstClear, map: w.map.name, mapId: this.mapId, diff: D.name, diffKey: d, wave: w.doneWave, maxWave: w.maxWave, lives: w.lives, maxLives: w.maxLives,
       kills: w.stats.kills, coins: w.stats.coins, leaks: w.stats.leaks, reactions: w.stats.reactions, evolves: w.stats.evolves, combo: Math.max(w.bestCombo, w.comboN),
       used, xp: w.stats.xp, winBonus, snap: this.snap, charUps: this.charUps, accGain: this.accGain, accUps: this.accUps, achs: this.achs, masteryUps,
-      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch], daily, powGot, chests, records, trial, floor,
+      hero: hero ? { lvl: hero.hlvl, id: hero.cid } : null, dmg: w.stats.dmg, medal, ch: CH[this.ch], daily, powGot, chests, records, trial, floor, evWin, evName: this.ch === 'event' ? eventDef(P).name : null,
     });
     if (silent) return res;
     this.app.results(res);
